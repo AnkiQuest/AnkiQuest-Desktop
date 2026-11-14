@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// Every kind of win with its default policy.
-pub(crate) const KINDS: [(&str, &str); 10] = [
+pub(crate) const KINDS: [(&str, &str); 11] = [
     ("daily_goal", "ask"),
     ("streak_secured", "private"),
     ("streak", "ask"),
@@ -31,6 +31,7 @@ pub(crate) const KINDS: [(&str, &str); 10] = [
     ("conquered", "ask"),
     ("place", "ask"),
     ("challenge", "ask"),
+    ("companion_unlocked", "ask"),
 ];
 
 const POLICIES: [&str; 3] = ["private", "ask", "auto"];
@@ -92,6 +93,7 @@ pub(crate) fn kind_of(key: &str) -> Option<&'static str> {
         "conquered" => "conquered",
         "place" => "place",
         "challenge" => "challenge",
+        "companion" => "companion_unlocked",
         _ => return None,
     })
 }
@@ -123,10 +125,17 @@ pub(crate) fn stats(profile: &Profile) -> Value {
 
 /// Stored texts that speak to the player, and how each reads when the player shares it.
 /// The first pattern that matches wins, so more specific ones come first.
-const OWN_WORDS: [(&str, &str); 10] = [
+const OWN_WORDS: [(&str, &str); 13] = [
     (
         "You reached level {0} with {1} XP.",
         phrase("I reached level {0} with {1} XP."),
+    ),
+    // Companion unlocks; the level one comes after the one with XP, which it would also match.
+    ("{0} joined you!", phrase("{0} joined me!")),
+    ("You reached level {0}.", phrase("I reached level {0}.")),
+    (
+        "You have studied for {0} hours in total.",
+        phrase("I have studied for {0} hours in total."),
     ),
     // Records: the span is one of `Records::SPANS`, each its own catalog entry.
     (
@@ -1112,7 +1121,7 @@ pub(crate) mod tests {
         let level = make("level:3", "Level 3!", "You reached level 3.");
         assert_eq!(
             shared_words(&store.conn, &level).unwrap(),
-            ("Level 3!".into(), "You reached level 3.".into())
+            ("Level 3!".into(), "I reached level 3.".into())
         );
         cleanup(store, path);
     }

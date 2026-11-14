@@ -1,18 +1,21 @@
 """The study companion picker: a card per companion with a preview of its poses.
 
-Tapping Ankilope's card in a row unlocks the hidden cow (companion_unlock); nothing hints at it.
-Settings and Tools > AnkiQuest > Study companion both open this one picker."""
-
-import time
+Companions earned at a milestone show as a greyed silhouette with their condition and progress
+until the server has unlocked them (companion_unlock); secret ones stay hidden. Settings and
+Tools > AnkiQuest > Study companion both open this one picker."""
 
 from aqt.qt import QButtonGroup, QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, Qt
 
 from . import companion_art, companion_unlock, moods
+from .companion_unlock import Choice
 from .language import tr
 
 FACE_PX = 64
 POSE_PX = 44
 CARD = "ankiquest_companion_card"
+
+# Every companion in the picker's order.
+ORDER = (moods.AKI, moods.ANKILOPE_ID, moods.COW, moods.NONE)
 
 # A selected card has the highlight colour's border.
 _STYLE = (
@@ -21,26 +24,29 @@ _STYLE = (
 ) % (CARD, CARD)
 
 
-def _now_ms():
-    return int(time.time() * 1000)
-
-
 def _load(api):
-    """The account's companion, the server's features and its unlocks (None without them)."""
+    """The account's companion and the server's unlocks."""
     features = api.capabilities()
-    return api.companion(), features, companion_unlock.fetch(api, features)
+    return api.companion(), companion_unlock.fetch(api, features)
 
 
-def _save(api, chosen, pending):
-    """Sends unlocks made here before the companion that needs them; answers the server's
-    unlocks, or None when it has none."""
-    server = companion_unlock.send(api, pending) if pending else None
-    api.set_companion(chosen)
-    return server
+def _locked_lines(progress):
+    """The condition and progress a locked card shows, leaving out what this add-on cannot word."""
+    found = (companion_unlock.condition(progress, tr), companion_unlock.reached(progress, tr))
+    return [line for line in found if line]
 
 
-def _card(companion):
-    """A checkable card: the companion's preview poses with its name under them."""
+def _label(text):
+    label = QLabel(text)
+    label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+    label.setTextFormat(Qt.TextFormat.PlainText)
+    return label
+
+
+def _card(companion, progress=None):
+    """A checkable card: the companion's preview poses with its name under them. A locked one,
+    given its `progress`, shows the poses as silhouettes with its condition and progress and
+    cannot be chosen."""
     card = QPushButton()
     card.setObjectName(CARD)
     card.setCheckable(True)
@@ -50,19 +56,27 @@ def _card(companion):
     poses = QHBoxLayout()
     for index, pose in enumerate(moods.preview(companion)):
         image = QLabel()
-        image.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), companion, FACE_PX if index == 0 else POSE_PX))
+        picture = companion_art.pixmap(companion_art.pose_path(pose), companion, FACE_PX if index == 0 else POSE_PX)
+        image.setPixmap(companion_art.silhouette(picture) if progress is not None else picture)
         poses.addWidget(image, 0, Qt.AlignmentFlag.AlignBottom)
     if poses.count() == 0:
         poses.addWidget(QLabel("○"))
     layout.addLayout(poses)
-    name = QLabel(moods.NAMES.get(companion) or tr("No companion"))
-    name.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-    layout.addWidget(name)
+    labels = [_label(moods.NAMES.get(companion) or tr("No companion"))]
+
+    # A locked card says how to earn it.
+    if progress is not None:
+        labels += [_label(line) for line in _locked_lines(progress)]
+        card.setEnabled(False)
+        card.setProperty("locked", True)
+    for label in labels:
+        layout.addWidget(label)
 
     # The labels let clicks through to the card.
     for index in range(poses.count()):
         poses.itemAt(index).widget().setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-    name.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+    for label in labels:
+        label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
     card.setMinimumHeight(card.sizeHint().height())
     return card
 
@@ -72,12 +86,9 @@ class Picker:
 
     def __init__(self, parent, mw, api, current, on_saved):
         self._mw, self._api, self._on_saved = mw, api, on_saved
-        self._prefs = mw.pm.profile
-        self._key = companion_unlock.account(api)
-        self._taps = companion_unlock.Taps()
         self._loaded = current
-        # Unknown (None) until the server answers; offline the cow can still be found.
-        self._features = None
+        # None until the server answers; until then only the current companion is offered.
+        self._found = None
         self._cards = {}
 
         dialog = self.dialog = QDialog(parent)
@@ -89,11 +100,6 @@ class Picker:
         layout.addLayout(self._row)
         self._group = QButtonGroup(dialog)
         self._group.setExclusive(True)
-        self._message = QLabel()
-        self._message.setObjectName("ankiquest_companion_message")
-        self._message.setTextFormat(Qt.TextFormat.PlainText)
-        self._message.hide()
-        layout.addWidget(self._message)
         self._status = QLabel(tr("Loading…"))
         self._status.setTextFormat(Qt.TextFormat.PlainText)
         self._status.setWordWrap(True)
@@ -113,29 +119,28 @@ class Picker:
         self._show_cards(current)
         mw.taskman.run_in_background(lambda: _load(api), self._arrived)
 
-    def _unlocked(self):
-        return companion_unlock.unlocked(self._prefs, self._key)
-
     def _show_cards(self, selected):
-        """One card per companion this player may choose, in the picker's order."""
-        shown = [moods.AKI, moods.ANKILOPE_ID]
-        if moods.COW in self._unlocked() or selected == moods.COW:
-            shown.append(moods.COW)
-        shown.append(moods.NONE)
-        for companion in shown:
-            if companion in self._cards:
+        """One card per companion the picker offers, in its order, `selected` checked."""
+        for card in self._cards.values():
+            self._group.removeButton(card)
+            self._row.removeWidget(card)
+            card.deleteLater()
+        self._cards = {}
+        for companion in ORDER:
+            offered = companion_unlock.choice(companion, self._found, selected)
+            if offered == Choice.HIDDEN:
                 continue
-            card = _card(companion)
-            card.clicked.connect(lambda _checked=False, chosen=companion: self._tapped(chosen))
+            progress = self._found.progress[companion] if offered == Choice.LOCKED else None
+            card = _card(companion, progress)
             self._group.addButton(card)
-            self._row.insertWidget(shown.index(companion), card)
+            self._row.addWidget(card)
             self._cards[companion] = card
         if selected in self._cards:
             self._cards[selected].setChecked(True)
 
     def _arrived(self, future):
         try:
-            companion, features, server = future.result()
+            companion, found = future.result()
         except RuntimeError:
             return
         except Exception as error:
@@ -143,32 +148,8 @@ class Picker:
             self._status.setText(tr("Could not load your study companion (%s).") % error)
             return
         self._status.hide()
-        self._loaded, self._features = companion, features
-        if server is not None:
-            companion_unlock.settle(self._prefs, self._key, server)
+        self._loaded, self._found = companion, found
         self._show_cards(companion)
-
-    def _tapped(self, chosen):
-        if not self._taps.tap(chosen, _now_ms()) or moods.COW in self._cards:
-            return
-        # A server known to lack unlocks could not keep the cow.
-        if self._features is not None and companion_unlock.FEATURE not in self._features:
-            return
-        companion_unlock.record(self._prefs, self._key, moods.COW)
-        self._message.setText(tr("%s joined you!") % moods.NAMES[moods.COW])
-        self._message.show()
-        self._show_cards(moods.COW)
-        self._mw.taskman.run_in_background(lambda: companion_unlock.send(self._api, [moods.COW]), self._sent)
-
-    def _sent(self, future):
-        # Offline, the unlock stays pending and the regular poll sends it.
-        try:
-            server = future.result()
-        except Exception as error:
-            print("ankiquest unlock:", error)
-            return
-        if server is not None:
-            companion_unlock.settle(self._prefs, self._key, server)
 
     def chosen(self):
         card = self._group.checkedButton()
@@ -179,13 +160,12 @@ class Picker:
         if chosen is None or chosen == self._loaded:
             self.dialog.accept()
             return
-        pending = companion_unlock.pending(self._prefs, self._key) if chosen == moods.COW else []
         self._save_button.setEnabled(False)
-        self._mw.taskman.run_in_background(lambda: _save(self._api, chosen, pending), lambda future: self._saved(future, chosen))
+        self._mw.taskman.run_in_background(lambda: self._api.set_companion(chosen), lambda future: self._saved(future, chosen))
 
     def _saved(self, future, chosen):
         try:
-            server = future.result()
+            future.result()
         except RuntimeError:
             return
         except Exception as error:
@@ -193,8 +173,6 @@ class Picker:
             self._status.setText(tr("Could not save your study companion (%s).") % error)
             self._status.show()
             return
-        if server is not None:
-            companion_unlock.settle(self._prefs, self._key, server)
         self._loaded = chosen
         self._on_saved(chosen)
         self.dialog.accept()

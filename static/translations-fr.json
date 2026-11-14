@@ -530,7 +530,7 @@
   "Study buddies": "Jeunes étudiants",
   "Study days": "Jours d’étude",
   "Study days count actual studying; freezes do not count.": "Les jours d'étude comptent l'étude réelle; les gels ne comptent pas.",
-  "Study for {0} hours in total": "Étude pour {0} heures au total",
+  "Study for {0} hours in total": "Étudier {0} heures au total",
   "Study for {0} minutes": "Etude pendant {0} minutes",
   "Study in {0} separate sessions": "Etude en {0} sessions séparées",
   "Study in {0} separate sessions in one day": "Étudier en {0} séances séparées en une journée",
@@ -1389,5 +1389,13 @@
   "No hidden players.": "Aucune personne masquée.",
   "Show again": "Afficher de nouveau",
   "Show {0} again": "Afficher {0} de nouveau",
-  "Could not update hidden players. Try again.": "Impossible de mettre à jour la liste des personnes masquées. Réessaie."
+  "Could not update hidden players. Try again.": "Impossible de mettre à jour la liste des personnes masquées. Réessaie.",
+  "{0} joined you!": "{0} t’a rejoint !",
+  "{0} joined me!": "{0} m’a rejoint !",
+  "You reached level {0}.": "Vous avez atteint le niveau {0}.",
+  "I reached level {0}.": "J’ai atteint le niveau {0}.",
+  "You have studied for {0} hours in total.": "Vous avez étudié {0} heures au total.",
+  "Reach level {0}": "Atteins le niveau {0}",
+  "Level {0} of {1}": "Niveau {0} sur {1}",
+  "{0} of {1} hours": "{0} heures sur {1}"
 }

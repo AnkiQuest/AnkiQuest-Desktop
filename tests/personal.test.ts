@@ -14,6 +14,9 @@ const initial = () => ({
   activity:{items:[],unread_count:2},
   reminders:{gentle_daily:false,urgent_streak:false,freeze_used:false,freeze_refill:false,milestone:false,weekly_closing:false,weekly_recap:false,reminder_hour:20,quiet_start:22,quiet_end:9,daily_limit:2},
   companion:{companion:'aki'},
+  // A server before milestones has no unlocks; `companionHeader` is what the last companion save sent.
+  unlocks:null as null|{unlocks:string[],progress:Record<string,{kind:string,value:number,goal:number}>},
+  companionHeader:null as string|null,
   freezes:{enabled:false,freezes:1,capacity:3},
   nudges:{receiving:true,automatic_receiving:false,friends:[{user:'bob',display:'Bob',muted_by_me:false,enabled:true,sent_today:false}]},
   subscriptions:{enabled:true,unsubscribed_senders:[],muted_senders:['carol'],sharing_senders:['bob'],senders:[{user:'bob',display:'Bob'}]},
@@ -36,6 +39,8 @@ async function fixture(browser: Browser, options: {member?:boolean,locale?:strin
     if(pathname==='/api/study/alice')return route.fulfill({json:url.searchParams.get('year')==='2025'?{...data.study,year:2025,days:[{date:'2025-06-20',reviews:4,time_ms:120000,xp:40,new_cards:1,streak:1,frozen:false}]}:data.study});
     if(pathname==='/api/activity/alice')return route.fulfill({json:data.activity});
     if(pathname==='/api/community/challenges/alice')return route.fulfill({json:data.challenges});
+    if(pathname==='/api/unlocks/alice'&&data.unlocks)return route.fulfill({json:data.unlocks});
+    if(pathname==='/api/companion/alice'&&method==='POST')data.companionHeader=route.request().headers()['x-ankiquest-companions']??null;
     const settings: Record<string,Settings>={'/api/companion/alice':'companion','/api/community/reminders/alice':'reminders','/api/streak-freezes/alice':'freezes','/api/friend-nudges/alice':'nudges','/api/deck-subscriptions/alice':'subscriptions','/api/decks/alice':'decks'};
     const key=settings[pathname];
     if(key) {
@@ -108,6 +113,7 @@ async function noOverflow(page: Page,label: string){const size=await page.evalua
     await f.page.locator('#companion-form button[type="submit"]').click();
     await f.page.waitForFunction(()=>document.documentElement.dataset.companion==='none');
     assert.equal(f.data.companion.companion,'none');
+    assert.equal(f.data.companionHeader,'milestones');
     if(screenshots)await f.page.screenshot({path:path.join(screenshots,'settings-light.png'),fullPage:true});
     await f.page.locator('#reminders-form [name="gentle_daily"]').check();
     await f.page.locator('#freeze-toggle').check();
@@ -164,6 +170,25 @@ async function noOverflow(page: Page,label: string){const size=await page.evalua
     await future.page.goto('http://ankiquest.test/history');
     await future.page.locator(`[data-day="${futureDate}"]:visible`).waitFor();
     assert.deepEqual(future.errors,[]);checks++;await future.context.close();
+
+    // With milestones, a locked companion is a silhouette with its condition and progress, and
+    // cannot be chosen; an unlocked one is a choice.
+    const locked=await fixture(browser);
+    locked.data.unlocks={unlocks:['cow'],progress:{ankilope:{kind:'level',value:3,goal:30}}};
+    await locked.page.goto('http://ankiquest.test/settings');
+    await locked.page.locator('#companion-form').waitFor();
+    const ankilope=locked.page.locator('#companion-form .companion-locked');
+    assert.equal(await ankilope.count(),1);
+    assert.equal(await ankilope.locator('input').getAttribute('value'),'ankilope');
+    assert.equal(await ankilope.locator('input').isDisabled(),true);
+    assert.match(await ankilope.innerText(),/Reach level 30[\s\S]*Level 3 of 30/);
+    assert.equal(await locked.page.locator('#companion-form [value="cow"]').isDisabled(),false);
+    locked.data.unlocks={unlocks:[],progress:{ankilope:{kind:'level',value:3,goal:30},cow:{kind:'study_hours',value:6,goal:10}}};
+    await locked.page.reload();
+    await locked.page.locator('#companion-form').waitFor();
+    assert.match(await locked.page.locator('#companion-form').innerText(),/Study for 10 hours in total[\s\S]*6 of 10 hours/);
+    assert.equal(await locked.page.locator('#companion-form input:not([disabled])').count(),2,'Aki and no companion');
+    assert.deepEqual(locked.errors,[]);checks++;await locked.context.close();
   } finally {await browser.close();}
   console.log(`PASS: ${checks} personal-page responsive, privacy, history and settings browser scenarios.`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

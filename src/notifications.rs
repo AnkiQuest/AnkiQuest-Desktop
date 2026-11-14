@@ -226,6 +226,7 @@ fn is_celebration(key: &str) -> bool {
         "conquered:",
         "secured:",
         "goal:",
+        "companion:",
     ]
     .iter()
     .any(|prefix| key.starts_with(prefix))

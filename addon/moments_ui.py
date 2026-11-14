@@ -295,7 +295,7 @@ class _Card:
         self._body.setText(item["body"])
         self._date.setText(inbox.when(item["at"] // 1000))
         self._status.clear()
-        companion = self._addon.current_companion()
+        companion = moments.shown_companion(item, self._addon.current_companion())
         pose = moments._pose(item, companion)
         self._art.setVisible(pose is not None)
         if pose is not None:

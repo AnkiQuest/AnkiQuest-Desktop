@@ -1,5 +1,7 @@
 //! A player's visual study companion, shared by the website and installed clients.
 use crate::access::require_owner;
+use crate::game::{Event, Profile};
+use crate::i18n::english;
 use crate::{
     App,
     store::{Error, Store},
@@ -11,11 +13,12 @@ use axum::{
 };
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::collections::BTreeMap;
+use std::sync::{Arc, OnceLock};
 
 pub const DEFAULT: &str = "aki";
 
-/// The hidden companion a player finds in the companion picker.
+/// The cow, shown as Bluma.
 pub(crate) const COW: &str = "cow";
 
 /// Every stored companion. Keep [`TABLE`]'s check in step; changing it needs a migration step.
@@ -34,27 +37,69 @@ pub fn valid(value: &str) -> bool {
 /// touch them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Unlock {
-    /// The cow companion, found by tapping Ankilope in the picker.
+    /// Ankilope, earned at a level.
+    Ankilope,
+    /// The cow, shown as Bluma, earned by hours of study.
     Cow,
 }
 
+/// Whether the clients released before milestones offered a companion to everyone.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Released {
+    /// Offered to every player, so a save from those clients is still accepted.
+    Offered,
+    /// Never offered by them.
+    Hidden,
+}
+
 impl Unlock {
-    const ALL: [Unlock; 1] = [Unlock::Cow];
+    const ALL: [Unlock; 2] = [Unlock::Ankilope, Unlock::Cow];
 
     pub(crate) fn id(self) -> &'static str {
         match self {
-            Unlock::Cow => "cow",
+            Unlock::Ankilope => "ankilope",
+            Unlock::Cow => COW,
+        }
+    }
+
+    /// The companion's name, as both clients show it.
+    fn name(self) -> &'static str {
+        match self {
+            Unlock::Ankilope => "Ankilope",
+            Unlock::Cow => "Bluma",
+        }
+    }
+
+    fn released(self) -> Released {
+        match self {
+            Unlock::Ankilope => Released::Offered,
+            Unlock::Cow => Released::Hidden,
         }
     }
 
     fn parse(id: &str) -> Option<Unlock> {
         Self::ALL.into_iter().find(|unlock| unlock.id() == id)
     }
+
+    /// The moment a player gets when this unlock is granted.
+    fn event(self) -> Event {
+        let milestone = milestone(self);
+        let goal = milestone.goal.to_string();
+        let body = match milestone.kind {
+            Kind::Level => english("You reached level {0}.", &[&goal]),
+            Kind::StudyHours => english("You have studied for {0} hours in total.", &[&goal]),
+        };
+        Event {
+            key: format!("{MOMENT_PREFIX}{}", self.id()),
+            title: english("{0} joined you!", &[self.name()]),
+            body,
+        }
+    }
 }
 
 /// The unlock `companion` needs before a player may choose it.
 fn needed(companion: &str) -> Option<Unlock> {
-    (companion == COW).then_some(Unlock::Cow)
+    Unlock::parse(companion)
 }
 
 /// Whose art draws `companion`. The cow has no art yet (#88), so it borrows Ankilope's, which
@@ -65,6 +110,147 @@ pub(crate) fn art_owner(companion: &str) -> &str {
     } else {
         companion
     }
+}
+
+/// The companion an unlock moment's event key names, such as `cow` for `companion:cow`.
+pub(crate) fn of_moment(key: &str) -> Option<&'static str> {
+    key.strip_prefix(MOMENT_PREFIX)
+        .and_then(Unlock::parse)
+        .map(Unlock::id)
+}
+
+/// How unlock moments' event keys start; the rest is the companion.
+const MOMENT_PREFIX: &str = "companion:";
+
+/// A client that sends this header with [`MILESTONES`] shows locked companions itself, so the
+/// server refuses a locked one. Clients from before milestones don't send it.
+const CLIENT_HEADER: &str = "x-ankiquest-companions";
+const MILESTONES: &str = "milestones";
+
+/// The conditions both clients show, defined once with the cases they test against.
+const RULES: &str = include_str!("../tests/fixtures/companion_unlock.json");
+
+/// What a milestone counts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum Kind {
+    Level,
+    StudyHours,
+}
+
+/// Whether a companion shows before it is earned.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Visibility {
+    Shown,
+    Secret,
+}
+
+/// Whether the fixture's companion can be earned yet.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum Status {
+    Live,
+    /// No art yet: listed so both clients agree on it, but nobody earns it.
+    Planned,
+}
+
+/// A fixture entry as written. Planned entries may count kinds this server does not measure.
+#[derive(Deserialize)]
+struct Rule {
+    companion: String,
+    kind: String,
+    goal: u64,
+    secret: bool,
+    status: Status,
+}
+
+#[derive(Deserialize)]
+struct Rules {
+    companions: Vec<Rule>,
+}
+
+/// How one unlock is earned.
+#[derive(Clone, Copy, Debug)]
+struct Milestone {
+    unlock: Unlock,
+    kind: Kind,
+    goal: u64,
+    visibility: Visibility,
+}
+
+/// The live milestones of a fixture, in its order.
+fn parse(source: &str) -> Vec<Milestone> {
+    let rules: Rules = serde_json::from_str(source).expect("the unlock fixture parses");
+    rules
+        .companions
+        .into_iter()
+        .filter(|rule| rule.status == Status::Live)
+        .map(|rule| Milestone {
+            unlock: Unlock::parse(&rule.companion).expect("a live companion is an unlock"),
+            kind: serde_json::from_value(serde_json::Value::String(rule.kind))
+                .expect("a live companion counts a known kind"),
+            goal: rule.goal,
+            visibility: if rule.secret {
+                Visibility::Secret
+            } else {
+                Visibility::Shown
+            },
+        })
+        .collect()
+}
+
+fn milestones() -> &'static [Milestone] {
+    static PARSED: OnceLock<Vec<Milestone>> = OnceLock::new();
+    PARSED.get_or_init(|| parse(RULES))
+}
+
+fn milestone(unlock: Unlock) -> Milestone {
+    *milestones()
+        .iter()
+        .find(|milestone| milestone.unlock == unlock)
+        .expect("every unlock has a milestone")
+}
+
+/// What milestones count for one player, derived from their reviews and never stored.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Measures {
+    level: u64,
+    study_hours: u64,
+}
+
+impl Measures {
+    /// A player without reviews is at the first level with nothing studied.
+    fn of(profile: Option<&Profile>) -> Self {
+        match profile {
+            Some(profile) => Measures {
+                level: profile.level,
+                study_hours: profile.lifetime.hours,
+            },
+            None => Measures {
+                level: crate::game::level_for(0).0,
+                study_hours: 0,
+            },
+        }
+    }
+
+    fn value(self, kind: Kind) -> u64 {
+        match kind {
+            Kind::Level => self.level,
+            Kind::StudyHours => self.study_hours,
+        }
+    }
+
+    fn reached(self, milestone: &Milestone) -> bool {
+        self.value(milestone.kind) >= milestone.goal
+    }
+}
+
+/// How far a player is toward a locked companion.
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub struct Progress {
+    kind: Kind,
+    value: u64,
+    goal: u64,
 }
 
 pub fn initialize(conn: &Connection) -> Result<(), Error> {
@@ -117,15 +303,39 @@ impl Store {
             .collect())
     }
 
-    /// Records `unlock` for `user`; unlocking again keeps the first time.
-    pub(crate) fn add_unlock(&self, user: &str, unlock: Unlock, at_ms: i64) -> Result<(), Error> {
-        self.conn.execute(
+    /// Records `unlock` for `user`; unlocking again keeps the first time. True when it is new.
+    pub(crate) fn add_unlock(&self, user: &str, unlock: Unlock, at_ms: i64) -> Result<bool, Error> {
+        let added = self.conn.execute(
             "insert into companion_unlocks (user, unlock, unlocked_at) values (?1, ?2, ?3)
              on conflict (user, unlock) do nothing",
             params![user, unlock.id(), at_ms],
         )?;
-        Ok(())
+        Ok(added > 0)
     }
+
+    /// Grants every milestone `measures` reach and answers what `user` has unlocked.
+    fn grant(&self, user: &str, measures: Measures, at_ms: i64) -> Result<Vec<Unlock>, Error> {
+        for milestone in milestones() {
+            if measures.reached(milestone) {
+                self.add_unlock(user, milestone.unlock, at_ms)?;
+            }
+        }
+        self.unlocks(user)
+    }
+}
+
+/// Grants what `profile` has earned and answers the unlock moments `user` has, one per unlock
+/// kept, whenever it was granted. Each is announced once: the caller queues or marks them seen.
+pub(crate) fn moments(store: &Store, user: &str, profile: &Profile) -> Result<Vec<Event>, Error> {
+    let unlocks = store.grant(user, Measures::of(Some(profile)), crate::app::now_ms())?;
+    Ok(unlocks.into_iter().map(Unlock::event).collect())
+}
+
+/// Whether the client sent [`CLIENT_HEADER`]: see there.
+fn shows_locks(headers: &HeaderMap) -> bool {
+    headers
+        .get(CLIENT_HEADER)
+        .is_some_and(|value| value.as_bytes() == MILESTONES.as_bytes())
 }
 
 #[derive(Deserialize, Serialize)]
@@ -159,24 +369,50 @@ pub async fn set(
     if !valid(&preference.companion) {
         return Err(StatusCode::BAD_REQUEST);
     }
-    let store = app.store.lock().unwrap();
 
-    // A hidden companion stays hidden until the player has unlocked it.
-    if let Some(unlock) = needed(&preference.companion) {
-        let unlocks = store.unlocks(&user).map_err(crate::store_error)?;
-        if !unlocks.contains(&unlock) {
-            return Err(StatusCode::CONFLICT);
-        }
+    // A companion that needs an unlock waits for it; a milestone reached since the last
+    // upload counts.
+    if let Some(unlock) = needed(&preference.companion)
+        && !current(&app, &user)?.unlocks.contains(&unlock.id())
+    {
+        admit_released(&app, &user, unlock, &headers)?;
     }
-    store
+    app.store
+        .lock()
+        .unwrap()
         .set_companion(&user, &preference.companion)
         .map_err(crate::store_error)?;
     Ok(Json(preference))
 }
 
-#[derive(Serialize)]
+/// Clients released before milestones offered Ankilope to everyone and show any refusal as an
+/// error. Their save is still accepted and grants the unlock, without a moment, so the player
+/// keeps what they chose. A client that shows locks, or a companion they never offered, is
+/// refused.
+fn admit_released(
+    app: &App,
+    user: &str,
+    unlock: Unlock,
+    headers: &HeaderMap,
+) -> Result<(), StatusCode> {
+    if shows_locks(headers) || unlock.released() == Released::Hidden {
+        return Err(StatusCode::CONFLICT);
+    }
+    let store = app.store.lock().unwrap();
+    store
+        .add_unlock(user, unlock, crate::app::now_ms())
+        .map_err(crate::store_error)?;
+    store
+        .mark_seen(user, &unlock.event().key)
+        .map_err(crate::store_error)?;
+    Ok(())
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Unlocks {
     unlocks: Vec<&'static str>,
+    /// Each locked companion that is not secret, by id.
+    progress: BTreeMap<&'static str, Progress>,
 }
 
 #[derive(Deserialize)]
@@ -185,11 +421,38 @@ pub struct UnlockRequest {
     unlock: String,
 }
 
-fn unlocks_of(store: &Store, user: &str) -> Result<Json<Unlocks>, StatusCode> {
-    let unlocks = store.unlocks(user).map_err(crate::store_error)?;
-    Ok(Json(Unlocks {
+/// `unlocks` with the progress toward every other companion that shows while locked.
+fn listed(unlocks: Vec<Unlock>, measures: Measures) -> Unlocks {
+    let progress = milestones()
+        .iter()
+        .filter(|milestone| milestone.visibility == Visibility::Shown)
+        .filter(|milestone| !unlocks.contains(&milestone.unlock))
+        .map(|milestone| {
+            let progress = Progress {
+                kind: milestone.kind,
+                value: measures.value(milestone.kind),
+                goal: milestone.goal,
+            };
+            (milestone.unlock.id(), progress)
+        })
+        .collect();
+    Unlocks {
         unlocks: unlocks.into_iter().map(Unlock::id).collect(),
-    }))
+        progress,
+    }
+}
+
+/// Grants what `user` has earned and lists it with the progress toward the rest. The profile
+/// is worked out before the store is locked, as everywhere else.
+fn current(app: &App, user: &str) -> Result<Unlocks, StatusCode> {
+    let measures = Measures::of(app.profile(user).as_ref());
+    let unlocks = app
+        .store
+        .lock()
+        .unwrap()
+        .grant(user, measures, crate::app::now_ms())
+        .map_err(crate::store_error)?;
+    Ok(listed(unlocks, measures))
 }
 
 pub async fn get_unlocks(
@@ -198,9 +461,12 @@ pub async fn get_unlocks(
     headers: HeaderMap,
 ) -> Result<Json<Unlocks>, StatusCode> {
     require_owner(&app, &user, &headers)?;
-    unlocks_of(&app.store.lock().unwrap(), &user)
+    current(&app, &user).map(Json)
 }
 
+/// Every unlock is a milestone the server grants, so a client cannot add one: asking for one
+/// already granted answers the list, as it did when clients reported the cow; any other is
+/// `409`. Unknown ids, and companions the fixture lists as planned, are `400`.
 pub async fn add_unlock(
     State(app): State<Arc<App>>,
     Path(user): Path<String>,
@@ -209,16 +475,24 @@ pub async fn add_unlock(
 ) -> Result<Json<Unlocks>, StatusCode> {
     require_owner(&app, &user, &headers)?;
     let unlock = Unlock::parse(&request.unlock).ok_or(StatusCode::BAD_REQUEST)?;
-    let store = app.store.lock().unwrap();
-    store
-        .add_unlock(&user, unlock, crate::app::now_ms())
-        .map_err(crate::store_error)?;
-    unlocks_of(&store, &user)
+    let answer = current(&app, &user)?;
+    if !answer.unlocks.contains(&unlock.id()) {
+        return Err(StatusCode::CONFLICT);
+    }
+    Ok(Json(answer))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::{call, cleanup, fixture};
+    use serde_json::{Value, json};
+
+    const HOUR_MS: i64 = 3_600_000;
+
+    fn measures(level: u64, study_hours: u64) -> Measures {
+        Measures { level, study_hours }
+    }
 
     #[test]
     fn choice_is_per_player_and_survives_reopening_the_store() {
@@ -237,8 +511,8 @@ mod tests {
     fn unlocks_are_per_player_kept_once_and_survive_reopening_the_store() {
         let (store, path) = crate::test_support::temporary_store();
         assert!(store.unlocks("alice").unwrap().is_empty());
-        store.add_unlock("alice", Unlock::Cow, 1).unwrap();
-        store.add_unlock("alice", Unlock::Cow, 2).unwrap();
+        assert!(store.add_unlock("alice", Unlock::Cow, 1).unwrap());
+        assert!(!store.add_unlock("alice", Unlock::Cow, 2).unwrap());
         drop(store);
         let reopened = Store::open(&path).unwrap();
         assert_eq!(reopened.unlocks("alice").unwrap(), [Unlock::Cow]);
@@ -253,66 +527,263 @@ mod tests {
     }
 
     #[test]
-    fn every_companion_fits_the_table_and_only_the_cow_needs_an_unlock() {
-        let (store, _path) = crate::test_support::temporary_store();
-        for companion in COMPANIONS {
-            store.set_companion("alice", companion).unwrap();
-            assert_eq!(store.companion("alice").unwrap(), companion);
-            assert_eq!(needed(companion).is_some(), companion == COW, "{companion}");
-        }
-        assert!(store.set_companion("alice", "unknown").is_err());
-        assert_eq!(art_owner(COW), "ankilope");
-        assert_eq!(art_owner("aki"), "aki");
+    fn every_live_companion_in_the_fixture_is_an_unlock_with_one_milestone() {
+        let rules: Value = serde_json::from_str(RULES).unwrap();
         for unlock in Unlock::ALL {
+            let found = milestones().iter().filter(|m| m.unlock == unlock).count();
+            assert_eq!(found, 1, "{unlock:?}");
             assert_eq!(Unlock::parse(unlock.id()), Some(unlock));
+            assert_eq!(needed(unlock.id()), Some(unlock));
         }
+        assert_eq!(milestones().len(), Unlock::ALL.len());
+
+        // Planned companions have no art yet, so this server knows nothing of them.
+        for rule in rules["companions"].as_array().unwrap() {
+            let planned = rule["status"] == "planned";
+            let id = rule["companion"].as_str().unwrap();
+            assert_eq!(Unlock::parse(id).is_none(), planned, "{id}");
+            assert_eq!(valid(id), !planned, "{id}");
+        }
+        assert_eq!(needed("aki"), None);
+        assert_eq!(needed("none"), None);
         assert_eq!(Unlock::parse("Cow"), None);
     }
 
+    #[test]
+    fn the_fixture_checks_decide_each_unlock() {
+        let rules: Value = serde_json::from_str(RULES).unwrap();
+        let checks = rules["checks"].as_array().unwrap();
+        assert!(!checks.is_empty());
+        for check in checks {
+            let unlock = Unlock::parse(check["companion"].as_str().unwrap()).unwrap();
+            let value = check["value"].as_u64().unwrap();
+            let milestone = milestone(unlock);
+            let measured = match milestone.kind {
+                Kind::Level => measures(value, 0),
+                Kind::StudyHours => measures(1, value),
+            };
+            assert_eq!(
+                measured.reached(&milestone),
+                check["unlocks"].as_bool().unwrap(),
+                "{}",
+                check["name"]
+            );
+        }
+    }
+
+    #[test]
+    fn level_30_unlocks_ankilope_for_good() {
+        let (store, path) = crate::test_support::temporary_store();
+        assert!(store.grant("hill", measures(29, 0), 1).unwrap().is_empty());
+        assert_eq!(
+            store.grant("hill", measures(30, 0), 2).unwrap(),
+            [Unlock::Ankilope]
+        );
+
+        // A level reset or less study later takes nothing back.
+        assert_eq!(
+            store.grant("hill", measures(1, 0), 3).unwrap(),
+            [Unlock::Ankilope]
+        );
+        assert_eq!(
+            store.grant("hill", measures(1, 10), 4).unwrap(),
+            Unlock::ALL
+        );
+        cleanup(store, path);
+    }
+
+    #[test]
+    fn progress_lists_only_locked_companions_that_show() {
+        let listed = |unlocks: Vec<Unlock>, measured| {
+            serde_json::to_value(super::listed(unlocks, measured)).unwrap()
+        };
+        assert_eq!(
+            listed(vec![], measures(3, 6)),
+            json!({"unlocks": [], "progress": {
+                "ankilope": {"kind": "level", "value": 3, "goal": 30},
+                "cow": {"kind": "study_hours", "value": 6, "goal": 10}
+            }})
+        );
+        assert_eq!(
+            listed(vec![Unlock::Cow], measures(3, 12)),
+            json!({"unlocks": ["cow"], "progress": {
+                "ankilope": {"kind": "level", "value": 3, "goal": 30}
+            }})
+        );
+        assert_eq!(
+            listed(Unlock::ALL.to_vec(), measures(40, 12)),
+            json!({"unlocks": ["ankilope", "cow"], "progress": {}})
+        );
+        assert_eq!(Measures::of(None), measures(1, 0));
+    }
+
+    #[test]
+    fn unlock_moments_name_the_companion_and_its_milestone() {
+        let ankilope = Unlock::Ankilope.event();
+        assert_eq!(ankilope.key, "companion:ankilope");
+        assert_eq!(ankilope.title, "Ankilope joined you!");
+        assert_eq!(ankilope.body, "You reached level 30.");
+        let cow = Unlock::Cow.event();
+        assert_eq!(cow.key, "companion:cow");
+        assert_eq!(cow.title, "Bluma joined you!");
+        assert_eq!(cow.body, "You have studied for 10 hours in total.");
+        assert_eq!(of_moment("companion:cow"), Some(COW));
+        assert_eq!(of_moment("companion:horse"), None);
+        assert_eq!(of_moment("level:3"), None);
+        assert_eq!(
+            crate::wins::own_words(&cow.title, &cow.body),
+            (
+                "Bluma joined me!".into(),
+                "I have studied for 10 hours in total.".into()
+            )
+        );
+        assert_eq!(
+            crate::wins::own_words(&ankilope.title, &ankilope.body).1,
+            "I reached level 30."
+        );
+        assert_eq!(art_owner(COW), "ankilope");
+        assert_eq!(art_owner("aki"), "aki");
+    }
+
+    /// An upload of one review that took `time_ms`, answered at `at`.
+    fn study(at: i64, time_ms: i64) -> Value {
+        json!({
+            "reviews": [{"id": at, "cid": at, "last_ivl": 1, "ivl": 3, "time_ms": time_ms, "kind": 1}],
+            "clock": {"offset_west_min": 0, "rollover_hour": 4}
+        })
+    }
+
     #[tokio::test]
-    async fn the_cow_is_unlocked_by_its_owner_once_and_only_then_chosen() {
-        use crate::test_support::{call, cleanup, fixture};
-        use serde_json::{Value, json};
-
+    async fn ten_hours_of_study_bring_bluma_with_a_moment_to_share() {
         let (app, path) = fixture();
+        let now = crate::app::now_ms();
+        let reviews = "/api/reviews/hill";
         let unlocks = "/api/unlocks/hill";
-        let companion = "/api/companion/hill";
-        let cow = json!({"companion": "cow"});
 
-        // Nothing is unlocked yet, so the cow cannot be chosen.
-        let nothing = json!({"unlocks": []});
-        let got = call(&app, "GET", unlocks, "hill-secret", Value::Null).await;
-        assert_eq!(got, (StatusCode::OK, nothing));
-        let refused = call(&app, "POST", companion, "hill-secret", cow.clone()).await;
-        assert_eq!(refused.0, StatusCode::CONFLICT);
+        // The first upload records history; 9 hours 59 minutes are not enough.
+        let almost = 10 * HOUR_MS - 60_000;
+        let first = call(
+            &app,
+            "POST",
+            reviews,
+            "hill-secret",
+            study(now - 3 * HOUR_MS, almost),
+        )
+        .await;
+        assert_eq!(first.0, StatusCode::OK);
+        let (status, got) = call(&app, "GET", unlocks, "hill-secret", Value::Null).await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(got["unlocks"], json!([]));
+        assert_eq!(
+            got["progress"]["cow"],
+            json!({"kind": "study_hours", "value": 9, "goal": 10})
+        );
+        assert_eq!(got["progress"]["ankilope"]["goal"], 30);
 
-        // Only the player's own token unlocks, and only known ids.
-        let unlock = json!({"unlock": "cow"});
-        let other = call(&app, "POST", unlocks, "cerro-secret", unlock.clone()).await;
-        assert_eq!(other.0, StatusCode::UNAUTHORIZED);
+        // One more minute makes 10 hours: the upload grants Bluma.
+        let more = call(
+            &app,
+            "POST",
+            reviews,
+            "hill-secret",
+            study(now - HOUR_MS, 60_000),
+        )
+        .await;
+        assert_eq!(more.0, StatusCode::OK);
+        assert_eq!(
+            app.store.lock().unwrap().unlocks("hill").unwrap(),
+            [Unlock::Cow]
+        );
+        let (_, got) = call(&app, "GET", unlocks, "hill-secret", Value::Null).await;
+        assert_eq!(got["unlocks"], json!(["cow"]));
+        assert_eq!(got["progress"].get("cow"), None);
+
+        // The worker announces it once, as a moment with a win.
+        crate::worker::tick(&app).unwrap();
+        crate::worker::tick(&app).unwrap();
+        let (_, inbox) = call(
+            &app,
+            "GET",
+            "/api/notifications/hill",
+            "hill-secret",
+            Value::Null,
+        )
+        .await;
+        let joined: Vec<&Value> = inbox
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["moment"] == "companion:cow")
+            .collect();
+        assert_eq!(joined.len(), 1, "{inbox}");
+        assert_eq!(joined[0]["title"], "Bluma joined you!");
+        assert_eq!(joined[0]["kind"], "celebration");
+        assert_eq!(joined[0]["topic"], "companion");
+        assert!(joined[0]["win"].is_i64(), "{}", joined[0]);
+
+        // It can be shared like any other moment.
+        let share = json!({"moment": {"key": "companion:cow"}, "to": {"friends": ["cerro"]}});
+        let shared = call(&app, "POST", "/api/share/hill", "hill-secret", share).await;
+        assert_eq!(shared.0, StatusCode::OK, "{}", shared.1);
+        assert_eq!(shared.1["recipients"], 1);
+        cleanup(app, path);
+    }
+
+    /// `POST /api/companion/hill` choosing `companion`, from a client that does or does not
+    /// show locked companions.
+    async fn choose(app: &Arc<App>, companion: &str, shows: bool) -> StatusCode {
+        let mut request = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/companion/hill")
+            .header("authorization", "Bearer hill-secret")
+            .header("content-type", "application/json");
+        if shows {
+            request = request.header(CLIENT_HEADER, MILESTONES);
+        }
+        let body = json!({"companion": companion}).to_string();
+        let request = request.body(axum::body::Body::from(body)).unwrap();
+        crate::test_support::route(app, request).await.status()
+    }
+
+    #[tokio::test]
+    async fn locked_companions_are_refused_except_ankilope_from_released_clients() {
+        let (app, path) = fixture();
+
+        // Clients that show locks are refused both locked companions.
+        assert_eq!(choose(&app, "ankilope", true).await, StatusCode::CONFLICT);
+        assert_eq!(choose(&app, "cow", true).await, StatusCode::CONFLICT);
+        assert_eq!(choose(&app, "aki", true).await, StatusCode::OK);
+
+        // Released clients offered Ankilope to everyone: their save is kept, and grants it
+        // without a moment. They never offered the cow.
+        assert_eq!(choose(&app, "cow", false).await, StatusCode::CONFLICT);
+        assert_eq!(choose(&app, "ankilope", false).await, StatusCode::OK);
+        {
+            let store = app.store.lock().unwrap();
+            assert_eq!(store.companion("hill").unwrap(), "ankilope");
+            assert_eq!(store.unlocks("hill").unwrap(), [Unlock::Ankilope]);
+            assert!(store.is_seen("hill", "companion:ankilope").unwrap());
+        }
+        assert_eq!(choose(&app, "ankilope", true).await, StatusCode::OK);
+
+        // Clients cannot report unlocks: only one already granted answers.
+        let unlocks = "/api/unlocks/hill";
+        let ask = |id: &str| json!({"unlock": id});
+        let granted = call(&app, "POST", unlocks, "hill-secret", ask("ankilope")).await;
+        assert_eq!(granted.0, StatusCode::OK);
+        assert_eq!(granted.1["unlocks"], json!(["ankilope"]));
+        let cow = call(&app, "POST", unlocks, "hill-secret", ask("cow")).await;
+        assert_eq!(cow.0, StatusCode::CONFLICT);
+        for unknown in ["horse", "anki_tan", "leech_tan"] {
+            let bad = call(&app, "POST", unlocks, "hill-secret", ask(unknown)).await;
+            assert_eq!(bad.0, StatusCode::BAD_REQUEST, "{unknown}");
+        }
+
+        // Only the player's own token reads or asks.
         let other = call(&app, "GET", unlocks, "cerro-secret", Value::Null).await;
         assert_eq!(other.0, StatusCode::UNAUTHORIZED);
-        let unknown = json!({"unlock": "horse"});
-        let bad = call(&app, "POST", unlocks, "hill-secret", unknown).await;
-        assert_eq!(bad.0, StatusCode::BAD_REQUEST);
-
-        // Unlocking twice answers the same list; then the cow can be chosen.
-        let unlocked = (StatusCode::OK, json!({"unlocks": ["cow"]}));
-        for _ in 0..2 {
-            let answer = call(&app, "POST", unlocks, "hill-secret", unlock.clone()).await;
-            assert_eq!(answer, unlocked);
-        }
-        let got = call(&app, "GET", unlocks, "hill-secret", Value::Null).await;
-        assert_eq!(got, unlocked);
-        let chosen = call(&app, "POST", companion, "hill-secret", cow.clone()).await;
-        assert_eq!(chosen, (StatusCode::OK, cow.clone()));
-        let got = call(&app, "GET", companion, "hill-secret", Value::Null).await;
-        assert_eq!(got, (StatusCode::OK, cow.clone()));
-
-        // Another player's unlock is their own.
-        let theirs = "/api/companion/cerro";
-        let refused = call(&app, "POST", theirs, "cerro-secret", cow).await;
-        assert_eq!(refused.0, StatusCode::CONFLICT);
+        let other = call(&app, "POST", unlocks, "cerro-secret", ask("cow")).await;
+        assert_eq!(other.0, StatusCode::UNAUTHORIZED);
         cleanup(app, path);
     }
 }

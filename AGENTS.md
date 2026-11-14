@@ -53,6 +53,15 @@ AnkiQuest has two clients: the Android app ([float3/AnkiQuest-Android](https://g
 - Use the same names, wording and order for the same thing on both clients.
 - When you find a gap between the clients, open a `parity` issue for it.
 
+## Companion art
+
+Companion art means every picture of a character: poses, moment and card pictures, widget and notification drawables.
+
+- Never delete companion art, even when nothing uses it any more. Remove the references, keep the files, so they can be reused or merged later.
+- Each character needs a core set of poses before it goes live in the apps: face, asleep, happy, streak (on fire), sad, hopeful, frozen and neglected. A character without the full core set stays hidden.
+- Every other pose is an extension: streak tiers, milestones, frozen days 2 and 3, hurt, dead, welcome, a defeated leech, and poses for other rare moments. Extensions are optional. A missing extension falls back to its core pose (a streak tier to streak, frozen 3 to frozen, a defeated leech to happy).
+- The core set, the extensions and their fallbacks are defined once, in `tests/fixtures/companion_poses.json`; both clients use that list.
+
 ## Writing
 
 Write comments, commit messages, issues and PR descriptions with as few words as needed. No praise, no filler, no superlatives. Em dashes take no spaces around them.

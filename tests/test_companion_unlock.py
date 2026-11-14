@@ -1,4 +1,4 @@
-"""The hidden cow: the shared tap rule, unlocks kept until the server has them, and its art."""
+"""Companions earned at milestones: the shared conditions, what the picker offers, and the art."""
 
 import json
 import os
@@ -16,91 +16,134 @@ moods = load_in_package("aq_cow", "moods")
 board = load_in_package("aq_cow", "board")
 share = load_in_package("aq_cow", "share")
 client = load_in_package("aq_cow", "client")
+moments = load_in_package("aq_cow", "moments")
 
 FIXTURE = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
 EXAMPLES = ADDON.parent / "docs/api/examples"
+LIVE = [rule for rule in FIXTURE["companions"] if rule["status"] == "live"]
+Choice = unlock.Choice
 
 
-class TapRule(unittest.TestCase):
-    def test_the_rule_is_the_shared_one(self):
+def example(name):
+    return json.loads((EXAMPLES / (name + ".json")).read_text("utf-8"))
+
+
+class SharedConditions(unittest.TestCase):
+    def test_the_live_companions_are_the_ones_the_add_on_earns(self):
+        self.assertEqual(list(unlock.EARNED), [rule["companion"] for rule in LIVE])
+        for rule in LIVE:
+            self.assertFalse(rule["secret"], "a secret one would need hiding")
+            self.assertIn(rule["companion"], moods.NAMES)
+        for rule in FIXTURE["companions"]:
+            if rule["status"] == "planned":
+                self.assertNotIn(rule["companion"], moods.NAMES, "planned companions have no art yet")
+
+    def test_every_live_condition_is_worded(self):
+        texts = {
+            "ankilope": ("Reach level 30", "Level 3 of 30"),
+            "cow": ("Study for 10 hours in total", "6 of 10 hours"),
+        }
+        for rule in LIVE:
+            progress = {"kind": rule["kind"], "value": 3 if rule["kind"] == unlock.LEVEL else 6, "goal": rule["goal"]}
+            words = (unlock.condition(progress, str), unlock.reached(progress, str))
+            self.assertEqual(texts[rule["companion"]], words)
+        unknown = {"kind": "streak", "value": 1, "goal": 66}
+        self.assertIsNone(unlock.condition(unknown, str))
+        self.assertIsNone(unlock.reached(unknown, str))
+
+    def test_the_tap_rule_is_the_shared_one(self):
         self.assertEqual(FIXTURE["taps"], unlock.TAPS)
         self.assertEqual(FIXTURE["max_gap_ms"], unlock.MAX_GAP_MS)
-
-    def test_every_shared_case(self):
+        chibi = next(rule for rule in FIXTURE["companions"] if rule["kind"] == "taps")
+        self.assertEqual(FIXTURE["taps"], chibi["goal"])
         self.assertTrue(FIXTURE["cases"])
         for case in FIXTURE["cases"]:
             with self.subTest(case=case["name"]):
-                taps = unlock.Taps()
+                taps = unlock.Taps(chibi["requires"])
                 found = [taps.tap(choice, at_ms) for choice, at_ms in case["sequence"]]
                 self.assertEqual(case["unlocks"], found[-1])
                 self.assertFalse(any(found[:-1]), "only the last tap may unlock")
 
-    def test_the_count_starts_again_after_an_unlock(self):
-        taps = unlock.Taps()
-        found = [taps.tap("ankilope", index * 100) for index in range(2 * unlock.TAPS)]
-        self.assertEqual([unlock.TAPS - 1, 2 * unlock.TAPS - 1], [index for index, done in enumerate(found) if done])
 
+class Offered(unittest.TestCase):
+    def test_the_servers_answer_is_read_from_the_examples(self):
+        found = unlock.parse(example("unlocks"))
+        self.assertEqual({"cow"}, found.unlocks)
+        self.assertEqual({"kind": "level", "value": 2, "goal": 30}, found.progress["ankilope"])
+        self.assertEqual(found.unlocks, unlock.parse(example("unlocks_save")).unlocks)
 
-class KeptUnlocks(unittest.TestCase):
-    def setUp(self):
-        self.prefs = {}
-        self.api = SimpleNamespace(base="https://example.test", name="hill")
-        self.key = unlock.account(self.api)
+        # What cannot be read is left out.
+        odd = unlock.parse({"unlocks": ["cow", 3], "progress": {"ankilope": {"kind": "level"}, "x": 1}})
+        self.assertEqual(({"cow"}, {}), (set(odd.unlocks), odd.progress))
+        self.assertEqual(frozenset(), unlock.parse(None).unlocks)
 
-    def test_an_unlock_waits_until_the_server_lists_it(self):
-        unlock.record(self.prefs, self.key, "cow")
-        self.assertEqual(["cow"], unlock.pending(self.prefs, self.key))
-        self.assertEqual({"cow"}, unlock.unlocked(self.prefs, self.key))
-        unlock.settle(self.prefs, self.key, ["cow"])
-        self.assertEqual([], unlock.pending(self.prefs, self.key))
-        self.assertEqual({"cow"}, unlock.unlocked(self.prefs, self.key))
+    def test_a_server_without_unlocks_answers_nothing_unlocked(self):
+        api = SimpleNamespace(unlocks=Mock(return_value=example("unlocks")))
+        self.assertEqual({"cow"}, unlock.fetch(api, frozenset([unlock.FEATURE])).unlocks)
+        older = unlock.fetch(api, frozenset())
+        self.assertEqual((frozenset(), {}), (older.unlocks, older.progress))
+        api.unlocks.assert_called_once()
 
-        # Recording it again once sent does not send it again.
-        unlock.record(self.prefs, self.key, "cow")
-        self.assertEqual([], unlock.pending(self.prefs, self.key))
-
-    def test_unlocks_belong_to_one_account(self):
-        unlock.record(self.prefs, self.key, "cow")
-        other = unlock.account(SimpleNamespace(base="https://example.test", name="cerro"))
-        self.assertEqual(set(), unlock.unlocked(self.prefs, other))
-
-    def test_an_unlock_from_another_device_counts(self):
-        unlock.settle(self.prefs, self.key, ["cow"])
-        self.assertEqual({"cow"}, unlock.unlocked(self.prefs, self.key))
-
-    def test_sending_needs_the_servers_capability(self):
-        answer = json.loads((EXAMPLES / "unlocks_save.json").read_text("utf-8"))
-        api = SimpleNamespace(capabilities=Mock(return_value=frozenset([unlock.FEATURE])), unlock=Mock(return_value=answer))
-        self.assertEqual(["cow"], unlock.send(api, ["cow"]))
-        api.unlock.assert_called_once_with("cow")
-
-        older = SimpleNamespace(capabilities=Mock(return_value=frozenset()), unlock=Mock())
-        self.assertIsNone(unlock.send(older, ["cow"]))
-        older.unlock.assert_not_called()
-
-    def test_the_servers_list_is_read_from_the_example(self):
-        answer = json.loads((EXAMPLES / "unlocks.json").read_text("utf-8"))
-        api = SimpleNamespace(unlocks=Mock(return_value=answer))
-        self.assertEqual(["cow"], unlock.fetch(api, frozenset([unlock.FEATURE])))
-        self.assertIsNone(unlock.fetch(api, frozenset()))
-        api.unlocks.return_value = {"unlocks": ["cow", 3, None]}
-        self.assertEqual(["cow"], unlock.fetch(api, frozenset([unlock.FEATURE])))
+    def test_each_companion_is_offered_by_its_state(self):
+        locked = unlock.Found([], {"ankilope": {"kind": "level", "value": 3, "goal": 30}, "cow": {"kind": "study_hours", "value": 6, "goal": 10}})
+        earned = unlock.Found(["ankilope", "cow"])
+        older = unlock.Found()
+        cases = (
+            # (companion, found, current, offered)
+            ("aki", None, "aki", Choice.FREE),
+            ("none", locked, "aki", Choice.FREE),
+            ("ankilope", locked, "aki", Choice.LOCKED),
+            ("cow", locked, "aki", Choice.LOCKED),
+            ("ankilope", earned, "aki", Choice.UNLOCKED),
+            ("cow", earned, "aki", Choice.UNLOCKED),
+            # The current companion stays a choice, however it was chosen.
+            ("ankilope", locked, "ankilope", Choice.UNLOCKED),
+            # Before the server answers only the current one shows.
+            ("ankilope", None, "aki", Choice.HIDDEN),
+            # A server from before milestones: Ankilope as it was, the cow only once unlocked.
+            ("ankilope", older, "aki", Choice.FREE),
+            ("cow", older, "aki", Choice.HIDDEN),
+            ("cow", unlock.Found(["cow"]), "aki", Choice.UNLOCKED),
+        )
+        for companion, found, current, offered in cases:
+            with self.subTest(companion=companion, current=current):
+                self.assertEqual(offered, unlock.choice(companion, found, current))
 
 
 class Client(unittest.TestCase):
-    def test_unlock_requests(self):
+    def test_saving_says_the_add_on_shows_locks(self):
         api = client.Client("https://example.test", "hill", "secret")
-        api._request = Mock(return_value={"unlocks": ["cow"]})
+        api._request = Mock(return_value={"companion": "cow"})
         api.unlocks()
         api._request.assert_called_with("/api/unlocks/hill")
-        api.unlock("cow")
-        api._request.assert_called_with("/api/unlocks/hill", {"unlock": "cow"})
+        self.assertEqual("cow", api.set_companion("cow"))
+        api._request.assert_called_with("/api/companion/hill", {"companion": "cow"}, extra={"X-AnkiQuest-Companions": "milestones"})
+        self.assertFalse(hasattr(api, "unlock"), "the server grants unlocks")
 
     def test_the_cow_can_be_saved_and_read(self):
         self.assertIn("cow", client.COMPANIONS)
         api = client.Client("https://example.test", "hill", "secret")
         api._request = Mock(return_value={"companion": "cow"})
         self.assertEqual("cow", api.companion())
+
+
+class UnlockMoment(unittest.TestCase):
+    def test_the_moment_shows_the_companion_that_joined(self):
+        row = next(row for row in example("notifications_companion") if row.get("moment") == "companion:cow")
+        item = moments._notice(row)
+        self.assertEqual(("companion", "Bluma joined you!"), (item["topic"], item["title"]))
+        self.assertEqual("Bluma joined me!", item["share"]["title"])
+        self.assertEqual("cow", moments.shown_companion(item, "aki"))
+        self.assertEqual("ankilope_celebrate", moments._pose(item, moments.shown_companion(item, "none")))
+        level = moments._notice({**row, "moment": "level:3", "topic": "level"})
+        self.assertEqual("aki", moments.shown_companion(level, "aki"))
+        horse = moments._notice({**row, "moment": "companion:horse"})
+        self.assertEqual("aki", moments.shown_companion(horse, "aki"))
+
+    def test_the_sharing_settings_name_the_new_kind(self):
+        sharing = load_in_package("aq_cow", "sharing")
+        kinds = [kind for kind, _ in sharing.KINDS]
+        self.assertEqual(sorted(kinds), sorted(example("sharing")["policies"]))
 
 
 class CowArt(unittest.TestCase):
