@@ -1941,3 +1941,10 @@ PORTUGUESE.update({
     "App and privacy": "App e privacidade",
     "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Ninguém novo recebeu: os teus amigos já têm, ou ainda não tens amigos no AnkiQuest.",
 })
+
+# Anki-tan credit, as on Android's About screen (ankiquest_about_anki_tan).
+_ANKI_TAN = '<a href="%s">Anki-tan</a> by <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+SPANISH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+GERMAN[_ANKI_TAN] = '<a href="%s">Anki-tan</a> von <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+FRENCH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> par <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+PORTUGUESE[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'

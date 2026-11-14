@@ -28,6 +28,11 @@ from .share import face_path
 from .today_ui import settings_section
 from . import companion_art, reminders_ui, settings_sync, updates
 
+# Anki-tan's CC BY-SA 4.0 licence asks for this credit; Android shows the same on its About screen.
+ANKI_TAN_URL = "https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html"
+SHIGEYUKI_URL = "https://www.patreon.com/Shigeyuki"
+CC_BY_SA_URL = "https://creativecommons.org/licenses/by-sa/4.0/"
+
 
 def _scroller(widgets):
     inner = QWidget()
@@ -153,6 +158,17 @@ def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
     return result
 
 
+def _credit():
+    """Credit for Anki-tan, with the links Android's About screen has."""
+    text = tr('<a href="%s">Anki-tan</a> by <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.')
+    label = QLabel(text % (ANKI_TAN_URL, SHIGEYUKI_URL, CC_BY_SA_URL))
+    label.setObjectName("ankiquest_anki_tan_credit")
+    label.setTextFormat(Qt.TextFormat.RichText)
+    label.setOpenExternalLinks(True)
+    label.setWordWrap(True)
+    return label
+
+
 def _folded(title, layout):
     """Keep occasional controls reachable without making the main dialog longer."""
     toggle = QPushButton(title)
@@ -264,6 +280,7 @@ def settings_dialog(
     installed = updates.installed(Path(__file__).parent)
     version = updates.label(installed) if installed is not None else tr("Local copy")
     groups["app"].addWidget(QLabel(tr("Version: %s") % version))
+    groups["app"].addWidget(_credit())
     if updates._source(Path(__file__).parent) is updates._Source.ANKIWEB:
         groups["app"].addWidget(QLabel(tr("Updates are managed by AnkiWeb.")))
     else:
