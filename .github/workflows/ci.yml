@@ -97,6 +97,8 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # The real-Anki smoke installs archives from the Rust packager.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python }}
@@ -107,6 +109,8 @@ jobs:
           bash .github/scripts/ubuntu-archive.sh
           sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
           python -m pip install -r tests/requirements-anki-${{ matrix.anki }}.txt
+      - name: Build the add-on packager
+        run: cargo build -p ankiquest-xtask
       - name: Lint the add-on
         run: python -m pyflakes addon
       - name: Test the add-on and its real Anki APIs
@@ -119,11 +123,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - name: Test and build the archive
         run: |
-          python3 -m unittest discover -s tests -p test_addon_package.py -v
-          python3 .github/scripts/package-addon.py --output ankiquest.ankiaddon
-          python3 .github/scripts/package-addon.py --ankiweb --output ankiquest-ankiweb.ankiaddon
+          cargo test -p ankiquest-xtask package
+          cargo run -p ankiquest-xtask -- package-addon --output ankiquest.ankiaddon
+          cargo run -p ankiquest-xtask -- package-addon --ankiweb --output ankiquest-ankiweb.ankiaddon
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ankiquest-addon

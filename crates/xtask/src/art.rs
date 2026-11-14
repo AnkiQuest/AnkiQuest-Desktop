@@ -12,6 +12,8 @@ use std::process::ExitCode;
 use image::imageops::{self, FilterType};
 use image::{Rgba32FImage, RgbaImage};
 
+use crate::root;
+
 mod addon;
 mod banner;
 
@@ -169,11 +171,6 @@ pub fn banner(args: &[String]) -> ExitCode {
 fn usage() -> ExitCode {
     eprintln!("usage: xtask export-android-art [--check] <android-checkout>");
     ExitCode::FAILURE
-}
-
-/// The repository root, where the masters live.
-fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
 /// The drawable's path relative to an Android checkout.
