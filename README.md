@@ -2,13 +2,13 @@
 <img alt="" src="docs/graphics/banner_readme.png"/>
 </p>
 
-<a href="https://github.com/float3/ankiquest/releases/latest"><img src="https://img.shields.io/github/v/release/float3/ankiquest" alt="release"/></a>
+<a href="https://github.com/AnkiQuest/ankiquest/releases/latest"><img src="https://img.shields.io/github/v/release/AnkiQuest/ankiquest" alt="release"/></a>
 <a href="https://ankiweb.net/shared/info/414948448"><img src="https://img.shields.io/badge/AnkiWeb-414948448-2a6db0" alt="AnkiWeb add-on"/></a>
-<a href="https://github.com/float3/ankiquest/actions/workflows/ci.yml"><img src="https://github.com/float3/ankiquest/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"/></a>
-<a href="https://github.com/float3/ankiquest/actions/workflows/addon.yml"><img src="https://github.com/float3/ankiquest/actions/workflows/addon.yml/badge.svg?branch=master" alt="Desktop add-on"/></a>
-<a href="https://github.com/float3/ankiquest/commits/master"><img src="https://img.shields.io/github/commit-activity/m/float3/ankiquest" alt="commit-activity"/></a>
-<a href="https://github.com/float3/ankiquest/graphs/contributors"><img src="https://img.shields.io/github/contributors/float3/ankiquest" alt="contributors"/></a>
-<a href="https://github.com/float3/ankiquest/blob/master/LICENSE"><img src="https://img.shields.io/github/license/float3/ankiquest" alt="license"/></a>
+<a href="https://github.com/AnkiQuest/ankiquest/actions/workflows/ci.yml"><img src="https://github.com/AnkiQuest/ankiquest/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"/></a>
+<a href="https://github.com/AnkiQuest/ankiquest/actions/workflows/addon.yml"><img src="https://github.com/AnkiQuest/ankiquest/actions/workflows/addon.yml/badge.svg?branch=master" alt="Desktop add-on"/></a>
+<a href="https://github.com/AnkiQuest/ankiquest/commits/master"><img src="https://img.shields.io/github/commit-activity/m/AnkiQuest/ankiquest" alt="commit-activity"/></a>
+<a href="https://github.com/AnkiQuest/ankiquest/graphs/contributors"><img src="https://img.shields.io/github/contributors/AnkiQuest/ankiquest" alt="contributors"/></a>
+<a href="https://github.com/AnkiQuest/ankiquest/blob/master/LICENSE"><img src="https://img.shields.io/github/license/AnkiQuest/ankiquest" alt="license"/></a>
 
 # AnkiQuest
 
@@ -18,8 +18,8 @@ XP, streaks, daily quests, friends and leaderboards for Anki. Clients send revie
 
 1. create an account on an AnkiQuest server, such as [ankiquest.rationality-munich.com](https://ankiquest.rationality-munich.com).
 2. Connect Anki:
-   - **desktop:** in Anki 23.10 or newer (Qt 6), open **Tools → Add-ons → Get Add-ons** and enter **414948448** ([AnkiWeb listing](https://ankiweb.net/shared/info/414948448)). Restart Anki, then choose **Tools → AnkiQuest → Settings → Account**. AnkiWeb manages updates. The [GitHub package](https://github.com/float3/ankiquest/releases/latest) remains available; remove the other installation before switching channels and sign in with the same AnkiQuest account.
-   - **Android:** install `AnkiQuest.apk` from the [latest release](https://github.com/float3/AnkiQuest-Android/releases/latest). it installs next to AnkiDroid as **AnkiQuest**; sync your collection through AnkiWeb as usual. then open **Settings → ankiquest → Account & connection → Sign in or create account**.
+   - **desktop:** in Anki 23.10 or newer (Qt 6), open **Tools → Add-ons → Get Add-ons** and enter **414948448** ([AnkiWeb listing](https://ankiweb.net/shared/info/414948448)). Restart Anki, then choose **Tools → AnkiQuest → Settings → Account**. AnkiWeb manages updates. The [GitHub package](https://github.com/AnkiQuest/ankiquest/releases/latest) remains available; remove the other installation before switching channels and sign in with the same AnkiQuest account.
+   - **Android:** install `AnkiQuest.apk` from the [latest release](https://github.com/AnkiQuest/AnkiQuest-Android/releases/latest). it installs next to AnkiDroid as **AnkiQuest**; sync your collection through AnkiWeb as usual. then open **Settings → ankiquest → Account & connection → Sign in or create account**.
 3. study as usual. On desktop, open **Tools → AnkiQuest → Friends** to manage friends and groups, preview a group invitation, or start a friend goal. The website's **Friends** page is also available.
 
 ## run your own server
