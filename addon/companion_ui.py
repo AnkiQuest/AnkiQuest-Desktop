@@ -1,15 +1,17 @@
-"""The study companion picker: a card per companion with a preview of its poses.
+"""The companion tab: the chosen companion in today's mood, and the picker, a card per
+companion with a preview of its poses.
 
 Companions earned at a milestone show as a greyed silhouette with their condition and progress
-until the server has unlocked them (companion_unlock); secret ones stay hidden. Settings and
-Tools > AnkiQuest > Study companion both open this one picker."""
+until the server has unlocked them (companion_unlock); secret ones stay hidden. Settings,
+Tools > AnkiQuest > Study companion and the companion in the Today panel open this one tab."""
 
-from aqt.qt import QButtonGroup, QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, Qt
+from aqt.qt import QButtonGroup, QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, Qt
 
 from . import companion_art, companion_unlock, moods
 from .companion_unlock import Choice
 from .language import tr
 
+TODAY_PX = 128
 FACE_PX = 64
 POSE_PX = 44
 CARD = "ankiquest_companion_card"
@@ -77,14 +79,41 @@ def _card(companion, progress=None):
         poses.itemAt(index).widget().setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
     for label in labels:
         label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-    card.setMinimumHeight(card.sizeHint().height())
+    # A button does not size itself by the layout inside it.
+    card.setMinimumSize(layout.sizeHint())
     return card
 
 
-class Picker:
-    """The picker window for `api`'s account. `on_saved(companion)` runs after a save."""
+def _today(companion, mood, streak):
+    """The chosen companion large in today's pose, its name and a line saying why it feels so."""
+    box = QWidget()
+    layout = QVBoxLayout(box)
+    layout.setContentsMargins(0, 0, 0, 0)
+    pose = moods.companion_pose(companion, moods.streak_pose(mood, streak))
+    if pose is not None:
+        art = QLabel()
+        art.setObjectName("ankiquest_companion_today")
+        art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), companion, TODAY_PX))
+        art.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(art)
+    name = _label(moods.NAMES.get(companion) or tr("No companion"))
+    name.setStyleSheet("font-weight:bold;font-size:15px")
+    layout.addWidget(name)
 
-    def __init__(self, parent, mw, api, current, on_saved):
+    # No companion has no mood.
+    if pose is not None:
+        text, values = moods.mood_line(mood, streak)
+        line = _label(tr(text) % values)
+        line.setWordWrap(True)
+        layout.addWidget(line)
+    return box
+
+
+class Picker:
+    """The companion tab for `api`'s account, `today` being the streak mood and streak
+    (moods.today_mood). `on_saved(companion)` runs after a save."""
+
+    def __init__(self, parent, mw, api, current, on_saved, today=(moods.MOOD_UNKNOWN, 0)):
         self._mw, self._api, self._on_saved = mw, api, on_saved
         self._loaded = current
         # None until the server answers; until then only the current companion is offered.
@@ -95,6 +124,8 @@ class Picker:
         dialog.setWindowTitle(tr("Study companion"))
         dialog.setWindowIcon(companion_art.icon(current or moods.AKI))
         layout = QVBoxLayout(dialog)
+        self.today = _today(current or moods.AKI, *today)
+        layout.addWidget(self.today)
         layout.addWidget(QLabel(tr("Choose who cheers you on.")))
         self._row = QHBoxLayout()
         layout.addLayout(self._row)
@@ -124,6 +155,7 @@ class Picker:
         for card in self._cards.values():
             self._group.removeButton(card)
             self._row.removeWidget(card)
+            card.hide()
             card.deleteLater()
         self._cards = {}
         for companion in ORDER:
@@ -178,9 +210,9 @@ class Picker:
         self.dialog.accept()
 
 
-def open_picker(parent, mw, api, current, on_saved):
-    """Shows the picker for `api`'s account and returns it."""
-    picker = Picker(parent, mw, api, current, on_saved)
+def open_picker(parent, mw, api, current, on_saved, today=(moods.MOOD_UNKNOWN, 0)):
+    """Shows the companion tab for `api`'s account and returns it."""
+    picker = Picker(parent, mw, api, current, on_saved, today)
     picker.dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
     picker.dialog.show()
     return picker

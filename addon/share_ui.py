@@ -12,6 +12,7 @@ from aqt.qt import (
     QLabel,
     QPushButton,
     QVBoxLayout,
+    QWidget,
     Qt,
 )
 
@@ -248,3 +249,17 @@ def offer(parent, api, win, companion, current_client, run):
     _corner(dialog, parent)
     dialog.show()
     return dialog
+
+
+def share_toggle(buttons):
+    """A checkable "Share" button and a hidden column of `buttons` that it shows and hides."""
+    column = QWidget()
+    layout = QVBoxLayout(column)
+    layout.setContentsMargins(0, 0, 0, 0)
+    for button in buttons:
+        layout.addWidget(button)
+    column.hide()
+    toggle = QPushButton(tr("Share"))
+    toggle.setCheckable(True)
+    toggle.toggled.connect(column.setVisible)
+    return toggle, column

@@ -190,6 +190,48 @@ class Moments(unittest.TestCase):
         self.assertEqual("Streak secured! 🔥", self.presenter._card._title.text())
         self.addon.home._streak_title.assert_called_with(summary)
 
+    def joined(self, unread=True):
+        return {"key": "companion:cow", "topic": "companion", "at": 60, "title": "Bluma joined you!",
+                "body": "You have studied for 10 hours in total.", "notice": 5, "unread": unread}
+
+    def test_a_companion_that_joined_is_revealed_before_the_card(self):
+        self.addon.choose_companion = Mock()
+        self.offer(self.joined())
+        self.offer()
+        self.transition("overview", "review")
+        reveal = self.presenter._reveal
+        self.assertIsNotNone(reveal)
+        self.assertIsNone(self.presenter._card, "the card waits for the reveal")
+        self.assertIs(ui._Phase.REVEALING, self.presenter._phase)
+        reveal._skip()
+        reveal.choose.click()
+        self.flush()
+        self.addon.choose_companion.assert_called_once_with("cow")
+        self.assertIn(("/api/activity/sam/read", {"ids": [5]}, None), self.requests)
+        self.assertEqual(["level:4"], [item["key"] for item in self.presenter._card._items])
+
+    def test_a_moment_read_on_another_device_shows_the_card(self):
+        self.offer(self.joined(unread=False))
+        self.transition("overview", "review")
+        self.assertIsNone(self.presenter._reveal)
+        self.assertEqual(["companion:cow"], [item["key"] for item in self.presenter._card._items])
+
+    def test_studying_closes_the_reveal_and_it_plays_again_later(self):
+        self.offer(self.joined())
+        self.transition("overview", "review")
+        first = self.presenter._reveal
+        self.transition("review", "overview")
+        self.assertIsNone(self.presenter._reveal)
+        self.assertEqual([], self.requests)
+        self.assertEqual(1, self.presenter._count())
+        self.transition("overview", "review")
+        self.assertIsNotNone(self.presenter._reveal)
+        self.assertIsNot(first, self.presenter._reveal)
+        self.presenter._reveal.later.click()
+        self.flush()
+        self.assertEqual(0, self.presenter._count())
+        self.assertIsNone(self.presenter._card)
+
     def test_conquest_load_is_read_only_and_a_new_win_keeps_the_draft_label(self):
         control = self.conquest()
         self.assertEqual("der Hund", control._label.text())

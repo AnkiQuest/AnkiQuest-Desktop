@@ -150,16 +150,21 @@ def _pose_url(name):
     return "/_addons/%s/art/%s.png" % (mw.addonManager.addonFromModule(__name__), name)
 
 
-def pose_url(chosen_companion):
-    """The companion's pose for today's streak, by the one rule (moods.today_pose). The goal is
-    the server's word; the Today panel also counts reviews it has not uploaded yet."""
+def today_mood():
+    """Today's streak mood and streak, by the one rule (moods.today_mood). The goal is the
+    server's word; the Today panel also counts reviews it has not uploaded yet."""
     profile = addon().state["profile"]
     view = _profile_for_display(profile)
 
     # Only a profile that still describes today says whether today's goal is reached.
     served = ((moods.current(profile, now_ms()) or {}).get("goal") or {}).get("reached")
     goal = moods.Goal.REACHED if served is True else moods.Goal.OPEN
-    return _pose_url(moods.companion_pose(chosen_companion, moods.today_pose(view, goal)))
+    return moods.today_mood(view, goal), int((view or {}).get("streak") or 0)
+
+
+def pose_url(chosen_companion):
+    """The companion's pose for today's streak."""
+    return _pose_url(moods.companion_pose(chosen_companion, moods.streak_pose(*today_mood())))
 
 
 def days_for(deck_browser=None):
