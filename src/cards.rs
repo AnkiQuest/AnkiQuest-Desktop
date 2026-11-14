@@ -111,7 +111,7 @@ fn cow_art() -> Option<tiny_skia::Pixmap> {
 
     // The matrix is linear, so it applies to premultiplied channels as is; each stays at or
     // below its alpha.
-    for pixel in pixmap.data_mut().chunks_exact_mut(4) {
+    for pixel in pixmap.data_mut().as_chunks_mut::<4>().0 {
         let rgb = [pixel[0], pixel[1], pixel[2]].map(f32::from);
         let alpha = f32::from(pixel[3]);
         for (channel, row) in pixel.iter_mut().zip(matrix) {
