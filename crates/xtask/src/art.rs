@@ -5,11 +5,12 @@
 //! upscaled. `--check` writes nothing and fails when a drawable is missing
 //! or has a different pixel size.
 
+use std::borrow::Cow;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use ankiquest_art::{load, png_size, shrink, target};
+use ankiquest_art::{ICON_POSES, companions_with, load, png_size, shrink, target};
 use image::RgbaImage;
 
 mod addon;
@@ -37,10 +38,14 @@ const METHOD: i32 = 6;
 /// 1100 px (AnkiQuest-Android#168), so smaller poses were upscaled.
 const WIDGET: u32 = 1024;
 
+/// Icons beside the streak number: the widget draws its flame at 12 dp,
+/// 48 px at xxxhdpi; twice that leaves room for larger widget text.
+const ICON: u32 = 96;
+
 /// One drawable: name, master PNG, square size and WebP quality.
 struct Art {
-    name: &'static str,
-    source: &'static str,
+    name: Cow<'static, str>,
+    source: Cow<'static, str>,
     size: u32,
     quality: f32,
 }
@@ -48,8 +53,8 @@ struct Art {
 /// A drawable at the default quality.
 const fn art(name: &'static str, source: &'static str, size: u32) -> Art {
     Art {
-        name,
-        source,
+        name: Cow::Borrowed(name),
+        source: Cow::Borrowed(source),
         size,
         quality: QUALITY,
     }
@@ -58,8 +63,8 @@ const fn art(name: &'static str, source: &'static str, size: u32) -> Art {
 /// A pose the big streak widget shows, for either companion.
 const fn widget(name: &'static str, source: &'static str) -> Art {
     Art {
-        name,
-        source,
+        name: Cow::Borrowed(name),
+        source: Cow::Borrowed(source),
         size: WIDGET,
         quality: WIDGET_QUALITY,
     }
@@ -184,12 +189,40 @@ fn drawable(name: &str) -> String {
     format!("{DRAWABLES}/{name}.webp")
 }
 
+/// The icons for every companion with a master of an icon pose, named
+/// `<companion>_<pose>`. A companion without one shows the fallback.
+fn icons() -> Result<Vec<Art>, String> {
+    let mut icons = Vec::new();
+    for pose in ICON_POSES {
+        for companion in companions_with(&root().join("static"), pose)? {
+            icons.push(Art {
+                name: Cow::Owned(format!("{}_{pose}", companion.replace('-', "_"))),
+                source: Cow::Owned(format!("static/{companion}/{pose}.png")),
+                size: ICON,
+                quality: QUALITY,
+            });
+        }
+    }
+    Ok(icons)
+}
+
+/// Every drawable: the fixed list, then the icons that have masters.
+fn drawables() -> Result<Vec<Art>, String> {
+    let fixed = ART.iter().map(|art| Art {
+        name: art.name.clone(),
+        source: art.source.clone(),
+        size: art.size,
+        quality: art.quality,
+    });
+    Ok(fixed.chain(icons()?).collect())
+}
+
 /// Writes every drawable into the checkout.
 fn export(android: &Path) -> Result<ExitCode, String> {
     let folder = android.join(DRAWABLES);
     fs::create_dir_all(&folder).map_err(|e| format!("{}: {e}", folder.display()))?;
-    for art in ART {
-        let master = load(&root().join(art.source))?;
+    for art in drawables()? {
+        let master = load(&root().join(&*art.source))?;
         let (width, height) = target(master.width(), master.height(), art.size);
         if (width, height) != (art.size, art.size) {
             println!(
@@ -204,9 +237,9 @@ fn export(android: &Path) -> Result<ExitCode, String> {
         // Downscale, encode and write.
         let image = shrink(master, width, height);
         let bytes = encode(&image, art.quality)?;
-        let path = android.join(drawable(art.name));
+        let path = android.join(drawable(&art.name));
         fs::write(&path, &bytes).map_err(|e| format!("{}: {e}", path.display()))?;
-        let name = drawable(art.name);
+        let name = drawable(&art.name);
         println!("{name}: {width}x{height}, {} bytes", bytes.len());
     }
     Ok(ExitCode::SUCCESS)
@@ -215,10 +248,11 @@ fn export(android: &Path) -> Result<ExitCode, String> {
 /// Compares every drawable's pixel size with what export would write.
 fn check(android: &Path) -> Result<ExitCode, String> {
     let mut failed = false;
-    for art in ART {
-        let (width, height) = png_size(&root().join(art.source))?;
+    let drawables = drawables()?;
+    for art in &drawables {
+        let (width, height) = png_size(&root().join(&*art.source))?;
         let expected = target(width, height, art.size);
-        let name = drawable(art.name);
+        let name = drawable(&art.name);
         let Some(actual) = webp_size(&android.join(&name))? else {
             println!("missing: {name}");
             failed = true;
@@ -234,7 +268,7 @@ fn check(android: &Path) -> Result<ExitCode, String> {
     if failed {
         return Ok(ExitCode::FAILURE);
     }
-    println!("all {} drawables match", ART.len());
+    println!("all {} drawables match", drawables.len());
     Ok(ExitCode::SUCCESS)
 }
 
@@ -294,23 +328,35 @@ mod tests {
             "aki_at_risk",
         ];
         let large: Vec<_> = ART.iter().filter(|art| art.size == WIDGET).collect();
-        let names: Vec<_> = large.iter().map(|art| art.name).collect();
+        let names: Vec<_> = large.iter().map(|art| &*art.name).collect();
         assert_eq!(poses.to_vec(), names);
         assert!(large.iter().all(|art| art.quality == WIDGET_QUALITY));
     }
 
     #[test]
     fn names_are_unique() {
-        let mut names: Vec<_> = ART.iter().map(|art| art.name).collect();
+        let drawables = drawables().unwrap();
+        let mut names: Vec<_> = drawables.iter().map(|art| &*art.name).collect();
         names.sort_unstable();
         names.dedup();
-        assert_eq!(ART.len(), names.len());
+        assert_eq!(drawables.len(), names.len());
+    }
+
+    #[test]
+    fn icons_are_small_and_follow_their_masters() {
+        // An icon exists only for a companion with its master; without
+        // masters there are none, and the app shows the fallback pose.
+        for icon in icons().unwrap() {
+            assert_eq!(icon.size, ICON);
+            assert!(root().join(&*icon.source).is_file(), "{}", icon.source);
+            assert!(icon.name.ends_with("_icon_fire"), "{}", icon.name);
+        }
     }
 
     #[test]
     fn masters_exist() {
         for art in ART {
-            assert!(root().join(art.source).is_file(), "{}", art.source);
+            assert!(root().join(&*art.source).is_file(), "{}", art.source);
         }
     }
 

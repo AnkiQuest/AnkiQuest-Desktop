@@ -1,8 +1,11 @@
 //! Writes the desktop add-on's companion poses from the master PNGs in
 //! `static/`: every `addon` entry of the art manifest (`art-exports.json`).
 //!
-//! Each pose is a 256 px square, 256-colour palette PNG with transparency.
-//! Export writes them all and records each file's SHA-256 in the manifest.
+//! Each pose is a 256 px square, 256-colour palette PNG with transparency;
+//! an icon pose (`ankiquest_art::ICON_POSES`) is 64 px, and export adds one
+//! for every companion with its master. A companion without one shows the
+//! pose's fallback. Export writes them all and records each file's SHA-256
+//! in the manifest.
 //! `--check` writes nothing and fails when a pose differs from what export
 //! would write, or from the hash in the manifest.
 
@@ -12,12 +15,21 @@ use std::process::ExitCode;
 use color_quant::NeuQuant;
 use image::RgbaImage;
 
+use ankiquest_art::{ICON_POSES, companions_with};
+
 use super::exports::{self, Export, Exporter};
 use super::{load, root, shrink, target};
 
 /// Pose edge in pixels: the Today panel shows 96 px at up to 2x, and
 /// moments 112 px.
 const SIZE: u32 = 256;
+
+/// Icon edge in pixels: an icon beside the streak number, drawn at up to
+/// 32 px at 2x.
+const ICON: u32 = 64;
+
+/// The add-on's pose folder, relative to the repository root.
+const FOLDER: &str = "addon/art";
 
 /// Palette size, the most an indexed PNG holds.
 const COLOURS: usize = 256;
@@ -67,21 +79,56 @@ fn usage() -> ExitCode {
     ExitCode::FAILURE
 }
 
-/// Whether a manifest entry is an add-on pose.
+/// Whether a manifest entry is an add-on pose or icon.
 fn is_pose(export: &Export) -> bool {
-    export.exporter == Exporter::Addon
+    matches!(export.exporter, Exporter::Addon | Exporter::AddonIcon)
+}
+
+/// The edge, in pixels, `exporter` writes.
+fn size(exporter: Exporter) -> u32 {
+    match exporter {
+        Exporter::Addon => SIZE,
+        Exporter::AddonIcon => ICON,
+    }
 }
 
 /// The pose `export` describes, made from its master.
 fn render(export: &Export) -> Result<Vec<u8>, String> {
     let master = load(&root().join(&export.master))?;
-    let (width, height) = target(master.width(), master.height(), SIZE);
+    let (width, height) = target(master.width(), master.height(), size(export.exporter));
     encode(&shrink(master, width, height))
+}
+
+/// An entry for every icon master, as `<companion>_<pose>.png`.
+fn icons() -> Result<Vec<Export>, String> {
+    let mut icons = Vec::new();
+    for pose in ICON_POSES {
+        for companion in companions_with(&root().join("static"), pose)? {
+            icons.push(Export {
+                file: format!("{FOLDER}/{}_{pose}.png", companion.replace('-', "_")),
+                master: format!("static/{companion}/{pose}.png"),
+                exporter: Exporter::AddonIcon,
+                sha256: String::new(),
+            });
+        }
+    }
+    Ok(icons)
 }
 
 /// Writes every pose and records its hash in the manifest.
 fn export() -> Result<ExitCode, String> {
     let mut manifest = exports::read()?;
+
+    // List icons whose masters were added since the last export.
+    for icon in icons()? {
+        if !manifest
+            .exports
+            .iter()
+            .any(|export| export.file == icon.file)
+        {
+            manifest.exports.push(icon);
+        }
+    }
     for export in manifest.exports.iter_mut().filter(|export| is_pose(export)) {
         let bytes = render(export)?;
         let path = root().join(&export.file);
@@ -112,11 +159,19 @@ fn check() -> Result<ExitCode, String> {
 /// One line for each pose that is missing, edited or out of date.
 fn stale() -> Result<Vec<String>, String> {
     let mut failed = Vec::new();
-    for export in exports::read()?
-        .exports
-        .iter()
-        .filter(|export| is_pose(export))
-    {
+    let manifest = exports::read()?;
+
+    // An icon master added without running export.
+    for icon in icons()? {
+        if !manifest
+            .exports
+            .iter()
+            .any(|export| export.file == icon.file)
+        {
+            failed.push(format!("not exported: {}", icon.master));
+        }
+    }
+    for export in manifest.exports.iter().filter(|export| is_pose(export)) {
         let path = root().join(&export.file);
         let Ok(committed) = fs::read(&path) else {
             failed.push(format!("missing: {}", export.file));
@@ -207,6 +262,15 @@ mod tests {
         files.sort_unstable();
         files.dedup();
         assert_eq!(manifest.exports.len(), files.len());
+    }
+
+    #[test]
+    fn icons_are_named_after_companion_and_pose() {
+        for icon in icons().unwrap() {
+            assert!(icon.file.starts_with("addon/art/"), "{}", icon.file);
+            assert!(icon.file.ends_with("_icon_fire.png"), "{}", icon.file);
+            assert!(root().join(&icon.master).is_file(), "{}", icon.master);
+        }
     }
 
     #[test]

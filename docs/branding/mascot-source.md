@@ -82,10 +82,26 @@ the companions in `tests/fixtures/companion_unlock.json`, or a folder in
 It fails unless such an image is a master in `static/<companion>/`, an
 export in the manifest, or retired there.
 
+## Icon poses
+
+`ankiquest_art::ICON_POSES` lists small pictures of a companion, exported
+for every companion that has the master and for no other:
+
+| Pose | Fallback | Use | Add-on | Android |
+|---|---|---|---|---|
+| `icon_fire` | `streak` | the companion on fire, beside the streak number | `addon/art/<companion>_icon_fire.png`, 64 px | `<companion>_icon_fire.webp`, 96 px |
+
+The add-on shows the streak beside its flame at up to 32 px at 2x; the
+Android widget draws its flame at 12 dp, 48 px at xxxhdpi, and the export
+doubles that for larger widgets. `export-addon-art` adds the manifest entry
+when the master appears, and its check fails until it has. A client that
+finds no icon shows the fallback from `tests/fixtures/companion_poses.json`.
+
 ## Adding art
 
 - A new master: add `static/<companion>/<pose>.png`. Share cards pick it up
-  on the next build when it is a card pose.
+  on the next build when it is a card pose. An icon pose master needs
+  `export-addon-art` and `export-android-art` run.
 - A new add-on pose: add an `addon` entry to the manifest and run
   `export-addon-art`.
 - A new Android drawable: add it to `ART` in `crates/xtask/src/art.rs` and
