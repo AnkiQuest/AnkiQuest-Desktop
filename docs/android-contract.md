@@ -1,8 +1,8 @@
 # Keeping released Android clients compatible
 
 The `android-contract` CI job compares this server's API examples with the
-examples consumed by `float3/AnkiQuest-Android@main`. It makes a sparse public
-checkout without a personal access token and runs a small Rust guard
+examples consumed by `AnkiQuest/AnkiQuest-Android@main`. It makes a sparse
+public checkout without a personal access token and runs a small Rust guard
 (`crates/xtask`). It does not run Android code or Gradle.
 
 Android owns the baseline in `AnkiDroid/src/test/resources/`:
@@ -14,7 +14,7 @@ Android owns the baseline in `AnkiDroid/src/test/resources/`:
   count as consumed; the last two do not.
 - `ankiquest-api/<name>.json` contains that commit's recorded responses.
 
-The companion Android work is [Android #203](https://github.com/float3/AnkiQuest-Android/issues/203).
+The companion Android work is [Android #203](https://github.com/AnkiQuest/AnkiQuest-Android/issues/203).
 It verifies the vendored files against the pinned commit and proposes newer
 data through a bump PR. Ordinary Android PRs and pushes test their committed
 data instead of silently taking new server data.
