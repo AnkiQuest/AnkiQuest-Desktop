@@ -28,7 +28,7 @@ from .decks import label, ordered
 from .language import tr
 from .share import face_path
 from .today_ui import settings_section
-from . import reminders_ui, updates
+from . import reminders_ui, settings_sync, updates
 
 
 def _scroller(widgets):
@@ -276,6 +276,15 @@ def settings_dialog(
     else:
         groups["app"].addWidget(_row(QLabel(tr("Update channel")), channel))
     today_values = settings_section(groups["app"], config, notify_layout=groups["notify"])
+
+    # This device's switch for the settings above that follow the account.
+    sync = QCheckBox(tr("Sync settings"))
+    sync.setObjectName("ankiquest_sync_settings")
+    sync.setChecked(settings_sync.enabled(config))
+    sync_note = QLabel(tr("Keep AnkiQuest settings the same on all your devices. This switch applies only to this device."))
+    sync_note.setWordWrap(True)
+    groups["app"].addWidget(sync)
+    groups["app"].addWidget(sync_note)
     if on_privacy is not None:
         privacy = QPushButton(tr("Privacy notice"))
         privacy.clicked.connect(on_privacy)
@@ -320,7 +329,10 @@ def settings_dialog(
         return None
     if finish and original == tuple(field.text().strip() for field in (url, user, token)):
         finish()
-    return dict(_values(url, user, token, rank, hours, channel), **today_values(), **reminders._values())
+    return dict(
+        _values(url, user, token, rank, hours, channel), **today_values(), **reminders._values(),
+        **{settings_sync.SWITCH: sync.isChecked()},
+    )
 
 
 def _values(url, user, token, rank, hours, channel):

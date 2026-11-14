@@ -24,6 +24,7 @@ pub(crate) const FEATURES: &[&str] = &[
     "mute",
     "reactions",
     "review_offsets",
+    "settings_sync",
     "share_cards",
     "share_moments",
     "wins",

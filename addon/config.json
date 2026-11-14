@@ -9,5 +9,6 @@
     "deck_status": true,
     "session_summary": true,
     "goal_celebrations": true,
-    "review_heatmap": true
+    "review_heatmap": true,
+    "sync_settings": true
 }

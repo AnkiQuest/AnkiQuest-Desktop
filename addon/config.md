@@ -13,11 +13,13 @@ The settings dialog has four groups and scrolls within the window:
 - **Account:** sign in, switch accounts, sign out, choose your study companion and manage your account on the website. **Data** holds the last upload status and **Upload everything again**. This recovery action quietly replays your history; ordinary uploads resume from their saved checkpoint.
 - **Notify me about:** rank changes, streak warnings, local goal celebrations, server nudges and celebrations, deck completion alerts and unsubscriptions.
 - **Sharing:** choose decks and people for completion notifications, set who hears about each kind of win, and choose whether you appear on the global leaderboard. This switch reads the server's current choice; it is hidden on older servers without the field.
-- **App and privacy:** update channel, deck markers, session recap, review heatmap, daily goal, streak protection and the server's privacy notice.
+- **App and privacy:** update channel, deck markers, session recap, review heatmap, **Sync settings**, daily goal, streak protection and the server's privacy notice.
 
 Server choices follow your account across devices. Only changed choices are sent when you save. After switching or editing the connection, save and reopen settings to load that account's choices.
 
 The local options below match `config.json`. Account choices stay on the server; internal bookkeeping keys are not user preferences.
+
+**Sync settings** (`sync_settings`, on by default) keeps `notify_rank`, `streak_hours`, `system_notifications`, `deck_status`, `session_summary`, `goal_celebrations` and `review_heatmap` the same on every device signed in to your account, including AnkiQuest for Android where it has the same setting. When a setting was changed on two devices, the later change wins. The switch itself, `update_channel` and the connection stay on this computer. While it is off, this computer neither sends nor takes these settings; turning it on again keeps the newer side of each. It needs a server that offers settings sync.
 
 - `notify_rank`: say something when your place on the leaderboard changes
 - `streak_hours`: warn you this many hours before your streak ends (0 turns it off)

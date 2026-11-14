@@ -57,6 +57,7 @@ class SignOut(_HeldTasks):
             [(old_review,), (new_review,)],
         )
         self.sign_out()
+        self.addon.sync_settings = Mock()
 
         self.addon._finish_sign_in({"url": self.api.base, "user": self.api.name, "token": "new-token"})
         self.finish()
