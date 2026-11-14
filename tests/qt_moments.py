@@ -127,6 +127,18 @@ class Moments(unittest.TestCase):
         self.presenter._open()
         self.assertEqual("goal:2", self.presenter._card._items[0]["key"])
 
+    def test_moments_wait_while_aki_greets(self):
+        self.mw.state = "deckBrowser"
+        self.presenter._hold()
+        self.offer(self.item("goal:2", "goal"))
+        self.transition("deckBrowser", None)
+        self.assertIsNone(self.presenter._card)
+
+        # Closing the greeting shows what arrived meanwhile.
+        self.presenter._release()
+        self.flush()
+        self.assertEqual("goal:2", self.presenter._card._items[0]["key"])
+
     def test_a_late_permission_reply_cannot_cross_profiles_or_accounts(self):
         self.defer = True
         self.offer()

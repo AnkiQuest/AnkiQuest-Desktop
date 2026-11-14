@@ -12,11 +12,11 @@ from urllib.parse import urlsplit
 import anki.lang
 
 from aqt import gui_hooks, mw
-from aqt.qt import QAction, QKeySequence, QMenu, QTimer
+from aqt.qt import QAction, QApplication, QKeySequence, QMenu, QTimer
 from aqt.utils import openLink, tooltip
 
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
-from . import companion_ui, inbox_ui, moments, moments_ui, moods, share, sharing
+from . import companion_ui, greeting, inbox_ui, moments, moments_ui, moods, share, sharing
 from .inbox import CHALLENGE_ROUTE
 from .language import _plural, tr
 from .client import (
@@ -788,16 +788,21 @@ def _save_account_config(values):
     sync_settings()
 
 
-def _offer_sign_in():
+def _welcome():
     profile = mw.pm.profile
     if profile is None:
         return
 
     def show():
-        # Profile open -> ready deck browser -> one sign-in offer for this profile.
+        # Profile open -> ready deck browser, no dialog of Anki's in front -> Aki's greeting
+        # once per computer, else one sign-in offer for this profile.
+        if mw.pm.profile is not profile or mw.state == "review" or QApplication.activeModalWidget() is not None:
+            return
+        if greeting.state(mw.pm.meta) is greeting.State.PENDING:
+            _greet(profile)
+            return
         settings = config()
-        if (mw.pm.profile is not profile or profile.get(SIGN_IN_OFFER_KEY)
-                or settings.get("user") or mw.state == "review"):
+        if profile.get(SIGN_IN_OFFER_KEY) or settings.get("user"):
             return
         profile[SIGN_IN_OFFER_KEY] = True
         answer = ask_account(settings.get("url", ""), dismiss=tr("Not now"))
@@ -805,6 +810,24 @@ def _offer_sign_in():
             _finish_sign_in(answer)
 
     QTimer.singleShot(0, show)
+
+
+def _greet(profile):
+    """Aki's greeting. Signed out, it is this profile's sign-in offer."""
+    # Remembered before showing, so a crash or a second profile open never shows it twice.
+    greeting.remember(mw.pm.meta, greeting.State.SHOWN)
+    account = greeting.Account.SIGNED_IN if client().configured else greeting.Account.SIGNED_OUT
+    if account is greeting.Account.SIGNED_OUT:
+        profile[SIGN_IN_OFFER_KEY] = True
+
+    # Moments wait until the greeting closes.
+    _moments._hold()
+    choice = greeting.ask(mw, account)
+    if choice is greeting.Choice.SIGN_IN and mw.pm.profile is profile:
+        answer = ask_account(config().get("url", ""))
+        if answer and mw.pm.profile is profile:
+            _finish_sign_in(answer)
+    _moments._release()
 
 
 def open_settings():
@@ -973,7 +996,7 @@ def on_profile_open():
     sync_settings()
     poll()
     maybe_check_updates()
-    _offer_sign_in()
+    _welcome()
     _moments._transition(mw.state, None)
 
 
