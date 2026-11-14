@@ -1,0 +1,18 @@
+{
+  "_about": "The poses a companion character needs. A character goes live in the apps only when it has every core pose. Extensions are optional; a missing extension shows its fallback, which is a core pose or another extension that eventually reaches one. See AGENTS.md, Companion art.",
+  "core": ["face", "asleep", "happy", "streak", "sad", "hopeful", "frozen", "neglected"],
+  "extensions": {
+    "streak_hot": "streak",
+    "streak_blazing": "streak_hot",
+    "streak_legend": "streak_blazing",
+    "streak_milestone": "streak_legend",
+    "frozen_2": "frozen",
+    "frozen_3": "frozen_2",
+    "welcome": "happy",
+    "review": "happy",
+    "hurt": "sad",
+    "abandoned": "neglected",
+    "dead": "neglected",
+    "leech_defeated": "happy"
+  }
+}
