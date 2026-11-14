@@ -53,6 +53,16 @@ test('Ankilope maps study states to available artwork and none hides companion c
   companion.setChoice('../bad');
   assert.equal(companion.choice(),'aki');
 });
+test('the cow is drawn with Ankilope art turned purple until it has its own',()=>{
+  const companion=fixture();
+  companion.setChoice('cow');
+  assert.equal(companion.choice(),'cow');
+  assert.equal(companion.artOwner(),'ankilope');
+  assert.match(companion.image('freeze'),/src="\/ankilope\/study.png"/);
+  assert.equal(companion.filter(),'hue-rotate(250deg)');
+  companion.setChoice('ankilope');
+  assert.equal(companion.filter(),'none');
+});
 test('Aki encouragement is translated before it reaches the page',()=>{
   const markup=fixture('es').profile({streak_state:'protected',today:{reviews:0}});
   assert.match(markup,/Un protector mantiene tu racha/);

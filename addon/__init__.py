@@ -16,7 +16,7 @@ from aqt.qt import QAction, QKeySequence, QMenu, QTimer
 from aqt.utils import openLink, tooltip
 
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
-from . import inbox_ui, moments, moments_ui, share, sharing
+from . import companion_ui, companion_unlock, inbox_ui, moments, moments_ui, moods, share, sharing
 from .inbox import CHALLENGE_ROUTE
 from .language import _plural, tr
 from .client import (
@@ -547,6 +547,8 @@ def poll(quiet=False):
     week = prefs.get(ORDER_WEEK_KEY)
     announcements = delivery._record(prefs, api)
     cursor = announcements["cursor"]
+    unlock_key = companion_unlock.account(api)
+    unlocks = companion_unlock.pending(prefs, unlock_key)
 
     def work():
         rank, profile = api.rank(previous, week), api.profile()
@@ -556,7 +558,7 @@ def poll(quiet=False):
             companion = api.companion()
         except Exception:
             companion = state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
-        return rank, profile, notifications, companion, arrivals, reminders
+        return rank, profile, notifications, companion, arrivals, reminders, _send_unlocks(api, unlocks)
 
     def done(future):
         if state["polling"] is not request:
@@ -566,7 +568,7 @@ def poll(quiet=False):
         if mw.pm.profile is not prefs or [current.base, current.user, current.token] != account:
             return
         try:
-            rank, profile, inbox, companion, arrivals, reminders = future.result()
+            rank, profile, inbox, companion, arrivals, reminders, unlocked = future.result()
         except Exception as e:
             # Keep a direct sign-in link on the deck list for a revoked credential.
             if isinstance(e, ServerError) and e.status == HTTPStatus.UNAUTHORIZED:
@@ -583,12 +585,25 @@ def poll(quiet=False):
         state["place"] = order.index(api.name) + 1 if api.name in order else None
         state["profile"], state["activity"], state["inbox"] = profile, inbox, inbox.items
         state["companion"], state["companion_account"] = companion, account
+        if unlocked is not None:
+            companion_unlock.settle(prefs, unlock_key, unlocked)
         if reminders is not None:
             announcements["reminders"] = reminders
         announce(rank, profile, arrivals, quiet)
         redraw()
 
     mw.taskman.run_in_background(work, done)
+
+
+def _send_unlocks(api, unlocks):
+    """Sends unlocks made offline; a failure leaves them for the next poll."""
+    if not unlocks:
+        return None
+    try:
+        return companion_unlock.send(api, unlocks)
+    except Exception as e:
+        print("ankiquest unlocks:", e)
+        return None
 
 
 def announce(rank, profile, inbox, quiet):
@@ -626,6 +641,8 @@ def redraw():
 
 def on_deck_browser(deck_browser, content):
     api = client()
+    # The heatmap shows the companion even while the board below does not.
+    content.stats += board.companion_style(current_companion())
     if not api.configured:
         content.stats += board.welcome(tr)
         return
@@ -638,7 +655,7 @@ def on_deck_browser(deck_browser, content):
     page = state["activity"]
     waiting, actions = (page.unread, page.actions) if page is not None else (0, 0)
     companion = state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
-    mascot = None if companion == "none" else "/_addons/%s/%s_face.png" % (mw.addonManager.addonFromModule(__name__), companion)
+    mascot = None if companion == "none" else "/_addons/%s/%s_face.png" % (mw.addonManager.addonFromModule(__name__), moods.art_owner(companion))
     today = home.today_view(deck_browser, companion)
     profile = today["profile"] if today is not None else home._profile_for_display(state["profile"])
     content.stats += board.html(profile, state["place"], waiting, tr, mascot, today, actions=actions)
@@ -861,7 +878,10 @@ def settings_sections(dialog, groups):
         poll(quiet=True)
 
     finishes = [found for found in (
-        preferences.section(dialog, groups, mw, api, upload_status=_upload_status(api), on_saved=changed),
+        preferences.section(
+            dialog, groups, mw, api, upload_status=_upload_status(api), on_saved=changed,
+            on_companion=lambda: open_companion(dialog),
+        ),
         sharing.section(groups["sharing"], mw, api),
     ) if found]
     if not finishes:
@@ -1069,6 +1089,7 @@ mw.form.menuTools.addAction(_tools.menuAction())
 add_action(tr("Today"), lambda: open_page(board.PAGES["today"]))
 add_action(tr("Inbox"), open_inbox, inbox_ui.SHORTCUT)
 add_action(tr("Friends"), home._open_friends)
+add_action(tr("Study companion"), lambda: open_companion())
 copies_ui.setup(mw, lambda: client(), lambda: state["companion"], _tools)
 add_action(tr("Website"), open_website, WEBSITE_SHORTCUT)
 add_action(tr("Settings"), open_settings)
@@ -1092,6 +1113,27 @@ if hasattr(gui_hooks, "profile_will_close"):
 def current_companion():
     api = client()
     return state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
+
+
+def open_companion(parent=None):
+    """The companion picker for the signed-in account."""
+    api = client()
+    if not api.configured:
+        tooltip(tr("Set the server, player and token in AnkiQuest settings first."))
+        return None
+    account = [api.base, api.user, api.token]
+
+    def saved(companion):
+        # A picker left open across an account change must not set the new account's companion.
+        if [client().base, client().user, client().token] != account:
+            return
+        state["companion"], state["companion_account"] = companion, account
+        state["polling"] = None
+        poll(quiet=True)
+        redraw()
+        tooltip(tr("Study companion saved."))
+
+    return companion_ui.open_picker(parent or mw, mw, api, current_companion(), saved)
 
 
 def open_native_inbox():

@@ -2,7 +2,18 @@
 
 import time
 from html import escape
+from . import moods
 from .language import _clock
+
+# The class of every companion picture in the deck list, the Today panel's and the heatmap's.
+COMPANION_CLASS = "aq-companion"
+
+
+def companion_style(companion):
+    """A style element that draws the deck list's companion pictures as `companion` needs:
+    the cow is Ankilope's art turned purple until it has its own (#88). Empty for others."""
+    found = moods.css_filter(companion)
+    return "<style>img.%s{filter:%s}</style>" % (COMPANION_CLASS, found) if found else ""
 
 PAGES = {
     "board": "/week",
@@ -187,8 +198,8 @@ def html(profile, place=None, unread=0, translate=lambda value: value, mascot=No
         return panel(profile, place, unread, translate, today, actions)
     parts = summary_parts(profile, place, translate)
     mascot_html = (
-        '<img src="%s" width=40 height=40 alt="" style="object-fit:contain">'
-        % escape(mascot)
+        '<img class=%s src="%s" width=40 height=40 alt="" style="object-fit:contain">'
+        % (COMPANION_CLASS, escape(mascot))
         if mascot else ""
     )
     return (
@@ -275,7 +286,7 @@ def _day_label(profile, translate):
 
 def head(today, profile, place, translate):
     art = today.get("art")
-    image = '<img src="%s" alt="">' % escape(art) if art else ""
+    image = '<img class=%s src="%s" alt="">' % (COMPANION_CLASS, escape(art)) if art else ""
     mood = "<div class=aq-bubble>%s</div>" % escape(today["mood"]) if today.get("mood") else ""
     return "<div class=aq-hero>%s<div>%s%s%s</div></div>" % (image, mood, pills(profile, place, translate), _freeze_pills(profile, translate))
 
@@ -378,7 +389,7 @@ def quests_card(profile, today, translate):
         return ""
     body = ""
     if all(quest.get("done") for quest in quests) and today.get("winner"):
-        body += '<img class=aq-winner src="%s" alt="">' % escape(today["winner"])
+        body += '<img class="aq-winner %s" src="%s" alt="">' % (COMPANION_CLASS, escape(today["winner"]))
     body += "".join(quest_line(quest, translate) for quest in quests)
     return card(translate("Daily quests"), body)
 

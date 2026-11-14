@@ -310,6 +310,12 @@ fn router(app: Arc<App>) -> Router {
             "/api/companion/{user}",
             get(companions::get).post(companions::set),
         )
+        .route(
+            "/api/unlocks/{user}",
+            get(companions::get_unlocks)
+                .post(companions::add_unlock)
+                .layer(axum::extract::DefaultBodyLimit::max(4096)),
+        )
         .route("/api/language/{user}", get(i18n::get).post(i18n::set))
         .layer(axum::middleware::from_fn_with_state(
             app.clone(),

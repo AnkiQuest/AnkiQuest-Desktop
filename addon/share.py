@@ -6,6 +6,7 @@ Plain Python, so the tests load it without Anki; share_ui.py shows it."""
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from . import moods
 from .language import _plural
 
 MAX_IMAGE = 4 * 1024 * 1024
@@ -141,6 +142,7 @@ def invitation(win, server, translate=lambda value: value):
 
 def face_path(companion):
     """The bundled face for the chosen companion; None means no art."""
-    if companion == "none":
+    if companion == moods.NONE:
         return None
-    return str(Path(__file__).with_name("ankilope_face.png" if companion == "ankilope" else "aki_face.png"))
+    owner = moods.art_owner(companion)
+    return str(Path(__file__).with_name("ankilope_face.png" if owner == moods.ANKILOPE_ID else "aki_face.png"))

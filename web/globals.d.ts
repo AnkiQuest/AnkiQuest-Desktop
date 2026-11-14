@@ -61,6 +61,12 @@ declare global {
     decorate(root?: ParentNode & Partial<Pick<Element, "matches">>): void;
     setChoice(next: string): void;
     choice(): string;
+    /** The companion whose art the choice is drawn with. */
+    artOwner(): string;
+    /** The CSS filter the choice's art is drawn with, "none" for most. */
+    filter(): string;
+    /** The hidden companion's name, shown once it is unlocked. */
+    cowName: string;
   }
 
   interface AvatarEditorOptions {

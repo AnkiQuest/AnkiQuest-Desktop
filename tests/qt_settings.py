@@ -62,7 +62,7 @@ class Settings(unittest.TestCase):
     def checkbox(self, dialog, text):
         return next(widget for widget in dialog.findChildren(QCheckBox) if widget.text() == text)
 
-    def open(self, action, on_account=None):
+    def open(self, action, on_account=None, on_companion=None):
         errors = []
 
         def interact():
@@ -77,7 +77,7 @@ class Settings(unittest.TestCase):
         QTimer.singleShot(0, interact)
         values = ui.settings_dialog(
             None, self.config, Mock(), Mock(), on_account=on_account,
-            extra=lambda dialog, groups: preferences.section(dialog, groups, self.mw, self.api),
+            extra=lambda dialog, groups: preferences.section(dialog, groups, self.mw, self.api, on_companion=on_companion),
         )
         if errors:
             raise errors[0]
@@ -148,16 +148,17 @@ class Settings(unittest.TestCase):
         self.open(edit)
         self.assertEqual([("/api/decks/sam", {"celebrations": True})], self.posts)
 
-    def test_companion_is_read_from_and_saved_to_the_account(self):
+    def test_companion_button_opens_the_picker_and_settings_save_no_companion(self):
+        opened = []
+
         def edit(dialog):
-            companion = dialog.findChild(QComboBox, "ankiquest_companion")
-            self.assertIsNotNone(companion)
-            self.assertEqual("ankilope", companion.currentData())
-            companion.setCurrentIndex(companion.findData("aki"))
+            self.assertIsNone(dialog.findChild(QComboBox, "ankiquest_companion"))
+            dialog.findChild(QPushButton, "ankiquest_companion").click()
             self.button(dialog, "Save").click()
 
-        self.open(edit)
-        self.assertEqual([("companion", "aki")], self.posts)
+        self.open(edit, on_companion=lambda: opened.append(True))
+        self.assertEqual([True], opened)
+        self.assertEqual([], self.posts)
 
     def test_account_switch_does_not_save_old_server_choices(self):
         account = {"url": "https://another.test", "user": "other", "token": "new-token"}
@@ -269,11 +270,6 @@ class Settings(unittest.TestCase):
         self.assertEqual(2, len(pending), "Only the two reads may be scheduled")
         for work, done in pending:
             self.run_task(work, done)
-        self.assertEqual([], self.posts)
-
-    def test_unrecognized_companion_is_not_replaced_on_save(self):
-        self.api.companion = lambda: "future-companion"
-        self.open(lambda dialog: self.button(dialog, "Save").click())
         self.assertEqual([], self.posts)
 
     def test_deck_picker_only_selects_decks_and_people(self):

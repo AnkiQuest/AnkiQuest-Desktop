@@ -63,10 +63,17 @@ pub(crate) struct Card {
     pub(crate) seed: u64,
 }
 
-/// The embedded art for `pose` of `companion`; Ankilope and unknown poses celebrate.
+/// The cow's card art, made by [`cow_art`].
+const COW_ART: &str = "cow-celebrate";
+
+/// How far [`cow_art`] turns Ankilope's hues, in degrees, as CSS `hue-rotate` does on the web.
+const COW_HUE_DEGREES: f32 = 250.0;
+
+/// The embedded art for `pose` of `companion`; Ankilope, the cow and unknown poses celebrate.
 pub(crate) fn art(companion: &str, pose: &str) -> Option<&'static str> {
     match (companion, pose) {
         ("none", _) | (_, "none") => None,
+        (crate::companions::COW, _) => Some(COW_ART),
         ("ankilope", _) => Some("ankilope-celebrate"),
         (_, "streak") => Some("aki-streak"),
         (_, "winner") => Some("aki-winner"),
@@ -77,18 +84,64 @@ pub(crate) fn art(companion: &str, pose: &str) -> Option<&'static str> {
 
 /// The decoded art called `name`, decoded once.
 fn art_pixmap(name: &str) -> Option<&'static tiny_skia::Pixmap> {
-    const NAMES: [&str; 5] = [
+    const NAMES: [&str; 6] = [
         "aki-celebrate",
         "aki-streak",
         "aki-winner",
         "aki-freeze",
         "ankilope-celebrate",
+        COW_ART,
     ];
-    static DECODED: [OnceLock<Option<tiny_skia::Pixmap>>; 5] = [const { OnceLock::new() }; 5];
+    static DECODED: [OnceLock<Option<tiny_skia::Pixmap>>; 6] = [const { OnceLock::new() }; 6];
     let index = NAMES.iter().position(|known| *known == name)?;
     DECODED[index]
-        .get_or_init(|| tiny_skia::Pixmap::decode_png(art_png(name)?).ok())
+        .get_or_init(|| {
+            if name == COW_ART {
+                return cow_art();
+            }
+            tiny_skia::Pixmap::decode_png(art_png(name)?).ok()
+        })
         .as_ref()
+}
+
+/// The cow's interim art: Ankilope's, turned purple, until the cow has its own (#88).
+fn cow_art() -> Option<tiny_skia::Pixmap> {
+    let mut pixmap = tiny_skia::Pixmap::decode_png(art_png("ankilope-celebrate")?).ok()?;
+    let matrix = hue_rotation(COW_HUE_DEGREES);
+
+    // The matrix is linear, so it applies to premultiplied channels as is; each stays at or
+    // below its alpha.
+    for pixel in pixmap.data_mut().chunks_exact_mut(4) {
+        let rgb = [pixel[0], pixel[1], pixel[2]].map(f32::from);
+        let alpha = f32::from(pixel[3]);
+        for (channel, row) in pixel.iter_mut().zip(matrix) {
+            let value = row[0] * rgb[0] + row[1] * rgb[1] + row[2] * rgb[2];
+            *channel = value.round().clamp(0.0, alpha) as u8;
+        }
+    }
+    Some(pixmap)
+}
+
+/// The colour matrix of CSS `hue-rotate(degrees)` (Filter Effects Module, `feColorMatrix`).
+fn hue_rotation(degrees: f32) -> [[f32; 3]; 3] {
+    let (sin, cos) = degrees.to_radians().sin_cos();
+    [
+        [
+            0.213 + cos * 0.787 - sin * 0.213,
+            0.715 - cos * 0.715 - sin * 0.715,
+            0.072 - cos * 0.072 + sin * 0.928,
+        ],
+        [
+            0.213 - cos * 0.213 + sin * 0.143,
+            0.715 + cos * 0.285 + sin * 0.140,
+            0.072 - cos * 0.072 - sin * 0.283,
+        ],
+        [
+            0.213 - cos * 0.213 - sin * 0.787,
+            0.715 - cos * 0.715 + sin * 0.715,
+            0.072 + cos * 0.928 + sin * 0.072,
+        ],
+    ]
 }
 
 fn art_png(name: &str) -> Option<&'static [u8]> {
@@ -1403,6 +1456,7 @@ mod tests {
         assert_eq!(art("aki", "streak"), Some("aki-streak"));
         assert_eq!(art("aki", "missing"), Some("aki-celebrate"));
         assert_eq!(art("ankilope", "winner"), Some("ankilope-celebrate"));
+        assert_eq!(art("cow", "streak"), Some(COW_ART));
         assert_eq!(art("none", "celebrate"), None);
         for name in [
             "aki-celebrate",
@@ -1424,6 +1478,7 @@ mod tests {
             ("aki", "freeze"),
             ("aki", "missing"),
             ("ankilope", "streak"),
+            ("cow", "winner"),
             ("none", "celebrate"),
         ];
         for (index, (companion, pose)) in poses.into_iter().enumerate() {
@@ -1437,6 +1492,37 @@ mod tests {
                     shape.size(),
                     "{companion} {pose} {shape:?}"
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn the_cow_is_ankilope_turned_purple() {
+        let ankilope = art_pixmap("ankilope-celebrate").unwrap();
+        let cow = art_pixmap(COW_ART).unwrap();
+        assert_eq!(cow.width(), ankilope.width());
+        assert_eq!(cow.height(), ankilope.height());
+
+        // Ankilope's tan coat (234, 171, 91) turns a light purple; alpha is kept.
+        let matrix = hue_rotation(COW_HUE_DEGREES);
+        let turned = matrix.map(|row| (row[0] * 234.0 + row[1] * 171.0 + row[2] * 91.0).round());
+        assert!(turned[2] > turned[1] && turned[0] > turned[1], "{turned:?}");
+        let same_alpha = ankilope
+            .pixels()
+            .iter()
+            .zip(cow.pixels())
+            .all(|(a, c)| a.alpha() == c.alpha());
+        assert!(same_alpha);
+        assert_ne!(ankilope.data(), cow.data());
+
+        // A turn of 0 degrees is the identity.
+        for (row, expected) in
+            hue_rotation(0.0)
+                .into_iter()
+                .zip([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+        {
+            for (value, want) in row.into_iter().zip(expected) {
+                assert!((value - want).abs() < 1e-5);
             }
         }
     }

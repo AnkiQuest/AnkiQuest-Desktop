@@ -16,6 +16,7 @@ from datetime import date
 from html import escape
 
 from . import heatmap
+from .board import COMPANION_CLASS
 from .language import _plural as _plural_text
 
 CONFIG_KEY = "review_heatmap"
@@ -251,7 +252,7 @@ def html(data, tr, language="en", expanded=True, art=None):
     # Keeps "</script>" in a label from ending the script.
     script = SCRIPT % (json.dumps(page, ensure_ascii=False).replace("</", "<\\/"), CARDS, EXPANDED)
 
-    picture = "<img src='%s' alt=''>" % escape(art, quote=True) if art else ""
+    picture = "<img class=%s src='%s' alt=''>" % (COMPANION_CLASS, escape(art, quote=True)) if art else ""
     toggle = tr("Collapse review heatmap") if expanded else tr("Expand review heatmap")
     empty = "" if data.reviews else "<p class=hm-note>%s</p>" % escape(tr("Your reviews will appear here after you study."))
     return (

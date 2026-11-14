@@ -111,7 +111,7 @@ def sign_up(base, user, password, display, device):
     return _account(base, "/api/accounts", body)
 
 
-COMPANIONS = ("aki", "ankilope", "none")
+COMPANIONS = ("aki", "ankilope", "cow", "none")
 
 
 def _companion(answer):
@@ -183,6 +183,14 @@ class Client:
         if companion not in COMPANIONS:
             raise ValueError("Unknown study companion")
         return _companion(self._request("/api/companion/" + self.user, {"companion": companion}))
+
+    def unlocks(self):
+        """`{"unlocks": [...]}`: what this player has unlocked, such as the cow."""
+        return self._request("/api/unlocks/" + self.user)
+
+    def unlock(self, unlock):
+        """Unlocks `unlock` for this player; unlocking again changes nothing."""
+        return self._request("/api/unlocks/" + self.user, {"unlock": unlock})
 
     def notifications(self):
         return self._request("/api/notifications/" + self.user)

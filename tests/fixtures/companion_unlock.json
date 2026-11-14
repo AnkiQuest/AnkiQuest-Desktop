@@ -1,0 +1,42 @@
+{
+  "_about": "How a player unlocks the hidden cow companion in the companion picker: `taps` taps on Ankilope in a row, each at most `max_gap_ms` after the one before. A tap on another choice, or a longer gap, starts the count again (a late tap counts as the first of a new run). Each case lists the taps as [choice, milliseconds] and whether the last one unlocks the cow. The desktop add-on (addon/companion_unlock.py, tests/test_companion_unlock.py) checks it; the Android app keeps a copy.",
+  "taps": 9,
+  "max_gap_ms": 2000,
+  "cases": [
+    {
+      "name": "nine quick taps unlock",
+      "sequence": [["ankilope", 0], ["ankilope", 300], ["ankilope", 600], ["ankilope", 900], ["ankilope", 1200], ["ankilope", 1500], ["ankilope", 1800], ["ankilope", 2100], ["ankilope", 2400]],
+      "unlocks": true
+    },
+    {
+      "name": "eight taps are not enough",
+      "sequence": [["ankilope", 0], ["ankilope", 300], ["ankilope", 600], ["ankilope", 900], ["ankilope", 1200], ["ankilope", 1500], ["ankilope", 1800], ["ankilope", 2100]],
+      "unlocks": false
+    },
+    {
+      "name": "a gap of exactly max_gap_ms still counts",
+      "sequence": [["ankilope", 0], ["ankilope", 2000], ["ankilope", 4000], ["ankilope", 6000], ["ankilope", 8000], ["ankilope", 10000], ["ankilope", 12000], ["ankilope", 14000], ["ankilope", 16000]],
+      "unlocks": true
+    },
+    {
+      "name": "a longer gap starts again",
+      "sequence": [["ankilope", 0], ["ankilope", 300], ["ankilope", 600], ["ankilope", 900], ["ankilope", 3000], ["ankilope", 3300], ["ankilope", 3600], ["ankilope", 3900], ["ankilope", 4200]],
+      "unlocks": false
+    },
+    {
+      "name": "the late tap is the first of the new run",
+      "sequence": [["ankilope", 0], ["ankilope", 5000], ["ankilope", 5100], ["ankilope", 5200], ["ankilope", 5300], ["ankilope", 5400], ["ankilope", 5500], ["ankilope", 5600], ["ankilope", 5700], ["ankilope", 5800]],
+      "unlocks": true
+    },
+    {
+      "name": "a tap on another choice starts again",
+      "sequence": [["ankilope", 0], ["ankilope", 100], ["ankilope", 200], ["ankilope", 300], ["aki", 400], ["ankilope", 500], ["ankilope", 600], ["ankilope", 700], ["ankilope", 800]],
+      "unlocks": false
+    },
+    {
+      "name": "taps on other choices never unlock",
+      "sequence": [["aki", 0], ["aki", 100], ["aki", 200], ["aki", 300], ["aki", 400], ["none", 500], ["none", 600], ["none", 700], ["none", 800]],
+      "unlocks": false
+    }
+  ]
+}

@@ -9,7 +9,6 @@ from aqt.qt import (
     QDialog,
     QGroupBox,
     QHBoxLayout,
-    QIcon,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -17,7 +16,6 @@ from aqt.qt import (
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
-    QPixmap,
     QWidget,
 )
 
@@ -28,7 +26,7 @@ from .decks import label, ordered
 from .language import tr
 from .share import face_path
 from .today_ui import settings_section
-from . import reminders_ui, settings_sync, updates
+from . import companion_art, reminders_ui, settings_sync, updates
 
 
 def _scroller(widgets):
@@ -71,14 +69,9 @@ def _brand(dialog, layout, companion="aki"):
     """Local art works even before a server is configured or while offline."""
     if companion == "none":
         return
-    asset = face_path(companion)
-    dialog.setWindowIcon(QIcon(asset))
+    dialog.setWindowIcon(companion_art.icon(companion))
     image = QLabel()
-    image.setPixmap(QPixmap(asset).scaled(
-        48, 48,
-        Qt.AspectRatioMode.KeepAspectRatio,
-        Qt.TransformationMode.SmoothTransformation,
-    ))
+    image.setPixmap(companion_art.pixmap(face_path(companion), companion, 48))
     layout.addWidget(_row(image, QLabel(tr("Your study companion."))))
 
 

@@ -98,10 +98,11 @@ def save(api, loaded, wanted):
     api._request(subscriptions_path(api), subscription_body(fresh, wanted["alerts"], before, wanted["after"]))
 
 
-def section(dialog, groups, mw, api, upload_status=None, on_saved=None):
+def section(dialog, groups, mw, api, upload_status=None, on_saved=None, on_companion=None):
     """Appends the server-side preferences to the settings dialog and returns the function to run
-    when it is saved. Nothing is shown for an account without a token."""
-    from aqt.qt import QCheckBox, QLabel, Qt
+    when it is saved. Nothing is shown for an account without a token. `on_companion` opens the
+    companion picker, which saves on its own."""
+    from aqt.qt import QCheckBox, QLabel, QPushButton, Qt
 
     from .ui import _scroller
 
@@ -129,6 +130,11 @@ def section(dialog, groups, mw, api, upload_status=None, on_saved=None):
     loaded = {}
     reminders = groups.get("reminders")
     finish_choices = _account_choices(groups, mw, api, on_saved)
+    if on_companion is not None:
+        companion = QPushButton(tr("Study companion"))
+        companion.setObjectName("ankiquest_companion")
+        companion.clicked.connect(on_companion)
+        groups["account"].addWidget(companion)
 
     def shown(future):
         try:
@@ -224,28 +230,24 @@ _DECK_CHOICES = (
 
 def _load_choices(api):
     found = {}
-    for key, read in (("decks", api.deck_settings), ("companion", api.companion)):
-        try:
-            found[key] = read()
-        except Exception as error:
-            print("ankiquest %s:" % key, error)
+    try:
+        found["decks"] = api.deck_settings()
+    except Exception as error:
+        print("ankiquest decks:", error)
     return found
 
 
-def _save_choices(api, loaded, wanted, companion):
+def _save_choices(api, loaded, wanted):
     before = loaded.get("decks") or {}
     changes = {key: value for key, value in wanted.items() if key in before and value != before[key]}
     if changes:
         api._request("/api/decks/" + api.user, changes)
-    changed_companion = companion is not None and "companion" in loaded and companion != loaded["companion"]
-    if changed_companion:
-        api.set_companion(companion)
-    return bool(changes) or changed_companion
+    return bool(changes)
 
 
 def _account_choices(groups, mw, api, on_saved):
     """Load account choices into their groups; absent server fields stay hidden."""
-    from aqt.qt import QCheckBox, QComboBox, QLabel
+    from aqt.qt import QCheckBox
 
     toggles = {}
     for key, title, group in _DECK_CHOICES:
@@ -253,14 +255,6 @@ def _account_choices(groups, mw, api, on_saved):
         box.hide()
         groups[group].addWidget(box)
         toggles[key] = box
-    label = QLabel(tr("Study companion"))
-    companion = QComboBox()
-    companion.setObjectName("ankiquest_companion")
-    for value, title in (("aki", "Aki"), ("ankilope", "Ankilope"), ("none", tr("No companion"))):
-        companion.addItem(title, value)
-    for widget in (label, companion):
-        widget.hide()
-        groups["account"].addWidget(widget)
     loaded = {}
 
     def arrived(future):
@@ -271,11 +265,6 @@ def _account_choices(groups, mw, api, on_saved):
                 if isinstance(settings.get(key), bool):
                     box.setChecked(settings[key])
                     box.show()
-            selected = companion.findData(loaded.get("companion"))
-            if selected >= 0:
-                companion.setCurrentIndex(selected)
-                label.show()
-                companion.show()
         except RuntimeError:
             return
 
@@ -287,9 +276,8 @@ def _account_choices(groups, mw, api, on_saved):
             return
         settings = before.get("decks") or {}
         wanted = {key: box.isChecked() for key, box in toggles.items() if isinstance(settings.get(key), bool)}
-        selected = companion.currentData() if companion.findData(before.get("companion")) >= 0 else None
         mw.taskman.run_in_background(
-            lambda: _save_choices(api, before, wanted, selected),
+            lambda: _save_choices(api, before, wanted),
             lambda future: _choices_saved(future, on_saved),
         )
 

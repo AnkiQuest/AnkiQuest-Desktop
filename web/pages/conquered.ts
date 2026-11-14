@@ -70,7 +70,7 @@ function pose(data: Shared): CompanionPose {
 function companionSource(data: Shared) {
   const choice = AnkiQuestAki.choice();
   if (choice === "none") return null;
-  return choice === "ankilope" ? "/ankilope/celebrate.png" : `/aki/${pose(data)}.png`;
+  return AnkiQuestAki.artOwner() === "ankilope" ? "/ankilope/celebrate.png" : `/aki/${pose(data)}.png`;
 }
 
 /** A square picture of the card to post where links do not unfurl. */
@@ -95,6 +95,7 @@ async function picture(data: Shared): Promise<Blob | null> {
   if (art) {
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.25)"; ctx.shadowBlur = 30; ctx.shadowOffsetY = 14;
+    ctx.filter = AnkiQuestAki.filter();
     ctx.drawImage(art, (size - artSize) / 2, 30, artSize, artSize);
     ctx.restore();
   } else {
