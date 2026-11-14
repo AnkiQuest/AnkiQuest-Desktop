@@ -8,7 +8,6 @@ from urllib.parse import unquote
 from . import share, social_data
 
 _FEATURE = "share_moments"
-_UNDO_SEND = "share_undo_send"
 _MAX_NOTE = 140
 _MAX_RECENT = 20
 _RECENT = "ankiquestRecentShares"
@@ -101,13 +100,11 @@ def _send(api, win, choice, note):
     return _Sent(int(answer["recipients"]), int(answer["win"]), answer.get("undo_until"))
 
 
-def _retract(api, sent, features):
-    selector = ""
-    if _UNDO_SEND in features:
-        if not isinstance(sent._until, int) or isinstance(sent._until, bool):
-            raise ValueError("This send has no Undo receipt.")
-        selector = "?until=%d" % sent._until
-    path = "/api/share/%s/%d%s" % (api.user, sent._win, selector)
+def _retract(api, sent):
+    if not isinstance(sent._until, int) or isinstance(sent._until, bool):
+        raise ValueError("This send has no Undo receipt.")
+    # Old servers ignore this selector; a stale capability cache must not broaden Undo.
+    path = "/api/share/%s/%d?until=%d" % (api.user, sent._win, sent._until)
     return int(api._request(path, method="DELETE")["retracted"])
 
 
@@ -130,5 +127,5 @@ def _load(api, win, recent):
     # Old servers and old local notices keep the existing share actions.
     features = api.capabilities() if hasattr(api, "capabilities") else frozenset()
     if _FEATURE not in features or _moment(win) is None:
-        return features, None
-    return features, _targets(social_data._people(api), unquote(api.user), recent)
+        return None
+    return _targets(social_data._people(api), unquote(api.user), recent)

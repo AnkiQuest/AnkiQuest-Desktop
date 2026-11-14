@@ -149,12 +149,12 @@ class Contracts(unittest.TestCase):
                        ("POST", "/api/share/hill"): "share_moment",
                        ("DELETE", "/api/share/hill/6?until=1793269800000"): "share_undo_send"}
         win = {"win": 6, "title": "Anki-tan unlocked", "body": "A 66-day streak.", "kind": "companion_unlocked"}
-        features, targets = moment_share._load(self.api, win, [])
+        targets = moment_share._load(self.api, win, [])
         self.assertEqual(["user:friend", "group:2", "group:1"], [target._key for target in targets])
         picked = moment_share._Picked((targets[0], targets[1]))
         receipt = moment_share._send(self.api, win, picked, "  A\nsmall win ")
         self.assertEqual({"moment": {"win": 6}, "to": {"friends": ["friend"], "groups": [2]}, "note": "A small win"}, self.sent[-1][2])
-        self.assertEqual(1, moment_share._retract(self.api, receipt, features))
+        self.assertEqual(1, moment_share._retract(self.api, receipt))
 
     def test_conquest_share_uses_its_review_id_and_no_automatic_publication(self):
         self.routes = {("POST", "/api/share/hill"): "share_moment_group"}

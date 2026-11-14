@@ -5,7 +5,8 @@ recipient picker. Server wins—including `companion_unlocked`—and conquered
 cards can go to all friends, chosen friends and groups, with a 140-character note.
 Recent recipients come first. Empty and own-only groups are omitted.
 
-Undo uses the returned send receipt when `share_undo_send` is advertised.
+Undo always uses the returned send receipt, even if cached capabilities predate
+a server upgrade; older servers ignore the selector.
 An old server keeps its previous sharing actions. More apps keeps image export,
 text and explicit public-link creation; opening the picker publishes nothing.
 
@@ -20,7 +21,7 @@ Existing API examples are exercised by `test_desktop_contract.py`.
 
 The Qt tests cover actual controls, queued requests, account and profile changes,
 window closure, independent Undo receipts, legacy servers and both entry points.
-The moment-selection regression failed before the lifecycle fix.
+The moment-selection and stale-capability Undo regressions failed before their fixes.
 
 ![Recipient picker](share.png)
 

@@ -35,16 +35,14 @@ class Choices(unittest.TestCase):
             expected = case.get("expected", case.get("unit", "") * case.get("expected_repeat", 0))
             self.assertEqual(expected, model._note(text))
 
-    def test_receipts_preserve_earlier_sends_and_legacy_endpoint(self):
+    def test_every_undo_uses_a_valid_send_receipt(self):
         sent = model._Sent(1, 17, 1900000000000)
         api = SimpleNamespace(user="hill", _request=Mock(return_value={"retracted": 1}))
-        self.assertEqual(1, model._retract(api, sent, {"share_undo_send"}))
+        self.assertEqual(1, model._retract(api, sent))
         api._request.assert_called_once_with("/api/share/hill/17?until=1900000000000", method="DELETE")
-        model._retract(api, sent, set())
-        api._request.assert_called_with("/api/share/hill/17", method="DELETE")
         api._request.reset_mock()
         with self.assertRaises(ValueError):
-            model._retract(api, model._Sent(1, 17, None), {"share_undo_send"})
+            model._retract(api, model._Sent(1, 17, None))
         api._request.assert_not_called()
 
     def test_recents_stay_with_the_account_and_exclude_circle(self):

@@ -119,6 +119,13 @@ class ShareWindow(unittest.TestCase):
         self.assertIn("Shared with 1 friend", window._status.text())
 
     def test_second_send_undo_preserves_the_first_recipient(self):
+        self._two_sends()
+
+    def test_stale_capabilities_do_not_retract_the_first_send(self):
+        self.features = {"share_moments"}
+        self._two_sends()
+
+    def _two_sends(self):
         first = self.open()
         self.tap(first, "user:ana")
         first._send.click()

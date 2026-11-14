@@ -35,7 +35,7 @@ class _Picker:
         self._api, self._win = api, win
         self._current = current_client
         self._phase, self._choice = _Phase.LOADING, model._Choice.NOBODY
-        self._features, self._targets, self._rows = frozenset(), (), []
+        self._targets, self._rows = (), []
         host = self._host(parent)
         self._pm = getattr(host, "pm", None)
         taskman = getattr(host, "taskman", None)
@@ -164,7 +164,7 @@ class _Picker:
 
     def _loaded(self, future):
         try:
-            self._features, targets = future.result()
+            targets = future.result()
         except Exception as error:
             self._phase = _Phase.ERROR
             self._status.setText(tr("Couldn't load friends (%s).") % error_text(error))
@@ -288,7 +288,7 @@ class _Picker:
                 self._refresh()
             self._undo_state()
 
-        self._run(lambda: model._retract(self._api, delivered._sent, self._features), retracted)
+        self._run(lambda: model._retract(self._api, delivered._sent), retracted)
 
     def _copy_invite(self):
         if self._owns():
