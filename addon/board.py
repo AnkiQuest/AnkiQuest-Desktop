@@ -5,6 +5,9 @@ from html import escape
 from . import moods
 from .language import _clock
 
+# Shown instead of other players until the server holds one of the player's reviews.
+UPLOAD_FIRST = "Study and sync once to see how others are doing."
+
 # The class of every companion picture in the deck list, the Today panel's and the heatmap's.
 COMPANION_CLASS = "aq-companion"
 
@@ -495,9 +498,11 @@ def board_card(today, translate, profile=None):
             )
         )
     rows = "".join(board_row(*row, translate) for row in standing["rows"])
-    if not rows:
+    if standing.get("locked"):
+        rows += "<div class=aq-empty-note>%s</div>" % escape(translate(UPLOAD_FIRST))
+    elif not rows:
         rows = "<div class=aq-empty-note>%s</div>" % escape(translate("Nobody else plays yet."))
-    if not any(not mine for _, _, mine in standing["rows"]):
+    if not standing.get("locked") and not any(not mine for _, _, mine in standing["rows"]):
         rows += "<div class=aq-empty-note>%s</div>" % link("challenges", translate("Add friends to study together"))
     closing = closing_week(profile, translate)
     if closing:
