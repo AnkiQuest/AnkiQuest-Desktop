@@ -33,10 +33,14 @@ BACKGROUND = QColor(20, 18, 31)
 CARD_WIDTH, CARD_HEIGHT = 56, 80
 
 
-def motion(profiles):
-    """Reduced when the player's Anki asks for reduced motion (Preferences, Reduce motion)."""
-    asks = getattr(profiles, "reduce_motion", None)
-    return Motion.REDUCED if callable(asks) and asks() else Motion.FULL
+# The add-on's own setting, off by default. Anki's Reduce motion is on by default, so it would
+# hide the reveal from most players.
+REDUCE_MOTION = "reduce_motion"
+
+
+def motion(config):
+    """Reduced when the player turned on Reduce motion in the AnkiQuest settings."""
+    return Motion.REDUCED if config.get(REDUCE_MOTION) is True else Motion.FULL
 
 
 def _eased(t):

@@ -210,6 +210,16 @@ class Moments(unittest.TestCase):
         self.assertIn(("/api/activity/sam/read", {"ids": [5]}, None), self.requests)
         self.assertEqual(["level:4"], [item["key"] for item in self.presenter._card._items])
 
+    def test_the_full_reveal_plays_unless_reduce_motion_is_on(self):
+        self.mw.pm.reduce_motion = lambda: True
+        self.offer(self.joined())
+        self.transition("overview", "review")
+        self.assertIs(ui.reveal_ui.Phase.FALLING, self.presenter._reveal.reveal.phase, "Anki's own setting does not count")
+        self.transition("review", "overview")
+        self.addon.config = lambda: {"reduce_motion": True}
+        self.transition("overview", "review")
+        self.assertIs(ui.reveal_ui.Phase.FADING, self.presenter._reveal.reveal.phase)
+
     def test_a_moment_read_on_another_device_shows_the_card(self):
         self.offer(self.joined(unread=False))
         self.transition("overview", "review")

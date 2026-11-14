@@ -107,9 +107,10 @@ class Reveal(unittest.TestCase):
         self.assertTrue(window.details.isVisible())
 
     def test_reduced_motion_fades_in(self):
-        self.assertEqual(Motion.REDUCED, reveal_ui.motion(SimpleNamespace(reduce_motion=lambda: True)))
-        self.assertEqual(Motion.FULL, reveal_ui.motion(SimpleNamespace(reduce_motion=lambda: False)))
-        self.assertEqual(Motion.FULL, reveal_ui.motion(SimpleNamespace()))
+        # AnkiQuest's own setting, off by default; Anki's Reduce motion, on by default, does not count.
+        self.assertEqual(Motion.FULL, reveal_ui.motion({}))
+        self.assertEqual(Motion.FULL, reveal_ui.motion({"reduce_motion": False}))
+        self.assertEqual(Motion.REDUCED, reveal_ui.motion({"reduce_motion": True}))
         window = self.window(Motion.REDUCED)
         self.assertEqual(Phase.FADING, window.reveal.phase)
         window.run_for(reveal_ui.companion_reveal.DURATION_MS[Phase.FADING])

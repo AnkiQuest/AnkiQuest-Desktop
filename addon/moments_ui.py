@@ -178,7 +178,7 @@ class _Presenter:
             return share_ui.Sharing(dialog, api, item["share"], self._addon.client, run, status)
 
         window = self._reveal = reveal_ui.play(
-            mw, item, reveal_ui.motion(mw.pm), self._addon.current_companion(),
+            mw, item, reveal_ui.motion(self._addon.config()), self._addon.current_companion(),
             lambda companion: self._addon.choose_companion(companion), sharing, mw.taskman.run_in_background,
         )
         self._phase = _Phase.REVEALING
