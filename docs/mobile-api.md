@@ -59,7 +59,7 @@ The `403` with `"reauth": true` described under capabilities applies to the firs
 
 ## study companion
 
-`GET /api/companion/{user}` answers the owner's companion, `{"companion": "aki"}`; `POST` with the same shape saves it. The companions are `aki` (the default), `ankilope`, `cow` and `none`; anything else is `400`. Example: `companion.json`.
+`GET /api/companion/{user}` answers the owner's companion, `{"companion": "aki"}`; `POST` with the same shape saves it. The companions are `aki` (the default), `ankilope`, `cow` and `none`, and each planned companion below once it goes live; anything else is `400`. Example: `companion.json`.
 
 Every companion but Aki is earned at a milestone. The conditions are defined once in [`tests/fixtures/companion_unlock.json`](../tests/fixtures/companion_unlock.json), which both clients and the server test against:
 
@@ -67,21 +67,25 @@ Every companion but Aki is earned at a milestone. The conditions are defined onc
 |---|---|---|---|
 | `ankilope` | reaching level 30 | `level` | 30 |
 | `cow` (Bluma) | 10 hours of study in total | `study_hours` | 10 |
+| `anki_tan` (Anki-tan), planned | a 66-day streak | `streak` | 66 |
+| `anki_tan_chibi` (Chibi Anki-tan), planned, secret | 9 quick taps in a row on Anki-tan in the picker, once she is unlocked | `taps` | 9 |
+| `leech_tan` (Leech-tan), planned, secret | 3 tamed leeches: cards with at least 8 lapses that later reached a 21-day interval, each card once | `leeches_tamed` | 3 |
 
-The fixture also lists companions without art yet (`"status": "planned"`); servers and clients ignore them until they go live. A `secret` companion is hidden until earned; the others show in the picker as a locked silhouette with their condition and progress, and cannot be chosen.
+Companions without art yet are listed with `"status": "planned"`; servers and clients ignore them until they go live: they are not in `unlocks` or `progress`, never granted, and saving or asking for one is `400`. A `secret` companion is hidden until earned; the others show in the picker as a locked silhouette with their condition and progress, and cannot be chosen.
 
-The server decides from what it already has: the level and the whole hours studied that the profile shows. It checks when reviews are uploaded, on each worker run and on `GET /api/unlocks/{user}`, so a player who already qualifies gets the unlock the next time any of these happens. Unlocks are permanent: a level or streak lost later takes nothing back. Progress is worked out from the reviews each time and never stored.
+The server decides from what it already has: the level, the whole hours studied, the current streak and the tamed leeches that the profile shows. A `taps` companion is the exception: the client counts the taps and reports the run (below). It checks when reviews are uploaded, on each worker run and on `GET /api/unlocks/{user}`, so a player who already qualifies gets the unlock the next time any of these happens. Unlocks are permanent: a level or streak lost later takes nothing back. Progress is worked out from the reviews each time and never stored.
 
 | request | answers |
 |---|---|
 | `GET /api/unlocks/{user}` | `{"unlocks": ["cow"], "progress": {"ankilope": {"kind": "level", "value": 3, "goal": 30}}}`: everything the player has unlocked, `[]` for nothing, and for each locked companion that is not secret, how far the player is. `value` counts in the unit of `kind` and stays below `goal` |
 | `POST /api/unlocks/{user}` `{"unlock": "cow"}` | the same, when the player already has that unlock; `409` when not |
+| `POST /api/unlocks/{user}` `{"unlock": "anki_tan_chibi", "taps": [["anki_tan", 0], ["anki_tan", 300], …]}` | for a `taps` companion: the run that unlocked it, oldest first, each tap as `[companion tapped, milliseconds]` as in the fixture's `cases`, at most 64. The server grants it and answers the list when the companion it `requires` is unlocked and the last tap completes a run by the fixture's rule; `409` when not. Asking again once granted needs no `taps`. `taps` for any other companion is `400` |
 
-Both need the player's own token. An unknown unlock, or a planned one, is `400`. Clients no longer report unlocks: the server grants every one, and `POST` only keeps answering for clients from before milestones. A client that sees `companion_milestones` reads `unlocks` and `progress` instead. Unlocks are kept per account and are not settings: they follow the account whatever the **Sync settings** switch says. Unlocks are part of the data download and deleted with the account. Examples: `unlocks.json`, `unlocks_save.json`.
+Both need the player's own token. An unknown unlock, or a planned one, is `400`. Clients report only `taps` unlocks: the server grants every other one, and `POST` for those only keeps answering for clients from before milestones. A client that sees `companion_milestones` reads `unlocks` and `progress` instead. Unlocks are kept per account and are not settings: they follow the account whatever the **Sync settings** switch says. Unlocks are part of the data download and deleted with the account. Examples: `unlocks.json`, `unlocks_save.json`.
 
 Saving a companion the player has not unlocked is `409` for a client that sends the header `X-AnkiQuest-Companions: milestones`, which says it shows locked companions itself. Send it with every `POST /api/companion/{user}`. Clients released before milestones offered Ankilope to everyone and do not send it: their save of `ankilope` is accepted and grants the unlock, without a moment, so they show no error; their save of `cow` is `409`, as before.
 
-When the server grants an unlock it records a moment with the event key `companion:{companion}`, such as `companion:cow`: a `celebration` row in the inbox with `topic` `companion`, the title "Bluma joined you!" (the companion's name), a body naming the milestone ("You have studied for 10 hours in total.") and a win of kind `companion_unlocked`. Show it like the other moments, with the art of the companion that joined rather than the chosen one, and share it like any other win, for example `POST /api/share/{user}` `{"moment": {"key": "companion:cow"}, "to": "circle"}`. Its share card shows the companion that joined. Example: `notifications_companion.json`. Players who had Ankilope chosen or the cow unlocked when this came in keep them without a moment.
+When the server grants an unlock it records a moment with the event key `companion:{companion}`, such as `companion:cow`: a `celebration` row in the inbox with `topic` `companion`, the title "Bluma joined you!" (the companion's name), a body naming the milestone ("You have studied for 10 hours in total.", "You kept a 66-day streak.", "You tapped Anki-tan 9 times in a row.", "You tamed 3 leeches.") and a win of kind `companion_unlocked`. Show it like the other moments, with the art of the companion that joined rather than the chosen one, and share it like any other win, for example `POST /api/share/{user}` `{"moment": {"key": "companion:cow"}, "to": "circle"}`. Its share card shows the companion that joined. Example: `notifications_companion.json`. Players who had Ankilope chosen or the cow unlocked when this came in keep them without a moment.
 
 The cow has no art yet (#88). Until it has, clients and the server draw it with Ankilope's art turned purple: CSS `hue-rotate(250deg)`, or the same colour matrix applied to the image.
 
