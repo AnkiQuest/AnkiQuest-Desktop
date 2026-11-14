@@ -1,0 +1,59 @@
+[
+  {
+    "candidate": "aki-sad-b",
+    "master": "static/aki/sad.png",
+    "source_sha256": "3e669b300b001b87ab172206596df681f4730f997eaefeaf67c5c0eb7de6cea5",
+    "output_sha256": "e1831842c60c943d3763f8ac6d12d2f7971294f14ea96c963ba8040ae37aae83",
+    "size": [
+      1254,
+      1254
+    ],
+    "alpha_1_to_4_removed": 7286,
+    "isolated_alpha_5_to_16_removed": 201,
+    "isolated_max_alpha": 12,
+    "bounds": [
+      134,
+      130,
+      1061,
+      1177
+    ]
+  },
+  {
+    "candidate": "ankitan-frozen-full-c",
+    "master": "static/anki-tan/generated/frozen-full.png",
+    "source_sha256": "0632dcbbf0f98568f3fa06830bb6424297edb896c5956841ff91a6b5e3d1d23a",
+    "output_sha256": "37f5d348c9ddee7f1cb20560f40743f9138335d19e3ee4fa52f0480b79477f8a",
+    "size": [
+      1254,
+      1254
+    ],
+    "alpha_1_to_4_removed": 31708,
+    "isolated_alpha_5_to_16_removed": 156,
+    "isolated_max_alpha": 8,
+    "bounds": [
+      282,
+      23,
+      946,
+      1233
+    ]
+  },
+  {
+    "candidate": "ankitan-frozen-chibi-c",
+    "master": "static/anki-tan/generated/frozen-chibi.png",
+    "source_sha256": "033115182d43be4f2cdb6a6e26817c0bd4377350645fee8ac5af421118dbd595",
+    "output_sha256": "aebf39773e119b991133628f46179913dc4c96891af56bc97d5c45a011a19a09",
+    "size": [
+      1254,
+      1254
+    ],
+    "alpha_1_to_4_removed": 20978,
+    "isolated_alpha_5_to_16_removed": 840,
+    "isolated_max_alpha": 14,
+    "bounds": [
+      133,
+      100,
+      1102,
+      1183
+    ]
+  }
+]

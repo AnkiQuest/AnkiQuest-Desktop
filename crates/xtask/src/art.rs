@@ -64,6 +64,15 @@ const fn widget(name: &'static str, source: &'static str) -> Art {
 
 const ART: &[Art] = &[
     widget("aki_face", "static/aki/face.png"),
+    widget("aki_sad", "static/aki/sad.png"),
+    widget(
+        "anki_tan_frozen",
+        "static/anki-tan/generated/frozen-full.png",
+    ),
+    widget(
+        "anki_tan_chibi_frozen",
+        "static/anki-tan/generated/frozen-chibi.png",
+    ),
     widget("ankilope_face", "static/ankilope/face.png"),
     widget("aki_celebrate", "static/aki/celebrate.png"),
     widget("aki_streak", "static/aki/streak.png"),
@@ -326,6 +335,9 @@ mod tests {
         // (AnkiquestStreakWidget.poses, AnkiquestCompanion), and nothing else.
         let poses = [
             "aki_face",
+            "aki_sad",
+            "anki_tan_frozen",
+            "anki_tan_chibi_frozen",
             "ankilope_face",
             "aki_celebrate",
             "aki_streak",

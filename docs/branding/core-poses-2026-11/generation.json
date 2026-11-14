@@ -1,0 +1,101 @@
+[
+  {
+    "candidate": "aki-sad-a",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest mascot illustration. Image 1 (welcome.png) is the identity and style reference; image 2 (at_risk.png) is a secondary identity and proportion reference, not the requested pose. Match approved Aki exactly: orange-and-cream red panda, dark chocolate paws, round triangular ears, warm brown eyes, indigo scarf and matching flashcard satchel with a gold button, and a large orange-and-rust ringed tail. Preserve the masters' hand-painted soft shading, thin clean outlines, restrained fur texture and palette. New core SAD pose, candidate A: Aki sits with gently slumped shoulders and lowered ears, holding one unopened blank cream flashcard loosely in both paws. The large eyes are visibly teary with one small tear, closed small downturned mouth, discouraged but lovable and never shamed. Keep both feet and the entire ringed tail visible. Make the emotional change unmistakable at 64 pixels without an exaggerated crying face. A coherent large silhouette centered with at least 6 percent empty margin on all four sides. Exactly two forepaws, two feet, two ears and one tail. Keep the ears, limbs, tail and props in frame. Actual transparent background, clean alpha edges. No matte, scenery, floor shadow, glow, scattered speckles, white fringe, text, numbers, watermark or extra props. One character only.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png",
+      "static/aki/at_risk.png"
+    ]
+  },
+  {
+    "candidate": "aki-sad-b",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest mascot illustration. Image 1 (welcome.png) is the identity and style reference; image 2 (at_risk.png) is a secondary identity and proportion reference, not the requested pose. Match approved Aki exactly: orange-and-cream red panda, dark chocolate paws, round triangular ears, warm brown eyes, indigo scarf and matching flashcard satchel with a gold button, and a large orange-and-rust ringed tail. Preserve the masters' hand-painted soft shading, thin clean outlines, restrained fur texture and palette. New core SAD pose, candidate B: Aki stands with a modest slump, chin lowered and ears angled down, holding one unopened blank cream flashcard low in both paws. The shoulders sag gently and the knees bend a little. The large eyes are visibly teary with one small tear, closed small downturned mouth, discouraged but lovable and never shamed. Keep both feet and the entire ringed tail visible. Make the emotional change unmistakable at 64 pixels without an exaggerated crying face. A coherent large silhouette centered with at least 6 percent empty margin on all four sides. Exactly two forepaws, two feet, two ears and one tail. Keep the ears, limbs, tail and props in frame. Actual transparent background, clean alpha edges. No matte, scenery, floor shadow, glow, scattered speckles, white fringe, text, numbers, watermark or extra props. One character only.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png",
+      "static/aki/at_risk.png"
+    ]
+  },
+  {
+    "candidate": "aki-sad-c",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest mascot illustration. Image 1 (welcome.png) is the identity and style reference; image 2 (at_risk.png) is a secondary identity and proportion reference, not the requested pose. Match approved Aki exactly: orange-and-cream red panda, dark chocolate paws, round triangular ears, warm brown eyes, indigo scarf and matching flashcard satchel with a gold button, and a large orange-and-rust ringed tail. Preserve the masters' hand-painted soft shading, thin clean outlines, restrained fur texture and palette. New core SAD pose, candidate C: Aki sits at a slight three-quarter angle with gently slumped shoulders and distinctly drooping ears, looking down at one unopened blank cream flashcard held low in both paws. One small tear rolls down the cheek. The large eyes are visibly teary with one small tear, closed small downturned mouth, discouraged but lovable and never shamed. Keep both feet and the entire ringed tail visible. Make the emotional change unmistakable at 64 pixels without an exaggerated crying face. A coherent large silhouette centered with at least 6 percent empty margin on all four sides. Exactly two forepaws, two feet, two ears and one tail. Keep the ears, limbs, tail and props in frame. Actual transparent background, clean alpha edges. No matte, scenery, floor shadow, glow, scattered speckles, white fringe, text, numbers, watermark or extra props. One character only.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png",
+      "static/aki/at_risk.png"
+    ]
+  },
+  {
+    "candidate": "ankitan-frozen-full-a",
+    "prompt": "Create one transparent 1254 by 1254 illustration of Anki-tan, a CC BY-SA 4.0 derivative of Shigeyuki's supplied character. The supplied image is the identity and style reference. Match its hand-drawn anime illustration, lightly rough black sketch outlines, subtle grey and blue pencil shading, blue hair, expressive face, white headband with three blue Anki stars, grey and black magical-girl dress with a blue star brooch, grey gloves, and grey boots. Preserve the slim full-body proportions and the handmade linework; do not convert her to a 3D render, plush mascot, glossy vector or chibi. New core frozen pose: she stands huddled under a light blue winter blanket with a cream edge, grey-gloved hands pulling it around her shoulders, shivering with a tiny breath puff. Her familiar face shows cold cheeks and a determined small closed mouth. The dress hem and both boots remain visible below the blanket, long blue hair falls outside it, and the star headband stays clear. Keep the entire figure, headband, hair, hands, feet and props inside a square with 8 percent clear margin. At most two small blank floating flashcards, one small breath puff and two bold simple snowflakes; readable even when small. Actual transparent background, no scenery, floor, cast shadow, aura, text, logo, caption, watermark or background color. One character only.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "license": "CC BY-SA 4.0",
+    "credit": "Anki-tan by Shigeyuki (https://www.patreon.com/Shigeyuki)",
+    "references": [
+      "static/anki-tan/illust/anki_tan_main.png"
+    ]
+  },
+  {
+    "candidate": "ankitan-frozen-full-b",
+    "prompt": "Create one transparent 1254 by 1254 illustration of Anki-tan, a CC BY-SA 4.0 derivative of Shigeyuki's supplied character. The supplied image is the identity and style reference. Match its hand-drawn anime illustration, lightly rough black sketch outlines, subtle grey and blue pencil shading, blue hair, expressive face, white headband with three blue Anki stars, grey and black magical-girl dress with a blue star brooch, grey gloves, and grey boots. Preserve the slim full-body proportions and the handmade linework; do not convert her to a 3D render, plush mascot, glossy vector or chibi. New core frozen pose: she sits with knees tucked under a soft pale blue blanket, grey-gloved hands holding the blanket edges under her chin. She looks chilly but safe, with a small shiver and breath puff, familiar open eyes and pink cheeks. The headband and long blue hair are fully visible, her star brooch peeks above the blanket and both grey boots peek out at the bottom. Keep the entire figure, headband, hair, hands, feet and props inside a square with 8 percent clear margin. At most two small blank floating flashcards, one small breath puff and two bold simple snowflakes; readable even when small. Actual transparent background, no scenery, floor, cast shadow, aura, text, logo, caption, watermark or background color. One character only.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "license": "CC BY-SA 4.0",
+    "credit": "Anki-tan by Shigeyuki (https://www.patreon.com/Shigeyuki)",
+    "references": [
+      "static/anki-tan/illust/anki_tan_main.png"
+    ]
+  },
+  {
+    "candidate": "ankitan-frozen-full-c",
+    "prompt": "Create one transparent 1254 by 1254 illustration of Anki-tan, a CC BY-SA 4.0 derivative of Shigeyuki's supplied character. The supplied image is the identity and style reference. Match its hand-drawn anime illustration, lightly rough black sketch outlines, subtle grey and blue pencil shading, blue hair, expressive face, white headband with three blue Anki stars, grey and black magical-girl dress with a blue star brooch, grey gloves, and grey boots. Preserve the slim full-body proportions and the handmade linework; do not convert her to a 3D render, plush mascot, glossy vector or chibi. New core frozen pose: she stands with knees slightly bent and feet together, wrapped snugly in a pale blue blanket over her grey and black dress, gently shivering while holding one blank flashcard with grey gloves at her chest. Show her long blue hair, three-star white headband and brooch clearly. Her expression is chilly and patient, with a small breath puff. Keep the entire figure, headband, hair, hands, feet and props inside a square with 8 percent clear margin. At most two small blank floating flashcards, one small breath puff and two bold simple snowflakes; readable even when small. Actual transparent background, no scenery, floor, cast shadow, aura, text, logo, caption, watermark or background color. One character only. Draw exactly three visibly separate blue stars on the white headband, including a centre star. All illustration content must fit inside the central 1000 by 1000 pixels of the 1254 square, with empty transparent border. Use delicate unshadowed ink lines; do not copy any white backdrop or halo from the reference.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "license": "CC BY-SA 4.0",
+    "credit": "Anki-tan by Shigeyuki (https://www.patreon.com/Shigeyuki)",
+    "references": [
+      "static/anki-tan/illust/anki_tan_main.png"
+    ]
+  },
+  {
+    "candidate": "ankitan-frozen-chibi-a",
+    "prompt": "Create one transparent 1254 by 1254 chibi Anki-tan frozen expression, a CC BY-SA 4.0 derivative of Shigeyuki's supplied emoji faces. The two images are the identity and pixel-art style references. Match exactly their bright cyan-blue bob hair and single curled forelock, peach face, chunky stepped black outlines, small flat white/grey headband with three bright blue Anki stars, simple dark eyes and flat limited palette. This is the head-only emoji version, not a full figure and not a smooth anime portrait. Keep the chunky pixel grid aesthetic and flat colors; no watercolor, fur, gradients, 3D shading or glossy highlights. New core FROZEN expression: her cheeks have a subtle cool tint, tiny clenched teeth form a shivering mouth and her eyes look cold but safe. A short pale blue scarf or blanket edge is tucked just under her chin. One small breath puff and two blocky pale-blue snowflakes identify the cold. Center the complete head and any small cold marks within 80 percent of the square, retaining at least 8 percent completely transparent margin around stars, hair and every mark. Readable at 32-64 pixels. Actual transparent alpha background. No text, letters, numbers, border, watermark, scenery, ground, shadow, glow or background color.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "license": "CC BY-SA 4.0",
+    "credit": "Anki-tan by Shigeyuki (https://www.patreon.com/Shigeyuki)",
+    "references": [
+      "static/anki-tan/emoji/Ankitan_00_smile.png",
+      "static/anki-tan/emoji/Ankitan_02_cry.png"
+    ]
+  },
+  {
+    "candidate": "ankitan-frozen-chibi-b",
+    "prompt": "Create one transparent 1254 by 1254 chibi Anki-tan frozen expression, a CC BY-SA 4.0 derivative of Shigeyuki's supplied emoji faces. The two images are the identity and pixel-art style references. Match exactly their bright cyan-blue bob hair and single curled forelock, peach face, chunky stepped black outlines, small flat white/grey headband with three bright blue Anki stars, simple dark eyes and flat limited palette. This is the head-only emoji version, not a full figure and not a smooth anime portrait. Keep the chunky pixel grid aesthetic and flat colors; no watercolor, fur, gradients, 3D shading or glossy highlights. New core FROZEN expression: her eyes squint gently against the cold, a small wavering mouth chatters, pale-blue blush replaces the usual orange cheek marks. A snug pale-blue blanket edge reaches her chin. One small breath puff and two simple pixel snowflakes sit beside the head. Center the complete head and any small cold marks within 80 percent of the square, retaining at least 8 percent completely transparent margin around stars, hair and every mark. Readable at 32-64 pixels. Actual transparent alpha background. No text, letters, numbers, border, watermark, scenery, ground, shadow, glow or background color. Exactly three blue headband stars must be visibly drawn: a star at the left, a star at the centre and a star at the right. Do not hide the middle star behind the hair.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "license": "CC BY-SA 4.0",
+    "credit": "Anki-tan by Shigeyuki (https://www.patreon.com/Shigeyuki)",
+    "references": [
+      "static/anki-tan/emoji/Ankitan_00_smile.png",
+      "static/anki-tan/emoji/Ankitan_02_cry.png"
+    ]
+  },
+  {
+    "candidate": "ankitan-frozen-chibi-c",
+    "prompt": "Create one transparent 1254 by 1254 chibi Anki-tan frozen expression, a CC BY-SA 4.0 derivative of Shigeyuki's supplied emoji faces. The two images are the identity and pixel-art style references. Match exactly their bright cyan-blue bob hair and single curled forelock, peach face, chunky stepped black outlines, small flat white/grey headband with three bright blue Anki stars, simple dark eyes and flat limited palette. This is the head-only emoji version, not a full figure and not a smooth anime portrait. Keep the chunky pixel grid aesthetic and flat colors; no watercolor, fur, gradients, 3D shading or glossy highlights. New core FROZEN expression: she looks chilly with worried angled brows, tiny dark eyes, blue cheek marks, a small zigzag mouth and one white breath puff. A pale-blue blanket edge cups the chin; two tiny snowflakes stay clear of the headband stars. Center the complete head and any small cold marks within 80 percent of the square, retaining at least 8 percent completely transparent margin around stars, hair and every mark. Readable at 32-64 pixels. Actual transparent alpha background. No text, letters, numbers, border, watermark, scenery, ground, shadow, glow or background color. Exactly three blue headband stars must be visibly drawn: a star at the left, a star at the centre and a star at the right. Do not hide the middle star behind the hair.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "license": "CC BY-SA 4.0",
+    "credit": "Anki-tan by Shigeyuki (https://www.patreon.com/Shigeyuki)",
+    "references": [
+      "static/anki-tan/emoji/Ankitan_00_smile.png",
+      "static/anki-tan/emoji/Ankitan_02_cry.png"
+    ]
+  }
+]
