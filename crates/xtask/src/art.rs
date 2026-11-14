@@ -42,12 +42,29 @@ const WIDGET: u32 = 1024;
 /// 48 px at xxxhdpi; twice that leaves room for larger widget text.
 const ICON: u32 = 96;
 
-/// One drawable: name, master PNG, square size and WebP quality.
+/// Luminance below which a pixel counts as line art in [`Look::Outline`].
+const LINE_LUMA: f32 = 90.0;
+
+/// Alpha above which a pixel is part of the picture in [`Look::Outline`].
+const LINE_ALPHA: u8 = 128;
+
+/// How a drawable shows its master.
+#[derive(Clone, Copy, PartialEq)]
+enum Look {
+    /// The master as drawn.
+    Colour,
+    /// Only the master's dark line art, in black on transparent: the
+    /// monochrome layer of a themed launcher icon, which keeps alpha only.
+    Outline,
+}
+
+/// One drawable: name, master PNG, square size, WebP quality and look.
 struct Art {
     name: Cow<'static, str>,
     source: Cow<'static, str>,
     size: u32,
     quality: f32,
+    look: Look,
 }
 
 /// A drawable at the default quality.
@@ -57,6 +74,18 @@ const fn art(name: &'static str, source: &'static str, size: u32) -> Art {
         source: Cow::Borrowed(source),
         size,
         quality: QUALITY,
+        look: Look::Colour,
+    }
+}
+
+/// A themed icon's monochrome layer, from the master's line art.
+const fn outline(name: &'static str, source: &'static str, size: u32) -> Art {
+    Art {
+        name: Cow::Borrowed(name),
+        source: Cow::Borrowed(source),
+        size,
+        quality: QUALITY,
+        look: Look::Outline,
     }
 }
 
@@ -67,6 +96,7 @@ const fn widget(name: &'static str, source: &'static str) -> Art {
         source: Cow::Borrowed(source),
         size: WIDGET,
         quality: WIDGET_QUALITY,
+        look: Look::Colour,
     }
 }
 
@@ -126,6 +156,29 @@ const ART: &[Art] = &[
         336,
     ),
     art("duo_friends", "static/duo/friends.png", 336),
+    // Anki-tan's launcher icons (AnkiQuest-Android AnkiquestIcon), CC BY-SA 4.0.
+    // The pack's icon is 256 px and is kept at that size.
+    art("anki_tan_icon", "static/anki-tan/icon.png", 432),
+    art(
+        "anki_tan_icon_happy",
+        "static/anki-tan/emoji/Ankitan_09_fire_eyes.png",
+        432,
+    ),
+    art(
+        "anki_tan_icon_worried",
+        "static/anki-tan/emoji/Ankitan_02_cry.png",
+        432,
+    ),
+    art(
+        "anki_tan_icon_sleepy",
+        "static/anki-tan/emoji/Ankitan_35_sleeping.png",
+        432,
+    ),
+    outline(
+        "anki_tan_icon_mono",
+        "static/anki-tan/emoji/Ankitan_00_smile.png",
+        432,
+    ),
 ];
 
 /// Whether to write drawables or only compare their sizes.
@@ -200,6 +253,7 @@ fn icons() -> Result<Vec<Art>, String> {
                 source: Cow::Owned(format!("static/{companion}/{pose}.png")),
                 size: ICON,
                 quality: QUALITY,
+                look: Look::Colour,
             });
         }
     }
@@ -213,6 +267,7 @@ fn drawables() -> Result<Vec<Art>, String> {
         source: art.source.clone(),
         size: art.size,
         quality: art.quality,
+        look: art.look,
     });
     Ok(fixed.chain(icons()?).collect())
 }
@@ -222,7 +277,7 @@ fn export(android: &Path) -> Result<ExitCode, String> {
     let folder = android.join(DRAWABLES);
     fs::create_dir_all(&folder).map_err(|e| format!("{}: {e}", folder.display()))?;
     for art in drawables()? {
-        let master = load(&root().join(&*art.source))?;
+        let master = look(load(&root().join(&*art.source))?, art.look);
         let (width, height) = target(master.width(), master.height(), art.size);
         if (width, height) != (art.size, art.size) {
             println!(
@@ -270,6 +325,23 @@ fn check(android: &Path) -> Result<ExitCode, String> {
     }
     println!("all {} drawables match", drawables.len());
     Ok(ExitCode::SUCCESS)
+}
+
+/// The master as [`Look`] asks for it.
+fn look(master: RgbaImage, look: Look) -> RgbaImage {
+    if look == Look::Colour {
+        return master;
+    }
+
+    // Keep opaque dark pixels as black line art; drop everything else.
+    let mut lines = master;
+    for pixel in lines.pixels_mut() {
+        let [r, g, b, a] = pixel.0;
+        let luma = 0.299 * f32::from(r) + 0.587 * f32::from(g) + 0.114 * f32::from(b);
+        let line = a > LINE_ALPHA && luma < LINE_LUMA;
+        pixel.0 = if line { [0, 0, 0, 255] } else { [0, 0, 0, 0] };
+    }
+    lines
 }
 
 /// A WebP's pixel size, or `None` when the file does not exist.
@@ -371,5 +443,17 @@ mod tests {
             features.format(),
             Some(webp::BitstreamFormat::Lossy)
         ));
+    }
+
+    #[test]
+    fn outline_keeps_only_dark_lines() {
+        let mut image = RgbaImage::new(3, 1);
+        image.put_pixel(0, 0, image::Rgba([10, 10, 10, 255]));
+        image.put_pixel(1, 0, image::Rgba([250, 200, 180, 255]));
+        image.put_pixel(2, 0, image::Rgba([10, 10, 10, 40]));
+        let lines = look(image, Look::Outline);
+        assert_eq!([0, 0, 0, 255], lines.get_pixel(0, 0).0, "black line");
+        assert_eq!(0, lines.get_pixel(1, 0)[3], "skin");
+        assert_eq!(0, lines.get_pixel(2, 0)[3], "faint dark pixel");
     }
 }
