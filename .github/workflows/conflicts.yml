@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   scan:
-    if: github.repository == 'float3/ankiquest'
+    if: github.repository == 'AnkiQuest/ankiquest'
     runs-on: ubuntu-latest
     permissions:
       contents: read

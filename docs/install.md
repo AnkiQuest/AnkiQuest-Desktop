@@ -11,7 +11,7 @@ builds SQLite from source by default. The website and translations are embedded
 in the server binary; there is no separate web server build to deploy.
 
 ```sh
-git clone https://github.com/float3/ankiquest.git
+git clone https://github.com/AnkiQuest/ankiquest.git
 cd ankiquest
 rustup target add wasm32-unknown-unknown
 npm ci
@@ -59,7 +59,7 @@ your existing system flake, pass `inputs` to the host module through
 
 ```nix
 # In the system flake's inputs:
-ankiquest.url = "github:float3/ankiquest";
+ankiquest.url = "github:AnkiQuest/ankiquest";
 
 # In the host module, with inputs in its arguments:
 imports = [ inputs.ankiquest.nixosModules.default ];
