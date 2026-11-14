@@ -1,7 +1,7 @@
 # Core pose additions
 
 Part of [#88](https://github.com/AnkiQuest/ankiquest/issues/88). This batch adds
-Aki's sad pose and Anki-tan's full and chibi frozen poses. Pose selection belongs
+Aki's sad, hopeful, frozen and neglected poses, plus Anki-tan's full and chibi frozen poses. Pose selection belongs
 to the companion implementation; this change only supplies art and exports.
 
 ![Existing references and new poses, on white and dark backgrounds](review.png)
@@ -9,8 +9,8 @@ to the companion implementation; this change only supplies art and exports.
 The images were generated with OpenAI's built-in image generation tool
 (`image_gen`). The tool did not expose its model identifier; no model name is
 asserted. Three candidates were generated for each pose. The selected candidates
-are Aki B, Anki-tan full C and Anki-tan chibi C. [Exact prompts](generation.json)
-include all nine candidates. [Reusable prompts](prompts.md) split style from pose.
+are Aki sad B, hopeful B, frozen A and neglected B, plus Anki-tan full C and chibi C. [Exact prompts](generation.json)
+include all 18 candidates. [Reusable prompts](prompts.md) split style from pose.
 
 The references are the existing Aki masters and Shigeyuki's Anki-tan asset pack
 from [#274](https://github.com/AnkiQuest/ankiquest/pull/274), commit
@@ -33,9 +33,17 @@ large size and 32 px.
 
 Exports use the existing Rust tools: 1024 px WebP for Android and 256 px indexed
 PNG for desktop. Export Android art into an empty staging directory, then copy
-only the three new files; export desktop without `--replace`. Existing art stays
+only the six new files; export desktop without `--replace`. Existing art stays
 untouched. Android parity is supplied in a linked companion-art PR.
 
 [Desktop and Android export comparison](exports-review.png) checks the generated
 PNG/WebP at the same visible size on white and dark backgrounds. Android parity:
 [issue #293](https://github.com/AnkiQuest/AnkiQuest-Android/issues/293).
+
+[Aki’s completed core additions beside the existing references](aki-core-review.png)
+show both light and dark backgrounds. [Their desktop and Android exports](aki-core-exports.png)
+were also compared at the same visible size.
+
+This PR depends on the reference pack in #274. The icon exports in #277 are
+compatible and keep their own source names. The add-on settings credit from
+#287 is included with this first shipment of Anki-tan art, as the owner requested.

@@ -97,5 +97,86 @@
       "static/anki-tan/emoji/Ankitan_00_smile.png",
       "static/anki-tan/emoji/Ankitan_02_cry.png"
     ]
+  },
+  {
+    "candidate": "aki-hopeful-a",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. New core HOPEFUL pose, showing a small amount of study begun but not yet finished. A gentle tentative smile, attentive open eyes and lifted ears, encouraging but calm; no celebration, flames, trophies or confident victory gesture. Standing with a slight forward lean, holding a blank cream flashcard at the chest in one paw, the other paw half-raised as if ready to try. Both feet and full tail visible. One character only. Exactly two forepaws, two feet, two ears and one tail; all visible and in frame. Center a clear readable silhouette with at least 6 percent transparent margin. True transparent alpha, no backdrop, floor shadow, glow, scattered speckles, white fringe, scenery, text, numbers or watermark. Emotion must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
+  },
+  {
+    "candidate": "aki-hopeful-b",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. New core HOPEFUL pose, showing a small amount of study begun but not yet finished. A gentle tentative smile, attentive open eyes and lifted ears, encouraging but calm; no celebration, flames, trophies or confident victory gesture. Standing with shoulders straightening, holding one blank cream flashcard carefully in both paws near the chest. Chin tipped slightly upward, small expectant smile and bright eyes. Both feet and full tail visible. One character only. Exactly two forepaws, two feet, two ears and one tail; all visible and in frame. Center a clear readable silhouette with at least 6 percent transparent margin. True transparent alpha, no backdrop, floor shadow, glow, scattered speckles, white fringe, scenery, text, numbers or watermark. Emotion must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
+  },
+  {
+    "candidate": "aki-hopeful-c",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. New core HOPEFUL pose, showing a small amount of study begun but not yet finished. A gentle tentative smile, attentive open eyes and lifted ears, encouraging but calm; no celebration, flames, trophies or confident victory gesture. Sitting upright with the large tail curled beside the feet, one paw holding a blank cream flashcard and the other resting on the knee. Gently raised eyebrows and a shy hopeful smile, ears lifted. One character only. Exactly two forepaws, two feet, two ears and one tail; all visible and in frame. Center a clear readable silhouette with at least 6 percent transparent margin. True transparent alpha, no backdrop, floor shadow, glow, scattered speckles, white fringe, scenery, text, numbers or watermark. Emotion must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
+  },
+  {
+    "candidate": "aki-frozen-a",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. Core FROZEN pose: Aki stands snugly in a simple translucent pale-blue ice block reaching his waist, feet faintly visible through it. His upper body and expressive face stay out of the ice. Shoulders gently tucked, paws together close to his chest, ears slightly lowered, a small patient closed smile, not distressed. Tail curls visibly beside the block with a thin icy rim. The indigo scarf and satchel remain visible. A protective frozen day, not an injury. Ice uses only two or three bold faceted shapes. One character only, centered with a clear silhouette and at least 6 percent transparent margin on every edge. True transparent alpha, no backdrop, floor shadow, glow, scattered speckles, white fringe, scenery, text, numbers or watermark. No snowflakes, loose particles or decorative stars. Match the orange and cream fur, indigo scarf and satchel exactly. Exactly two forepaws, two hind feet, two ears and one ringed tail; no extra limbs. Emotion and ice must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
+  },
+  {
+    "candidate": "aki-frozen-b",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. Core FROZEN pose: Aki is seated in a rounded faceted translucent pale-blue ice shell around his lower body. Face, ears and forepaws are outside it. He hugs the ends of his indigo scarf, shoulders tucked and eyes soft, waiting calmly for the next study day. The large orange-ringed tail curves up beside him, partially caught in clear ice. His purple satchel sits at his hip above the ice edge. Keep the ice restrained, clearly readable, with no shards and no danger. One character only, centered with a clear silhouette and at least 6 percent transparent margin on every edge. True transparent alpha, no backdrop, floor shadow, glow, scattered speckles, white fringe, scenery, text, numbers or watermark. No snowflakes, loose particles or decorative stars. Match the orange and cream fur, indigo scarf and satchel exactly. Exactly two forepaws, two hind feet, two ears and one ringed tail; no extra limbs. Emotion and ice must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
+  },
+  {
+    "candidate": "aki-frozen-c",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. Core FROZEN pose: Aki stands with his two forepaws held against his chest and a blank cream flashcard between them. A single clean rounded translucent blue ice block encloses his legs and lower belly; show two feet faintly through the ice. Big ringed tail curls up on his left. Slightly lifted inner eyebrows, soft open eyes and a tiny patient smile convey safe waiting rather than sadness. The scarf and matching satchel are unobscured. Clean minimal faceted ice, no jagged shards. One character only, centered with a clear silhouette and at least 6 percent transparent margin on every edge. True transparent alpha, no backdrop, floor shadow, glow, scattered speckles, white fringe, scenery, text, numbers or watermark. No snowflakes, loose particles or decorative stars. Match the orange and cream fur, indigo scarf and satchel exactly. Exactly two forepaws, two hind feet, two ears and one ringed tail; no extra limbs. Emotion and ice must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
+  },
+  {
+    "candidate": "aki-neglected-a",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. New core NEGLECTED pose for a companion who has not studied for a while: gently weary and untidy but safe and welcoming. Aki sits with shoulders slumped and ears drooping to the sides, half-lidded warm eyes and a tiny neutral mouth. He holds a blank flashcard loosely in his lap with both paws. His large ringed tail rests curled beside him; scarf knot is a little loose, tufts of fur slightly mussed. Satchel still at his hip. This is low energy, distinct from crying or sadness. One character only, centered with a clear silhouette and at least 6 percent transparent margin on every edge. True transparent alpha, no backdrop, floor shadow, glow, dust particles, stray speckles, white fringe, scenery, text, numbers or watermark. No physical damage or illness, no guilt or tears. Match the orange and cream fur, indigo scarf and satchel exactly. Exactly two forepaws, two hind feet, two ears and one ringed tail; no extra limbs. Expression must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
+  },
+  {
+    "candidate": "aki-neglected-b",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. New core NEGLECTED pose: Aki sits huddled with his big ringed tail wrapped around his feet and two paws resting on it. His ears tip outward and down, eyelids lowered with a quiet tired gaze toward the viewer, mouth a very small soft line. Fur tufts a little rumpled and indigo scarf a little crooked, satchel beside his hip with one blank cream card peeking out. Gentle patiently waiting mood, no tears, no open mouth, no anger. One character only, centered with a clear silhouette and at least 6 percent transparent margin on every edge. True transparent alpha, no backdrop, floor shadow, glow, dust particles, stray speckles, white fringe, scenery, text, numbers or watermark. No physical damage or illness, no guilt or tears. Match the orange and cream fur, indigo scarf and satchel exactly. Exactly two forepaws, two hind feet, two ears and one ringed tail; no extra limbs. Expression must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
+  },
+  {
+    "candidate": "aki-neglected-c",
+    "prompt": "Create one transparent 1254 by 1254 AnkiQuest illustration. Use the supplied Aki welcome master as the exact identity and visual-style reference: orange-and-cream red panda, warm brown eyes, dark chocolate paws, large ringed orange-and-rust tail, rounded triangular ears, indigo scarf and matching flashcard satchel with gold button. Match its lightly textured hand-painted shading, thin outlines, proportions and palette. New core NEGLECTED pose: Aki stands with drooped shoulders, low ears and tired half-open eyes, his two forepaws resting together against his belly around one blank flashcard. His large ringed tail hangs in a low curl beside his feet. Slightly untidy head fur and loose scarf convey a long quiet break. Keep him healthy and kind, a tiny tentative smile rather than crying. Both feet, satchel and entire tail visible. One character only, centered with a clear silhouette and at least 6 percent transparent margin on every edge. True transparent alpha, no backdrop, floor shadow, glow, dust particles, stray speckles, white fringe, scenery, text, numbers or watermark. No physical damage or illness, no guilt or tears. Match the orange and cream fur, indigo scarf and satchel exactly. Exactly two forepaws, two hind feet, two ears and one ringed tail; no extra limbs. Expression must read at 64 px.",
+    "tool": "image_gen",
+    "model": "The built-in tool does not expose the model identifier",
+    "references": [
+      "static/aki/welcome.png"
+    ]
   }
 ]

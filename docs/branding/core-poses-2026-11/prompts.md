@@ -53,3 +53,23 @@ small breath puff, at most two floating blank flashcards and two snowflakes.
 Worried angled brows, small dark eyes, blue cheek marks, small zigzag mouth and
 one white breath puff. A pale-blue blanket edge cups the chin. Two small pixel
 snowflakes stay clear of all three headband stars.
+
+## Aki: hopeful
+
+Stand with shoulders straightening, holding a blank cream flashcard in both paws
+near the chest. Chin slightly lifted, bright open eyes, small expectant smile.
+Keep the full tail and both feet visible. Calm anticipation, without a victory gesture.
+
+## Aki: frozen
+
+Stand in a simple translucent pale-blue ice block reaching the waist, feet faintly
+visible through it. Face and forepaws stay out of the ice, shoulders tucked, paws
+together at the chest, ears slightly lowered and a patient smile. Tail curves
+beside the ice; scarf and satchel remain visible. No shards or danger.
+
+## Aki: neglected
+
+Sit with the ringed tail wrapped around the feet and two paws resting on it.
+Ears tip outward and down, eyelids lowered, a quiet tired gaze and small soft
+mouth. Slightly rumpled fur and a crooked scarf; satchel at the hip. No tears
+or injury. Show low energy while waiting kindly for the player.

@@ -65,14 +65,9 @@ const fn widget(name: &'static str, source: &'static str) -> Art {
 const ART: &[Art] = &[
     widget("aki_face", "static/aki/face.png"),
     widget("aki_sad", "static/aki/sad.png"),
-    widget(
-        "anki_tan_frozen",
-        "static/anki-tan/generated/frozen-full.png",
-    ),
-    widget(
-        "anki_tan_chibi_frozen",
-        "static/anki-tan/generated/frozen-chibi.png",
-    ),
+    widget("aki_hopeful", "static/aki/hopeful.png"),
+    widget("aki_frozen", "static/aki/frozen.png"),
+    widget("aki_neglected", "static/aki/neglected.png"),
     widget("ankilope_face", "static/ankilope/face.png"),
     widget("aki_celebrate", "static/aki/celebrate.png"),
     widget("aki_streak", "static/aki/streak.png"),
@@ -127,6 +122,14 @@ const ART: &[Art] = &[
         336,
     ),
     art("duo_friends", "static/duo/friends.png", 336),
+    widget(
+        "anki_tan_frozen",
+        "static/anki-tan/generated/frozen-full.png",
+    ),
+    widget(
+        "anki_tan_chibi_frozen",
+        "static/anki-tan/generated/frozen-chibi.png",
+    ),
 ];
 
 /// Whether to write drawables or only compare their sizes.
@@ -331,13 +334,13 @@ mod tests {
 
     #[test]
     fn widget_poses_are_large() {
-        // Every pose the big streak widget shows, with either companion
-        // (AnkiquestStreakWidget.poses, AnkiquestCompanion), and nothing else.
+        // Large widget poses, including core art awaiting companion selection wiring.
         let poses = [
             "aki_face",
             "aki_sad",
-            "anki_tan_frozen",
-            "anki_tan_chibi_frozen",
+            "aki_hopeful",
+            "aki_frozen",
+            "aki_neglected",
             "ankilope_face",
             "aki_celebrate",
             "aki_streak",
@@ -357,6 +360,8 @@ mod tests {
             "aki_goal",
             "aki_sleeping",
             "aki_at_risk",
+            "anki_tan_frozen",
+            "anki_tan_chibi_frozen",
         ];
         let large: Vec<_> = ART.iter().filter(|art| art.size == WIDGET).collect();
         let names: Vec<_> = large.iter().map(|art| art.name).collect();

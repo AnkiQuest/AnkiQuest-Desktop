@@ -55,5 +55,62 @@
       1102,
       1183
     ]
+  },
+  {
+    "candidate": "aki-hopeful-b",
+    "master": "static/aki/hopeful.png",
+    "source_sha256": "e575cb413a0411c8f81f82a1d4d820e851f3af5bf92ccf15617a59a39ab9c2b7",
+    "output_sha256": "afa532a73338f697cd50d1369e9eedc5c5ddf423d5feecab54805c2445432ca8",
+    "size": [
+      1254,
+      1254
+    ],
+    "alpha_1_to_4_removed": 10123,
+    "isolated_alpha_5_to_16_removed": 365,
+    "isolated_max_alpha": 8,
+    "bounds": [
+      118,
+      100,
+      979,
+      1169
+    ]
+  },
+  {
+    "candidate": "aki-frozen-a",
+    "master": "static/aki/frozen.png",
+    "source_sha256": "7b91e24a32b8f5783199eb5300d2d42ecdafebafd139e56cdca5593e32eae80b",
+    "output_sha256": "246046b0cb44c940dd799306c9ca5c212ffea00ef4362b320d44adddf96d5178",
+    "size": [
+      1254,
+      1254
+    ],
+    "alpha_1_to_4_removed": 14258,
+    "isolated_alpha_5_to_16_removed": 502,
+    "isolated_max_alpha": 11,
+    "bounds": [
+      109,
+      125,
+      1040,
+      1150
+    ]
+  },
+  {
+    "candidate": "aki-neglected-b",
+    "master": "static/aki/neglected.png",
+    "source_sha256": "e517aa67b817afaed4b27a0422b6fb67e70947eebe8128f795898b9ce2998396",
+    "output_sha256": "88efd2372e7151292272fad8020d66bcd32f797036e29db40413797f287db6a7",
+    "size": [
+      1254,
+      1254
+    ],
+    "alpha_1_to_4_removed": 6940,
+    "isolated_alpha_5_to_16_removed": 203,
+    "isolated_max_alpha": 9,
+    "bounds": [
+      203,
+      104,
+      1023,
+      1156
+    ]
   }
 ]

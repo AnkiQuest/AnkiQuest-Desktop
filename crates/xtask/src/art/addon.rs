@@ -43,6 +43,9 @@ const fn pose(name: &'static str, source: &'static str) -> Pose {
 const POSES: &[Pose] = &[
     pose("aki_face", "static/aki/face.png"),
     pose("aki_sad", "static/aki/sad.png"),
+    pose("aki_hopeful", "static/aki/hopeful.png"),
+    pose("aki_frozen", "static/aki/frozen.png"),
+    pose("aki_neglected", "static/aki/neglected.png"),
     pose(
         "anki_tan_frozen",
         "static/anki-tan/generated/frozen-full.png",
