@@ -21,8 +21,11 @@ use std::sync::{Arc, OnceLock};
 
 const PATH: &str = "/api/settings/{user}";
 
-/// Ten keys with their times fit in well under a kilobyte.
+/// Room for the known keys and a few dozen newer ones with their times.
 const BODY_LIMIT: usize = 8192;
+
+/// The longest key name, as `key_rules.pattern` in the shared fixture allows.
+const MAX_NAME_LEN: usize = 64;
 
 const SCHEMA: &str = include_str!("../tests/fixtures/synced_settings.json");
 
@@ -50,23 +53,58 @@ struct Key {
     kind: Kind,
 }
 
+/// Limits for every key, known or not.
+#[derive(Debug, Deserialize)]
+struct Rules {
+    max_keys: usize,
+    max_value_bytes: usize,
+}
+
 #[derive(Deserialize)]
 struct Schema {
     keys: Vec<Key>,
+    key_rules: Rules,
 }
 
-/// The known keys by name, read once from the shared fixture.
-fn keys() -> &'static BTreeMap<String, Kind> {
-    static KEYS: OnceLock<BTreeMap<String, Kind>> = OnceLock::new();
-    KEYS.get_or_init(|| {
+/// The known keys by name and the limits, read once from the shared fixture.
+fn schema() -> &'static (BTreeMap<String, Kind>, Rules) {
+    static SCHEMA_ONCE: OnceLock<(BTreeMap<String, Kind>, Rules)> = OnceLock::new();
+    SCHEMA_ONCE.get_or_init(|| {
         let schema: Schema =
             serde_json::from_str(SCHEMA).expect("tests/fixtures/synced_settings.json is valid");
-        schema
+        let keys = schema
             .keys
             .into_iter()
             .map(|key| (key.key, key.kind))
-            .collect()
+            .collect();
+        (keys, schema.key_rules)
     })
+}
+
+fn keys() -> &'static BTreeMap<String, Kind> {
+    &schema().0
+}
+
+fn rules() -> &'static Rules {
+    &schema().1
+}
+
+/// A lowercase snake_case name starting with a letter, at most [`MAX_NAME_LEN`] bytes.
+fn valid_name(name: &str) -> bool {
+    let mut bytes = name.bytes();
+    let starts_with_letter = bytes.next().is_some_and(|b| b.is_ascii_lowercase());
+    starts_with_letter
+        && name.len() <= MAX_NAME_LEN
+        && bytes.all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+}
+
+/// Whether `value` may be stored under `key`: a known key's type and range, or any value up
+/// to the size limit for a key this server does not know.
+fn storable(key: &str, value: &Value) -> bool {
+    match keys().get(key) {
+        Some(kind) => kind.accepts(value),
+        None => value.to_string().len() <= rules().max_value_bytes,
+    }
 }
 
 /// One setting's value and when the player chose it, in milliseconds since the epoch.
@@ -90,7 +128,7 @@ pub fn initialize(conn: &Connection) -> Result<(), Error> {
     Ok(())
 }
 
-/// The player's stored settings. Rows a key no longer accepts are left out.
+/// The player's stored settings. Rows a known key no longer accepts are left out.
 fn load(conn: &Connection, user: &str) -> Result<BTreeMap<String, Entry>, Error> {
     let mut stmt =
         conn.prepare("select key, value, updated_at from synced_settings where user = ?1")?;
@@ -107,31 +145,23 @@ fn load(conn: &Connection, user: &str) -> Result<BTreeMap<String, Entry>, Error>
         let Ok(value) = serde_json::from_str::<Value>(&text) else {
             continue;
         };
-        if keys().get(&key).is_some_and(|kind| kind.accepts(&value)) {
+        if storable(&key, &value) {
             found.insert(key, Entry { value, updated_at });
         }
     }
     Ok(found)
 }
 
-/// A change split into the entries to merge, with future times moved to `now`, and the unknown
-/// keys. None when a known key has a value it does not accept or a negative time.
-fn checked(
-    incoming: BTreeMap<String, Entry>,
-    now: i64,
-) -> Option<(BTreeMap<String, Entry>, Vec<String>)> {
-    let mut known = BTreeMap::new();
-    let mut ignored = Vec::new();
+/// The change with future times moved to `now`. None when a key breaks the name rule, a value
+/// cannot be stored under its key, or a time is negative.
+fn checked(incoming: BTreeMap<String, Entry>, now: i64) -> Option<BTreeMap<String, Entry>> {
+    let mut entries = BTreeMap::new();
     for (key, entry) in incoming {
-        let Some(kind) = keys().get(&key) else {
-            ignored.push(key);
-            continue;
-        };
-        if !kind.accepts(&entry.value) || entry.updated_at < 0 {
+        if !valid_name(&key) || !storable(&key, &entry.value) || entry.updated_at < 0 {
             return None;
         }
         let updated_at = entry.updated_at.min(now);
-        known.insert(
+        entries.insert(
             key,
             Entry {
                 value: entry.value,
@@ -139,12 +169,32 @@ fn checked(
             },
         );
     }
-    Some((known, ignored))
+    Some(entries)
+}
+
+/// How a merge ended.
+#[derive(Debug, PartialEq)]
+enum Merge {
+    Stored,
+    /// The player would keep more keys than allowed; nothing was stored.
+    TooManyKeys,
 }
 
 /// Stores each entry newer than the one stored; an equally old one keeps the stored value.
-fn merge(conn: &Connection, user: &str, entries: &BTreeMap<String, Entry>) -> Result<(), Error> {
+fn merge(conn: &Connection, user: &str, entries: &BTreeMap<String, Entry>) -> Result<Merge, Error> {
     let transaction = conn.unchecked_transaction()?;
+
+    // Count the keys the player would keep, stored ones included.
+    let mut stmt = transaction.prepare("select key from synced_settings where user = ?1")?;
+    let mut names = stmt
+        .query_map([user], |row| row.get::<_, String>(0))?
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
+    drop(stmt);
+    names.extend(entries.keys().cloned());
+    if names.len() > rules().max_keys {
+        return Ok(Merge::TooManyKeys);
+    }
+
     for (key, entry) in entries {
         transaction.execute(
             "insert into synced_settings (user, key, value, updated_at) values (?1, ?2, ?3, ?4)
@@ -154,7 +204,7 @@ fn merge(conn: &Connection, user: &str, entries: &BTreeMap<String, Entry>) -> Re
         )?;
     }
     transaction.commit()?;
-    Ok(())
+    Ok(Merge::Stored)
 }
 
 #[derive(Debug, Serialize)]
@@ -166,13 +216,6 @@ struct Settings {
 #[serde(deny_unknown_fields)]
 struct Change {
     settings: BTreeMap<String, Entry>,
-}
-
-/// The merged settings after a change, and the keys this server does not know.
-#[derive(Debug, Serialize)]
-struct Merged {
-    settings: BTreeMap<String, Entry>,
-    ignored: Vec<String>,
 }
 
 async fn get_settings(
@@ -191,13 +234,15 @@ async fn put_settings(
     Path(user): Path<String>,
     headers: HeaderMap,
     Json(change): Json<Change>,
-) -> Result<Json<Merged>, StatusCode> {
+) -> Result<Json<Settings>, StatusCode> {
     require_owner(&app, &user, &headers)?;
-    let (entries, ignored) = checked(change.settings, now_ms()).ok_or(StatusCode::BAD_REQUEST)?;
+    let entries = checked(change.settings, now_ms()).ok_or(StatusCode::BAD_REQUEST)?;
     let store = app.store.lock().unwrap();
-    merge(&store.conn, &user, &entries).map_err(store_error)?;
+    if merge(&store.conn, &user, &entries).map_err(store_error)? == Merge::TooManyKeys {
+        return Err(StatusCode::BAD_REQUEST);
+    }
     let settings = load(&store.conn, &user).map_err(store_error)?;
-    Ok(Json(Merged { settings, ignored }))
+    Ok(Json(Settings { settings }))
 }
 
 pub(crate) fn routes() -> Router<Arc<App>> {
@@ -229,8 +274,6 @@ mod tests {
         #[serde(default)]
         expected: BTreeMap<String, Entry>,
         #[serde(default)]
-        ignored: Vec<String>,
-        #[serde(default)]
         refused: bool,
     }
 
@@ -246,10 +289,23 @@ mod tests {
         for key in listed {
             let name = key["key"].as_str().unwrap();
             assert!(keys()[name].accepts(&key["default"]), "{name} default");
-            assert!(
-                name.bytes().all(|b| b.is_ascii_lowercase() || b == b'_'),
-                "{name} is snake_case"
-            );
+            assert!(valid_name(name), "{name} follows the name rule");
+        }
+        assert_eq!(
+            fixture["key_rules"]["pattern"],
+            format!("^[a-z][a-z0-9_]{{0,{}}}$", MAX_NAME_LEN - 1)
+        );
+    }
+
+    #[test]
+    fn key_names_follow_the_rule() {
+        let longest = "a".repeat(MAX_NAME_LEN);
+        for good in ["a", "notify_rank", "key_2", longest.as_str()] {
+            assert!(valid_name(good), "{good}");
+        }
+        let too_long = "a".repeat(MAX_NAME_LEN + 1);
+        for bad in ["", "_a", "2a", "Notify", "a-b", "a b", too_long.as_str()] {
+            assert!(!valid_name(bad), "{bad}");
         }
     }
 
@@ -259,38 +315,38 @@ mod tests {
         for case in fixture.server_merge {
             let (store, path) = temporary_store();
             merge(&store.conn, "hill", &case.stored).unwrap();
-            match checked(case.incoming, case.now_ms) {
-                None => assert!(case.refused, "{}: refused", case.name),
-                Some((entries, ignored)) => {
-                    assert!(!case.refused, "{}: accepted", case.name);
-                    merge(&store.conn, "hill", &entries).unwrap();
-                    assert_eq!(
-                        load(&store.conn, "hill").unwrap(),
-                        case.expected,
-                        "{}",
-                        case.name
-                    );
-                    assert_eq!(ignored, case.ignored, "{}", case.name);
-                }
+            let before = load(&store.conn, "hill").unwrap();
+            let merged = checked(case.incoming, case.now_ms)
+                .map(|entries| merge(&store.conn, "hill", &entries).unwrap());
+            let after = load(&store.conn, "hill").unwrap();
+            if case.refused {
+                assert_ne!(merged, Some(Merge::Stored), "{}: refused", case.name);
+                assert_eq!(after, before, "{}: nothing stored", case.name);
+            } else {
+                assert_eq!(merged, Some(Merge::Stored), "{}: accepted", case.name);
+                assert_eq!(after, case.expected, "{}", case.name);
             }
             cleanup(store, path);
         }
     }
 
     #[test]
-    fn rows_a_key_no_longer_accepts_are_left_out() {
+    fn rows_a_known_key_no_longer_accepts_are_left_out() {
         let (store, path) = temporary_store();
         store
             .conn
             .execute_batch(
-                "insert into synced_settings values ('hill', 'retired', 'true', 1);
+                "insert into synced_settings values ('hill', 'later', 'true', 1);
                  insert into synced_settings values ('hill', 'notify_rank', '3', 1);
                  insert into synced_settings values ('hill', 'deck_status', 'false', 1);",
             )
             .unwrap();
         assert_eq!(
             load(&store.conn, "hill").unwrap(),
-            BTreeMap::from([("deck_status".into(), entry(false.into(), 1))])
+            BTreeMap::from([
+                ("deck_status".into(), entry(false.into(), 1)),
+                ("later".into(), entry(true.into(), 1)),
+            ])
         );
         cleanup(store, path);
     }
@@ -337,10 +393,12 @@ mod tests {
         .await
         .unwrap()
         .0;
-        assert_eq!(merged.ignored, ["later"]);
         assert_eq!(
             merged.settings,
-            BTreeMap::from([("notify_rank".into(), entry(false.into(), 5))])
+            BTreeMap::from([
+                ("later".into(), entry(true.into(), 5)),
+                ("notify_rank".into(), entry(false.into(), 5)),
+            ])
         );
         let read =
             |user: &str| get_settings(State(app.clone()), UrlPath(user.into()), headers(user));

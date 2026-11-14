@@ -54,6 +54,8 @@ SIGN_IN_OFFER_KEY = "ankiquestSignInOffered"
 ADDON_DIR = Path(__file__).resolve().parent
 RESYNC_WINDOW_MS = 7 * 86_400_000
 POLL_MS = 5 * 60 * 1000
+# A poll syncs settings at most this often, so a sync just started elsewhere is not repeated.
+SETTINGS_POLL_GAP_S = 60
 RETRY_START_MS = 5_000
 RETRY_MAX_STEPS = 6
 WEBSITE_SHORTCUT = "Ctrl+Shift+K"
@@ -154,6 +156,7 @@ state = {
     "inbox": [],
     "activity": None,
     "settings_sync": _SettingsSync.IDLE,
+    "settings_synced_at": 0.0,
 }
 
 mw.addonManager.setWebExports(__name__, r"((aki|ankilope)_face|art/(aki|ankilope)_[a-z]+)\.png")
@@ -188,6 +191,7 @@ def sync_settings():
     if not settings_sync.enabled(snapshot) or not api.configured:
         return
     state["settings_sync"] = _SettingsSync.RUNNING
+    state["settings_synced_at"] = time.time()
     account = (api.base, api.user, api.token)
 
     def done(future):
@@ -204,6 +208,16 @@ def sync_settings():
             sync_settings()
 
     mw.taskman.run_in_background(lambda: settings_sync.run(api, snapshot), done)
+
+
+def _poll_settings():
+    """Syncs settings on the regular poll, so changes from other devices arrive without a
+    restart. A sync in flight or just started is left alone."""
+    if state["settings_sync"] is not _SettingsSync.IDLE:
+        return
+    if time.time() - state["settings_synced_at"] < SETTINGS_POLL_GAP_S:
+        return
+    sync_settings()
 
 
 def _apply_synced(snapshot, account, updates, changed):
@@ -517,6 +531,7 @@ def poll(quiet=False):
     """Keeps the deck list board, the inbox and the streak warning up to date."""
     # Queue offers first; the activity poll refreshes quiet hours before delivery.
     copies_ui.poll(quiet=True)
+    _poll_settings()
     api = client()
     account = [api.base, api.user, api.token]
     prefs = mw.pm.profile
@@ -950,10 +965,10 @@ def on_profile_open():
         state["timer"] = mw.progress.timer(POLL_MS, poll, repeat=True, parent=mw)
     refresh_shared_decks()
     _request_upload(Refresh(False, UploadMode.PROFILE_OPEN))
+    sync_settings()
     poll()
     maybe_check_updates()
     _offer_sign_in()
-    sync_settings()
     _moments._transition(mw.state, None)
 
 

@@ -19,7 +19,7 @@ Server choices follow your account across devices. Only changed choices are sent
 
 The local options below match `config.json`. Account choices stay on the server; internal bookkeeping keys are not user preferences.
 
-**Sync settings** (`sync_settings`, on by default) keeps `notify_rank`, `streak_hours`, `system_notifications`, `deck_status`, `session_summary`, `goal_celebrations` and `review_heatmap` the same on every device signed in to your account, including AnkiQuest for Android where it has the same setting. When a setting was changed on two devices, the later change wins. The switch itself, `update_channel` and the connection stay on this computer. While it is off, this computer neither sends nor takes these settings; turning it on again keeps the newer side of each. It needs a server that offers settings sync.
+**Sync settings** (`sync_settings`, on by default) keeps `notify_rank`, `streak_hours`, `deck_status`, `session_summary`, `goal_celebrations` and `review_heatmap` the same on every device signed in to your account, including AnkiQuest for Android where it has the same setting. When a setting was changed on two devices, the later change wins. Changes from other devices arrive with the regular five-minute refresh. The switch itself, `system_notifications`, `update_channel` and the connection stay on this computer. While it is off, this computer neither sends nor takes these settings; turning it on again keeps the newer side of each. It needs a server that offers settings sync.
 
 - `notify_rank`: say something when your place on the leaderboard changes
 - `streak_hours`: warn you this many hours before your streak ends (0 turns it off)

@@ -252,7 +252,8 @@ async fn examples_match_the_handlers() {
     )
     .await;
 
-    // Synced settings: one change sent a minute ago, with a key this server does not know.
+    // Synced settings: one change sent a minute ago, with a key this server does not know,
+    // which it keeps for newer clients.
     examples.push((
         "settings_save",
         f.call(

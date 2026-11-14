@@ -10,8 +10,9 @@ from test_addon_uploads import HeldTasks
 class PollAccount(HeldTasks):
     def setUp(self):
         super().setUp()
-        # Deck copies poll on their own; only the board's poll is under test.
+        # Deck copies and settings sync poll on their own; only the board's poll is under test.
         self.addon.copies_ui.poll = Mock()
+        self.addon._poll_settings = Mock()
 
     def switch(self, user):
         """Signs in as `user`, as the account and settings dialogs do."""

@@ -17,7 +17,6 @@ CHANGED_KEY = "synced_settings_changed_at"
 KEYS = {
     "notify_rank": ("notify_rank", True, None),
     "streak_warning_hours": ("streak_hours", 2, (0, 12)),
-    "system_notifications": ("system_notifications", False, None),
     "session_summary": ("session_summary", True, None),
     "goal_celebrations": ("goal_celebrations", True, None),
     "deck_status": ("deck_status", True, None),

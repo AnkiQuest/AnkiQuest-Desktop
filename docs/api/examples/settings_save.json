@@ -1,8 +1,9 @@
 {
-  "ignored": [
-    "future_setting"
-  ],
   "settings": {
+    "future_setting": {
+      "updated_at": 1793183340000,
+      "value": true
+    },
     "notify_rank": {
       "updated_at": 1793183340000,
       "value": false

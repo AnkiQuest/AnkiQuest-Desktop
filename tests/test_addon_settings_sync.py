@@ -182,6 +182,27 @@ class AddonSync(unittest.TestCase):
         self.assertEqual(NOW_MS, self.settings[settings_sync.CHANGED_KEY]["review_heatmap"])
         self.addon.redraw.assert_called_once_with()
 
+    def test_the_regular_poll_syncs_at_most_once_a_minute(self):
+        server = self.use_server(review_heatmap={"value": False, "updated_at": NOW_MS})
+        self.addon.copies_ui.poll = Mock()
+        self.mw.pm.profile = None
+        with patch.object(self.addon.time, "time", return_value=1000.0):
+            self.addon.poll()
+            self.assertFalse(self.settings["review_heatmap"])
+            self.addon.poll()
+        self.assertEqual(1, len(server.calls))
+        with patch.object(self.addon.time, "time", return_value=1000.0 + self.addon.SETTINGS_POLL_GAP_S):
+            self.addon.poll()
+        self.assertEqual(2, len(server.calls))
+
+    def test_the_poll_leaves_a_sync_in_flight_alone(self):
+        self.use_server()
+        self.addon.copies_ui.poll = Mock()
+        self.mw.pm.profile = None
+        self.addon.state["settings_sync"] = self.addon._SettingsSync.RUNNING
+        self.addon.poll()
+        self.assertIs(self.addon._SettingsSync.RUNNING, self.addon.state["settings_sync"])
+
     def test_a_reply_for_another_account_is_dropped(self):
         server = self.use_server(review_heatmap={"value": False, "updated_at": NOW_MS})
         original = server._request
