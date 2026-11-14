@@ -327,6 +327,11 @@ pub(crate) fn mark_events_seen(store: &Store, user: &str, profile: &Profile) -> 
     if let Some(goal) = crate::goals::event(&store.conn, user, profile)? {
         store.mark_seen(user, &goal.key)?;
     }
+
+    // Companions earned by the history being recorded join without a moment.
+    for moment in crate::companions::moments(store, user, profile)? {
+        store.mark_seen(user, &moment.key)?;
+    }
     Ok(())
 }
 

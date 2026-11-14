@@ -1,4 +1,11 @@
 {
+  "progress": {
+    "ankilope": {
+      "goal": 30,
+      "kind": "level",
+      "value": 2
+    }
+  },
   "unlocks": [
     "cow"
   ]

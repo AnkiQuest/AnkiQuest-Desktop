@@ -113,6 +113,9 @@ def sign_up(base, user, password, display, device):
 
 COMPANIONS = ("aki", "ankilope", "cow", "none")
 
+# Tells the server this add-on shows locked companions, so it refuses one still locked.
+SHOWS_LOCKS = {"X-AnkiQuest-Companions": "milestones"}
+
 
 def _companion(answer):
     choice = answer["companion"]
@@ -131,8 +134,8 @@ class Client:
     def configured(self):
         return bool(self.base and self.user and self.token)
 
-    def _request(self, path, body=None, method=None):
-        headers = {"Accept-Language": self.language}
+    def _request(self, path, body=None, method=None, extra=None):
+        headers = dict(extra or {}, **{"Accept-Language": self.language})
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         return request_json(self.base + path, body, headers, method=method)
@@ -182,15 +185,12 @@ class Client:
     def set_companion(self, companion):
         if companion not in COMPANIONS:
             raise ValueError("Unknown study companion")
-        return _companion(self._request("/api/companion/" + self.user, {"companion": companion}))
+        return _companion(self._request("/api/companion/" + self.user, {"companion": companion}, extra=SHOWS_LOCKS))
 
     def unlocks(self):
-        """`{"unlocks": [...]}`: what this player has unlocked, such as the cow."""
+        """`{"unlocks": [...], "progress": {...}}`: the companions this player has unlocked and
+        how far they are toward the others."""
         return self._request("/api/unlocks/" + self.user)
-
-    def unlock(self, unlock):
-        """Unlocks `unlock` for this player; unlocking again changes nothing."""
-        return self._request("/api/unlocks/" + self.user, {"unlock": unlock})
 
     def notifications(self):
         return self._request("/api/notifications/" + self.user)

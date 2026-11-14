@@ -6,7 +6,7 @@ The cow has no art yet (#88). Until it has, its pictures are Ankilope's, hue-rot
 import math
 from pathlib import Path
 
-from aqt.qt import QIcon, QImage, QPixmap, Qt
+from aqt.qt import QColor, QIcon, QImage, QPainter, QPixmap, Qt
 
 from . import moods
 from .share import face_path
@@ -30,6 +30,16 @@ def pixmap(path, companion, size=None):
     return picture.scaled(
         size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation,
     )
+
+
+def silhouette(picture):
+    """`picture` as a grey shadow of its shape, for a companion not unlocked yet."""
+    shadow = QPixmap(picture)
+    painter = QPainter(shadow)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+    painter.fillRect(shadow.rect(), QColor(128, 128, 128, 110))
+    painter.end()
+    return shadow
 
 
 def icon(companion):

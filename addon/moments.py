@@ -92,6 +92,12 @@ def _rank(change, place, week, at):
     }
 
 
+def shown_companion(item, companion):
+    """The companion an item's art shows: the one that joined for an unlock, else `companion`."""
+    joined = item["key"].split(":", 1)[1] if item["topic"] == "companion" and ":" in item["key"] else None
+    return joined if joined in moods.NAMES else companion
+
+
 def _pose(item, companion):
     # A milestone has its own pose; a counted day burns as hot as its streak, as on the phone.
     if item["topic"] == "streak":

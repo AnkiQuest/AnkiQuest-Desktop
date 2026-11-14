@@ -16,7 +16,7 @@ from aqt.qt import QAction, QKeySequence, QMenu, QTimer
 from aqt.utils import openLink, tooltip
 
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
-from . import companion_ui, companion_unlock, inbox_ui, moments, moments_ui, moods, share, sharing
+from . import companion_ui, inbox_ui, moments, moments_ui, moods, share, sharing
 from .inbox import CHALLENGE_ROUTE
 from .language import _plural, tr
 from .client import (
@@ -547,8 +547,6 @@ def poll(quiet=False):
     week = prefs.get(ORDER_WEEK_KEY)
     announcements = delivery._record(prefs, api)
     cursor = announcements["cursor"]
-    unlock_key = companion_unlock.account(api)
-    unlocks = companion_unlock.pending(prefs, unlock_key)
 
     def work():
         rank, profile = api.rank(previous, week), api.profile()
@@ -558,7 +556,7 @@ def poll(quiet=False):
             companion = api.companion()
         except Exception:
             companion = state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
-        return rank, profile, notifications, companion, arrivals, reminders, _send_unlocks(api, unlocks)
+        return rank, profile, notifications, companion, arrivals, reminders
 
     def done(future):
         if state["polling"] is not request:
@@ -568,7 +566,7 @@ def poll(quiet=False):
         if mw.pm.profile is not prefs or [current.base, current.user, current.token] != account:
             return
         try:
-            rank, profile, inbox, companion, arrivals, reminders, unlocked = future.result()
+            rank, profile, inbox, companion, arrivals, reminders = future.result()
         except Exception as e:
             # Keep a direct sign-in link on the deck list for a revoked credential.
             if isinstance(e, ServerError) and e.status == HTTPStatus.UNAUTHORIZED:
@@ -585,25 +583,12 @@ def poll(quiet=False):
         state["place"] = order.index(api.name) + 1 if api.name in order else None
         state["profile"], state["activity"], state["inbox"] = profile, inbox, inbox.items
         state["companion"], state["companion_account"] = companion, account
-        if unlocked is not None:
-            companion_unlock.settle(prefs, unlock_key, unlocked)
         if reminders is not None:
             announcements["reminders"] = reminders
         announce(rank, profile, arrivals, quiet)
         redraw()
 
     mw.taskman.run_in_background(work, done)
-
-
-def _send_unlocks(api, unlocks):
-    """Sends unlocks made offline; a failure leaves them for the next poll."""
-    if not unlocks:
-        return None
-    try:
-        return companion_unlock.send(api, unlocks)
-    except Exception as e:
-        print("ankiquest unlocks:", e)
-        return None
 
 
 def announce(rank, profile, inbox, quiet):

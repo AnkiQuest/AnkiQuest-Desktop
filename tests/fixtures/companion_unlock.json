@@ -1,36 +1,50 @@
 {
-  "_about": "How a player unlocks the hidden cow companion in the companion picker: `taps` taps on Ankilope in a row, each at most `max_gap_ms` after the one before. A tap on another choice, or a longer gap, starts the count again (a late tap counts as the first of a new run). Each case lists the taps as [choice, milliseconds] and whether the last one unlocks the cow. The desktop add-on (addon/companion_unlock.py, tests/test_companion_unlock.py) checks it; the Android app keeps a copy.",
+  "_about": "How a player earns each companion but Aki. The server decides from what it already knows and keeps the unlock for good; clients only show the condition and the progress `GET /api/unlocks/{user}` answers. `kind` is what counts: `level` (the player's level), `study_hours` (whole hours studied in total), `streak` (days in a row), `taps` (taps in a row on the companion `requires` names, in the companion picker, once that one is unlocked: the client reports it with `POST /api/unlocks/{user}`; `goal` equals `taps`), `leeches_tamed` (cards with at least 8 lapses that later reached a 21-day interval). `goal` is the value that unlocks. A `secret` companion stays hidden until earned; the others show as a locked card with their condition. `status` is `live` when the companion can be earned, `planned` while it has no art yet: servers and clients ignore planned ones. Each check is a measured value and whether it unlocks; the server (src/companions.rs) tests against them. The tap rule: `taps` taps on the `requires` companion in a row, each at most `max_gap_ms` after the one before; a tap on another choice, or a longer gap, starts the count again (a late tap counts as the first of a new run). Each case lists the taps as [choice, milliseconds] and whether the last one unlocks.",
+  "companions": [
+    {"companion": "ankilope", "kind": "level", "goal": 30, "secret": false, "status": "live"},
+    {"companion": "cow", "kind": "study_hours", "goal": 10, "secret": false, "status": "live"},
+    {"companion": "anki_tan", "kind": "streak", "goal": 66, "secret": false, "status": "planned"},
+    {"companion": "anki_tan_chibi", "kind": "taps", "goal": 9, "requires": "anki_tan", "secret": true, "status": "planned"},
+    {"companion": "leech_tan", "kind": "leeches_tamed", "goal": 3, "secret": true, "status": "planned"}
+  ],
+  "checks": [
+    {"name": "level 29 is not enough", "companion": "ankilope", "value": 29, "unlocks": false},
+    {"name": "level 30 unlocks Ankilope", "companion": "ankilope", "value": 30, "unlocks": true},
+    {"name": "a later level still unlocks", "companion": "ankilope", "value": 31, "unlocks": true},
+    {"name": "9 whole hours are not enough", "companion": "cow", "value": 9, "unlocks": false},
+    {"name": "10 hours unlock Bluma", "companion": "cow", "value": 10, "unlocks": true}
+  ],
   "taps": 9,
   "max_gap_ms": 2000,
   "cases": [
     {
       "name": "nine quick taps unlock",
-      "sequence": [["ankilope", 0], ["ankilope", 300], ["ankilope", 600], ["ankilope", 900], ["ankilope", 1200], ["ankilope", 1500], ["ankilope", 1800], ["ankilope", 2100], ["ankilope", 2400]],
+      "sequence": [["anki_tan", 0], ["anki_tan", 300], ["anki_tan", 600], ["anki_tan", 900], ["anki_tan", 1200], ["anki_tan", 1500], ["anki_tan", 1800], ["anki_tan", 2100], ["anki_tan", 2400]],
       "unlocks": true
     },
     {
       "name": "eight taps are not enough",
-      "sequence": [["ankilope", 0], ["ankilope", 300], ["ankilope", 600], ["ankilope", 900], ["ankilope", 1200], ["ankilope", 1500], ["ankilope", 1800], ["ankilope", 2100]],
+      "sequence": [["anki_tan", 0], ["anki_tan", 300], ["anki_tan", 600], ["anki_tan", 900], ["anki_tan", 1200], ["anki_tan", 1500], ["anki_tan", 1800], ["anki_tan", 2100]],
       "unlocks": false
     },
     {
       "name": "a gap of exactly max_gap_ms still counts",
-      "sequence": [["ankilope", 0], ["ankilope", 2000], ["ankilope", 4000], ["ankilope", 6000], ["ankilope", 8000], ["ankilope", 10000], ["ankilope", 12000], ["ankilope", 14000], ["ankilope", 16000]],
+      "sequence": [["anki_tan", 0], ["anki_tan", 2000], ["anki_tan", 4000], ["anki_tan", 6000], ["anki_tan", 8000], ["anki_tan", 10000], ["anki_tan", 12000], ["anki_tan", 14000], ["anki_tan", 16000]],
       "unlocks": true
     },
     {
       "name": "a longer gap starts again",
-      "sequence": [["ankilope", 0], ["ankilope", 300], ["ankilope", 600], ["ankilope", 900], ["ankilope", 3000], ["ankilope", 3300], ["ankilope", 3600], ["ankilope", 3900], ["ankilope", 4200]],
+      "sequence": [["anki_tan", 0], ["anki_tan", 300], ["anki_tan", 600], ["anki_tan", 900], ["anki_tan", 3000], ["anki_tan", 3300], ["anki_tan", 3600], ["anki_tan", 3900], ["anki_tan", 4200]],
       "unlocks": false
     },
     {
       "name": "the late tap is the first of the new run",
-      "sequence": [["ankilope", 0], ["ankilope", 5000], ["ankilope", 5100], ["ankilope", 5200], ["ankilope", 5300], ["ankilope", 5400], ["ankilope", 5500], ["ankilope", 5600], ["ankilope", 5700], ["ankilope", 5800]],
+      "sequence": [["anki_tan", 0], ["anki_tan", 5000], ["anki_tan", 5100], ["anki_tan", 5200], ["anki_tan", 5300], ["anki_tan", 5400], ["anki_tan", 5500], ["anki_tan", 5600], ["anki_tan", 5700], ["anki_tan", 5800]],
       "unlocks": true
     },
     {
       "name": "a tap on another choice starts again",
-      "sequence": [["ankilope", 0], ["ankilope", 100], ["ankilope", 200], ["ankilope", 300], ["aki", 400], ["ankilope", 500], ["ankilope", 600], ["ankilope", 700], ["ankilope", 800]],
+      "sequence": [["anki_tan", 0], ["anki_tan", 100], ["anki_tan", 200], ["anki_tan", 300], ["aki", 400], ["anki_tan", 500], ["anki_tan", 600], ["anki_tan", 700], ["anki_tan", 800]],
       "unlocks": false
     },
     {

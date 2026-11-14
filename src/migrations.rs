@@ -18,6 +18,7 @@ const STEPS: &[Step] = &[
     adopted_device_names,
     share_notes,
     cow_companion,
+    companion_milestones,
 ];
 
 /// Brings the database up to the latest step, then turns foreign keys on for the connection.
@@ -210,6 +211,21 @@ fn cow_companion(conn: &Connection) -> Result<(), Error> {
          drop table companion_preferences_old;",
         crate::companions::TABLE
     ))?;
+    Ok(())
+}
+
+/// Ankilope became an unlock earned at a level. Players who already chose it keep it, as do
+/// players who unlocked the cow before it was earned by study. Neither gets an unlock moment
+/// for it, unless they have never been announced anything: then the first run records history.
+fn companion_milestones(conn: &Connection) -> Result<(), Error> {
+    conn.execute_batch(
+        "insert or ignore into companion_unlocks (user, unlock, unlocked_at)
+             select user, 'ankilope', cast(unixepoch('subsec') * 1000 as integer)
+             from companion_preferences where companion = 'ankilope';
+         insert or ignore into seen (user, key)
+             select user, 'companion:' || unlock from companion_unlocks
+             where exists (select 1 from seen where seen.user = companion_unlocks.user);",
+    )?;
     Ok(())
 }
 
@@ -452,6 +468,39 @@ mod tests {
         store.set_companion("bo", "cow").unwrap();
         assert_eq!(store.companion("bo").unwrap(), "cow");
         assert!(store.set_companion("bo", "horse").is_err());
+        cleanup(store, dir);
+    }
+
+    #[test]
+    fn players_keep_ankilope_and_the_cow_without_a_moment() {
+        let dir = temp_dir("companion-milestones");
+        drop(Store::open(&dir).unwrap());
+        {
+            // A version 7 database: hill chose Ankilope, bo unlocked the cow by tapping, ana
+            // chose Ankilope but has never been announced anything.
+            let conn = Connection::open(dir.join("ankiquest.db")).unwrap();
+            conn.execute_batch(
+                "insert into companion_preferences values
+                     ('hill', 'ankilope'), ('ana', 'ankilope'), ('cy', 'aki'), ('bo', 'cow');
+                 insert into companion_unlocks values ('bo', 'cow', 5);
+                 insert into seen (user, key) values ('hill', 'level:2'), ('bo', 'level:2');
+                 pragma user_version = 7;",
+            )
+            .unwrap();
+        }
+        let store = Store::open(&dir).unwrap();
+        assert_eq!(version(&store.conn), STEPS.len());
+        use crate::companions::Unlock;
+        assert_eq!(store.unlocks("hill").unwrap(), [Unlock::Ankilope]);
+        assert_eq!(store.unlocks("ana").unwrap(), [Unlock::Ankilope]);
+        assert_eq!(store.unlocks("bo").unwrap(), [Unlock::Cow]);
+        assert!(store.unlocks("cy").unwrap().is_empty());
+        assert!(store.is_seen("hill", "companion:ankilope").unwrap());
+        assert!(store.is_seen("bo", "companion:cow").unwrap());
+        assert!(
+            !store.is_seen("ana", "companion:ankilope").unwrap(),
+            "a first run records it with the rest of the history"
+        );
         cleanup(store, dir);
     }
 

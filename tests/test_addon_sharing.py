@@ -35,7 +35,7 @@ SETTINGS = {
 class SharingSettingsTests(unittest.TestCase):
     def test_every_kind_on_the_server_is_offered_with_every_policy(self):
         self.assertEqual(
-            ["daily_goal", "streak_secured", "streak", "level", "achievement", "record", "quest", "conquered", "place", "challenge"],
+            ["daily_goal", "streak_secured", "streak", "level", "achievement", "record", "quest", "conquered", "place", "challenge", "companion_unlocked"],
             [kind for kind, _ in sharing.KINDS],
         )
         self.assertEqual(["private", "ask", "auto"], [policy for policy, _ in sharing.POLICIES])

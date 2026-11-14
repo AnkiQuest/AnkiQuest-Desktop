@@ -1107,6 +1107,11 @@ fn shown(store: &Store, win: &Win) -> Result<Shown, Error> {
 }
 
 fn card(app: &App, store: &Store, win: &Win, shown: &Shown, host: &str) -> Result<Card, Error> {
+    // An unlock moment shows the companion that joined, whoever the player chose since.
+    let companion = match crate::companions::of_moment(&win.key) {
+        Some(joined) => joined.to_string(),
+        None => store.companion(&win.user)?,
+    };
     Ok(Card {
         kind: win.kind.clone(),
         title: clean(&shown.title, supported),
@@ -1115,7 +1120,7 @@ fn card(app: &App, store: &Store, win: &Win, shown: &Shown, host: &str) -> Resul
         display: clean(&app.display(&win.user), supported),
         date: date(win.day, &shown.language),
         host: clean(host, supported),
-        art: art(&store.companion(&win.user)?, &win.art),
+        art: art(&companion, &win.art),
         avatar: avatars::picture(store, &win.user)?.map(|(_, png)| png),
         seed: win.id as u64,
     })

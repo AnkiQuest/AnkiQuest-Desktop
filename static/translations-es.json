@@ -1389,5 +1389,13 @@
   "No hidden players.": "No hay personas ocultas.",
   "Show again": "Volver a mostrar",
   "Show {0} again": "Volver a mostrar a {0}",
-  "Could not update hidden players. Try again.": "No se pudo actualizar la lista de personas ocultas. Inténtalo de nuevo."
+  "Could not update hidden players. Try again.": "No se pudo actualizar la lista de personas ocultas. Inténtalo de nuevo.",
+  "{0} joined you!": "¡{0} se unió a ti!",
+  "{0} joined me!": "¡{0} se unió a mí!",
+  "You reached level {0}.": "Has alcanzado el nivel {0}.",
+  "I reached level {0}.": "He alcanzado el nivel {0}.",
+  "You have studied for {0} hours in total.": "Has estudiado {0} horas en total.",
+  "Reach level {0}": "Alcanza el nivel {0}",
+  "Level {0} of {1}": "Nivel {0} de {1}",
+  "{0} of {1} hours": "{0} de {1} horas"
 }
