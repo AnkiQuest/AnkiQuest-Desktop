@@ -4,7 +4,7 @@
 //! An image is companion art when its path names a companion, or when it
 //! looks like a master scaled to another size. It may only be a master in
 //! `static/<companion>/`, an export in the art manifest, or a retired copy
-//! the manifest keeps.
+//! the manifest keeps. Animations are not compared with masters.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -119,7 +119,19 @@ struct Print {
     pixels: RgbaImage,
 }
 
-/// Decodes `image` and shrinks it to a fingerprint.
+/// Whether `path` is an animated PNG. An animation is not a scaled copy of
+/// a still, even when its first frame is (the Anki-tan pack's sprites).
+fn animated(path: &Path) -> bool {
+    let Ok(file) = fs::File::open(path) else {
+        return false;
+    };
+    let reader = std::io::BufReader::new(file);
+    image::codecs::png::PngDecoder::new(reader)
+        .and_then(|decoder| decoder.is_apng())
+        .unwrap_or(false)
+}
+
+/// Decodes `image` and shrinks it to a fingerprint; `None` for animations.
 fn print(image: &str) -> Option<Print> {
     let path = root().join(image);
     let decoded = if image.ends_with(".webp") {
@@ -133,6 +145,9 @@ fn print(image: &str) -> Option<Print> {
             image::DynamicImage::ImageRgb8(rgb).into_rgba8()
         }
     } else {
+        if animated(&path) {
+            return None;
+        }
         image::open(&path).ok()?.into_rgba8()
     };
     let size = decoded.dimensions();
@@ -314,4 +329,14 @@ fn a_scaled_copy_is_found_anywhere() {
             "{image}"
         );
     }
+}
+
+#[test]
+fn an_animation_is_not_a_copy_of_its_frame() {
+    // The Anki-tan pack's 240 px sprites are APNGs whose first frame matches
+    // a frame master; an animation is a picture of its own, not a copy.
+    let animation = "static/anki-tan/sprite/Anki-tan_hello_240px.png";
+    let frame = "static/anki-tan/sprite/idle/anki-tan_idle_0024.png";
+    assert!(print(animation).is_none(), "{animation}");
+    assert!(print(frame).is_some(), "{frame}");
 }
