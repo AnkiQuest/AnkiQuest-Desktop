@@ -6,7 +6,6 @@ from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from enum import Enum, auto
 from http import HTTPStatus
-from pathlib import Path
 from html import escape
 
 from aqt import gui_hooks, mw
@@ -26,7 +25,6 @@ STREAK_MINUTES_KEY = "ankiquestStreakMinutes"
 CELEBRATED_KEY = "ankiquestGoalCelebrated"
 PERIOD_KEY = "ankiquestBoardPeriod"
 SESSION_KEY = "ankiquestLastStudySession"
-ART = Path(__file__).resolve().parent / "art"
 BOARD_MS = 5 * 60 * 1000
 BOARD_RETRY_MS = 30_000
 BOARD_RETRY_CAP_MS = BOARD_MS
@@ -143,15 +141,25 @@ def companion():
 
 
 def art_url(chosen_companion, mood):
-    name = moods.art(chosen_companion, mood)
+    return _pose_url(moods.art(chosen_companion, mood))
+
+
+def _pose_url(name):
     if name is None:
         return None
     return "/_addons/%s/art/%s.png" % (mw.addonManager.addonFromModule(__name__), name)
 
 
-def art_path(chosen_companion, mood):
-    name = moods.art(chosen_companion, mood)
-    return None if name is None else str(ART / (name + ".png"))
+def pose_url(chosen_companion):
+    """The companion's pose for today's streak, by the one rule (moods.today_pose). The goal is
+    the server's word; the Today panel also counts reviews it has not uploaded yet."""
+    profile = addon().state["profile"]
+    view = _profile_for_display(profile)
+
+    # Only a profile that still describes today says whether today's goal is reached.
+    served = ((moods.current(profile, now_ms()) or {}).get("goal") or {}).get("reached")
+    goal = moods.Goal.REACHED if served is True else moods.Goal.OPEN
+    return _pose_url(moods.companion_pose(chosen_companion, moods.today_pose(view, goal)))
 
 
 def days_for(deck_browser=None):
@@ -486,10 +494,12 @@ def today_view(deck_browser, chosen_companion):
     api = addon().client()
     profile = day_verdict._for_display(addon().state["profile"], status.verdict)
     mood = moods.mood([day.due for day in days], focus.due if focus else 0, profile, now_ms())
+    goal = moods.Goal.REACHED if status.goal_done else moods.Goal.OPEN
+    pose = moods.companion_pose(chosen_companion, moods.today_pose(profile, goal))
     session = last_session(api)
     return {
         "profile": profile,
-        "art": art_url(chosen_companion, mood),
+        "art": _pose_url(pose),
         "mood": tr(moods.message(chosen_companion, mood)) if chosen_companion != "none" else None,
         "winner": art_url(chosen_companion, moods.WINNER),
         "focus": focus_view(focus),
@@ -780,6 +790,7 @@ def celebrate(summary):
         "title": _streak_title(summary) if topic == "secured" else goals.celebration_title(goals.GOAL, tr),
         "body": goals.celebration_text(goals.MINIMUM if topic == "secured" else goals.GOAL, status, tr),
         "at": summary["finished_at"], "local": True, "summary": summary,
+        "streak": (status.verdict or {}).get("streak"),
     } for topic in topics]
     addon()._moments._offer(addon().client(), items, summary)
     return True

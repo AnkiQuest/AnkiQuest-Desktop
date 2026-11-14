@@ -92,8 +92,13 @@ class MomentQueue(unittest.TestCase):
         self.assertEqual("I reached level 4", self.pending()[0]["share"]["body"])
 
     def test_the_topic_selects_art_and_none_has_no_mascot(self):
-        for topic, expected in (("secured", "streak"), ("level", "winner"), ("goal", "celebrate")):
+        for topic, expected in (("secured", "streak"), ("streak", "streak_milestone"), ("level", "winner"), ("goal", "celebrate")):
             item = moments._notice(notice(topic=topic))
             self.assertEqual("aki_" + expected, moments._pose(item, "aki"))
             self.assertTrue(moments._pose(item, "ankilope").startswith("ankilope_"))
             self.assertIsNone(moments._pose(item, "none"))
+
+    def test_a_secured_day_burns_as_hot_as_its_streak(self):
+        for streak, expected in ((None, "aki_streak"), (6, "aki_streak"), (7, "aki_streak_hot"), (30, "aki_streak_blazing"), (100, "aki_streak_legend")):
+            self.assertEqual(expected, moments._pose({"topic": "secured", "streak": streak}, "aki"))
+        self.assertEqual("ankilope_study", moments._pose({"topic": "secured", "streak": 64}, "ankilope"))

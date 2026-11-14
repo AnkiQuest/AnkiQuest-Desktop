@@ -12,6 +12,7 @@ use std::process::ExitCode;
 use image::imageops::{self, FilterType};
 use image::{Rgba32FImage, RgbaImage};
 
+mod addon;
 mod banner;
 
 /// Drawable folder inside an AnkiQuest-Android checkout.
@@ -152,6 +153,11 @@ pub fn run(args: &[String]) -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// Runs the add-on pose exporter: `[--check | --replace]`.
+pub fn addon(args: &[String]) -> ExitCode {
+    addon::run(args)
 }
 
 /// Runs the banner command: `[--social] [--out <file>]`.

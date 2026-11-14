@@ -1,4 +1,11 @@
-"""The companion's mood for today, and its artwork, chosen like the phone app's Aki."""
+"""The companion's mood for today, and its artwork, chosen like the phone app's Aki.
+
+Two rules live here. `streak_mood` picks the pose from today's streak, as the phone's
+AnkiquestMood does, pinned by tests/fixtures/streak_moods.json. `mood` picks the encouraging
+line from the collection's due cards.
+"""
+
+from enum import Enum, auto
 
 WELCOME, REVIEW, CELEBRATE, STREAK, FREEZE, WINNER = "welcome", "review", "celebrate", "streak", "freeze", "winner"
 
@@ -13,13 +20,45 @@ MESSAGES = {
 
 COMPANION_WELCOME = "One card, one small step."
 
+# Today's day verdict, as the fixture names it.
+STUDIED, PROTECTED, SHORT, PENDING, UNKNOWN = "studied", "protected", "short", "pending", "unknown"
+
+# The displayed day's `_day_status` (day_verdict._for_display) to its verdict; pending splits by reviews.
+_DAY_STATES = {"met": STUDIED, "syncing": STUDIED, "protected": PROTECTED, "pending": PENDING}
+
+# Aki's streak moods, as the phone names them.
+STREAK_MOODS = ("unknown", "asleep", "sad", "frozen_1", "frozen_2", "frozen_3", "hopeful", "fire")
+(MOOD_UNKNOWN, ASLEEP, SAD, FROZEN_1, FROZEN_2, FROZEN_3, HOPEFUL, FIRE) = STREAK_MOODS
+
+# The pose for each mood but fire. Interim poses stand in until sad, hopeful and frozen art
+# exists (#88): at_risk is the most worried, welcome smiles with a card, freeze_used has snow.
+_MOOD_POSES = {
+    MOOD_UNKNOWN: "aki_face",
+    ASLEEP: "aki_sleeping",
+    SAD: "aki_at_risk",
+    FROZEN_1: "aki_freeze_used",
+    FROZEN_2: "aki_freeze",
+    FROZEN_3: "aki_freeze_used",
+    HOPEFUL: "aki_welcome",
+}
+
+# A counted day's pose by heat: the first streak length each pose starts at, hottest first.
+HEAT = ((100, "aki_streak_legend"), (30, "aki_streak_blazing"), (7, "aki_streak_hot"), (1, "aki_streak"))
+
+
+class Goal(Enum):
+    """Whether today's daily goal is reached."""
+    OPEN = auto()
+    REACHED = auto()
+
+
+# Ankilope's version of each Aki pose, as the phone's AnkiquestCompanion maps them.
 ANKILOPE = {
-    WELCOME: "ankilope_welcome",
-    CELEBRATE: "ankilope_celebrate",
-    WINNER: "ankilope_celebrate",
-    REVIEW: "ankilope_study",
-    STREAK: "ankilope_study",
-    FREEZE: "ankilope_study",
+    "aki_face": "ankilope_face",
+    "aki_welcome": "ankilope_welcome",
+    "aki_sleeping": "ankilope_welcome",
+    "aki_celebrate": "ankilope_celebrate",
+    "aki_winner": "ankilope_celebrate",
 }
 
 
@@ -54,13 +93,73 @@ def mood(decks_due, focus_due, profile, now_ms):
     return WELCOME
 
 
-def art(companion, chosen):
-    """The file name, without folder or extension, of `companion`'s art for a mood; None for no companion."""
+def streak_mood(state, reviews, streak, frozen_days, goal):
+    """Today's streak mood for a day verdict `state` with `reviews` so far, a `streak` of that many
+    days and `frozen_days` frozen days in a row ending yesterday."""
+    # Today counts, or the goal says the player did what they planned.
+    if state == STUDIED or goal == Goal.REACHED:
+        return FIRE
+    if state == UNKNOWN:
+        return MOOD_UNKNOWN
+    if reviews > 0:
+        return HOPEFUL
+
+    # A protected day means a freeze kept at least yesterday, even without the heatmap.
+    frozen = max(frozen_days, 1 if state == PROTECTED else 0)
+    if frozen >= 3:
+        return FROZEN_3
+    if frozen == 2:
+        return FROZEN_2
+    if frozen == 1:
+        return FROZEN_1
+    return ASLEEP if streak == 0 else SAD
+
+
+def streak_pose(chosen, streak):
+    """Aki's pose for a streak mood; a counted day burns by the streak's heat, from day one."""
+    if chosen != FIRE:
+        return _MOOD_POSES[chosen]
+    return next((pose for days, pose in HEAT if streak >= days), HEAT[-1][1])
+
+
+def frozen_run(heatmap):
+    """The frozen days in a row ending yesterday in a profile's heatmap, whose last cell is today."""
+    days = 0
+    for cell in reversed((heatmap or [])[:-1]):
+        if not (isinstance(cell, dict) and cell.get("frozen") is True):
+            break
+        days += 1
+    return days
+
+
+def day_state(view):
+    """The verdict of a displayed profile's day (day_verdict._for_display)."""
+    state = _DAY_STATES.get((view or {}).get("_day_status"), UNKNOWN)
+    if state == PENDING and _reviews_today(view) > 0:
+        return SHORT
+    return state
+
+
+def today_pose(view, goal):
+    """Aki's pose for the displayed profile's day: the one streak rule every surface uses."""
+    view = view or {}
+    streak = int(view.get("streak") or 0)
+    chosen = streak_mood(day_state(view), _reviews_today(view), streak, frozen_run(view.get("heatmap")), goal)
+    return streak_pose(chosen, streak)
+
+
+def companion_pose(companion, aki):
+    """`companion`'s version of the Aki pose `aki`; None for no companion."""
     if companion == "none":
         return None
     if companion == "ankilope":
-        return ANKILOPE.get(chosen, "ankilope_welcome")
-    return "aki_" + chosen if chosen in MESSAGES else "aki_welcome"
+        return ANKILOPE.get(aki, "ankilope_study")
+    return aki
+
+
+def art(companion, chosen):
+    """The file name, without folder or extension, of `companion`'s art for a mood; None for no companion."""
+    return companion_pose(companion, "aki_" + chosen if chosen in MESSAGES else "aki_welcome")
 
 
 def message(companion, chosen):

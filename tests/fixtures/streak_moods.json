@@ -1,0 +1,588 @@
+{
+  "_about": "Aki's streak mood for today, and its pose. `today.state` is the day verdict: studied (today counts, or will once unsent reviews arrive), protected, short (reviews short of the minimum), pending (no reviews) or unknown. `frozen_days` counts the heatmap's frozen days in a row ending yesterday (frozen_run). A counted day or a reached goal is fire, by heat: 1-6 aki_streak, 7-29 aki_streak_hot, 30-99 aki_streak_blazing, 100+ aki_streak_legend. Poses are Aki's; other companions map them to their own art. The desktop add-on (addon/moods.py, tests/test_streak_moods.py) checks it; the Android app keeps a copy for AnkiquestMood.",
+  "moods": [
+    {
+      "name": "nothing is known about today",
+      "today": {
+        "state": "unknown",
+        "reviews": 4,
+        "streak": 10,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "unknown",
+        "pose": "aki_face"
+      }
+    },
+    {
+      "name": "no study and no streak",
+      "today": {
+        "state": "pending",
+        "reviews": 0,
+        "streak": 0,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "asleep",
+        "pose": "aki_sleeping"
+      }
+    },
+    {
+      "name": "no study with a one-day streak",
+      "today": {
+        "state": "pending",
+        "reviews": 0,
+        "streak": 1,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "sad",
+        "pose": "aki_at_risk"
+      }
+    },
+    {
+      "name": "no study with a 64-day streak",
+      "today": {
+        "state": "pending",
+        "reviews": 0,
+        "streak": 64,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "sad",
+        "pose": "aki_at_risk"
+      }
+    },
+    {
+      "name": "no study with a 365-day streak",
+      "today": {
+        "state": "pending",
+        "reviews": 0,
+        "streak": 365,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "sad",
+        "pose": "aki_at_risk"
+      }
+    },
+    {
+      "name": "some study without a streak",
+      "today": {
+        "state": "short",
+        "reviews": 3,
+        "streak": 0,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "hopeful",
+        "pose": "aki_welcome"
+      }
+    },
+    {
+      "name": "some study with a streak",
+      "today": {
+        "state": "short",
+        "reviews": 3,
+        "streak": 64,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "hopeful",
+        "pose": "aki_welcome"
+      }
+    },
+    {
+      "name": "an unknown streak burns as day one",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 0,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak"
+      }
+    },
+    {
+      "name": "a counted day on a 1-day streak",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 1,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak"
+      }
+    },
+    {
+      "name": "a counted day on a 6-day streak",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 6,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak"
+      }
+    },
+    {
+      "name": "a counted day on a 7-day streak",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 7,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_hot"
+      }
+    },
+    {
+      "name": "a counted day on a 29-day streak",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 29,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_hot"
+      }
+    },
+    {
+      "name": "a counted day on a 30-day streak",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 30,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_blazing"
+      }
+    },
+    {
+      "name": "a counted day on a 99-day streak",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 99,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_blazing"
+      }
+    },
+    {
+      "name": "a counted day on a 100-day streak",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 100,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_legend"
+      }
+    },
+    {
+      "name": "a counted day on a 365-day streak",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 365,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_legend"
+      }
+    },
+    {
+      "name": "a reached goal before the minimum",
+      "today": {
+        "state": "short",
+        "reviews": 5,
+        "streak": 64,
+        "frozen_days": 0,
+        "goal_reached": true
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_blazing"
+      }
+    },
+    {
+      "name": "a reached goal before any review counts",
+      "today": {
+        "state": "pending",
+        "reviews": 0,
+        "streak": 64,
+        "frozen_days": 0,
+        "goal_reached": true
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_blazing"
+      }
+    },
+    {
+      "name": "a reached goal while the day is unknown",
+      "today": {
+        "state": "unknown",
+        "reviews": 0,
+        "streak": 8,
+        "frozen_days": 0,
+        "goal_reached": true
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_hot"
+      }
+    },
+    {
+      "name": "a protected day alone",
+      "today": {
+        "state": "protected",
+        "reviews": 0,
+        "streak": 10,
+        "frozen_days": 0,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "frozen_1",
+        "pose": "aki_freeze_used"
+      }
+    },
+    {
+      "name": "one frozen day",
+      "today": {
+        "state": "protected",
+        "reviews": 0,
+        "streak": 10,
+        "frozen_days": 1,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "frozen_1",
+        "pose": "aki_freeze_used"
+      }
+    },
+    {
+      "name": "two frozen days",
+      "today": {
+        "state": "protected",
+        "reviews": 0,
+        "streak": 10,
+        "frozen_days": 2,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "frozen_2",
+        "pose": "aki_freeze"
+      }
+    },
+    {
+      "name": "three frozen days",
+      "today": {
+        "state": "protected",
+        "reviews": 0,
+        "streak": 10,
+        "frozen_days": 3,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "frozen_3",
+        "pose": "aki_freeze_used"
+      }
+    },
+    {
+      "name": "four frozen days count as three",
+      "today": {
+        "state": "protected",
+        "reviews": 0,
+        "streak": 10,
+        "frozen_days": 4,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "frozen_3",
+        "pose": "aki_freeze_used"
+      }
+    },
+    {
+      "name": "frozen days before a pending day",
+      "today": {
+        "state": "pending",
+        "reviews": 0,
+        "streak": 10,
+        "frozen_days": 2,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "frozen_2",
+        "pose": "aki_freeze"
+      }
+    },
+    {
+      "name": "frozen days come before having no streak",
+      "today": {
+        "state": "pending",
+        "reviews": 0,
+        "streak": 0,
+        "frozen_days": 1,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "frozen_1",
+        "pose": "aki_freeze_used"
+      }
+    },
+    {
+      "name": "study after a freeze is hopeful",
+      "today": {
+        "state": "protected",
+        "reviews": 2,
+        "streak": 10,
+        "frozen_days": 2,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "hopeful",
+        "pose": "aki_welcome"
+      }
+    },
+    {
+      "name": "a counted day after a freeze burns",
+      "today": {
+        "state": "studied",
+        "reviews": 20,
+        "streak": 11,
+        "frozen_days": 2,
+        "goal_reached": false
+      },
+      "expected": {
+        "mood": "fire",
+        "pose": "aki_streak_hot"
+      }
+    }
+  ],
+  "frozen_run": [
+    {
+      "name": "no heatmap",
+      "heatmap": null,
+      "expected": 0
+    },
+    {
+      "name": "no frozen days",
+      "heatmap": [
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": false,
+          "state": "none"
+        }
+      ],
+      "expected": 0
+    },
+    {
+      "name": "one frozen day",
+      "heatmap": [
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": false,
+          "state": "none"
+        }
+      ],
+      "expected": 1
+    },
+    {
+      "name": "two frozen days",
+      "heatmap": [
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": false,
+          "state": "none"
+        }
+      ],
+      "expected": 2
+    },
+    {
+      "name": "three frozen days",
+      "heatmap": [
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": false,
+          "state": "none"
+        }
+      ],
+      "expected": 3
+    },
+    {
+      "name": "the whole history",
+      "heatmap": [
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": false,
+          "state": "none"
+        }
+      ],
+      "expected": 4
+    },
+    {
+      "name": "a met day ends the run",
+      "heatmap": [
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": false,
+          "state": "none"
+        }
+      ],
+      "expected": 1
+    },
+    {
+      "name": "only the run ending yesterday counts",
+      "heatmap": [
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        },
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": false,
+          "state": "none"
+        }
+      ],
+      "expected": 0
+    },
+    {
+      "name": "today's own cell is not before today",
+      "heatmap": [
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": false,
+          "state": "met"
+        },
+        {
+          "frozen": true,
+          "state": "frozen"
+        }
+      ],
+      "expected": 0
+    }
+  ]
+}
