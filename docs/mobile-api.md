@@ -8,7 +8,7 @@ these additions preserve bearer authentication and the existing notification arr
 `GET /api/capabilities` needs no sign-in, also on a private site, and may be cached for five minutes (`Cache-Control: max-age=300`). It answers what this server supports, so a client can turn a feature on when the server has it instead of waiting for a deploy:
 
 ```json
-{ "version": 1, "features": ["activity", "app_sign_in", "cookie_session", "deck_share", "devices", "global_leaderboard_hide", "goal_backlog_days", "mute", "reactions", "review_offsets", "share_cards", "share_moments", "share_undo_send", "wins"], "public_url": "https://anki.example.test" }
+{ "version": 1, "features": ["activity", "app_sign_in", "cookie_session", "deck_share", "devices", "global_leaderboard_hide", "goal_backlog_days", "mute", "reactions", "review_offsets", "settings_sync", "share_cards", "share_moments", "share_undo_send", "wins"], "public_url": "https://anki.example.test" }
 ```
 
 `public_url` is the server's main address, without a trailing slash, and is present only when the server has `public_url` configured. A client that saved another address for the same server (an old address that proxies to it) may move to this one: it checks that its saved token works there with one signed-in request that needs it, such as `GET /api/devices/{user}` (the profile also answers without a token), and only then saves the new address and moves anything it keeps per address. Clients only move to an `https` address, keep the saved one when the check fails or they are offline, and ignore the field otherwise.
@@ -25,6 +25,7 @@ these additions preserve bearer authentication and the existing notification arr
 | `mute` | muting a person, `POST /api/social/{user}` `{ "action": "mute" \| "unmute", "user" }`; `muted` in the social overview (see [community.md](community.md)) |
 | `reactions` | cheering a friend's share, `POST /api/react/{user}` |
 | `review_offsets` | an uploaded review row may carry `offset_west_min`, the device's UTC offset when the review was made, and the server dates time-zone changes from it (see `docs/server.md`, "getting reviews in"). Older servers ignore the field, so sending it is harmless |
+| `settings_sync` | player preferences kept the same on every device, `/api/settings/{user}` (below) |
 | `share_cards` | server-drawn cards and public pages under `/w/` |
 | `share_moments` | `POST /api/share/{user}` `{ "moment", "to", "note" }` to chosen friends and groups, and `DELETE /api/share/{user}/{win}` (see [sharing.md](sharing.md)) |
 | `share_undo_send` | `DELETE /api/share/{user}/{win}?until={undo_until}` takes back the one send that answered that `undo_until` (see [sharing.md](sharing.md)). Older servers ignore `until` and take back every send of that win from the last day |
@@ -53,6 +54,21 @@ The Android app's account settings are native and use these endpoints with the d
 | `DELETE /api/accounts/{user}` `{"password"}`, or no body for an account without a password that signed in again | `204` |
 
 The `403` with `"reauth": true` described under capabilities applies to the first password and to deleting an account without a password. An account without a password and without a linked provider the server offers cannot sign in again, so only the server operator can give it a first password (`set-password`); apps say so instead of asking it to sign in again.
+
+## synced settings
+
+Player preferences that would otherwise live on one device are kept on the server so every device shows the same ones. The keys, their types, ranges and defaults, and each client's own name for them are defined once in [`tests/fixtures/synced_settings.json`](../tests/fixtures/synced_settings.json), with the merge cases both clients and the server test against. Choices the server already keeps elsewhere (companion, daily goal, reminders and quiet hours, streak protection, nudges, celebrations, the global leaderboard, deck alerts, sharing policies) are not repeated here.
+
+| request | answers |
+|---|---|
+| `GET /api/settings/{user}` | `settings`: each stored key with its `value` and `updated_at` (milliseconds since the epoch). Keys never stored are absent; clients keep their default |
+| `PUT /api/settings/{user}` `{"settings": {"<key>": {"value", "updated_at"}}}` | the merged `settings` as above |
+
+Both need the player's token. Send only the keys that changed, each with the time the player changed it. The server keeps, key by key, the value with the later `updated_at`; when the times are equal, the stored value stays. A time in the future counts as now. Keys this server does not know are stored and returned as they are, by the same rule, so newer clients sync through an older server. Every key name is lowercase snake_case starting with a letter, at most 64 characters; a value for an unknown key is at most 1024 bytes of JSON; a player keeps at most 64 keys (`key_rules` in the fixture). A request that breaks one of these, has a known key with a value of the wrong type or outside its range, or a negative time, is refused with `400` and stores nothing. A stored value a known key no longer accepts is left out of answers. Examples: [settings.json](api/examples/settings.json), [settings_save.json](api/examples/settings_save.json).
+
+Clients keep, for each key they have, the time of the last local change (`0` for a value chosen before sync existed). On sign-in, on start, on their regular refresh and after the player changes a synced setting, they read the server's settings and, per key, apply the server's value when its `updated_at` is at least the local time, or send the local value when it is newer or the server has none. A value chosen before sync existed is sent with `updated_at` 0 only when it differs from the default, so any real change elsewhere wins over it. Clients ignore keys they don't have and values they cannot use.
+
+**Sync settings** (default on) is a device setting, never synced. While it is off a client neither sends nor applies synced settings; it still records the time of each local change, so turning it on again merges by the same rule. Clients only sync with a server that lists `settings_sync`.
 
 ## browser identity
 

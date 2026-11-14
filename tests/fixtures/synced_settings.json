@@ -1,0 +1,734 @@
+{
+  "_about": "Player preferences that follow the account to every device through GET/PUT /api/settings/{user}. The server reads `keys` from this file (src/synced_settings.rs) and tests `server_merge`; both clients map their own preference names with `desktop` and `android` and test `client_merge`. A client applies only the keys it has; null means that client has no such setting. The server also keeps keys it does not know, so a newer client syncs through an older server. Keys are never removed or retyped.",
+  "switch": {
+    "title": "Sync settings",
+    "summary": "Keep AnkiQuest settings the same on all your devices. This switch applies only to this device.",
+    "default": true,
+    "desktop": "sync_settings",
+    "android": "ankiquestSyncSettings"
+  },
+  "keys": [
+    {
+      "key": "notify_rank",
+      "type": "bool",
+      "default": true,
+      "desktop": "notify_rank",
+      "android": "ankiquestNotifyRank"
+    },
+    {
+      "key": "streak_warning_hours",
+      "type": "int",
+      "min": 0,
+      "max": 12,
+      "default": 2,
+      "desktop": "streak_hours",
+      "android": "ankiquestStreakReminderHours"
+    },
+    {
+      "key": "session_summary",
+      "type": "bool",
+      "default": true,
+      "desktop": "session_summary",
+      "android": "ankiquestSessionSummary"
+    },
+    {
+      "key": "goal_celebrations",
+      "type": "bool",
+      "default": true,
+      "desktop": "goal_celebrations",
+      "android": null
+    },
+    {
+      "key": "deck_status",
+      "type": "bool",
+      "default": true,
+      "desktop": "deck_status",
+      "android": null
+    },
+    {
+      "key": "review_heatmap",
+      "type": "bool",
+      "default": true,
+      "desktop": "review_heatmap",
+      "android": null
+    },
+    {
+      "key": "mood_icon",
+      "type": "bool",
+      "default": true,
+      "desktop": null,
+      "android": "ankiquestMoodIcon"
+    },
+    {
+      "key": "open_today",
+      "type": "bool",
+      "default": false,
+      "desktop": null,
+      "android": "ankiquestOpenToday"
+    },
+    {
+      "key": "ask_to_share_decks",
+      "type": "bool",
+      "default": true,
+      "desktop": null,
+      "android": "ankiquestAskToShareDecks"
+    },
+    {
+      "key": "streak_cue",
+      "type": "bool",
+      "default": true,
+      "desktop": null,
+      "android": "ankiquestStreakCue"
+    }
+  ],
+  "server_merge": [
+    {
+      "name": "a first value is stored",
+      "now_ms": 1793183400000,
+      "stored": {},
+      "incoming": {
+        "notify_rank": {
+          "value": false,
+          "updated_at": 1793183000000
+        }
+      },
+      "expected": {
+        "notify_rank": {
+          "value": false,
+          "updated_at": 1793183000000
+        }
+      }
+    },
+    {
+      "name": "a newer change replaces the stored value",
+      "now_ms": 1793183400000,
+      "stored": {
+        "streak_warning_hours": {
+          "value": 2,
+          "updated_at": 1793180000000
+        }
+      },
+      "incoming": {
+        "streak_warning_hours": {
+          "value": 5,
+          "updated_at": 1793183000000
+        }
+      },
+      "expected": {
+        "streak_warning_hours": {
+          "value": 5,
+          "updated_at": 1793183000000
+        }
+      }
+    },
+    {
+      "name": "an older or equally old change is dropped",
+      "now_ms": 1793183400000,
+      "stored": {
+        "notify_rank": {
+          "value": true,
+          "updated_at": 1793183000000
+        },
+        "session_summary": {
+          "value": true,
+          "updated_at": 1793183000000
+        }
+      },
+      "incoming": {
+        "notify_rank": {
+          "value": false,
+          "updated_at": 1793182000000
+        },
+        "session_summary": {
+          "value": false,
+          "updated_at": 1793183000000
+        }
+      },
+      "expected": {
+        "notify_rank": {
+          "value": true,
+          "updated_at": 1793183000000
+        },
+        "session_summary": {
+          "value": true,
+          "updated_at": 1793183000000
+        }
+      }
+    },
+    {
+      "name": "keys are merged one by one, so two devices changing different settings keep both",
+      "now_ms": 1793183400000,
+      "stored": {
+        "notify_rank": {
+          "value": false,
+          "updated_at": 1793183000000
+        },
+        "deck_status": {
+          "value": true,
+          "updated_at": 1793170000000
+        }
+      },
+      "incoming": {
+        "notify_rank": {
+          "value": true,
+          "updated_at": 1793170000000
+        },
+        "deck_status": {
+          "value": false,
+          "updated_at": 1793182000000
+        }
+      },
+      "expected": {
+        "notify_rank": {
+          "value": false,
+          "updated_at": 1793183000000
+        },
+        "deck_status": {
+          "value": false,
+          "updated_at": 1793182000000
+        }
+      }
+    },
+    {
+      "name": "a change from the future counts as made now",
+      "now_ms": 1793183400000,
+      "stored": {},
+      "incoming": {
+        "open_today": {
+          "value": true,
+          "updated_at": 1893183400000
+        }
+      },
+      "expected": {
+        "open_today": {
+          "value": true,
+          "updated_at": 1793183400000
+        }
+      }
+    },
+    {
+      "name": "unknown keys are kept as they are, newest change winning",
+      "now_ms": 1793183400000,
+      "stored": {
+        "future_setting": {
+          "value": {
+            "old": true
+          },
+          "updated_at": 1793180000000
+        }
+      },
+      "incoming": {
+        "mood_icon": {
+          "value": false,
+          "updated_at": 1793183000000
+        },
+        "future_setting": {
+          "value": "anything",
+          "updated_at": 1793183000000
+        }
+      },
+      "expected": {
+        "mood_icon": {
+          "value": false,
+          "updated_at": 1793183000000
+        },
+        "future_setting": {
+          "value": "anything",
+          "updated_at": 1793183000000
+        }
+      }
+    },
+    {
+      "name": "a key name outside the rules refuses the whole change",
+      "now_ms": 1793183400000,
+      "stored": {},
+      "incoming": {
+        "notify_rank": {
+          "value": false,
+          "updated_at": 1793183000000
+        },
+        "Future-Setting": {
+          "value": true,
+          "updated_at": 1793183000000
+        }
+      },
+      "refused": true
+    },
+    {
+      "name": "an unknown value over the size limit refuses the whole change",
+      "now_ms": 1793183400000,
+      "stored": {},
+      "incoming": {
+        "future_setting": {
+          "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "updated_at": 1793183000000
+        }
+      },
+      "refused": true
+    },
+    {
+      "name": "more keys than a player may keep refuses the whole change",
+      "now_ms": 1793183400000,
+      "stored": {
+        "notify_rank": {
+          "value": true,
+          "updated_at": 1
+        }
+      },
+      "incoming": {
+        "key_00": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_01": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_02": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_03": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_04": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_05": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_06": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_07": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_08": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_09": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_10": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_11": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_12": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_13": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_14": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_15": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_16": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_17": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_18": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_19": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_20": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_21": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_22": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_23": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_24": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_25": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_26": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_27": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_28": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_29": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_30": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_31": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_32": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_33": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_34": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_35": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_36": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_37": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_38": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_39": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_40": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_41": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_42": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_43": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_44": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_45": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_46": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_47": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_48": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_49": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_50": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_51": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_52": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_53": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_54": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_55": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_56": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_57": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_58": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_59": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_60": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_61": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_62": {
+          "value": true,
+          "updated_at": 1
+        },
+        "key_63": {
+          "value": true,
+          "updated_at": 1
+        }
+      },
+      "refused": true
+    },
+    {
+      "name": "a value of the wrong type refuses the whole change",
+      "now_ms": 1793183400000,
+      "stored": {},
+      "incoming": {
+        "notify_rank": {
+          "value": false,
+          "updated_at": 1793183000000
+        },
+        "session_summary": {
+          "value": "no",
+          "updated_at": 1793183000000
+        }
+      },
+      "refused": true
+    },
+    {
+      "name": "a number outside its range refuses the whole change",
+      "now_ms": 1793183400000,
+      "stored": {},
+      "incoming": {
+        "streak_warning_hours": {
+          "value": 13,
+          "updated_at": 1793183000000
+        }
+      },
+      "refused": true
+    },
+    {
+      "name": "a fractional number refuses the whole change",
+      "now_ms": 1793183400000,
+      "stored": {},
+      "incoming": {
+        "streak_warning_hours": {
+          "value": 2.5,
+          "updated_at": 1793183000000
+        }
+      },
+      "refused": true
+    },
+    {
+      "name": "a negative time refuses the whole change",
+      "now_ms": 1793183400000,
+      "stored": {},
+      "incoming": {
+        "notify_rank": {
+          "value": false,
+          "updated_at": -1
+        }
+      },
+      "refused": true
+    }
+  ],
+  "client_merge": [
+    {
+      "name": "nothing anywhere: nothing to do",
+      "key": "notify_rank",
+      "local": {
+        "value": true,
+        "changed_at": 0
+      },
+      "remote": null,
+      "expected": {
+        "value": true,
+        "changed_at": 0,
+        "push": null
+      }
+    },
+    {
+      "name": "a choice made before sync existed is offered as the oldest possible change",
+      "key": "notify_rank",
+      "local": {
+        "value": false,
+        "changed_at": 0
+      },
+      "remote": null,
+      "expected": {
+        "value": false,
+        "changed_at": 0,
+        "push": {
+          "value": false,
+          "updated_at": 0
+        }
+      }
+    },
+    {
+      "name": "a local change the server lacks is sent",
+      "key": "streak_warning_hours",
+      "local": {
+        "value": 2,
+        "changed_at": 1793183000000
+      },
+      "remote": null,
+      "expected": {
+        "value": 2,
+        "changed_at": 1793183000000,
+        "push": {
+          "value": 2,
+          "updated_at": 1793183000000
+        }
+      }
+    },
+    {
+      "name": "a newer remote value is applied",
+      "key": "notify_rank",
+      "local": {
+        "value": true,
+        "changed_at": 1793180000000
+      },
+      "remote": {
+        "value": false,
+        "updated_at": 1793183000000
+      },
+      "expected": {
+        "value": false,
+        "changed_at": 1793183000000,
+        "push": null
+      }
+    },
+    {
+      "name": "a remote value replaces a choice made before sync existed",
+      "key": "streak_warning_hours",
+      "local": {
+        "value": 4,
+        "changed_at": 0
+      },
+      "remote": {
+        "value": 6,
+        "updated_at": 0
+      },
+      "expected": {
+        "value": 6,
+        "changed_at": 0,
+        "push": null
+      }
+    },
+    {
+      "name": "on a tie the server's value wins, as the server keeps it",
+      "key": "notify_rank",
+      "local": {
+        "value": true,
+        "changed_at": 1793183000000
+      },
+      "remote": {
+        "value": false,
+        "updated_at": 1793183000000
+      },
+      "expected": {
+        "value": false,
+        "changed_at": 1793183000000,
+        "push": null
+      }
+    },
+    {
+      "name": "a newer local change is sent",
+      "key": "notify_rank",
+      "local": {
+        "value": false,
+        "changed_at": 1793183000000
+      },
+      "remote": {
+        "value": true,
+        "updated_at": 1793180000000
+      },
+      "expected": {
+        "value": false,
+        "changed_at": 1793183000000,
+        "push": {
+          "value": false,
+          "updated_at": 1793183000000
+        }
+      }
+    },
+    {
+      "name": "a remote value the client cannot use is ignored and the local one stays",
+      "key": "streak_warning_hours",
+      "local": {
+        "value": 3,
+        "changed_at": 1793180000000
+      },
+      "remote": {
+        "value": 99,
+        "updated_at": 1793183000000
+      },
+      "expected": {
+        "value": 3,
+        "changed_at": 1793180000000,
+        "push": null
+      }
+    }
+  ],
+  "key_rules": {
+    "pattern": "^[a-z][a-z0-9_]{0,63}$",
+    "max_keys": 64,
+    "max_value_bytes": 1024
+  }
+}

@@ -45,6 +45,7 @@ mod social;
 mod store;
 mod study;
 mod subscriptions;
+mod synced_settings;
 #[cfg(test)]
 mod test_support;
 mod web_util;
@@ -264,6 +265,7 @@ fn router(app: Arc<App>) -> Router {
         .merge(boards::routes())
         .merge(cards::routes())
         .merge(capabilities::routes())
+        .merge(synced_settings::routes())
         .route("/api/health", get(worker::health))
         .route("/", get(index))
         .route("/records", get(index))

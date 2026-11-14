@@ -56,6 +56,9 @@ class Settings(unittest.TestCase):
     def button(self, dialog, text):
         return next(widget for widget in dialog.findChildren(QPushButton) if widget.text() == text)
 
+    def group(self, dialog, title):
+        return next(widget for widget in dialog.findChildren(QGroupBox) if widget.title() == title)
+
     def checkbox(self, dialog, text):
         return next(widget for widget in dialog.findChildren(QCheckBox) if widget.text() == text)
 
@@ -169,6 +172,23 @@ class Settings(unittest.TestCase):
         values = self.open(edit, on_account=lambda _url: account)
         self.assertEqual(account, {key: values[key] for key in account})
         self.assertEqual([], self.posts)
+
+    def test_sync_switch_is_on_by_default_and_saved_for_this_device(self):
+        def turn_off(dialog):
+            box = self.checkbox(dialog, "Sync settings")
+            self.assertTrue(box.isChecked())
+            self.assertIs(box.parent(), self.group(dialog, "App and privacy"))
+            box.setChecked(False)
+            self.button(dialog, "Save").click()
+
+        self.assertIs(False, self.open(turn_off)["sync_settings"])
+        self.config["sync_settings"] = False
+
+        def keep(dialog):
+            self.assertFalse(self.checkbox(dialog, "Sync settings").isChecked())
+            self.button(dialog, "Save").click()
+
+        self.assertIs(False, self.open(keep)["sync_settings"])
 
     def test_reminders_off_disables_local_warning_and_every_server_kind(self):
         self.reminders.update(gentle_daily=True, urgent_streak=True)

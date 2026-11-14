@@ -1210,6 +1210,28 @@ PORTUGUESE.update({
     "Tools → AnkiQuest → Decks offered to me": "Ferramentas → AnkiQuest → Baralhos que me ofereceram",
 })
 
+# Settings sync.
+
+SPANISH.update({
+    "Sync settings": "Sincronizar ajustes",
+    "Keep AnkiQuest settings the same on all your devices. This switch applies only to this device.": "Mantén los mismos ajustes de AnkiQuest en todos tus dispositivos. Este interruptor solo se aplica a este dispositivo.",
+})
+
+GERMAN.update({
+    "Sync settings": "Einstellungen synchronisieren",
+    "Keep AnkiQuest settings the same on all your devices. This switch applies only to this device.": "Hält die AnkiQuest-Einstellungen auf allen deinen Geräten gleich. Dieser Schalter gilt nur für dieses Gerät.",
+})
+
+FRENCH.update({
+    "Sync settings": "Synchroniser les paramètres",
+    "Keep AnkiQuest settings the same on all your devices. This switch applies only to this device.": "Garde les mêmes paramètres AnkiQuest sur tous tes appareils. Ce réglage ne s’applique qu’à cet appareil.",
+})
+
+PORTUGUESE.update({
+    "Sync settings": "Sincronizar definições",
+    "Keep AnkiQuest settings the same on all your devices. This switch applies only to this device.": "Mantém as mesmas definições do AnkiQuest em todos os teus dispositivos. Este interruptor aplica-se só a este dispositivo.",
+})
+
 # Today details, toolbar and native Progress.
 
 SPANISH.update({

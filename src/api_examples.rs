@@ -252,6 +252,23 @@ async fn examples_match_the_handlers() {
     )
     .await;
 
+    // Synced settings: one change sent a minute ago, with a key this server does not know,
+    // which it keeps for newer clients.
+    examples.push((
+        "settings_save",
+        f.call(
+            "PUT",
+            "/api/settings/hill",
+            Some("hill-secret"),
+            json!({"settings": {
+                "notify_rank": {"value": false, "updated_at": NOW_MS - 60_000},
+                "streak_warning_hours": {"value": 4, "updated_at": NOW_MS - 60_000},
+                "future_setting": {"value": true, "updated_at": NOW_MS - 60_000}
+            }}),
+        )
+        .await,
+    ));
+
     f.call(
         "PUT",
         "/api/goal/hill",
@@ -352,6 +369,7 @@ async fn examples_match_the_handlers() {
         ("wins", "GET", "/api/wins/hill", Value::Null),
         ("decks", "GET", "/api/decks/hill", Value::Null),
         ("companion", "GET", "/api/companion/hill", Value::Null),
+        ("settings", "GET", "/api/settings/hill", Value::Null),
         (
             "streak_freezes",
             "GET",

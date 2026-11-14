@@ -4,7 +4,7 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import Enum, IntEnum, auto
 from http import HTTPStatus
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -37,7 +37,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, deck_names, preferences, preview, review_offsets
+from . import copies_ui, deck_names, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -54,6 +54,8 @@ SIGN_IN_OFFER_KEY = "ankiquestSignInOffered"
 ADDON_DIR = Path(__file__).resolve().parent
 RESYNC_WINDOW_MS = 7 * 86_400_000
 POLL_MS = 5 * 60 * 1000
+# A poll syncs settings at most this often, so a sync just started elsewhere is not repeated.
+SETTINGS_POLL_GAP_S = 60
 RETRY_START_MS = 5_000
 RETRY_MAX_STEPS = 6
 WEBSITE_SHORTCUT = "Ctrl+Shift+K"
@@ -132,6 +134,13 @@ class _PollFailure:
     retry_at: float
 
 
+class _SettingsSync(Enum):
+    IDLE = auto()
+    RUNNING = auto()
+    # Something changed while a sync ran; sync again when it finishes.
+    AGAIN = auto()
+
+
 state = {
     # Idle, uploading, waiting for a retry, or holding the last failure.
     "upload": None,
@@ -146,6 +155,8 @@ state = {
     "companion_account": None,
     "inbox": [],
     "activity": None,
+    "settings_sync": _SettingsSync.IDLE,
+    "settings_synced_at": 0.0,
 }
 
 mw.addonManager.setWebExports(__name__, r"((aki|ankilope)_face|art/(aki|ankilope)_[a-z0-9_]+)\.png")
@@ -156,9 +167,69 @@ def config():
 
 
 def save_config(values):
+    """Writes `values`. Changed synced settings get this moment as their change time and go
+    to the server."""
     current = config()
+    changed = settings_sync.stamped(current, values, int(time.time() * 1000))
+    wanted = changed is not None or settings_sync.turned_on(current, values)
     current.update(values)
+    if changed is not None:
+        current[settings_sync.CHANGED_KEY] = changed
     mw.addonManager.writeConfig(__name__, current)
+    if wanted:
+        sync_settings()
+
+
+def sync_settings():
+    """Applies newer synced settings from the server and sends newer ones from here, unless
+    this computer's Sync settings switch is off."""
+    if state["settings_sync"] is not _SettingsSync.IDLE:
+        state["settings_sync"] = _SettingsSync.AGAIN
+        return
+    snapshot = config()
+    api = client()
+    if not settings_sync.enabled(snapshot) or not api.configured:
+        return
+    state["settings_sync"] = _SettingsSync.RUNNING
+    state["settings_synced_at"] = time.time()
+    account = (api.base, api.user, api.token)
+
+    def done(future):
+        again = state["settings_sync"] is _SettingsSync.AGAIN
+        state["settings_sync"] = _SettingsSync.IDLE
+        try:
+            result = future.result()
+        except Exception as e:
+            print("ankiquest settings sync:", e)
+            result = None
+        if result is not None:
+            _apply_synced(snapshot, account, *result)
+        if again:
+            sync_settings()
+
+    mw.taskman.run_in_background(lambda: settings_sync.run(api, snapshot), done)
+
+
+def _poll_settings():
+    """Syncs settings on the regular poll, so changes from other devices arrive without a
+    restart. A sync in flight or just started is left alone."""
+    if state["settings_sync"] is not _SettingsSync.IDLE:
+        return
+    if time.time() - state["settings_synced_at"] < SETTINGS_POLL_GAP_S:
+        return
+    sync_settings()
+
+
+def _apply_synced(snapshot, account, updates, changed):
+    # A reply for another account, or after the switch went off, changes nothing.
+    current = config()
+    api = client()
+    if (api.base, api.user, api.token) != account or not settings_sync.enabled(current):
+        return
+    settled, applied = settings_sync.settle(snapshot, current, updates, changed)
+    mw.addonManager.writeConfig(__name__, settled)
+    if applied:
+        redraw()
 
 
 def drop_config(keys):
@@ -460,6 +531,7 @@ def poll(quiet=False):
     """Keeps the deck list board, the inbox and the streak warning up to date."""
     # Queue offers first; the activity poll refreshes quiet hours before delivery.
     copies_ui.poll(quiet=True)
+    _poll_settings()
     api = client()
     account = [api.base, api.user, api.token]
     prefs = mw.pm.profile
@@ -711,6 +783,7 @@ def _save_account_config(values):
     copies_ui.clear_account()
     inbox_ui.clear_account()
     web.clear_account()
+    sync_settings()
 
 
 def _offer_sign_in():
@@ -892,6 +965,7 @@ def on_profile_open():
         state["timer"] = mw.progress.timer(POLL_MS, poll, repeat=True, parent=mw)
     refresh_shared_decks()
     _request_upload(Refresh(False, UploadMode.PROFILE_OPEN))
+    sync_settings()
     poll()
     maybe_check_updates()
     _offer_sign_in()

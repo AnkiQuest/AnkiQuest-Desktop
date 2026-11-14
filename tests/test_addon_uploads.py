@@ -236,6 +236,7 @@ class UploadBatches(HeldTasks):
         self.addon.refresh_shared_decks = Mock()
         self.addon.poll = Mock()
         self.addon.maybe_check_updates = Mock()
+        self.addon.sync_settings = Mock()
 
         for trigger in (self.addon.on_profile_open, self.addon.on_profile_open, self.addon.on_sync):
             trigger()
