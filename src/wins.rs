@@ -96,14 +96,15 @@ pub(crate) fn kind_of(key: &str) -> Option<&'static str> {
     })
 }
 
-/// The companion pose a card of `kind` shows. Ankilope only has `celebrate`.
+/// The companion pose a card of `kind` shows. Ankilope, and the cow drawn from its art, only
+/// have `celebrate`.
 pub(crate) fn art(kind: &str, companion: &str) -> &'static str {
     let pose = match kind {
         "streak" | "streak_secured" => "streak",
         "place" | "record" => "winner",
         _ => "celebrate",
     };
-    if companion == "ankilope" {
+    if crate::companions::art_owner(companion) == "ankilope" {
         "celebrate"
     } else {
         pose
@@ -809,6 +810,7 @@ pub(crate) mod tests {
             assert_eq!(kind_of(key), Some(kind), "{key}");
             assert_eq!(art(kind, "aki"), pose);
             assert_eq!(art(kind, "ankilope"), "celebrate");
+            assert_eq!(art(kind, "cow"), "celebrate");
             assert!(KINDS.iter().any(|(known, _)| *known == kind));
         }
         assert_eq!(kind_of("nudge:place:1"), None);

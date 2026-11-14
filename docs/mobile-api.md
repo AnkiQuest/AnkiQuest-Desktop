@@ -8,7 +8,7 @@ these additions preserve bearer authentication and the existing notification arr
 `GET /api/capabilities` needs no sign-in, also on a private site, and may be cached for five minutes (`Cache-Control: max-age=300`). It answers what this server supports, so a client can turn a feature on when the server has it instead of waiting for a deploy:
 
 ```json
-{ "version": 1, "features": ["activity", "app_sign_in", "cookie_session", "deck_share", "devices", "global_leaderboard_hide", "goal_backlog_days", "mute", "reactions", "review_offsets", "settings_sync", "share_cards", "share_moments", "share_undo_send", "wins"], "public_url": "https://anki.example.test" }
+{ "version": 1, "features": ["activity", "app_sign_in", "companion_unlocks", "cookie_session", "deck_share", "devices", "global_leaderboard_hide", "goal_backlog_days", "mute", "reactions", "review_offsets", "settings_sync", "share_cards", "share_moments", "share_undo_send", "wins"], "public_url": "https://anki.example.test" }
 ```
 
 `public_url` is the server's main address, without a trailing slash, and is present only when the server has `public_url` configured. A client that saved another address for the same server (an old address that proxies to it) may move to this one: it checks that its saved token works there with one signed-in request that needs it, such as `GET /api/devices/{user}` (the profile also answers without a token), and only then saves the new address and moves anything it keeps per address. Clients only move to an `https` address, keep the saved one when the check fails or they are offline, and ignore the field otherwise.
@@ -17,6 +17,7 @@ these additions preserve bearer authentication and the existing notification arr
 |---|---|
 | `activity` | the durable inbox, `/api/activity/{user}` (below) |
 | `app_sign_in` | `POST /api/sign-in/{user}` `{"action": "browser", "provider", "purpose": "link" \| "reauth"}` gives an address to link a provider or sign in with it again in a browser (see `docs/server.md`, sign in with Google, GitHub or GitLab) |
+| `companion_unlocks` | the hidden cow companion: `/api/unlocks/{user}` and the companion `cow` (below, study companion) |
 | `cookie_session` | the web dashboard works with the session cookie alone when the native app hands it only `{user}`, no token |
 | `deck_share` | telling chosen friends about a deck just finished, `POST /api/decks/{user}/share` (see [sharing.md](sharing.md)) |
 | `devices` | password change and the device list and sign-out (`/api/devices/{user}`, see `docs/server.md`) |
@@ -54,6 +55,21 @@ The Android app's account settings are native and use these endpoints with the d
 | `DELETE /api/accounts/{user}` `{"password"}`, or no body for an account without a password that signed in again | `204` |
 
 The `403` with `"reauth": true` described under capabilities applies to the first password and to deleting an account without a password. An account without a password and without a linked provider the server offers cannot sign in again, so only the server operator can give it a first password (`set-password`); apps say so instead of asking it to sign in again.
+
+## study companion
+
+`GET /api/companion/{user}` answers the owner's companion, `{"companion": "aki"}`; `POST` with the same shape saves it. The companions are `aki` (the default), `ankilope`, `cow` and `none`; anything else is `400`. Example: `companion.json`.
+
+The cow, shown as Bluma, is hidden. A player unlocks it in the companion picker by tapping Ankilope `taps` times in a row, each tap at most `max_gap_ms` after the one before, as [`tests/fixtures/companion_unlock.json`](../tests/fixtures/companion_unlock.json) says. Before that the picker offers only Aki, Ankilope and no companion, with no hint. After it, the client says "Bluma joined you!", shows Bluma in the picker and selects it.
+
+| request | answers |
+|---|---|
+| `GET /api/unlocks/{user}` | `{"unlocks": ["cow"]}`: everything the player has unlocked, `[]` for nothing |
+| `POST /api/unlocks/{user}` `{"unlock": "cow"}` | the same, after adding it. Unlocking again changes nothing |
+
+Both need the player's own token. An unknown unlock is `400`. Saving the companion `cow` before it is unlocked is `409`, so a client unlocks first. Unlocks are kept per account and are not settings: they follow the account whatever the **Sync settings** switch says. A client that is offline when the player unlocks the cow keeps the unlock and sends it when it next reaches a server that lists `companion_unlocks`. Unlocks are part of the data download and deleted with the account. Examples: `unlocks_save.json`, `unlocks.json`.
+
+The cow has no art yet (#88). Until it has, clients and the server draw it with Ankilope's art turned purple: CSS `hue-rotate(250deg)`, or the same colour matrix applied to the image.
 
 ## synced settings
 

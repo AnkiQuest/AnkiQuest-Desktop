@@ -279,13 +279,14 @@ Cards are drawn by the server:
   with the link can see the card.
 
 Card contents:
-- art for the kind, in the player's companion (Aki, Ankilope, or none). The poses are:
+- art for the kind, in the player's companion (Aki, Ankilope, Bluma the cow, or none). The poses are:
   - `celebrate`: daily_goal, level, achievement, quest, challenge
   - `streak`: streak, streak_secured
   - `winner`: place, record
   - `freeze`: unused for now
   - Ankilope has no `streak`, `winner` or `freeze` pose and uses `celebrate`. The new art from #88
     replaces these poses later.
+  - The cow has no art yet (#88): it is Ankilope's `celebrate`, turned purple (`cards::cow_art`).
 - title, body
 - up to three stat chips from `stats`: streak, level, and the day's cards and minutes, which say
   "today". A `conquered` card leaves the day's totals off, since it is about one card

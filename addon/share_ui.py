@@ -10,13 +10,12 @@ from aqt.qt import (
     QHBoxLayout,
     QImage,
     QLabel,
-    QPixmap,
     QPushButton,
     QVBoxLayout,
     Qt,
 )
 
-from . import share
+from . import companion_art, share
 from .inbox import error_text
 from .language import tr
 
@@ -90,11 +89,7 @@ def _head(win, companion):
     asset = share.face_path(companion)
     if asset:
         image = QLabel()
-        image.setPixmap(QPixmap(asset).scaled(
-            56, 56,
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        ))
+        image.setPixmap(companion_art.pixmap(asset, companion, 56))
         head.addWidget(image)
     words = QVBoxLayout()
     words.addWidget(_plain(win["title"], True))

@@ -17,6 +17,7 @@ const STEPS: &[Step] = &[
     global_leaderboard_choice,
     adopted_device_names,
     share_notes,
+    cow_companion,
 ];
 
 /// Brings the database up to the latest step, then turns foreign keys on for the connection.
@@ -196,6 +197,20 @@ fn adopted_device_names(conn: &Connection) -> Result<(), Error> {
 /// The sender's own words with a moment shared by hand; null for every other row.
 fn share_notes(conn: &Connection) -> Result<(), Error> {
     add_column(conn, "notifications", "note", "text")
+}
+
+/// The cow joined the companions. SQLite cannot change a check constraint in place, so the
+/// table is rebuilt with [`crate::companions::TABLE`] and its rows copied over.
+fn cow_companion(conn: &Connection) -> Result<(), Error> {
+    conn.execute_batch(&format!(
+        "alter table companion_preferences rename to companion_preferences_old;
+         {}
+         insert into companion_preferences (user, companion)
+             select user, companion from companion_preferences_old;
+         drop table companion_preferences_old;",
+        crate::companions::TABLE
+    ))?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -405,6 +420,38 @@ mod tests {
         conn.execute("delete from accounts where user = 'hill'", [])
             .unwrap();
         assert_eq!(count(conn, "account_tokens"), 0);
+        cleanup(store, dir);
+    }
+
+    #[test]
+    fn the_cow_can_be_stored_after_the_companion_table_is_rebuilt() {
+        let dir = temp_dir("cow-companion");
+        drop(Store::open(&dir).unwrap());
+        {
+            // A version 6 database, whose check knows only the first three companions.
+            let conn = Connection::open(dir.join("ankiquest.db")).unwrap();
+            conn.execute_batch(
+                "drop table companion_preferences;
+                 create table companion_preferences (
+                     user text primary key,
+                     companion text not null check (companion in ('aki', 'ankilope', 'none'))
+                 ) without rowid;
+                 insert into companion_preferences values ('hill', 'ankilope'), ('ana', 'none');
+                 pragma user_version = 6;",
+            )
+            .unwrap();
+            assert!(
+                conn.execute("insert into companion_preferences values ('bo', 'cow')", [])
+                    .is_err()
+            );
+        }
+        let store = Store::open(&dir).unwrap();
+        assert_eq!(version(&store.conn), STEPS.len());
+        assert_eq!(store.companion("hill").unwrap(), "ankilope");
+        assert_eq!(store.companion("ana").unwrap(), "none");
+        store.set_companion("bo", "cow").unwrap();
+        assert_eq!(store.companion("bo").unwrap(), "cow");
+        assert!(store.set_companion("bo", "horse").is_err());
         cleanup(store, dir);
     }
 

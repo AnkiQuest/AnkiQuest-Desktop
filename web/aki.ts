@@ -6,11 +6,15 @@ import {escape} from "./common";
   type Mood = "review" | "celebrate" | "streak" | "freeze";
   const poses = new Set<string>(["welcome", "review", "celebrate", "streak", "freeze", "winner", "face"]);
   const ankilopePoses: Record<string, string> = {welcome:"welcome", review:"study", celebrate:"celebrate", streak:"study", freeze:"study", winner:"celebrate", face:"face"};
-  const choices = new Set<string>(["aki", "ankilope", "none"]);
+  const choices = new Set<string>(["aki", "ankilope", "cow", "none"]);
+  // The hidden cow has no art yet (#88): it is Ankilope's, turned purple by this CSS filter,
+  // which site.css applies through --cow-filter.
+  const cowFilter = "hue-rotate(250deg)";
+  const artOwner = (companion: string) => companion === "cow" ? "ankilope" : companion;
   let choice = "aki", identity: string | null | undefined = null, identityEpoch = 0;
   // The face is only ever drawn small, as the brand icon, so it uses the small copy.
   const file = (pose: string) => pose === "face" ? "face-192" : pose;
-  const source = (pose: string) => choice === "ankilope" ? `/ankilope/${file(ankilopePoses[pose] || "welcome")}.png` : `/aki/${file(pose)}.png`;
+  const source = (pose: string) => artOwner(choice) === "ankilope" ? `/ankilope/${file(ankilopePoses[pose] || "welcome")}.png` : `/aki/${file(pose)}.png`;
   const image = (pose = "welcome", extra = "") => {
     pose = poses.has(pose) ? pose : "welcome";
     return `<img class="aki-art ${escape(extra)}" data-companion-pose="${pose}" src="${source(pose)}" width="128" height="128" alt="" aria-hidden="true" decoding="async" loading="lazy">`;
@@ -64,11 +68,12 @@ import {escape} from "./common";
       if (epoch === identityEpoch) setChoice(saved.companion);
     } catch (_) { /* Keep the last visible choice while offline. */ }
   }
-  window.AnkiQuestAki = {image, profile, decorate, setChoice, choice:()=>choice};
+  window.AnkiQuestAki = {image, profile, decorate, setChoice, choice:()=>choice, artOwner:()=>artOwner(choice), filter:()=>choice === "cow" ? cowFilter : "none", cowName:"Bluma"};
   addEventListener("ankiquest:identity", event => loadChoice(event.detail?.user));
   addEventListener("ankiquest:locked", () => loadChoice(null));
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && identity) loadChoice(identity); });
   document.documentElement.dataset.companion = choice;
+  document.documentElement.style?.setProperty("--cow-filter", cowFilter);
   document.addEventListener("DOMContentLoaded", () => {
     decorate();
     if (!document.body || typeof MutationObserver !== "function") return;

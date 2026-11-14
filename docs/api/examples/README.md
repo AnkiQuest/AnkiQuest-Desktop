@@ -58,6 +58,8 @@ Random values are replaced, numbered in order of appearance: device tokens by `e
 | `sign_in_browser.json` | `POST /api/sign-in/{user}` `{"action": "browser", "provider", "purpose": "reauth"}` |
 | `reminders.json` | `GET /api/community/reminders/{user}`: the defaults, every reminder off |
 | `reminders_save.json` | `POST /api/community/reminders/{user}` with every setting |
+| `unlocks_save.json` | `POST /api/unlocks/{user}` `{"unlock": "cow"}` |
+| `unlocks.json` | `GET /api/unlocks/{user}`, after unlocking the cow |
 | `community.json` | `GET /api/community?year=2026&month=10`: the competition calendar, weeks and seasons |
 | `conquest.json` | `GET /api/conquests/{user}/{at}`, the owner's view of a labelled conquered card |
 | `conquest_tell.json` | `POST /api/conquests/{user}/{at}/tell` |

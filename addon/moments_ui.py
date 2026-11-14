@@ -2,11 +2,10 @@
 
 from copy import deepcopy
 from enum import Enum, auto
-from pathlib import Path
 
-from aqt.qt import QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QPixmap, QPushButton, QScrollArea, QTimer, QVBoxLayout, QWidget, Qt
+from aqt.qt import QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QScrollArea, QTimer, QVBoxLayout, QWidget, Qt
 
-from . import conquests_ui, inbox, moments, share_ui, today
+from . import companion_art, conquests_ui, inbox, moments, share_ui, today
 from .language import tr
 
 _RESTING = ("overview", "deckBrowser", "congrats")
@@ -296,12 +295,11 @@ class _Card:
         self._body.setText(item["body"])
         self._date.setText(inbox.when(item["at"] // 1000))
         self._status.clear()
-        pose = moments._pose(item, self._addon.current_companion())
+        companion = self._addon.current_companion()
+        pose = moments._pose(item, companion)
         self._art.setVisible(pose is not None)
         if pose is not None:
-            self._art.setPixmap(QPixmap(str(Path(__file__).with_name("art") / (pose + ".png"))).scaled(
-                112, 112, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation,
-            ))
+            self._art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), companion, 112))
         self._session_fields()
         while self._actions.count():
             self._actions.takeAt(0).widget().deleteLater()

@@ -155,14 +155,14 @@ class _Delivery:
             return True
         if not addon.config().get("system_notifications", False):
             return False
-        from aqt.qt import QIcon, QSystemTrayIcon
-        from .share import face_path
+        from aqt.qt import QSystemTrayIcon
+        from . import companion_art
 
         if not QSystemTrayIcon.isSystemTrayAvailable() or not QSystemTrayIcon.supportsMessages():
             return False
         self._destination = addon.copies_ui.open_offers if entry.get("kind") == _COPY_KIND else addon.open_inbox
         if self._tray is None:
-            self._tray = QSystemTrayIcon(QIcon(face_path(addon.state["companion"])), mw)
+            self._tray = QSystemTrayIcon(companion_art.icon(addon.state["companion"]), mw)
             owner, profile = self._owner, self._profile
 
             def clicked():

@@ -674,6 +674,22 @@ async fn examples_match_the_handlers() {
         )
         .await,
     ));
+    // Hill finds the cow in the companion picker; the list then holds it.
+    examples.push((
+        "unlocks_save",
+        f.call(
+            "POST",
+            "/api/unlocks/hill",
+            Some("hill-secret"),
+            json!({"unlock": "cow"}),
+        )
+        .await,
+    ));
+    examples.push((
+        "unlocks",
+        f.call("GET", "/api/unlocks/hill", Some("hill-secret"), Value::Null)
+            .await,
+    ));
     examples.push((
         "community",
         f.call(

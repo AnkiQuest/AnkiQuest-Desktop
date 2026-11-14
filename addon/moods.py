@@ -52,6 +52,16 @@ class Goal(Enum):
     REACHED = auto()
 
 
+# The companions in the picker's order, and the names it shows; "none" is named by the picker.
+AKI, ANKILOPE_ID, COW, NONE = "aki", "ankilope", "cow", "none"
+NAMES = {AKI: "Aki", ANKILOPE_ID: "Ankilope", COW: "Bluma"}
+
+# The Aki poses each picker card previews, in the phone's order: face, fire, sad.
+PREVIEW_POSES = ("aki_face", "aki_streak", "aki_at_risk")
+
+# How far the cow's art is hue-rotated, as CSS hue-rotate() turns it; see `art_owner`.
+COW_HUE_DEGREES = 250
+
 # Ankilope's version of each Aki pose, as the phone's AnkiquestCompanion maps them.
 ANKILOPE = {
     "aki_face": "ankilope_face",
@@ -148,13 +158,41 @@ def today_pose(view, goal):
     return streak_pose(chosen, streak)
 
 
+def art_owner(companion):
+    """Whose art draws `companion`. The cow has none yet (#88): it is Ankilope's, turned by
+    `hue_degrees`."""
+    return ANKILOPE_ID if companion == COW else companion
+
+
+def hue_degrees(companion):
+    """How far `companion`'s art is hue-rotated: only the cow's, until it has its own (#88)."""
+    return COW_HUE_DEGREES if companion == COW else 0
+
+
+def css_filter(companion):
+    """The CSS filter for `companion`'s art in web views; None when it needs none."""
+    degrees = hue_degrees(companion)
+    return "hue-rotate(%ddeg)" % degrees if degrees else None
+
+
 def companion_pose(companion, aki):
     """`companion`'s version of the Aki pose `aki`; None for no companion."""
-    if companion == "none":
+    if companion == NONE:
         return None
-    if companion == "ankilope":
+    if art_owner(companion) == ANKILOPE_ID:
         return ANKILOPE.get(aki, "ankilope_study")
     return aki
+
+
+def preview(companion):
+    """The poses `companion`'s picker card shows, by `PREVIEW_POSES`, each once; none for no
+    companion. Ankilope has fewer poses, so its card shows fewer."""
+    found = []
+    for aki in PREVIEW_POSES:
+        pose = companion_pose(companion, aki)
+        if pose is not None and pose not in found:
+            found.append(pose)
+    return found
 
 
 def art(companion, chosen):
@@ -164,6 +202,6 @@ def art(companion, chosen):
 
 def message(companion, chosen):
     """The mood line; the welcome names Aki, so other companions get a plainer one."""
-    if chosen == WELCOME and companion != "aki":
+    if chosen == WELCOME and companion != AKI:
         return COMPANION_WELCOME
     return MESSAGES.get(chosen, MESSAGES[WELCOME])

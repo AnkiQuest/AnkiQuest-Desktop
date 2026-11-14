@@ -41,7 +41,7 @@ class StreakMoods(unittest.TestCase):
         source = (ADDON / "__init__.py").read_text("utf-8")
         pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
         poses = {case["expected"]["pose"] for case in self.fixture["moods"]} | {"aki_streak_milestone"}
-        for companion in ("aki", "ankilope"):
+        for companion in ("aki", "ankilope", "cow"):
             for pose in poses:
                 name = "art/%s.png" % moods.companion_pose(companion, pose)
                 self.assertTrue((ADDON / name).is_file(), name)

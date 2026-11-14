@@ -26,12 +26,12 @@ class SettingsMenu(unittest.TestCase):
     write_config = addon_fixture.RefreshTests.write_config
     run_task = addon_fixture.RefreshTests.run_task
 
-    def test_one_tools_submenu_holds_all_eight_destinations(self):
+    def test_one_tools_submenu_holds_all_nine_destinations(self):
         menu = self.addon._tools
         self.mw.form.menuTools.addAction.assert_called_once_with(menu.menuAction())
-        self.assertEqual(8, menu.addAction.call_count)
+        self.assertEqual(9, menu.addAction.call_count)
         self.assertEqual(
-            ["Today", "Inbox", "Friends", "Website", "Settings", "Check for updates"],
+            ["Today", "Inbox", "Friends", "Study companion", "Website", "Settings", "Check for updates"],
             [call.args[0] for call in self.addon.QAction.call_args_list],
         )
         self.assertEqual(
