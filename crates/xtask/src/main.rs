@@ -2,6 +2,7 @@
 //!
 //! - `android-contract --android-resources <dir> [--server-examples <dir>]`
 //! - `export-android-art [--check] <android-checkout>`
+//! - `export-addon-art [--check | --replace]`
 //! - `banner [--social] [--out <file>]`
 
 mod art;
@@ -12,7 +13,7 @@ use std::process::ExitCode;
 
 const USAGE: &str = "usage: xtask android-contract --android-resources <dir> \
 [--server-examples <dir>]\n       xtask export-android-art [--check] <android-checkout>\n       \
-xtask banner [--social] [--out <file>]";
+xtask export-addon-art [--check | --replace]\n       xtask banner [--social] [--out <file>]";
 
 fn main() -> ExitCode {
     let mut args = env::args().skip(1);
@@ -23,6 +24,7 @@ fn main() -> ExitCode {
     match command.as_deref() {
         Some("android-contract") => contract::run(&rest),
         Some("export-android-art") => art::run(&rest),
+        Some("export-addon-art") => art::addon(&rest),
         Some("banner") => art::banner(&rest),
         _ => usage(),
     }

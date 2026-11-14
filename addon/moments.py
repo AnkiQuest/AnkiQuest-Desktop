@@ -8,7 +8,7 @@ _PRIORITY = {
     "record": 60, "leech": 55, "conquered": 50, "goal": 40, "quest": 30, "session": 0,
 }
 _POSES = {
-    "secured": moods.STREAK, "streak": moods.STREAK, "level": moods.WINNER,
+    "level": moods.WINNER,
     "rank": moods.WINNER, "achievement": moods.WINNER, "quest": moods.WINNER,
     "record": moods.CELEBRATE, "conquered": moods.CELEBRATE, "goal": moods.CELEBRATE,
 }
@@ -93,6 +93,11 @@ def _rank(change, place, week, at):
 
 
 def _pose(item, companion):
+    # A milestone has its own pose; a counted day burns as hot as its streak, as on the phone.
+    if item["topic"] == "streak":
+        return moods.companion_pose(companion, "aki_streak_milestone")
+    if item["topic"] == "secured":
+        return moods.companion_pose(companion, moods.streak_pose(moods.FIRE, item.get("streak") or 1))
     return moods.art(companion, _POSES.get(item["topic"], moods.CELEBRATE))
 
 

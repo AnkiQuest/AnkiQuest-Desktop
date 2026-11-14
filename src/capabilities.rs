@@ -27,6 +27,7 @@ pub(crate) const FEATURES: &[&str] = &[
     "settings_sync",
     "share_cards",
     "share_moments",
+    "share_undo_send",
     "wins",
 ];
 

@@ -24,9 +24,6 @@ MESSAGE = "ankiquest:heatmap:"
 CARDS = MESSAGE + "cards:"
 EXPANDED = MESSAGE + "expanded:"
 
-# The companion's picture in the heading, when one is chosen.
-ART = {"aki": "aki_streak", "ankilope": "ankilope_study"}
-
 # Colours from AnkiQuest-Android's review_heatmap.xml, light then night.
 STYLE = """<style>
 #aq-heatmap{--hm-empty:#e7ece9;--hm-l1:#bae1c4;--hm-l2:#77c58f;--hm-l3:#369d5b;--hm-l4:#136c37;
@@ -304,13 +301,10 @@ def _collection_heatmap(col):
 
 
 def _art(module):
-    api = module.client()
-    companion = module.current_companion()
-    if not api.configured or companion not in ART:
+    """The companion's pose for today's streak in the heading, as on the Today panel."""
+    if not module.client().configured:
         return None
-    from aqt import mw
-
-    return "/_addons/%s/art/%s.png" % (mw.addonManager.addonFromModule(module.__name__), ART[companion])
+    return module.home.pose_url(module.current_companion())
 
 
 def on_deck_browser(deck_browser, content):

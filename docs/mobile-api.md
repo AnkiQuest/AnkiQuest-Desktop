@@ -8,7 +8,7 @@ these additions preserve bearer authentication and the existing notification arr
 `GET /api/capabilities` needs no sign-in, also on a private site, and may be cached for five minutes (`Cache-Control: max-age=300`). It answers what this server supports, so a client can turn a feature on when the server has it instead of waiting for a deploy:
 
 ```json
-{ "version": 1, "features": ["activity", "app_sign_in", "cookie_session", "deck_share", "devices", "global_leaderboard_hide", "goal_backlog_days", "mute", "reactions", "review_offsets", "settings_sync", "share_cards", "share_moments", "wins"], "public_url": "https://anki.example.test" }
+{ "version": 1, "features": ["activity", "app_sign_in", "cookie_session", "deck_share", "devices", "global_leaderboard_hide", "goal_backlog_days", "mute", "reactions", "review_offsets", "settings_sync", "share_cards", "share_moments", "share_undo_send", "wins"], "public_url": "https://anki.example.test" }
 ```
 
 `public_url` is the server's main address, without a trailing slash, and is present only when the server has `public_url` configured. A client that saved another address for the same server (an old address that proxies to it) may move to this one: it checks that its saved token works there with one signed-in request that needs it, such as `GET /api/devices/{user}` (the profile also answers without a token), and only then saves the new address and moves anything it keeps per address. Clients only move to an `https` address, keep the saved one when the check fails or they are offline, and ignore the field otherwise.
@@ -28,6 +28,7 @@ these additions preserve bearer authentication and the existing notification arr
 | `settings_sync` | player preferences kept the same on every device, `/api/settings/{user}` (below) |
 | `share_cards` | server-drawn cards and public pages under `/w/` |
 | `share_moments` | `POST /api/share/{user}` `{ "moment", "to", "note" }` to chosen friends and groups, and `DELETE /api/share/{user}/{win}` (see [sharing.md](sharing.md)) |
+| `share_undo_send` | `DELETE /api/share/{user}/{win}?until={undo_until}` takes back the one send that answered that `undo_until` (see [sharing.md](sharing.md)). Older servers ignore `until` and take back every send of that win from the last day |
 | `wins` | wins, sharing policies and `{ "win", "to" }` shares (see [sharing.md](sharing.md)) |
 
 An account without a password (signed up with a provider) has to sign in with that provider again before it can be deleted or set its first password: those requests answer `403` with `"reauth": true` until it has, and a device token never counts. On a server with `app_sign_in`, apps ask for a browser address with `{"action": "browser", "purpose": "reauth"}`, open it in the system browser, and the sign-in then counts for ten minutes for their token. Older servers offer only **Sign in again** in Settings on the website (`/auth/oauth/{provider}?reauth=1`), which counts for that browser's session. See `docs/server.md`.
@@ -174,7 +175,7 @@ a refusal has `{ "error" }` to show: `400` for a group name, `403` for an owner 
 
 `POST /api/share/{user}` passes a win on to everyone in the player's circle. The body is either `{ "notification": 42 }`, one of the player's own `celebration`, `challenge_complete` or `reminder_weekly_recap` rows, or `{ "place": 2 }`, the player's current place (1 to 3) on this week's board. It answers `{ "recipients": n }`, the friends who got it now.
 
-the same endpoint sends any moment that is a win to chosen friends and groups with a note: `{ "moment": { "win" | "key" | "notification" | "conquest": … }, "to": "circle" | { "friends": [...], "groups": [...] }, "note"? }` answers `{ "recipients", "link", "win", "undo_until" }`, and `DELETE /api/share/{user}/{win}` takes it back for a day (see [sharing.md](sharing.md)). examples: `share_moment.json`, `share_moment_group.json` and `share_undo.json`.
+the same endpoint sends any moment that is a win to chosen friends and groups with a note: `{ "moment": { "win" | "key" | "notification" | "conquest": … }, "to": "circle" | { "friends": [...], "groups": [...] }, "note"? }` answers `{ "recipients", "link", "win", "undo_until" }`, and `DELETE /api/share/{user}/{win}` takes it back for a day; with `?until={undo_until}` only that send (see [sharing.md](sharing.md)). examples: `share_moment.json`, `share_moment_group.json`, `share_undo.json` and `share_undo_send.json`.
 
 friends receive a `share` row from the player, with the title and body quoted in the player's own words ("I reached level 4 with 900 XP." rather than "You reached…") and the same `topic` (`place:N` for a place), so it shows the same art and can be replied to.
 

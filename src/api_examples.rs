@@ -934,6 +934,28 @@ async fn examples_match_the_handlers() {
         )
         .await,
     ));
+
+    // Undo after a second send, a minute later, takes back that send alone: Friend's row
+    // goes, Ana's stays.
+    crate::app::fix_now_ms(Some(NOW_MS + 60_000));
+    let to_friend = f
+        .call(
+            "POST",
+            "/api/share/hill",
+            Some("hill-secret"),
+            json!({"moment": {"key": "level:3"}, "to": {"friends": ["friend"]}}),
+        )
+        .await;
+    let undo_send = format!(
+        "/api/share/hill/{}?until={}",
+        to_friend["win"], to_friend["undo_until"]
+    );
+    examples.push((
+        "share_undo_send",
+        f.call("DELETE", &undo_send, Some("hill-secret"), Value::Null)
+            .await,
+    ));
+    crate::app::fix_now_ms(Some(NOW_MS));
     f.remember_links();
 
     let update = std::env::var_os("UPDATE_API_EXAMPLES").is_some_and(|v| v == "1");

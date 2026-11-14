@@ -21,6 +21,8 @@ branding works offline.
 
 the Android app ships WebP copies of the Aki and Ankilope art in `drawable-nodpi`. after changing a PNG in `static/`, run `cargo run -p ankiquest-xtask -- export-android-art <android-checkout>` to rewrite them, and `--check` to confirm every drawable exists at its size.
 
+the desktop add-on ships 256 px palette PNGs of the poses it shows in `addon/art`. `cargo run -p ankiquest-xtask -- export-addon-art` writes the missing ones, `--replace` rewrites them all, and `cargo test -p ankiquest-xtask` fails while one is missing. Which pose shows for today's streak is one rule for both clients, pinned by `tests/fixtures/streak_moods.json`.
+
 the duo also leads the README banner (`docs/graphics/banner_readme.png`) and the repository's social preview (`docs/graphics/social_preview.png`). `cargo run -p ankiquest-xtask -- banner` draws the banner from the duo and `docs/screenshots`, `banner --social` the preview; `cargo test -p ankiquest-xtask` fails while either is stale. Android's README banner shows the duo too, and its social preview comes from `banner --social --out <android-checkout>/docs/graphics/logos/social_preview.png`.
 
 The [mascot source plan](mascot-source.md) moves `aki-prompts.json` with the

@@ -30,7 +30,7 @@ class DayState(unittest.TestCase):
         self.assertIn("8 day streak", html)
         self.assertIn("Syncing", html)
         self.assertNotIn("streak at risk today", html)
-        self.assertIn("aki_celebrate.png", html)
+        self.assertIn("aki_streak_hot.png", html, "today counts on an 8-day streak")
         self.assertEqual(7, self.addon.state["profile"]["streak"], "rendering does not rewrite the server cache")
         self.assertEqual(1, self.addon.state["profile"]["today"]["reviews"])
         self.addon.tooltip.reset_mock()
