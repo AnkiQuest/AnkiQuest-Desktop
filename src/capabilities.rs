@@ -26,6 +26,7 @@ pub(crate) const FEATURES: &[&str] = &[
     "review_offsets",
     "share_cards",
     "share_moments",
+    "share_undo_send",
     "wins",
 ];
 

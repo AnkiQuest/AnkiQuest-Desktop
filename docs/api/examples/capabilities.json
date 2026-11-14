@@ -12,6 +12,7 @@
     "review_offsets",
     "share_cards",
     "share_moments",
+    "share_undo_send",
     "wins"
   ],
   "public_url": "https://anki.example.test",

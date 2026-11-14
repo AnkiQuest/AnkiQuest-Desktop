@@ -218,6 +218,12 @@ sent it again; other rows stay, and a push already delivered stays on their phon
 `auto` policy are not taken back. It answers `{ "retracted": n }`, `0` when there was nothing to
 take back, or `409` when every row was sent more than a day ago. Someone else's win is `404`.
 
+`DELETE /api/share/{user}/{win}?until={undo_until}`, with the `undo_until` a send answered, takes
+back that send alone under the same rules: sending a win to Cerro and then to Ana, Undo on the
+second send leaves Cerro's row. It answers `{ "retracted": n }`, or `409` once that `undo_until`
+has passed; a `until` that is not a number is `400`. Servers with `share_undo_send` in
+`/api/capabilities` know `until`; older ones ignore it and take back every send from the last day.
+
 Telling friends about a conquest (`/api/conquests/{user}/{at}/tell`) and a finished deck
 (`/api/decks/{user}/share`) keep working as described here. Clients that see `share_moments` in
 `/api/capabilities` use this body instead for conquests.

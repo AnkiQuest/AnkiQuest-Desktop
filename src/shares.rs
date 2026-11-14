@@ -11,7 +11,7 @@ use crate::notifications::{Outgoing, insert_notification};
 use crate::store::{Error, Store, clock_in};
 use crate::wins::{self, Win as Moment};
 use crate::{boards::standings, web_util::base_url, web_util::store_error};
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::{delete, post};
 use axum::{Json, Router};
@@ -102,9 +102,26 @@ struct MomentShared {
     link: wins::Link,
     /// The win that was sent, to take it back with `DELETE /api/share/{user}/{win}`.
     win: i64,
-    /// Until when (ms) it can be taken back, when it reached anyone.
+    /// Until when (ms) it can be taken back, when it reached anyone; as `until`, it names this
+    /// send to take back alone.
     #[serde(skip_serializing_if = "Option::is_none")]
     undo_until: Option<i64>,
+}
+
+/// Which hand-sent rows of a win taking it back reaches.
+#[derive(Clone, Copy)]
+enum Sends {
+    /// Every send within [`UNDO_MS`].
+    All,
+    /// The one send at this time (ms).
+    At(i64),
+}
+
+/// `DELETE /api/share/{user}/{win}?until=…`: the `undo_until` a send answered, to take back
+/// that send alone.
+#[derive(Deserialize)]
+struct UndoQuery {
+    until: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -729,12 +746,20 @@ fn sent_rows(conn: &Connection, win: i64) -> rusqlite::Result<Vec<SentRow>> {
     .collect()
 }
 
-/// Takes back win `win` from friends it was sent to by hand within [`UNDO_MS`], who have not
-/// read, cheered or answered it: their row goes, and the win can reach them again. Answers
-/// how many rows went; `None` when it was sent by hand only longer ago than that.
-fn retract(conn: &mut Connection, win: i64, now: i64) -> Result<Option<usize>, Error> {
+/// Takes back win `win` from friends it was sent to by hand in `sends` within [`UNDO_MS`],
+/// who have not read, cheered or answered it: their row goes, and the win can reach them
+/// again. Answers how many rows went; `None` when those sends are all older than that.
+fn retract(
+    conn: &mut Connection,
+    win: i64,
+    sends: Sends,
+    now: i64,
+) -> Result<Option<usize>, Error> {
     let tx = conn.transaction()?;
-    let rows = sent_rows(&tx, win)?;
+    let mut rows = sent_rows(&tx, win)?;
+    if let Sends::At(at) = sends {
+        rows.retain(|row| row.sent_at == at);
+    }
     let recent: Vec<&SentRow> = rows.iter().filter(|r| now < r.sent_at + UNDO_MS).collect();
     if recent.is_empty() && !rows.is_empty() {
         return Ok(None);
@@ -761,16 +786,22 @@ fn retract(conn: &mut Connection, win: i64, now: i64) -> Result<Option<usize>, E
     Ok(Some(retracted))
 }
 
-/// Takes a moment sent by hand back; see [`retract`]. Too late is `409`.
+/// Takes a moment sent by hand back: one send with `until`, else every recent one; see
+/// [`retract`]. Too late is `409`.
 async fn unshare(
     State(app): State<Arc<App>>,
     Path((user, win)): Path<(String, i64)>,
+    Query(query): Query<UndoQuery>,
     headers: HeaderMap,
 ) -> Result<Json<Retracted>, StatusCode> {
     require_owner(&app, &user, &headers)?;
+    let sends = match query.until {
+        None => Sends::All,
+        Some(until) => Sends::At(until.checked_sub(UNDO_MS).ok_or(StatusCode::BAD_REQUEST)?),
+    };
     let mut store = app.store.lock().unwrap();
     wins::win(&store.conn, &user, win).ok_or(StatusCode::NOT_FOUND)?;
-    let retracted = retract(&mut store.conn, win, now_ms())
+    let retracted = retract(&mut store.conn, win, sends, now_ms())
         .map_err(store_error)?
         .ok_or(StatusCode::CONFLICT)?;
     Ok(Json(Retracted { retracted }))
@@ -1644,7 +1675,202 @@ mod tests {
             3_000,
         )
         .unwrap();
-        assert_eq!(retract(&mut store.conn, id, 4_000).unwrap(), Some(0));
+        assert_eq!(
+            retract(&mut store.conn, id, Sends::All, 4_000).unwrap(),
+            Some(0)
+        );
         assert_eq!(store.notifications("cerro", 4_000).unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn a_moment_is_taken_back_one_send_at_a_time() {
+        let (app, path) = moments_app();
+        let id = moment(&app.store.lock().unwrap(), "hill", "level:7");
+        let send_to = |friend: &str| json!({"moment": {"win": id}, "to": {"friends": [friend]}});
+        let undo = |until: i64| {
+            let path = format!("/api/share/hill/{id}?until={until}");
+            let app = app.clone();
+            async move { call(&app, "DELETE", &path, "hill-secret", Value::Null).await }
+        };
+
+        // Two sends of one win; Cerro's an hour before Friend's.
+        let (_, first) = share_as_hill(&app, send_to("cerro")).await;
+        let (_, second) = share_as_hill(&app, send_to("friend")).await;
+        let hour = 60 * 60 * 1000;
+        sql(
+            &app,
+            &format!(
+                "update notifications set created_at = created_at - {hour} where recipient = 'cerro'"
+            ),
+        );
+        let first = first["undo_until"].as_i64().unwrap() - hour;
+        let second = second["undo_until"].as_i64().unwrap();
+
+        // Undoing the second send leaves the first.
+        assert_eq!(
+            undo(second).await,
+            (StatusCode::OK, json!({"retracted": 1}))
+        );
+        assert!(inbox(&app, "friend").is_empty());
+        assert_eq!(inbox(&app, "cerro").len(), 1);
+        assert_eq!(
+            undo(second).await.1["retracted"],
+            0,
+            "asking twice is harmless"
+        );
+        assert_eq!(undo(first).await.1["retracted"], 1);
+        assert!(inbox(&app, "cerro").is_empty());
+
+        // A send more than a day ago is too late, and `until` must be a time.
+        let (_, late) = share_as_hill(&app, send_to("cerro")).await;
+        sql(
+            &app,
+            &format!(
+                "update notifications set created_at = created_at - {UNDO_MS} where recipient = 'cerro'"
+            ),
+        );
+        let late = late["undo_until"].as_i64().unwrap() - UNDO_MS;
+        assert_eq!(undo(late).await.0, StatusCode::CONFLICT);
+        assert_eq!(inbox(&app, "cerro").len(), 1);
+        let malformed = format!("/api/share/hill/{id}?until=soon");
+        assert_eq!(
+            call(&app, "DELETE", &malformed, "hill-secret", Value::Null)
+                .await
+                .0,
+            StatusCode::BAD_REQUEST
+        );
+        cleanup(app, path);
+    }
+
+    /// The private note every note test sends.
+    const NOTE: &str = "Our private study note";
+
+    /// `path` through the whole router with no credential, as its text.
+    async fn page(app: &Arc<App>, path: &str) -> (StatusCode, String) {
+        let request = axum::http::Request::builder()
+            .uri(path)
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let response = crate::test_support::route(app, request).await;
+        let status = response.status();
+        let bytes = axum::body::to_bytes(response.into_body(), 1 << 20)
+            .await
+            .unwrap();
+        (status, String::from_utf8_lossy(&bytes).into_owned())
+    }
+
+    /// Rows anywhere in the store that still hold [`NOTE`].
+    fn notes_kept(app: &App) -> i64 {
+        app.store
+            .lock()
+            .unwrap()
+            .conn
+            .query_row(
+                "select count(*) from notifications where note = ?1",
+                [NOTE],
+                |r| r.get(0),
+            )
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn a_note_is_seen_only_by_its_recipients() {
+        let (app, path) = moments_app();
+        let id = moment(&app.store.lock().unwrap(), "hill", "level:7");
+        let body = json!({"moment": {"win": id}, "to": {"friends": ["cerro"]}, "note": NOTE});
+        let (status, sent) = share_as_hill(&app, body).await;
+        assert_eq!(status, StatusCode::OK, "{sent}");
+        let token = sent["link"]["url"]
+            .as_str()
+            .unwrap()
+            .rsplit('/')
+            .next()
+            .unwrap();
+
+        // Cerro reads it, in any language.
+        let activity = |user: &str| {
+            let path = format!("/api/activity/{user}");
+            let token = format!("{user}-secret");
+            let app = app.clone();
+            async move {
+                call(&app, "GET", &path, &token, Value::Null)
+                    .await
+                    .1
+                    .to_string()
+            }
+        };
+        assert!(activity("cerro").await.contains(NOTE));
+        {
+            let store = app.store.lock().unwrap();
+            let mut row = store.notifications("cerro", now_ms()).unwrap().remove(0);
+            localize(&store.conn, &mut row, "es").unwrap();
+            assert_eq!(row.note.as_deref(), Some(NOTE));
+            assert!(!row.body.contains(NOTE));
+        }
+
+        // Nobody else does: not another friend, not the win, its link page or its card.
+        assert!(!activity("friend").await.contains(NOTE));
+        let (_, wins) = call(&app, "GET", "/api/wins/hill", "hill-secret", Value::Null).await;
+        assert!(!wins.to_string().contains(NOTE));
+        for path in [format!("/w/{token}"), format!("/w/{token}.png")] {
+            let (status, text) = page(&app, &path).await;
+            assert_eq!(status, StatusCode::OK, "{path}");
+            assert!(!text.contains(NOTE), "{path}");
+        }
+        let win = wins::win(&app.store.lock().unwrap().conn, "hill", id).unwrap();
+        assert!(!format!("{} {} {}", win.title, win.body, win.stats).contains(NOTE));
+
+        // The rest of the circle gets the win later without it.
+        share_as_hill(&app, json!({"moment": {"win": id}, "to": "circle"})).await;
+        assert_eq!(inbox(&app, "friend")[0].note, None);
+        assert!(!activity("friend").await.contains(NOTE));
+        cleanup(app, path);
+    }
+
+    #[tokio::test]
+    async fn a_note_leaves_with_its_row() {
+        let (app, path) = moments_app();
+        let id = moment(&app.store.lock().unwrap(), "hill", "level:7");
+        let body = json!({"moment": {"win": id}, "to": {"friends": ["cerro"]}, "note": NOTE});
+        share_as_hill(&app, body.clone()).await;
+
+        // Exports: the sender's and the recipient's carry it, nobody else's.
+        let export = |user: &str| {
+            crate::privacy::export(&app.store.lock().unwrap().conn, user)
+                .unwrap()
+                .to_string()
+        };
+        assert!(export("hill").contains(NOTE));
+        assert!(export("cerro").contains(NOTE));
+        assert!(!export("friend").contains(NOTE));
+
+        // Deleting either account removes it.
+        crate::privacy::forget(&app.store.lock().unwrap().conn, "cerro").unwrap();
+        assert_eq!(notes_kept(&app), 0);
+        let to_friend = json!({"moment": {"win": id}, "to": {"friends": ["friend"]}, "note": NOTE});
+        share_as_hill(&app, to_friend).await;
+        assert_eq!(notes_kept(&app), 1);
+        crate::privacy::forget(&app.store.lock().unwrap().conn, "hill").unwrap();
+        assert_eq!(notes_kept(&app), 0);
+        cleanup(app, path);
+    }
+
+    #[tokio::test]
+    async fn a_note_expires_with_its_row_but_the_win_stays_sent() {
+        let (app, path) = moments_app();
+        let id = moment(&app.store.lock().unwrap(), "hill", "level:7");
+        let body = json!({"moment": {"win": id}, "to": {"friends": ["cerro"]}, "note": NOTE});
+        share_as_hill(&app, body).await;
+        let later =
+            now_ms() + i64::from(crate::notifications::ACTIVITY_DAYS) * crate::game::DAY_MS + 1;
+        app.store
+            .lock()
+            .unwrap()
+            .prune_notifications(later)
+            .unwrap();
+        assert_eq!(notes_kept(&app), 0);
+        let (_, again) = share_as_hill(&app, json!({"moment": {"win": id}, "to": "circle"})).await;
+        assert_eq!(again["recipients"], 1, "only Friend, who never had it");
+        cleanup(app, path);
     }
 }

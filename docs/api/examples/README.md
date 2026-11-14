@@ -22,6 +22,7 @@ Random values are replaced, numbered in order of appearance: device tokens by `e
 | `share_moment.json` | `POST /api/share/{user}` `{"moment": {"conquest"}, "to": {"friends"}, "note"}` |
 | `share_moment_group.json` | `POST /api/share/{user}` `{"moment": {"key"}, "to": {"groups"}}` |
 | `share_undo.json` | `DELETE /api/share/{user}/{win}`, taking a moment sent by hand back |
+| `share_undo_send.json` | `DELETE /api/share/{user}/{win}?until={undo_until}`, taking one send back |
 | `deck_share.json` | `POST /api/decks/{user}/share` |
 | `react.json` | `POST /api/react/{user}` |
 | `profile.json` | `GET /api/profile/{user}`, owner view with `goal` |
