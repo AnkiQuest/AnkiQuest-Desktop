@@ -1,0 +1,163 @@
+{
+  "_about": "Companion art outside static/<companion>/. `exports`: committed copies of a master, written by the named xtask exporter, with the SHA-256 of the file it wrote; the tests regenerate each copy and compare. `retired`: copies nothing reads any more, kept because companion art is never deleted. See docs/branding/mascot-source.md.",
+  "exports": [
+    {
+      "exporter": "addon",
+      "file": "addon/aki_face.png",
+      "master": "static/aki/face.png",
+      "sha256": "e96a0044362231f79c1dbdfa27a657b130542625826f8d2f366c0ffe6d0803d9"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/ankilope_face.png",
+      "master": "static/ankilope/face.png",
+      "sha256": "0a0a603a6610b954be820403d1d380b472c9c16f9ab9f866697cc2d21e3c07ec"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_face.png",
+      "master": "static/aki/face.png",
+      "sha256": "e96a0044362231f79c1dbdfa27a657b130542625826f8d2f366c0ffe6d0803d9"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_welcome.png",
+      "master": "static/aki/welcome.png",
+      "sha256": "88fb49e089e887678281f236e022b863f98cd3172501c522c1be323abd0f3973"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_review.png",
+      "master": "static/aki/review.png",
+      "sha256": "6a601e8233664270d7e093343d01694b866634bf269ed7a1734e947c6934454c"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_celebrate.png",
+      "master": "static/aki/celebrate.png",
+      "sha256": "65b9645023bf71123d9b7e9b5634fda655ea4b7ca3dac1026f990c4da4d01569"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_winner.png",
+      "master": "static/aki/winner.png",
+      "sha256": "94bea3c98eb4956107c097bd00488ba593bb09212eff1977f26ee241b5a43cb3"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak.png",
+      "master": "static/aki/streak.png",
+      "sha256": "0e755065e88e2f43f172f6fad395741fc53da0f689680879d9470c7c00a16563"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak_hot.png",
+      "master": "static/aki/streak_hot.png",
+      "sha256": "e28c31e67d1bfdf7f9806780dc63fdc2cab4c33f99471fae4ea47bc9c0de724b"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak_blazing.png",
+      "master": "static/aki/streak_blazing.png",
+      "sha256": "ec51b9935b38b577b3bcc58c68045592e6e44526e08b39c5e655ef79663891b7"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak_legend.png",
+      "master": "static/aki/streak_legend.png",
+      "sha256": "8438de4bfe05a2e39acf446e7ec0fdc36b0c3f7d766fc4d7e268f3c46a4bddfd"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak_milestone.png",
+      "master": "static/aki/streak_milestone.png",
+      "sha256": "87b964240a3d2864e75f88f7ac43af7626eeeb63487d6a8cd102fe2896d5cdf0"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_freeze.png",
+      "master": "static/aki/freeze.png",
+      "sha256": "d7a79b412ecb306c91d3735b3af35b2faffd588bb1fa73d6b7de31ff98ab9aa9"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_freeze_used.png",
+      "master": "static/aki/freeze_used.png",
+      "sha256": "54cfd0010b455b3167304b63804a789a4f281e98f7a3feda323922e7924b1deb"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_sleeping.png",
+      "master": "static/aki/sleeping.png",
+      "sha256": "0e33f204926d992b79e85394c44f9ce6931b67685616716d1db83357348682da"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_at_risk.png",
+      "master": "static/aki/at_risk.png",
+      "sha256": "3f5b44c151755ff716b3864b28ca6c7f5e5fb6a868b1d84a8bb0944bcdce9d07"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_face.png",
+      "master": "static/ankilope/face.png",
+      "sha256": "0a0a603a6610b954be820403d1d380b472c9c16f9ab9f866697cc2d21e3c07ec"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_welcome.png",
+      "master": "static/ankilope/welcome.png",
+      "sha256": "46dfa9615d04387f0c8db07688be1c948083565a17518dd1c32aa4d417db310c"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_study.png",
+      "master": "static/ankilope/study.png",
+      "sha256": "6dc87506428629b225a6a7d0727ceb03b1d548cae17390e6d123df5181e17223"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_celebrate.png",
+      "master": "static/ankilope/celebrate.png",
+      "sha256": "3907226ec780c3d06dab59cc13f2d64920fd85624a2226969391f80e21ba4aa5"
+    }
+  ],
+  "retired": [
+    {
+      "file": "assets/cards/aki-celebrate.png",
+      "why": "Hand-made 512 px share-card copy; build.rs now exports card art from static/ into OUT_DIR. Unreferenced."
+    },
+    {
+      "file": "assets/cards/aki-freeze.png",
+      "why": "Hand-made 512 px share-card copy; build.rs now exports card art from static/ into OUT_DIR. Unreferenced."
+    },
+    {
+      "file": "assets/cards/aki-streak.png",
+      "why": "Hand-made 512 px share-card copy; build.rs now exports card art from static/ into OUT_DIR. Unreferenced."
+    },
+    {
+      "file": "assets/cards/aki-winner.png",
+      "why": "Hand-made 512 px share-card copy; build.rs now exports card art from static/ into OUT_DIR. Unreferenced."
+    },
+    {
+      "file": "assets/cards/ankilope-celebrate.png",
+      "why": "Hand-made 512 px share-card copy; build.rs now exports card art from static/ into OUT_DIR. Unreferenced."
+    },
+    {
+      "file": "static/aki/face-192.png",
+      "why": "Hand-made face icon; build.rs now exports it from face.png into OUT_DIR and the server serves that. Unreferenced."
+    },
+    {
+      "file": "static/aki/face-32.png",
+      "why": "Hand-made face icon; build.rs now exports it from face.png into OUT_DIR and the server serves that. Unreferenced."
+    },
+    {
+      "file": "static/ankilope/face-192.png",
+      "why": "Hand-made face icon; build.rs now exports it from face.png into OUT_DIR and the server serves that. Unreferenced."
+    },
+    {
+      "file": "docs/branding/ankilope-celebrate-review/review.png",
+      "why": "Review sheet comparing Ankilope's celebrate pose before and after its cleanup; a record in the docs, not a copy anything shows."
+    }
+  ]
+}

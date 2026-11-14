@@ -1,22 +1,19 @@
-//! Writes the desktop add-on's companion poses into `addon/art` from the
-//! master PNGs in `static/`.
+//! Writes the desktop add-on's companion poses from the master PNGs in
+//! `static/`: every `addon` entry of the art manifest (`art-exports.json`).
 //!
 //! Each pose is a 256 px square, 256-colour palette PNG with transparency.
-//! Export writes only the poses that are missing, because the existing ones
-//! were tuned by hand; `--replace` writes them all. `--check` writes nothing
-//! and fails when a pose is missing or has a different pixel size.
+//! Export writes them all and records each file's SHA-256 in the manifest.
+//! `--check` writes nothing and fails when a pose differs from what export
+//! would write, or from the hash in the manifest.
 
 use std::fs;
-use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use color_quant::NeuQuant;
 use image::RgbaImage;
 
-use super::{load, png_size, root, shrink, target};
-
-/// The add-on's pose folder, relative to the repository root.
-const FOLDER: &str = "addon/art";
+use super::exports::{self, Export, Exporter};
+use super::{load, root, shrink, target};
 
 /// Pose edge in pixels: the Today panel shows 96 px at up to 2x, and
 /// moments 112 px.
@@ -28,38 +25,14 @@ const COLOURS: usize = 256;
 /// NeuQuant sampling factor: 1 looks at every pixel, the slowest and best.
 const SAMPLING: i32 = 1;
 
-/// One pose: its file name without extension and its master PNG.
-struct Pose {
-    name: &'static str,
-    source: &'static str,
-}
+/// Largest mean channel difference, out of 255, between a committed pose
+/// and a fresh export: float rounding on another machine can move a few
+/// palette entries, a different picture moves far more.
+const MEAN_TOLERANCE: f64 = 0.5;
 
-/// A pose by name and master.
-const fn pose(name: &'static str, source: &'static str) -> Pose {
-    Pose { name, source }
-}
-
-/// Every pose the add-on shows, as Android names its drawables.
-const POSES: &[Pose] = &[
-    pose("aki_face", "static/aki/face.png"),
-    pose("aki_welcome", "static/aki/welcome.png"),
-    pose("aki_review", "static/aki/review.png"),
-    pose("aki_celebrate", "static/aki/celebrate.png"),
-    pose("aki_winner", "static/aki/winner.png"),
-    pose("aki_streak", "static/aki/streak.png"),
-    pose("aki_streak_hot", "static/aki/streak_hot.png"),
-    pose("aki_streak_blazing", "static/aki/streak_blazing.png"),
-    pose("aki_streak_legend", "static/aki/streak_legend.png"),
-    pose("aki_streak_milestone", "static/aki/streak_milestone.png"),
-    pose("aki_freeze", "static/aki/freeze.png"),
-    pose("aki_freeze_used", "static/aki/freeze_used.png"),
-    pose("aki_sleeping", "static/aki/sleeping.png"),
-    pose("aki_at_risk", "static/aki/at_risk.png"),
-    pose("ankilope_face", "static/ankilope/face.png"),
-    pose("ankilope_welcome", "static/ankilope/welcome.png"),
-    pose("ankilope_study", "static/ankilope/study.png"),
-    pose("ankilope_celebrate", "static/ankilope/celebrate.png"),
-];
+/// Largest single channel difference between a committed pose and a fresh
+/// export.
+const PIXEL_TOLERANCE: u8 = 48;
 
 /// What the command does.
 #[derive(PartialEq)]
@@ -68,32 +41,16 @@ enum Mode {
     Check,
 }
 
-/// What export does with a pose that is already there.
-#[derive(PartialEq)]
-enum Existing {
-    Keep,
-    Replace,
-}
-
-/// Runs the exporter: `[--check | --replace]`.
+/// Runs the exporter: `[--check]`.
 pub fn run(args: &[String]) -> ExitCode {
-    let mut mode = Mode::Export;
-    let mut existing = Existing::Keep;
-    for arg in args {
-        match arg.as_str() {
-            "--check" => mode = Mode::Check,
-            "--replace" => existing = Existing::Replace,
-            _ => return usage(),
-        }
-    }
-    if mode == Mode::Check && existing == Existing::Replace {
-        return usage();
-    }
-
-    let folder = root().join(FOLDER);
+    let mode = match args {
+        [] => Mode::Export,
+        [flag] if flag == "--check" => Mode::Check,
+        _ => return usage(),
+    };
     let result = match mode {
-        Mode::Export => export(&folder, &existing),
-        Mode::Check => check(&folder),
+        Mode::Export => export(),
+        Mode::Check => check(),
     };
     match result {
         Ok(code) => code,
@@ -106,72 +63,98 @@ pub fn run(args: &[String]) -> ExitCode {
 
 /// Prints the usage text and fails.
 fn usage() -> ExitCode {
-    eprintln!("usage: xtask export-addon-art [--check | --replace]");
+    eprintln!("usage: xtask export-addon-art [--check]");
     ExitCode::FAILURE
 }
 
-/// The pose's file in `folder`.
-fn file(folder: &Path, name: &str) -> PathBuf {
-    folder.join(format!("{name}.png"))
+/// Whether a manifest entry is an add-on pose.
+fn is_pose(export: &Export) -> bool {
+    export.exporter == Exporter::Addon
 }
 
-/// Writes the poses into `folder`.
-fn export(folder: &Path, existing: &Existing) -> Result<ExitCode, String> {
-    fs::create_dir_all(folder).map_err(|e| format!("{}: {e}", folder.display()))?;
-    for pose in POSES {
-        let path = file(folder, pose.name);
-        if *existing == Existing::Keep && path.exists() {
-            continue;
-        }
+/// The pose `export` describes, made from its master.
+fn render(export: &Export) -> Result<Vec<u8>, String> {
+    let master = load(&root().join(&export.master))?;
+    let (width, height) = target(master.width(), master.height(), SIZE);
+    encode(&shrink(master, width, height))
+}
 
-        // Downscale, reduce to a palette and write.
-        let master = load(&root().join(pose.source))?;
-        let (width, height) = target(master.width(), master.height(), SIZE);
-        let bytes = encode(&shrink(master, width, height))?;
+/// Writes every pose and records its hash in the manifest.
+fn export() -> Result<ExitCode, String> {
+    let mut manifest = exports::read()?;
+    for export in manifest.exports.iter_mut().filter(|export| is_pose(export)) {
+        let bytes = render(export)?;
+        let path = root().join(&export.file);
+        if let Some(folder) = path.parent() {
+            fs::create_dir_all(folder).map_err(|e| format!("{}: {e}", folder.display()))?;
+        }
         fs::write(&path, &bytes).map_err(|e| format!("{}: {e}", path.display()))?;
-        println!(
-            "{FOLDER}/{}.png: {width}x{height}, {} bytes",
-            pose.name,
-            bytes.len()
-        );
+        export.sha256 = exports::sha256(&bytes);
+        println!("{}: {} bytes", export.file, bytes.len());
     }
+    exports::write(&manifest)?;
     Ok(ExitCode::SUCCESS)
 }
 
-/// Compares every pose's pixel size with what export would write.
-fn check(folder: &Path) -> Result<ExitCode, String> {
-    let failed = missing(folder)?;
+/// Compares every pose with a fresh export and with the manifest.
+fn check() -> Result<ExitCode, String> {
+    let failed = stale()?;
     for line in &failed {
         println!("{line}");
     }
     if !failed.is_empty() {
         return Ok(ExitCode::FAILURE);
     }
-    println!("all {} add-on poses match", POSES.len());
+    println!("all add-on poses match");
     Ok(ExitCode::SUCCESS)
 }
 
-/// One line for each pose in `folder` that is missing or has the wrong size.
-fn missing(folder: &Path) -> Result<Vec<String>, String> {
+/// One line for each pose that is missing, edited or out of date.
+fn stale() -> Result<Vec<String>, String> {
     let mut failed = Vec::new();
-    for pose in POSES {
-        let (width, height) = png_size(&root().join(pose.source))?;
-        let expected = target(width, height, SIZE);
-        let path = file(folder, pose.name);
-        if !path.exists() {
-            failed.push(format!("missing: {FOLDER}/{}.png", pose.name));
+    for export in exports::read()?
+        .exports
+        .iter()
+        .filter(|export| is_pose(export))
+    {
+        let path = root().join(&export.file);
+        let Ok(committed) = fs::read(&path) else {
+            failed.push(format!("missing: {}", export.file));
+            continue;
+        };
+        if exports::sha256(&committed) != export.sha256 {
+            failed.push(format!("{}: not the file export wrote", export.file));
             continue;
         }
-        let actual = png_size(&path)?;
-        if actual != expected {
-            let ((aw, ah), (ew, eh)) = (actual, expected);
-            failed.push(format!(
-                "{FOLDER}/{}.png: {aw}x{ah}, expected {ew}x{eh}",
-                pose.name
-            ));
+        let fresh = render(export)?;
+        if fresh != committed && !close(&fresh, &committed)? {
+            failed.push(format!("{}: differs from {}", export.file, export.master));
         }
     }
     Ok(failed)
+}
+
+/// Whether two PNGs show the same pixels up to float rounding.
+fn close(a: &[u8], b: &[u8]) -> Result<bool, String> {
+    let decode = |bytes: &[u8]| {
+        image::load_from_memory(bytes)
+            .map(|image| image.into_rgba8())
+            .map_err(|e| e.to_string())
+    };
+    let (a, b) = (decode(a)?, decode(b)?);
+    if a.dimensions() != b.dimensions() {
+        return Ok(false);
+    }
+    let differences: Vec<u8> = a
+        .as_raw()
+        .iter()
+        .zip(b.as_raw())
+        .map(|(x, y)| x.abs_diff(*y))
+        .collect();
+    let total: f64 = differences.iter().map(|&d| f64::from(d)).sum();
+    let mean = total / differences.len().max(1) as f64;
+    let worst = differences.iter().copied().max().unwrap_or(0);
+    Ok(mean <= MEAN_TOLERANCE && worst <= PIXEL_TOLERANCE)
 }
 
 /// Encodes `image` as an indexed PNG with a 256-colour RGBA palette.
@@ -209,8 +192,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_addon_pose_is_exported() {
-        let failed = missing(&root().join(FOLDER)).unwrap();
+    fn every_addon_pose_is_current() {
+        let failed = stale().unwrap();
         assert!(
             failed.is_empty(),
             "run `cargo run -p ankiquest-xtask -- export-addon-art`: {failed:?}"
@@ -218,10 +201,20 @@ mod tests {
     }
 
     #[test]
-    fn poses_are_named_once() {
-        let mut names: Vec<_> = POSES.iter().map(|pose| pose.name).collect();
-        names.sort_unstable();
-        names.dedup();
-        assert_eq!(POSES.len(), names.len());
+    fn poses_are_listed_once() {
+        let manifest = exports::read().unwrap();
+        let mut files: Vec<_> = manifest.exports.iter().map(|e| &e.file).collect();
+        files.sort_unstable();
+        files.dedup();
+        assert_eq!(manifest.exports.len(), files.len());
+    }
+
+    #[test]
+    fn a_changed_picture_is_not_close() {
+        let red = RgbaImage::from_pixel(8, 8, image::Rgba([255, 0, 0, 255]));
+        let blue = RgbaImage::from_pixel(8, 8, image::Rgba([0, 0, 255, 255]));
+        let (red, blue) = (encode(&red).unwrap(), encode(&blue).unwrap());
+        assert!(close(&red, &red).unwrap());
+        assert!(!close(&red, &blue).unwrap());
     }
 }
