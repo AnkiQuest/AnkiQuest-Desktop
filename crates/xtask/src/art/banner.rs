@@ -1,7 +1,7 @@
 //! Composes the README banner and the social preview from the committed
 //! desktop screenshots and the duo art.
 //!
-//! Both follow the Android README banner (`tools/ankiquest_banner.py` in
+//! Both follow the Android README banner (`tools/ankiquest-banner` in
 //! AnkiQuest-Android): its blue gradient, the warm glow, Roboto title and
 //! tagline, the companion beside the title. Vector parts are SVG drawn with
 //! resvg; screenshots and art are downscaled with Lanczos and placed at whole
