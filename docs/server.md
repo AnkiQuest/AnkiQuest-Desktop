@@ -204,7 +204,7 @@ update the Android app before enabling private mode: authenticated reads and aut
 
 both clients upload new review rows after each answer and show XP feedback while reviewing. sync itself can stay on AnkiWeb.
 
-- Android: install `AnkiQuest.apk` from the [AnkiQuest-Android releases](https://github.com/float3/AnkiQuest-Android/releases/latest) and fill in Settings → ankiquest.
+- Android: install `AnkiQuest.apk` from the [AnkiQuest-Android releases](https://github.com/AnkiQuest/AnkiQuest-Android/releases/latest) and fill in Settings → ankiquest.
 - desktop: zip the contents of `addon/` into `ankiquest.ankiaddon`, open it with Anki, then fill in **Tools → AnkiQuest settings…**. the leaderboard appears under the deck list, with the period links it shares with the website.
 
 `POST /api/reviews/<user>` with `Authorization: Bearer <token>` and
@@ -281,7 +281,7 @@ the older `/api/notification-preferences/<user>` endpoint has been removed. mute
 ## NixOS
 
 ```nix
-inputs.ankiquest.url = "github:float3/ankiquest";
+inputs.ankiquest.url = "github:AnkiQuest/ankiquest";
 
 imports = [inputs.ankiquest.nixosModules.default];
 
