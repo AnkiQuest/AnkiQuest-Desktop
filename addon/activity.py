@@ -35,13 +35,16 @@ class _Page:
     latest: Optional[int]
     before: Optional[int]
     source: _Source = _Source.ACTIVITY
+    # Why the server left other players' study out ("upload_first"), or None.
+    locked: Optional[str] = None
 
 
 def _parse(answer):
     if not isinstance(answer, dict) or not isinstance(answer.get("items"), list):
         raise ValueError("Invalid activity response")
     return _Page(answer["items"], answer.get("attention") or [], int(answer.get("unread_count", 0)),
-                 int(answer.get("action_count", 0)), answer.get("latest_id"), answer.get("next_before"))
+                 int(answer.get("action_count", 0)), answer.get("latest_id"), answer.get("next_before"),
+                 locked=answer.get("locked"))
 
 
 def _request(api, category, read, before):

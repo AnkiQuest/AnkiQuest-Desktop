@@ -427,7 +427,7 @@ def board_view(api, profile=None):
         entry["avatar"] = pictures._get(entry.get("user"))
         rows.append((place, entry, mine))
     pictures._load([row[1]["user"] for row in rows], addon().redraw)
-    return {"period": chosen, "scope": board.query.scope, "scopes": board.scopes, "rows": rows}
+    return {"period": chosen, "scope": board.query.scope, "scopes": board.scopes, "rows": rows, "locked": board.locked}
 
 
 def _pictures():
