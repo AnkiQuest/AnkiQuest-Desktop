@@ -57,6 +57,8 @@ POLL_MS = 5 * 60 * 1000
 # A poll syncs settings at most this often, so a sync just started elsewhere is not repeated.
 SETTINGS_POLL_GAP_S = 60
 RETRY_START_MS = 5_000
+# How often a waiting greeting or sign-in offer checks whether Anki's dialog has closed.
+WELCOME_RETRY_MS = 1_000
 RETRY_MAX_STEPS = 6
 WEBSITE_SHORTCUT = "Ctrl+Shift+K"
 
@@ -134,6 +136,12 @@ class _PollFailure:
     retry_at: float
 
 
+@dataclass(frozen=True, eq=False)
+class _WelcomeWait:
+    """Aki's greeting or the sign-in offer, waiting until `profile`'s screen is free."""
+    profile: dict
+
+
 class _SettingsSync(Enum):
     IDLE = auto()
     RUNNING = auto()
@@ -156,6 +164,8 @@ state = {
     "inbox": [],
     "activity": None,
     "settings_sync": _SettingsSync.IDLE,
+    # None, or a _WelcomeWait for the open profile; a callback that holds another one is stale.
+    "welcome": None,
     "settings_synced_at": 0.0,
 }
 
@@ -684,6 +694,10 @@ def on_state_change(new_state, old_state):
     _moments._transition(new_state, old_state)
     _delivery._flush()
 
+    # A greeting or sign-in offer that waited for the review resumes when it ends.
+    if old_state == "review" and state["welcome"] is not None:
+        _try_welcome(state["welcome"])
+
 
 def open_inbox():
     mw.pm.profile[INBOX_KEY] = max(
@@ -789,27 +803,47 @@ def _save_account_config(values):
 
 
 def _welcome():
+    """Profile open: Aki's greeting once per computer, else one sign-in offer for this profile,
+    once no dialog of Anki's or review is in front."""
     profile = mw.pm.profile
     if profile is None:
         return
+    waiting = _WelcomeWait(profile)
+    state["welcome"] = waiting
+    QTimer.singleShot(0, lambda: _try_welcome(waiting))
 
-    def show():
-        # Profile open -> ready deck browser, no dialog of Anki's in front -> Aki's greeting
-        # once per computer, else one sign-in offer for this profile.
-        if mw.pm.profile is not profile or mw.state == "review" or QApplication.activeModalWidget() is not None:
-            return
-        if greeting.state(mw.pm.meta) is greeting.State.PENDING:
-            _greet(profile)
-            return
-        settings = config()
-        if profile.get(SIGN_IN_OFFER_KEY) or settings.get("user"):
-            return
-        profile[SIGN_IN_OFFER_KEY] = True
-        answer = ask_account(settings.get("url", ""), dismiss=tr("Not now"))
-        if answer and mw.pm.profile is profile:
-            _finish_sign_in(answer)
 
-    QTimer.singleShot(0, show)
+def _try_welcome(waiting):
+    # A closed or replaced profile, or an offer already made, ends the wait.
+    if state["welcome"] is not waiting or mw.pm.profile is not waiting.profile:
+        return
+
+    # A review resumes it from on_state_change when it ends; Anki's dialogs have no
+    # closing hook, so check again shortly.
+    if mw.state == "review":
+        return
+    if QApplication.activeModalWidget() is not None:
+        QTimer.singleShot(WELCOME_RETRY_MS, lambda: _try_welcome(waiting))
+        return
+
+    # The screen is free: offer once, with the account and stored state as they are now.
+    state["welcome"] = None
+    profile = waiting.profile
+    if greeting.state(mw.pm.meta) is greeting.State.PENDING:
+        _greet(profile)
+        return
+    settings = config()
+    if profile.get(SIGN_IN_OFFER_KEY) or settings.get("user"):
+        return
+    profile[SIGN_IN_OFFER_KEY] = True
+    answer = ask_account(settings.get("url", ""), dismiss=tr("Not now"))
+    if answer and mw.pm.profile is profile:
+        _finish_sign_in(answer)
+
+
+def _end_welcome():
+    """Profile close: a waiting greeting or sign-in offer waits for the next profile open."""
+    state["welcome"] = None
 
 
 def _greet(profile):
@@ -1116,6 +1150,7 @@ if hasattr(gui_hooks, "profile_will_close"):
     gui_hooks.profile_will_close.append(copies_ui.clear_account)
     gui_hooks.profile_will_close.append(preview.clear_account)
     gui_hooks.profile_will_close.append(lambda: _delivery._clear())
+    gui_hooks.profile_will_close.append(_end_welcome)
 
 
 def current_companion():
