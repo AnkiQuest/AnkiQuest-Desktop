@@ -278,6 +278,7 @@ pub(crate) fn tick(app: &App) -> Result<(), Error> {
             let push_enabled = push_destination(&app.config, user).is_some();
             let mut events = profile.events.clone();
             events.extend(goals::event(&store.conn, user, profile)?);
+            events.extend(crate::companions::moments(&store, user, profile)?);
             let push_secured = streak_saved_late(&store, user, profile, now_ms())?;
             store.queue_moments(
                 user,

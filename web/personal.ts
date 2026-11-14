@@ -40,11 +40,14 @@ import {failure, refused, request as call, send} from "./http";
   interface Group { id: number; name: string; owner: boolean; invite: string | null; members: Person[] }
   interface Social { groups: Group[]; friends: Person[]; incoming: Person[]; outgoing: Person[]; public: boolean; muted: Person[] }
   interface Invite { name: string; members: number }
+  /** `GET /api/unlocks/{user}`: `progress` lists each locked companion that shows before it is earned. */
+  interface UnlockProgress { kind: "level" | "study_hours"; value: number; goal: number }
+  interface Unlocks { unlocks: string[]; progress?: Record<string, UnlockProgress> }
   type SettingName = keyof Settings;
   interface State {
     session: OwnerSession | null; epoch: number; profile: Profile | null; study: StudyHistory | null; challenges: Challenges | null; activity: Activity | null;
     settings: Settings; errors: Record<string, string>; year: number | null; selected: string | null; native: boolean;
-    social: Social | null; invite: Invite | null; account: Account | null; signIn: SignIn | null; devices: Device[] | null;
+    social: Social | null; invite: Invite | null; account: Account | null; signIn: SignIn | null; devices: Device[] | null; unlocks: Unlocks | null;
     wins: Win[] | null; winsError: string; winsMore: boolean; winsLoading: boolean; winStatus: Record<number, {text: string; error: boolean}>;
   }
 
@@ -63,7 +66,7 @@ import {failure, refused, request as call, send} from "./http";
   const backlogPresets = [7, 14, 30, 60];
   const winPage = 10;
   const cards = new Map<number, Promise<string>>();
-  const state: State = {session:null, epoch:0, profile:null, study:null, challenges:null, activity:null, settings:{}, errors:{}, year:null, selected:null, native:false, social:null, invite:null, account:null, signIn:null, devices:null, wins:null, winsError:"", winsMore:false, winsLoading:false, winStatus:{}};
+  const state: State = {session:null, epoch:0, profile:null, study:null, challenges:null, activity:null, settings:{}, errors:{}, year:null, selected:null, native:false, social:null, invite:null, account:null, signIn:null, devices:null, unlocks:null, wins:null, winsError:"", winsMore:false, winsLoading:false, winStatus:{}};
   document.querySelector<HTMLElement>("[data-site-header]")!.dataset.siteSection = page === "settings" ? "settings" : "today";
   // Text waits for translations; restore() does too, so reminders are set before any render.
   void AnkiQuestI18n.ready.then(() => {
@@ -140,10 +143,10 @@ import {failure, refused, request as call, send} from "./http";
     if (member) useAccount(member);
     else showGate();
   }
-  async function request<T = unknown>(route: string, body?: unknown, session = state.session, method?: string): Promise<T | null> {
+  async function request<T = unknown>(route: string, body?: unknown, session = state.session, method?: string, headers?: Record<string, string>): Promise<T | null> {
     if (!session) throw Error(tr("Connect your account first."));
     try {
-      return await call<T | null>(route, {session, json: body, ...(method ? {method} : {})});
+      return await call<T | null>(route, {session, json: body, ...(method ? {method} : {}), ...(headers ? {headers} : {})});
     } catch (cause) {
       if (!refused(cause)) throw cause;
       const rejected = cause.status === 401 || cause.status === 403;
@@ -153,7 +156,9 @@ import {failure, refused, request as call, send} from "./http";
       throw cause;
     }
   }
-  const owner = <T = unknown>(route: string, body?: unknown, session = state.session, method?: string) => request<T>(route + "/" + encodeURIComponent(session!.user), body, session, method);
+  const owner = <T = unknown>(route: string, body?: unknown, session = state.session, method?: string, headers?: Record<string, string>) => request<T>(route + "/" + encodeURIComponent(session!.user), body, session, method, headers);
+  /** Tells the server this page shows locked companions, so it refuses one that is still locked. */
+  const SHOWS_LOCKS = {"X-AnkiQuest-Companions": "milestones"};
   function error(message: string) {
     $("personal-error").hidden = false;
     $("personal-error").textContent = message;
@@ -184,9 +189,10 @@ import {failure, refused, request as call, send} from "./http";
       } else if (page === "settings") {
         const names: SettingName[] = ["companion","reminders","freezes","nudges","subscriptions","decks","sharing","goal"];
         const calls = [owner("/api/companion",undefined,session),owner("/api/community/reminders",undefined,session),owner("/api/streak-freezes",undefined,session),owner("/api/friend-nudges",undefined,session),owner("/api/deck-subscriptions",undefined,session),owner("/api/decks",undefined,session),owner("/api/sharing",undefined,session),owner("/api/goal",undefined,session)];
-        const [results, account, signIn, devices] = await Promise.all([Promise.allSettled(calls), owner<Account>("/api/accounts",undefined,session).catch(() => null), owner<SignIn>("/api/sign-in",undefined,session).catch(() => null), owner<{devices: Device[]}>("/api/devices",undefined,session).catch(() => null)]);
+        const [results, account, signIn, devices, unlocks] = await Promise.all([Promise.allSettled(calls), owner<Account>("/api/accounts",undefined,session).catch(() => null), owner<SignIn>("/api/sign-in",undefined,session).catch(() => null), owner<{devices: Device[]}>("/api/devices",undefined,session).catch(() => null), owner<Unlocks>("/api/unlocks",undefined,session).catch(() => null)]);
         if (state.session !== session || state.epoch !== epoch) return;
         state.account = account;
+        state.unlocks = unlocks;
         state.signIn = signIn;
         state.devices = devices?.devices ?? null;
         state.errors = {};
@@ -540,9 +546,28 @@ import {failure, refused, request as call, send} from "./http";
     return {senders, unsubscribed};
   }
   function settingError(name: SettingName) { return html`<p class="status error" role="alert">${esc(state.errors[name] || tr("This setting could not load. Refresh to try again."))}</p>`; }
+  /** How a locked companion is earned and how far the player is, worded as on the desktop. */
+  function lockedText(progress: UnlockProgress): [string, string] {
+    if (progress.kind === "level") return [tr`Reach level ${progress.goal}`, tr`Level ${progress.value} of ${progress.goal}`];
+    return [tr`Study for ${progress.goal} hours in total`, tr`${progress.value} of ${progress.goal} hours`];
+  }
+  /** A companion earned at a milestone: a choice once unlocked, a silhouette with its condition
+   * while locked, and hidden while secret. Servers before milestones list no progress: there
+   * Ankilope is free, as it was, and the cow shows only once unlocked. */
+  function companionChoice(id: string, name: string, art: string, chosen: string): string {
+    const progress = state.unlocks?.progress?.[id];
+    const unlocked = chosen === id || !!state.unlocks?.unlocks.includes(id);
+    const image = html`<img class="${art}" src="/ankilope/face-192.png" alt="">`;
+    if (!unlocked && progress) {
+      const [condition, reached] = lockedText(progress);
+      return html`<label class="companion-option companion-locked"><input type="radio" name="companion" value="${id}" disabled>${image}<strong>${esc(name)}</strong><span class="companion-condition">${esc(condition)}</span><span class="companion-progress">${esc(reached)}</span></label>`;
+    }
+    if (!unlocked && id !== "ankilope") return "";
+    return html`<label class="companion-option"><input type="radio" name="companion" value="${id}" ${chosen===id?"checked":""}>${image}<strong>${esc(name)}</strong></label>`;
+  }
   function renderSettings(card: SettingName | null = null) {
     const {companion,reminders:prefs,freezes,nudges,subscriptions,decks,sharing,goal} = state.settings;
-    const companionCard = html`<article class="card"><div class="card-head"><div><h2>${tr("Your study companion")}</h2><p>${tr("Choose who cheers you on. This choice follows your account across devices.")}</p></div></div>${companion?html`<form id="companion-form"><div class="companion-options" role="radiogroup" aria-label="${tr("Your study companion")}"><label class="companion-option"><input type="radio" name="companion" value="aki" ${companion.companion==="aki"?"checked":""}><img src="/aki/face-192.png" alt=""><strong>Aki</strong></label><label class="companion-option"><input type="radio" name="companion" value="ankilope" ${companion.companion==="ankilope"?"checked":""}><img src="/ankilope/face-192.png" alt=""><strong>Ankilope</strong></label>${companion.companion==="cow"?html`<label class="companion-option"><input type="radio" name="companion" value="cow" checked><img class="cow-art" src="/ankilope/face-192.png" alt=""><strong>${esc(AnkiQuestAki.cowName)}</strong></label>`:""}<label class="companion-option companion-none"><input type="radio" name="companion" value="none" ${companion.companion==="none"?"checked":""}><span aria-hidden="true">○</span><strong>${tr("No companion")}</strong></label></div><p class="settings-hint">${tr("Your companion only changes the artwork and encouragement you see.")}</p><div class="setting-actions"><button class="primary" type="submit">${tr("Save companion")}</button></div><p class="status" role="status"></p></form>`:settingError("companion")}</article>`;
+    const companionCard = html`<article class="card"><div class="card-head"><div><h2>${tr("Your study companion")}</h2><p>${tr("Choose who cheers you on. This choice follows your account across devices.")}</p></div></div>${companion?html`<form id="companion-form"><div class="companion-options" role="radiogroup" aria-label="${tr("Your study companion")}"><label class="companion-option"><input type="radio" name="companion" value="aki" ${companion.companion==="aki"?"checked":""}><img src="/aki/face-192.png" alt=""><strong>Aki</strong></label>${companionChoice("ankilope","Ankilope","",companion.companion)}${companionChoice("cow",AnkiQuestAki.cowName,"cow-art",companion.companion)}<label class="companion-option companion-none"><input type="radio" name="companion" value="none" ${companion.companion==="none"?"checked":""}><span aria-hidden="true">○</span><strong>${tr("No companion")}</strong></label></div><p class="settings-hint">${tr("Your companion only changes the artwork and encouragement you see.")}</p><div class="setting-actions"><button class="primary" type="submit">${tr("Save companion")}</button></div><p class="status" role="status"></p></form>`:settingError("companion")}</article>`;
     const reminderCard = html`<article class="card"><div class="card-head"><div><h2>${tr("Reminders")}</h2><p>${tr("Choose when AnkiQuest checks in.")}</p></div></div>${prefs ? html`<form id="reminders-form"><div class="stack">${reminders.map(([key,label])=>check(key,label,prefs[key])).join("")}</div><div class="time-grid"><label class="field"><span>${tr("Daily reminder")}</span><select name="reminder_hour">${hourOptions(prefs.reminder_hour)}</select></label><label class="field"><span>${tr("Quiet from")}</span><select name="quiet_start">${hourOptions(prefs.quiet_start)}</select></label><label class="field"><span>${tr("Quiet until")}</span><select name="quiet_end">${hourOptions(prefs.quiet_end)}</select></label><label class="field"><span>${tr("Daily limit")}</span><select name="daily_limit">${[1,2,3,4,5].map(n=>html`<option value="${n}" ${n===prefs.daily_limit?"selected":""}>${n}</option>`).join("")}</select></label></div><p class="settings-hint">${tr("Reminder times use your AnkiQuest timezone. Equal quiet-hour times disable quiet hours.")}</p><div class="setting-actions"><button class="primary" type="submit">${tr("Save reminders")}</button></div><p class="status" role="status"></p></form>` : settingError("reminders")}</article>`;
     const nudgeCard = html`<article class="card"><div class="card-head"><div><h2>${tr("Encouragement")}</h2><p>${tr("Friendly nudges and progress celebrations.")}</p></div></div>${nudges ? html`${check("",tr("Allow friends to nudge me"),nudges.receiving,"",'data-nudge-field="receiving"')}${check("",tr("Automatic progress nudges"),nudges.automatic_receiving,"",'data-nudge-field="automatic"')}<fieldset><legend>${tr("Friends who can nudge me")}</legend>${nudges.friends.length ? nudges.friends.map(friend=>check("",friend.display,!friend.muted_by_me,"",`data-nudge-sender="${esc(friend.user)}"`)).join("") : html`<p class="settings-hint">${tr("No friends to choose yet.")}</p>`}</fieldset><p id="nudge-status" class="status" role="status"></p>` : settingError("nudges")}</article>`;
     const freezeCard = html`<article class="card" id="streak-protection"><div class="card-head"><div><h2>${tr("Streak protection")}</h2><p>${freezes?tr`${freezes.freezes} of ${freezes.capacity} freezes ready`:tr("Keep a little backup for busy days.")}</p></div></div>${freezes?html`${check("",tr("Use saved freezes automatically"),freezes.enabled,"",'id="freeze-toggle"')}<p class="settings-hint">${tr("Your saved freezes stay with you when protection is off.")}</p><p id="freeze-status" class="status" role="status"></p>`:settingError("freezes")}</article>`;
@@ -770,11 +795,11 @@ import {failure, refused, request as call, send} from "./http";
       status.className = "status error"; status.textContent = (cause as Error).message;
     }
   }
-  async function submitForm<K extends SettingName>(form: HTMLFormElement, route: string, body: unknown, key: K, method?: string) {
+  async function submitForm<K extends SettingName>(form: HTMLFormElement, route: string, body: unknown, key: K, method?: string, headers?: Record<string, string>) {
     const session = state.session, controls = [...form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>("input,select,button")], status = form.querySelector<HTMLElement>(".status")!;
     controls.forEach(control=>control.disabled=true);status.className="status";status.textContent=tr("Saving…");
     try {
-      const saved = await owner<Settings[K]>(route,body,session,method);
+      const saved = await owner<Settings[K]>(route,body,session,method,headers);
       if (state.session!==session) return;
       state.settings[key]=saved ?? body as Settings[K];
       if (key === "companion") AnkiQuestAki.setChoice((saved as {companion: string}).companion);
@@ -805,7 +830,7 @@ import {failure, refused, request as call, send} from "./http";
     if (form.id === "delete-account-form") { event.preventDefault(); deleteAccount(form); return; }
     if (form.id === "password-form") { event.preventDefault(); changePassword(form); return; }
     if (form.id === "companion-form") {
-      event.preventDefault();submitForm(form,"/api/companion",{companion:(form.elements.namedItem("companion") as RadioNodeList).value},"companion");
+      event.preventDefault();submitForm(form,"/api/companion",{companion:(form.elements.namedItem("companion") as RadioNodeList).value},"companion",undefined,SHOWS_LOCKS);
     }
     if (form.id === "reminders-form") {
       event.preventDefault();const data=new FormData(form),body: Record<string, boolean | number>={};

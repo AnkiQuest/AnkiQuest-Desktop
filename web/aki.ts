@@ -7,7 +7,7 @@ import {escape} from "./common";
   const poses = new Set<string>(["welcome", "review", "celebrate", "streak", "freeze", "winner", "face"]);
   const ankilopePoses: Record<string, string> = {welcome:"welcome", review:"study", celebrate:"celebrate", streak:"study", freeze:"study", winner:"celebrate", face:"face"};
   const choices = new Set<string>(["aki", "ankilope", "cow", "none"]);
-  // The hidden cow has no art yet (#88): it is Ankilope's, turned purple by this CSS filter,
+  // The cow has no art yet (#88): it is Ankilope's, turned purple by this CSS filter,
   // which site.css applies through --cow-filter.
   const cowFilter = "hue-rotate(250deg)";
   const artOwner = (companion: string) => companion === "cow" ? "ankilope" : companion;

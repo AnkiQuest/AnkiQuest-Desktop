@@ -8,7 +8,7 @@ these additions preserve bearer authentication and the existing notification arr
 `GET /api/capabilities` needs no sign-in, also on a private site, and may be cached for five minutes (`Cache-Control: max-age=300`). It answers what this server supports, so a client can turn a feature on when the server has it instead of waiting for a deploy:
 
 ```json
-{ "version": 1, "features": ["activity", "app_sign_in", "companion_unlocks", "cookie_session", "deck_share", "devices", "global_leaderboard_hide", "goal_backlog_days", "mute", "reactions", "review_offsets", "settings_sync", "share_cards", "share_moments", "share_undo_send", "wins"], "public_url": "https://anki.example.test" }
+{ "version": 1, "features": ["activity", "app_sign_in", "companion_milestones", "companion_unlocks", "cookie_session", "deck_share", "devices", "global_leaderboard_hide", "goal_backlog_days", "mute", "reactions", "review_offsets", "settings_sync", "share_cards", "share_moments", "share_undo_send", "wins"], "public_url": "https://anki.example.test" }
 ```
 
 `public_url` is the server's main address, without a trailing slash, and is present only when the server has `public_url` configured. A client that saved another address for the same server (an old address that proxies to it) may move to this one: it checks that its saved token works there with one signed-in request that needs it, such as `GET /api/devices/{user}` (the profile also answers without a token), and only then saves the new address and moves anything it keeps per address. Clients only move to an `https` address, keep the saved one when the check fails or they are offline, and ignore the field otherwise.
@@ -17,7 +17,8 @@ these additions preserve bearer authentication and the existing notification arr
 |---|---|
 | `activity` | the durable inbox, `/api/activity/{user}` (below) |
 | `app_sign_in` | `POST /api/sign-in/{user}` `{"action": "browser", "provider", "purpose": "link" \| "reauth"}` gives an address to link a provider or sign in with it again in a browser (see `docs/server.md`, sign in with Google, GitHub or GitLab) |
-| `companion_unlocks` | the hidden cow companion: `/api/unlocks/{user}` and the companion `cow` (below, study companion) |
+| `companion_milestones` | the server grants companions at milestones and answers `progress` in `GET /api/unlocks/{user}`; Ankilope is locked too (below, study companion) |
+| `companion_unlocks` | `/api/unlocks/{user}` and the companion `cow` (below, study companion) |
 | `cookie_session` | the web dashboard works with the session cookie alone when the native app hands it only `{user}`, no token |
 | `deck_share` | telling chosen friends about a deck just finished, `POST /api/decks/{user}/share` (see [sharing.md](sharing.md)) |
 | `devices` | password change and the device list and sign-out (`/api/devices/{user}`, see `docs/server.md`) |
@@ -60,14 +61,27 @@ The `403` with `"reauth": true` described under capabilities applies to the firs
 
 `GET /api/companion/{user}` answers the owner's companion, `{"companion": "aki"}`; `POST` with the same shape saves it. The companions are `aki` (the default), `ankilope`, `cow` and `none`; anything else is `400`. Example: `companion.json`.
 
-The cow, shown as Bluma, is hidden. A player unlocks it in the companion picker by tapping Ankilope `taps` times in a row, each tap at most `max_gap_ms` after the one before, as [`tests/fixtures/companion_unlock.json`](../tests/fixtures/companion_unlock.json) says. Before that the picker offers only Aki, Ankilope and no companion, with no hint. After it, the client says "Bluma joined you!", shows Bluma in the picker and selects it.
+Every companion but Aki is earned at a milestone. The conditions are defined once in [`tests/fixtures/companion_unlock.json`](../tests/fixtures/companion_unlock.json), which both clients and the server test against:
+
+| companion | earned by | `kind` | `goal` |
+|---|---|---|---|
+| `ankilope` | reaching level 30 | `level` | 30 |
+| `cow` (Bluma) | 10 hours of study in total | `study_hours` | 10 |
+
+The fixture also lists companions without art yet (`"status": "planned"`); servers and clients ignore them until they go live. A `secret` companion is hidden until earned; the others show in the picker as a locked silhouette with their condition and progress, and cannot be chosen.
+
+The server decides from what it already has: the level and the whole hours studied that the profile shows. It checks when reviews are uploaded, on each worker run and on `GET /api/unlocks/{user}`, so a player who already qualifies gets the unlock the next time any of these happens. Unlocks are permanent: a level or streak lost later takes nothing back. Progress is worked out from the reviews each time and never stored.
 
 | request | answers |
 |---|---|
-| `GET /api/unlocks/{user}` | `{"unlocks": ["cow"]}`: everything the player has unlocked, `[]` for nothing |
-| `POST /api/unlocks/{user}` `{"unlock": "cow"}` | the same, after adding it. Unlocking again changes nothing |
+| `GET /api/unlocks/{user}` | `{"unlocks": ["cow"], "progress": {"ankilope": {"kind": "level", "value": 3, "goal": 30}}}`: everything the player has unlocked, `[]` for nothing, and for each locked companion that is not secret, how far the player is. `value` counts in the unit of `kind` and stays below `goal` |
+| `POST /api/unlocks/{user}` `{"unlock": "cow"}` | the same, when the player already has that unlock; `409` when not |
 
-Both need the player's own token. An unknown unlock is `400`. Saving the companion `cow` before it is unlocked is `409`, so a client unlocks first. Unlocks are kept per account and are not settings: they follow the account whatever the **Sync settings** switch says. A client that is offline when the player unlocks the cow keeps the unlock and sends it when it next reaches a server that lists `companion_unlocks`. Unlocks are part of the data download and deleted with the account. Examples: `unlocks_save.json`, `unlocks.json`.
+Both need the player's own token. An unknown unlock, or a planned one, is `400`. Clients no longer report unlocks: the server grants every one, and `POST` only keeps answering for clients from before milestones. A client that sees `companion_milestones` reads `unlocks` and `progress` instead. Unlocks are kept per account and are not settings: they follow the account whatever the **Sync settings** switch says. Unlocks are part of the data download and deleted with the account. Examples: `unlocks.json`, `unlocks_save.json`.
+
+Saving a companion the player has not unlocked is `409` for a client that sends the header `X-AnkiQuest-Companions: milestones`, which says it shows locked companions itself. Send it with every `POST /api/companion/{user}`. Clients released before milestones offered Ankilope to everyone and do not send it: their save of `ankilope` is accepted and grants the unlock, without a moment, so they show no error; their save of `cow` is `409`, as before.
+
+When the server grants an unlock it records a moment with the event key `companion:{companion}`, such as `companion:cow`: a `celebration` row in the inbox with `topic` `companion`, the title "Bluma joined you!" (the companion's name), a body naming the milestone ("You have studied for 10 hours in total.") and a win of kind `companion_unlocked`. Show it like the other moments, with the art of the companion that joined rather than the chosen one, and share it like any other win, for example `POST /api/share/{user}` `{"moment": {"key": "companion:cow"}, "to": "circle"}`. Its share card shows the companion that joined. Example: `notifications_companion.json`. Players who had Ankilope chosen or the cow unlocked when this came in keep them without a moment.
 
 The cow has no art yet (#88). Until it has, clients and the server draw it with Ankilope's art turned purple: CSS `hue-rotate(250deg)`, or the same colour matrix applied to the image.
 
@@ -136,7 +150,7 @@ all cookie-authenticated mutations require `X-Ankiquest-CSRF: 1`. when origin is
 
 both timestamp fields are Unix **seconds**; challenge `start_at` and `end_at` retain their existing Unix **milliseconds** convention. Non-challenge rows have null `challenge_id` and `route`. existing rows acquire null `read_at` and are unread. activity preserves historical reminder text, including reminders that are no longer timely; it is not a source for replaying old system notifications.
 
-`topic` is present only when the server knows what a row is about, so clients can pick matching art. Celebrations and game events carry the first part of their event key: `achievement`, `level`, `streak`, `record`, `conquered`, `secured` or `goal`; a grouped "N new unlocks" row has one only when all of its events share it. A weekly recap carries `place:N` when the player was ranked. Both personal inbox endpoints include it. A `reminder_weekly_recap` body has one sentence a line (reviews and XP, place, friends, change from the previous week, best day, daily wins, streak); show it with its line breaks, or join the lines with spaces where only one line fits. Recaps written before this came as one line.
+`topic` is present only when the server knows what a row is about, so clients can pick matching art. Celebrations and game events carry the first part of their event key: `achievement`, `level`, `streak`, `record`, `conquered`, `secured`, `goal` or `companion`; a grouped "N new unlocks" row has one only when all of its events share it. A weekly recap carries `place:N` when the player was ranked. Both personal inbox endpoints include it. A `reminder_weekly_recap` body has one sentence a line (reviews and XP, place, friends, change from the previous week, best day, daily wins, streak); show it with its line breaks, or join the lines with spaces where only one line fits. Recaps written before this came as one line.
 
 `moment` is present only when a row is about a win: the player's own celebration, a friend's cheer (`reaction`) for one of the player's wins, or, on a friend's `share` row, that friend's win. It is that win's stable event key, the same key the moment was recorded under, such as `conquered:1793183400000`, `level:4`, `streak:20000:30`, `goal:20012` or `record:day:20000`. A conquered card's key is `conquered:` followed by the `at` the upload response returned for it in `conquests[]`, so a client that already showed that moment can recognise its `celebration` row and not show it twice; check `kind` too, since a cheer for the same win carries the same key. Grouped "N new unlocks" rows and rows not about a win have no `moment`. Unlike `win`, a server id the client cannot know beforehand, the key can be matched against what the client already saw.
 

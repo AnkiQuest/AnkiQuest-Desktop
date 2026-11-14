@@ -383,6 +383,9 @@ fn record_upload(
     if silent {
         mark_events_seen(&store, user, &profile).map_err(store_error)?;
     }
+
+    // Companions earned by this upload are granted now; the worker announces them.
+    crate::companions::moments(&store, user, &profile).map_err(store_error)?;
     profile.goal =
         Some(goals::view(&store.conn, user, &profile).map_err(|e| store_error(e.into()))?);
     let mut feedback = feedback::feedback(before.as_ref(), &profile, &announced);

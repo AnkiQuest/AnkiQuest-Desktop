@@ -674,7 +674,14 @@ async fn examples_match_the_handlers() {
         )
         .await,
     ));
-    // Hill finds the cow in the companion picker; the list then holds it.
+    // Hill unlocked the cow before it was earned by study and keeps it; asking for it again
+    // answers the list, with the progress toward Ankilope.
+    f.app
+        .store
+        .lock()
+        .unwrap()
+        .add_unlock("hill", crate::companions::Unlock::Cow, NOW_MS)
+        .unwrap();
     examples.push((
         "unlocks_save",
         f.call(
@@ -973,6 +980,44 @@ async fn examples_match_the_handlers() {
     ));
     crate::app::fix_now_ms(Some(NOW_MS));
     f.remember_links();
+
+    // Cerro passes 10 hours of study; the worker's moment for Bluma reaches the inbox.
+    f.call(
+        "POST",
+        "/api/reviews/cerro",
+        Some("cerro-secret"),
+        json!({
+            "reviews": [{"id": NOW_MS - 60_000, "cid": 9_000, "last_ivl": 1, "ivl": 3, "time_ms": 36_000_000, "kind": 1}],
+            "clock": {"offset_west_min": 0, "rollover_hour": 4}
+        }),
+    )
+    .await;
+    {
+        let profile = f.app.profile("cerro").unwrap();
+        let mut store = f.app.store.lock().unwrap();
+        let joined = crate::companions::moments(&store, "cerro", &profile).unwrap();
+        store
+            .queue_moments(
+                "cerro",
+                &joined,
+                profile.day,
+                NOW_MS,
+                false,
+                true,
+                &crate::wins::stats(&profile),
+            )
+            .unwrap();
+    }
+    examples.push((
+        "notifications_companion",
+        f.call(
+            "GET",
+            "/api/notifications/cerro",
+            Some("cerro-secret"),
+            Value::Null,
+        )
+        .await,
+    ));
 
     let update = std::env::var_os("UPDATE_API_EXAMPLES").is_some_and(|v| v == "1");
     let dir = examples_dir();

@@ -20,6 +20,7 @@ KINDS = (
     ("conquered", "Conquered cards"),
     ("place", "Top three of the week"),
     ("challenge", "Challenges completed"),
+    ("companion_unlocked", "New companions"),
 )
 DEFAULT_CAP = 3
 CAP_RANGE = (1, 10)

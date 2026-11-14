@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QImage, QLabel, QPushButton
+from aqt.qt import QApplication, QImage, QLabel
 
 from addon_loader import load_in_package
 
@@ -17,24 +17,22 @@ share = load_in_package("companion_qt", "share")
 companion_ui.tr = lambda text: text
 
 UNLOCKS = frozenset([companion_unlock.FEATURE])
+LOCKED = {"unlocks": [], "progress": {
+    "ankilope": {"kind": "level", "value": 3, "goal": 30},
+    "cow": {"kind": "study_hours", "value": 6, "goal": 10},
+}}
 
 
 class Picker(unittest.TestCase):
     def setUp(self):
-        self.prefs = {}
-        self.unlocked = []
+        self.answer = LOCKED
         self.api = SimpleNamespace(
             base="https://example.test", name="hill",
-            capabilities=Mock(return_value=UNLOCKS), companion=Mock(return_value="ankilope"),
-            unlocks=Mock(side_effect=lambda: {"unlocks": list(self.unlocked)}),
-            unlock=Mock(side_effect=self.unlock), set_companion=Mock(),
+            capabilities=Mock(return_value=UNLOCKS), companion=Mock(return_value="aki"),
+            unlocks=Mock(side_effect=lambda: self.answer), set_companion=Mock(),
         )
-        self.mw = SimpleNamespace(pm=SimpleNamespace(profile=self.prefs), taskman=SimpleNamespace(run_in_background=self.run_task))
+        self.mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=self.run_task))
         self.saved = []
-
-    def unlock(self, unlock):
-        self.unlocked.append(unlock)
-        return {"unlocks": list(self.unlocked)}
 
     def run_task(self, work, done):
         future = Future()
@@ -53,72 +51,67 @@ class Picker(unittest.TestCase):
         return [row.itemAt(index).widget().property("companion") for index in range(row.count())]
 
     def card(self, picker, companion):
-        return next(card for card in picker.dialog.findChildren(QPushButton, companion_ui.CARD) if card.property("companion") == companion)
+        return picker._cards[companion]
 
-    def message(self, picker):
-        return picker.dialog.findChild(QLabel, "ankiquest_companion_message")
+    def texts(self, card):
+        return [label.text() for label in card.findChildren(QLabel) if label.text()]
 
-    def test_the_cow_is_hidden_until_ankilope_is_tapped_nine_times(self):
+    def test_locked_companions_show_their_condition_and_cannot_be_chosen(self):
         picker = self.picker()
-        self.assertEqual(["aki", "ankilope", "none"], self.cards(picker))
-        self.assertEqual("ankilope", picker.chosen(), "the account's companion is selected")
-        for _ in range(companion_unlock.TAPS - 1):
-            self.card(picker, "ankilope").click()
-        self.assertEqual(["aki", "ankilope", "none"], self.cards(picker))
-        self.card(picker, "ankilope").click()
-
         self.assertEqual(["aki", "ankilope", "cow", "none"], self.cards(picker))
-        self.assertEqual("cow", picker.chosen())
-        self.assertEqual("Bluma joined you!", self.message(picker).text())
-        self.api.unlock.assert_called_once_with("cow")
-        key = companion_unlock.account(self.api)
-        self.assertEqual([], companion_unlock.pending(self.prefs, key), "the server has it")
+        self.assertEqual(["Ankilope", "Reach level 30", "Level 3 of 30"], self.texts(self.card(picker, "ankilope")))
+        self.assertEqual(["Bluma", "Study for 10 hours in total", "6 of 10 hours"], self.texts(self.card(picker, "cow")))
+        for companion in ("ankilope", "cow"):
+            self.assertFalse(self.card(picker, companion).isEnabled(), companion)
+        self.card(picker, "ankilope").click()
+        self.assertEqual("aki", picker.chosen())
+        self.card(picker, "none").click()
+        self.assertEqual("none", picker.chosen())
 
-        # Saving the cow sends no second unlock.
+    def test_an_unlocked_companion_is_chosen_and_saved(self):
+        self.answer = {"unlocks": ["cow"], "progress": {"ankilope": LOCKED["progress"]["ankilope"]}}
+        picker = self.picker()
+        cow = self.card(picker, "cow")
+        self.assertTrue(cow.isEnabled())
+        self.assertEqual(["Bluma"], self.texts(cow))
+        cow.click()
         picker._save()
         self.api.set_companion.assert_called_once_with("cow")
-        self.api.unlock.assert_called_once_with("cow")
         self.assertEqual(["cow"], self.saved)
 
+    def test_a_server_before_milestones_offers_ankilope_and_hides_the_cow(self):
+        self.api.capabilities.return_value = frozenset()
+        picker = self.picker()
+        self.assertEqual(["aki", "ankilope", "none"], self.cards(picker))
+        self.assertTrue(self.card(picker, "ankilope").isEnabled())
+        self.api.unlocks.assert_not_called()
+
+    def test_the_current_companion_shows_before_the_server_answers(self):
+        self.api.capabilities.side_effect = OSError("offline")
+        self.api.companion.return_value = "cow"
+        picker = companion_ui.Picker(None, self.mw, self.api, "cow", self.saved.append)
+        self.assertEqual(["aki", "cow", "none"], self.cards(picker))
+        self.assertEqual("cow", picker.chosen())
+
     def test_each_card_previews_its_poses(self):
+        self.answer = {"unlocks": ["ankilope"], "progress": {}}
         picker = self.picker()
         for companion, count in (("aki", 3), ("ankilope", 2), ("none", 1)):
             labels = [label for label in self.card(picker, companion).findChildren(QLabel) if label.pixmap() is not None and not label.pixmap().isNull()]
             self.assertEqual(count if companion != "none" else 0, len(labels), companion)
 
-    def test_an_unlock_made_offline_is_kept_and_sent_with_the_cow(self):
-        self.api.capabilities.side_effect = OSError("offline")
-        picker = self.picker()
-        self.api.unlock.side_effect = OSError("offline")
-        for _ in range(companion_unlock.TAPS):
-            self.card(picker, "ankilope").click()
-        self.assertEqual("cow", picker.chosen())
-        key = companion_unlock.account(self.api)
-        self.assertEqual(["cow"], companion_unlock.pending(self.prefs, key))
-
-        # Back online, saving the cow unlocks it first.
-        self.api.capabilities.side_effect = None
-        self.api.unlock.side_effect = self.unlock
-        picker._save()
-        self.assertEqual(["cow"], self.unlocked)
-        self.api.set_companion.assert_called_once_with("cow")
-        self.assertEqual([], companion_unlock.pending(self.prefs, key))
-
-    def test_a_server_without_unlocks_keeps_the_cow_hidden(self):
-        self.api.capabilities.return_value = frozenset()
-        picker = self.picker()
-        for _ in range(companion_unlock.TAPS):
-            self.card(picker, "ankilope").click()
-        self.assertEqual(["aki", "ankilope", "none"], self.cards(picker))
-        self.api.unlock.assert_not_called()
-
-    def test_an_unlock_from_another_device_shows_the_cow(self):
-        self.unlocked.append("cow")
-        self.api.companion.return_value = "cow"
-        picker = self.picker()
-        self.assertEqual(["aki", "ankilope", "cow", "none"], self.cards(picker))
-        self.assertEqual("cow", picker.chosen())
-        self.assertFalse(self.message(picker).isVisible())
+    def test_a_silhouette_keeps_the_shape_and_drops_the_colours(self):
+        face = companion_art.pixmap(share.face_path("ankilope"), "ankilope")
+        shadow = companion_art.silhouette(face).toImage().convertToFormat(QImage.Format.Format_ARGB32)
+        plain = face.toImage().convertToFormat(QImage.Format.Format_ARGB32)
+        colours = set()
+        for x in range(0, plain.width(), 4):
+            y = plain.height() // 2
+            self.assertEqual(plain.pixelColor(x, y).alpha() > 0, shadow.pixelColor(x, y).alpha() > 0)
+            if shadow.pixelColor(x, y).alpha() > 0:
+                colour = shadow.pixelColor(x, y)
+                colours.add(colour.red() == colour.green() == colour.blue())
+        self.assertEqual({True}, colours)
 
     def test_the_cow_is_ankilope_turned_purple(self):
         face = share.face_path("cow")

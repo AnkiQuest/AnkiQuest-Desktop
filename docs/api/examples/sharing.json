@@ -3,6 +3,7 @@
   "policies": {
     "achievement": "ask",
     "challenge": "ask",
+    "companion_unlocked": "ask",
     "conquered": "ask",
     "daily_goal": "ask",
     "level": "ask",

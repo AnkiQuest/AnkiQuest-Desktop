@@ -44,24 +44,5 @@ class PollAccount(HeldTasks):
         self.assertEqual(2, self.addon.state["profile"]["level"])
 
 
-    def test_an_unlock_made_offline_is_sent_by_the_next_poll(self):
-        unlock = self.addon.companion_unlock
-        key = unlock.account(self.api)
-        unlock.record(self.prefs(), key, "cow")
-        self.api.capabilities = Mock(return_value=frozenset([unlock.FEATURE]))
-        self.api.unlock = Mock(side_effect=[OSError("offline"), {"unlocks": ["cow"]}])
-        self.addon.state["profile"] = None
-        self.addon.poll(quiet=True)
-        self.finish()
-        self.assertEqual(["cow"], unlock.pending(self.prefs(), key), "kept while offline")
-        self.addon.poll(quiet=True)
-        self.finish()
-        self.assertEqual([], unlock.pending(self.prefs(), key))
-        self.assertEqual(2, self.api.unlock.call_count)
-
-    def prefs(self):
-        return self.addon.mw.pm.profile
-
-
 if __name__ == "__main__":
     unittest.main()

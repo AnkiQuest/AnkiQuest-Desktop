@@ -18,6 +18,7 @@ and link. All clients (Android, desktop add-on, web) use this API. None of them 
 | `conquered` | a card that kept failing is conquered | `conquered:{at}` | `ask` |
 | `place` | top 3 on the weekly board at the end of the week | `place:{week}:{n}` | `ask` |
 | `challenge` | a challenge is completed | `challenge:{id}` | `ask` |
+| `companion_unlocked` | a companion is earned at a milestone | `companion:{companion}` | `ask` |
 
 Deck completions keep their own per-deck recipients (`/api/decks`) and are not part of this table.
 A client can also ask right after a deck is finished which friends to tell (see "Telling friends about a finished deck").
