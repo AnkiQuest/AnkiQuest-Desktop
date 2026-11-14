@@ -177,19 +177,17 @@ fn missing(folder: &Path) -> Result<Vec<String>, String> {
 /// Encodes `image` as an indexed PNG with a 256-colour RGBA palette.
 fn encode(image: &RgbaImage) -> Result<Vec<u8>, String> {
     let quant = NeuQuant::new(SAMPLING, COLOURS, image.as_raw());
-    let indices: Vec<u8> = image
-        .as_raw()
-        .chunks_exact(4)
+    let (pixels, _) = image.as_raw().as_chunks::<4>();
+    let indices: Vec<u8> = pixels
+        .iter()
         .map(|pixel| quant.index_of(pixel) as u8)
         .collect();
 
     // Split the RGBA palette into PNG's colour and transparency chunks.
-    let palette = quant.color_map_rgba();
-    let colours: Vec<u8> = palette
-        .chunks_exact(4)
-        .flat_map(|c| [c[0], c[1], c[2]])
-        .collect();
-    let alpha: Vec<u8> = palette.chunks_exact(4).map(|c| c[3]).collect();
+    let rgba = quant.color_map_rgba();
+    let (palette, _) = rgba.as_chunks::<4>();
+    let colours: Vec<u8> = palette.iter().flat_map(|&[r, g, b, _]| [r, g, b]).collect();
+    let alpha: Vec<u8> = palette.iter().map(|&[_, _, _, a]| a).collect();
 
     let mut bytes = Vec::new();
     let mut encoder = png::Encoder::new(&mut bytes, image.width(), image.height());
