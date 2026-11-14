@@ -13,22 +13,31 @@ folder is left out: its pictures reuse other works.
 
 ## Core poses (AGENTS.md, Companion art)
 
-Chibi version, from `emoji/`:
+The pack's art serves as Anki-tan's poses until we draw our own, or for
+good. Where the full version has no picture, it uses the chibi face.
 
-| Core pose | File |
+| Core pose | Anki-tan | Anki-tan chibi |
+|---|---|---|
+| face | `sprite/idle/anki-tan_idle_0001.png` | `emoji/Ankitan_00_smile.png` |
+| asleep | `emoji/Ankitan_35_sleeping.png` | `emoji/Ankitan_35_sleeping.png` |
+| happy | `sticker/anki_tan_good.png` | `emoji/Ankitan_10_party.png` |
+| streak | `emoji/Ankitan_09_fire_eyes.png` | `emoji/Ankitan_09_fire_eyes.png` |
+| sad | `emoji/Ankitan_02_cry.png` | `emoji/Ankitan_02_cry.png` |
+| hopeful | `sticker/ankitan_lets_study.png` | `emoji/Ankitan_06_pleading.png` |
+| frozen | missing | missing |
+| neglected | `emoji/Ankitan_49_lost_streaks.png` | `emoji/Ankitan_49_lost_streaks.png` |
+
+Extensions, both versions unless noted:
+
+| Extension | File |
 |---|---|
-| face | `Ankitan_00_smile.png` |
-| asleep | `Ankitan_35_sleeping.png` |
-| happy | `Ankitan_10_party.png` |
-| streak | `Ankitan_09_fire_eyes.png` |
-| sad | `Ankitan_02_cry.png` |
-| hopeful | `Ankitan_06_pleading.png` |
-| frozen | missing |
-| neglected | `Ankitan_49_lost_streaks.png` |
+| welcome | `sticker/anki_tan_hello.png` (full), `emoji/Ankitan_21_saluting.png` (chibi) |
+| review | `sticker/press_spacebar.png` |
+| streak_legend | `emoji/Ankitan_43_crown.png` |
+| streak_milestone | `emoji/Ankitan_48_perfect_streaks.png` |
+| hurt | `emoji/Ankitan_28_spiral_eyes.png` |
+| dead | `emoji/Ankitan_39_crossed_out_eyes.png` |
+| celebrate (unlock reveal) | `illust/anki_tan_main.png` |
+| idle and wave animations | `sprite/idle`, `sprite/hello` |
 
-Extensions: `streak_legend` crown (`43`), `streak_milestone` perfect
-streaks (`48`), `dead` crossed-out eyes (`39`), `hurt` spiral eyes
-(`28`), `welcome` saluting (`21`).
-
-The chibi version lacks only `frozen`. The full version has welcome and
-happy (`illust/`, `sticker/`) but none of the other core poses.
+Both versions lack only `frozen`.
