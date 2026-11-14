@@ -31,7 +31,7 @@ class UpdateTests(unittest.TestCase):
         meta = json.dumps({"release": 10, "nightly": 3, "commit": "1a2b3c4d5e"}).encode()
         nightly = updates.latest_nightly(lambda url, timeout=20: meta)
         self.assertEqual((nightly["release"], nightly["nightly"]), (10, 3))
-        self.assertEqual(nightly["url"], "https://github.com/float3/ankiquest/releases/download/addon-nightly/ankiquest.ankiaddon")
+        self.assertEqual(nightly["url"], "https://github.com/AnkiQuest/ankiquest/releases/download/addon-nightly/ankiquest.ankiaddon")
         self.assertIsNone(updates.latest_nightly(lambda url, timeout=20: b'{"release": 0, "nightly": 1}'))
 
     def test_newer_orders_release_then_nightly_and_never_updates_a_local_copy(self):
