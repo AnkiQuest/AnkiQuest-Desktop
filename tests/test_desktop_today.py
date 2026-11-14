@@ -710,6 +710,17 @@ class HomeTests(unittest.TestCase):
         self.home.local["days"] = None
         self.assertNotIn("ankiquest-day", self.render().tree)
 
+    def test_a_streak_without_study_today_makes_aki_sad(self):
+        # Regression: cards due and no study today showed the review pose, not a worried Aki.
+        self.api.companion.return_value = "aki"
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"]["streak"] = 64
+        self.home.local["days"] = None
+        content = self.render()
+        self.assertIn("/_addons/ankiquest/art/aki_at_risk.png", content.stats)
+        self.assertNotIn("art/aki_review.png", content.stats)
+
     def test_studying_and_period_links_act_only_from_the_deck_list(self):
         handle = self.hooks.webview_did_receive_js_message[-1]
         self.assertEqual((True, None), handle(False, "ankiquest:study:5", self.mw.deckBrowser))
