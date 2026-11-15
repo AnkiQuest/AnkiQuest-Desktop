@@ -1910,6 +1910,36 @@ PORTUGUESE.update({
     "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalação é atualizada pelo AnkiWeb. Usa Ferramentas → Extras → Procurar atualizações.",
 })
 
+# Native moment recipients; wording matches Android's share sheet.
+SPANISH.update({
+    "Search friends and groups": "Buscar amigos y grupos", "All friends": "Todos los amigos",
+    "Retry": "Reintentar",
+    "Add a note (optional)": "Añadir una nota (opcional)", "More apps…": "Más aplicaciones…",
+    "Add friends in AnkiQuest to send them your moments.": "Añade amigos en AnkiQuest para enviarles tus momentos.",
+    "Invite a friend": "Invitar a un amigo", "Couldn't load friends (%s).": "No se pudieron cargar los amigos (%s).",
+})
+GERMAN.update({
+    "Search friends and groups": "Freunde und Gruppen suchen", "All friends": "Alle Freunde",
+    "Retry": "Erneut versuchen",
+    "Add a note (optional)": "Nachricht hinzufügen (optional)", "More apps…": "Weitere Apps…",
+    "Add friends in AnkiQuest to send them your moments.": "Füge Freunde in AnkiQuest hinzu, um deine Momente mit ihnen zu teilen.",
+    "Invite a friend": "Freund einladen", "Couldn't load friends (%s).": "Freunde konnten nicht geladen werden (%s).",
+})
+FRENCH.update({
+    "Search friends and groups": "Chercher des amis et des groupes", "All friends": "Tous les amis",
+    "Retry": "Réessayer",
+    "Add a note (optional)": "Ajouter un message (facultatif)", "More apps…": "Autres applis…",
+    "Add friends in AnkiQuest to send them your moments.": "Ajoute des amis dans AnkiQuest pour leur envoyer tes moments.",
+    "Invite a friend": "Inviter un ami", "Couldn't load friends (%s).": "Impossible de charger les amis (%s).",
+})
+PORTUGUESE.update({
+    "Search friends and groups": "Procurar amigos e grupos", "All friends": "Todos os amigos",
+    "Retry": "Tentar novamente",
+    "Add a note (optional)": "Adicionar uma nota (opcional)", "More apps…": "Mais apps…",
+    "Add friends in AnkiQuest to send them your moments.": "Adiciona amigos no AnkiQuest para lhes enviares os teus momentos.",
+    "Invite a friend": "Convidar um amigo", "Couldn't load friends (%s).": "Não foi possível carregar os amigos (%s).",
+})
+
 # Shared settings, moments and sharing wording; see tests/fixtures/desktop-wording.json.
 SPANISH.update({
     "Notify me about": "Avísame de",
@@ -1948,6 +1978,28 @@ PORTUGUESE.update({
     "Notify me about": "Avisar-me sobre",
     "App and privacy": "App e privacidade",
     "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Ninguém novo recebeu: os teus amigos já têm, ou ainda não tens amigos no AnkiQuest.",
+})
+
+# Aki's greeting on the first open. Android has these in English only so far.
+SPANISH.update({
+    "Hi, I’m Aki!": "¡Hola, soy Aki!",
+    "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "AnkiQuest añade rachas, amigos y clasificaciones a Anki. Te haré compañía mientras estudias.",
+    "Aki waving hello": "Aki saludando", "Later": "Más tarde", "Let’s study": "Vamos a estudiar",
+})
+GERMAN.update({
+    "Hi, I’m Aki!": "Hallo, ich bin Aki!",
+    "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "AnkiQuest ergänzt Anki um Lernserien, Freunde und Ranglisten. Ich leiste dir beim Lernen Gesellschaft.",
+    "Aki waving hello": "Aki winkt zur Begrüßung", "Later": "Später", "Let’s study": "Auf zum Lernen",
+})
+FRENCH.update({
+    "Hi, I’m Aki!": "Salut, je suis Aki !",
+    "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "AnkiQuest ajoute des séries, des amis et des classements à Anki. Je te tiens compagnie pendant que tu révises.",
+    "Aki waving hello": "Aki fait coucou", "Later": "Plus tard", "Let’s study": "Allons réviser",
+})
+PORTUGUESE.update({
+    "Hi, I’m Aki!": "Olá, sou a Aki!",
+    "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "O AnkiQuest acrescenta sequências, amigos e classificações ao Anki. Faço-te companhia enquanto estudas.",
+    "Aki waving hello": "Aki a acenar", "Later": "Mais tarde", "Let’s study": "Vamos estudar",
 })
 
 # Anki-tan credit, as on Android's About screen (ankiquest_about_anki_tan).
