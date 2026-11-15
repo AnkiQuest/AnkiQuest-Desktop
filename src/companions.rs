@@ -729,6 +729,81 @@ mod tests {
         cleanup(app, path);
     }
 
+    /// The companion moments in `hill`'s inbox at `path`, for a client that lists the companions
+    /// it can draw in `art`, or a released one that lists none.
+    async fn companion_moments(app: &Arc<App>, path: &str, art: Option<&str>) -> Value {
+        let mut request = axum::http::Request::builder()
+            .uri(path)
+            .header("authorization", "Bearer hill-secret");
+        if let Some(art) = art {
+            request = request.header("x-ankiquest-companion-art", art);
+        }
+        let request = request.body(axum::body::Body::empty()).unwrap();
+        let (status, body) =
+            crate::test_support::json_response(crate::test_support::route(app, request).await)
+                .await;
+        assert_eq!(status, StatusCode::OK, "{body}");
+        let rows = body.get("items").unwrap_or(&body).as_array().unwrap();
+        Value::Array(
+            rows.iter()
+                .filter_map(|row| row["moment"].as_str())
+                .filter(|key| key.starts_with(MOMENT_PREFIX))
+                .map(|key| Value::String(key.into()))
+                .collect(),
+        )
+    }
+
+    #[tokio::test]
+    async fn the_inbox_leaves_out_companions_a_client_cannot_draw() {
+        let (app, path) = fixture();
+        let now = crate::app::now_ms();
+
+        // A first upload and worker pass record history; the next upload brings Bluma.
+        for (at, time_ms) in [
+            (now - 3 * HOUR_MS, 10 * HOUR_MS - 60_000),
+            (now - HOUR_MS, 60_000),
+        ] {
+            let upload = call(
+                &app,
+                "POST",
+                "/api/reviews/hill",
+                "hill-secret",
+                study(at, time_ms),
+            )
+            .await;
+            assert_eq!(upload.0, StatusCode::OK);
+            crate::worker::tick(&app).unwrap();
+        }
+        let joined = json!(["companion:cow"]);
+
+        // Released clients draw Aki and Ankilope only, and send no list: Bluma stays out of
+        // both inbox endpoints, and the activity counts.
+        for inbox in ["/api/notifications/hill", "/api/activity/hill"] {
+            assert_eq!(
+                companion_moments(&app, inbox, None).await,
+                json!([]),
+                "{inbox}"
+            );
+            let listed = companion_moments(&app, inbox, Some("aki, ankilope")).await;
+            assert_eq!(listed, json!([]), "{inbox}");
+            let listed = companion_moments(&app, inbox, Some("aki,ankilope,cow")).await;
+            assert_eq!(listed, joined, "{inbox}");
+            let listed = companion_moments(&app, inbox, Some("aki, ankilope, cow, horse")).await;
+            assert_eq!(listed, joined, "{inbox}");
+        }
+        let (_, activity) = call(
+            &app,
+            "GET",
+            "/api/activity/hill",
+            "hill-secret",
+            Value::Null,
+        )
+        .await;
+        let items = activity["items"].as_array().unwrap().len();
+        assert_eq!(activity["unread_count"], items, "{activity}");
+        cleanup(app, path);
+    }
+
     /// `POST /api/companion/hill` choosing `companion`, from a client that does or does not
     /// show locked companions.
     async fn choose(app: &Arc<App>, companion: &str, shows: bool) -> StatusCode {
