@@ -4,16 +4,20 @@
 //! - `export-android-art [--check] <android-checkout>`
 //! - `export-addon-art [--check | --replace]`
 //! - `banner [--social] [--out <file>]`
+//! - `package-addon --output <file> [--ankiweb] [--ref <ref>] [--metadata <file>]`
 
 mod art;
 mod contract;
+mod package;
 
 use std::env;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const USAGE: &str = "usage: xtask android-contract --android-resources <dir> \
 [--server-examples <dir>]\n       xtask export-android-art [--check] <android-checkout>\n       \
-xtask export-addon-art [--check | --replace]\n       xtask banner [--social] [--out <file>]";
+xtask export-addon-art [--check | --replace]\n       xtask banner [--social] [--out <file>]\n       \
+xtask package-addon --output <file> [--ankiweb] [--ref <ref>] [--metadata <file>]";
 
 fn main() -> ExitCode {
     let mut args = env::args().skip(1);
@@ -26,6 +30,7 @@ fn main() -> ExitCode {
         Some("export-android-art") => art::run(&rest),
         Some("export-addon-art") => art::addon(&rest),
         Some("banner") => art::banner(&rest),
+        Some("package-addon") => package::run(&rest),
         _ => usage(),
     }
 }
@@ -34,4 +39,9 @@ fn main() -> ExitCode {
 fn usage() -> ExitCode {
     eprintln!("{USAGE}");
     ExitCode::FAILURE
+}
+
+/// The repository root.
+fn root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
