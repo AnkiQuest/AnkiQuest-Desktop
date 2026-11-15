@@ -105,6 +105,36 @@
     },
     {
       "exporter": "addon",
+      "file": "addon/art/ankilope_sad.png",
+      "master": "static/ankilope/sad.png",
+      "sha256": "b39b2ebaded5e5ab8326d38564e7797e7df4a4c7154c856e09dff1d9cc4de713"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_hopeful.png",
+      "master": "static/ankilope/hopeful.png",
+      "sha256": "8bc4f948b6ab82d32e47ffbf5100f25fb73fd95e03e498bd2223f39836d04585"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_frozen.png",
+      "master": "static/ankilope/frozen.png",
+      "sha256": "8edfb1c177bce4006cc62f7bbf69971e3a02848bb6e4af05bdde758a85f92233"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_sleeping.png",
+      "master": "static/ankilope/sleeping.png",
+      "sha256": "b22abcc439c7bd634400b5881ea862d18c07b325a29ccfab800441c3a281d250"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_neglected.png",
+      "master": "static/ankilope/neglected.png",
+      "sha256": "c3f8a49fe2f7979bc349f65d15571efda4f5bdb38a3deedc5dbbf0661f815aba"
+    },
+    {
+      "exporter": "addon",
       "file": "addon/art/ankilope_welcome.png",
       "master": "static/ankilope/welcome.png",
       "sha256": "46dfa9615d04387f0c8db07688be1c948083565a17518dd1c32aa4d417db310c"
@@ -202,6 +232,14 @@
     {
       "file": "docs/branding/core-poses-2026-11/aki-core-review.png",
       "why": "Review sheet for Aki's core poses (#288); a record in the docs, not a copy anything shows."
+    },
+    {
+      "file": "docs/branding/core-poses-2026-11/ankilope-core-exports.png",
+      "why": "Review sheet for Ankilope's core poses (#310); a record in the docs, not a copy anything shows."
+    },
+    {
+      "file": "docs/branding/core-poses-2026-11/ankilope-core-review.png",
+      "why": "Review sheet for Ankilope's core poses (#310); a record in the docs, not a copy anything shows."
     },
     {
       "file": "assets/retired/addon/aki_face-e7ab7876.png",

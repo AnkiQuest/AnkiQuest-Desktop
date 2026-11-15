@@ -4,7 +4,7 @@ from contextlib import ExitStack
 import importlib
 from pathlib import Path
 import re
-import runpy
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -27,6 +27,13 @@ from aqt.taskman import TaskManager
 
 ROOT = Path(__file__).resolve().parents[1]
 app = QApplication.instance() or QApplication([])
+
+
+def package(archive, *flags):
+    """Builds the release 13 archive with the repository's packager (crates/xtask)."""
+    command = ["cargo", "run", "--quiet", "-p", "ankiquest-xtask", "--", "package-addon",
+               "--ref", "refs/tags/addon-13", "--output", str(archive), *flags]
+    subprocess.run(command, cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
 
 
 def members():
@@ -85,11 +92,10 @@ class RealAnki(unittest.TestCase):
                 mw.form = Ui_MainWindow()
                 mw.form.setupUi(mw)
                 manager = AddonManager(mw)
-                package = runpy.run_path(str(ROOT / ".github/scripts/package-addon.py"))
                 archives = {}
-                for ankiweb, name in ((False, "ankiquest"), (True, "414948448")):
+                for flags, name in (((), "ankiquest"), (("--ankiweb",), "414948448")):
                     archive = Path(folder) / (name + ".ankiaddon")
-                    package["_build"](ROOT / "addon", archive, {"release": 13, "nightly": 0, "commit": "abc1234"}, ankiweb=ankiweb)
+                    package(archive, *flags)
                     archives[name] = archive
                 # The current profile owns account upload cursors, independent of package name.
                 cursors = {"https://quest.example": {"sam": {"through": 123456}}}
@@ -143,14 +149,13 @@ class RealAnki(unittest.TestCase):
             mw.deckBrowser = DeckBrowser.__new__(DeckBrowser)
             mw.reviewer = Reviewer.__new__(Reviewer)
             mw.addonManager = AddonManager(mw)
-            package = runpy.run_path(str(ROOT / ".github/scripts/package-addon.py"))
             archive = Path(folder) / "ankiquest.ankiaddon"
-            package["_build"](ROOT / "addon", archive, {"release": 11, "nightly": 0, "commit": "abcdef0"})
+            package(archive)
             installed = mw.addonManager.install(str(archive), manifest={"package": "ankiquest_smoke"})
             self.assertIsInstance(installed, InstallOk)
             self.assertTrue(installed.compatible)
             metadata = mw.addonManager.addon_meta("ankiquest_smoke")
-            self.assertEqual("addon-11", metadata.human_version)
+            self.assertEqual("addon-13", metadata.human_version)
             self.assertEqual("AnkiQuest", metadata.human_name())
             module = importlib.import_module("ankiquest_smoke")
             try:
