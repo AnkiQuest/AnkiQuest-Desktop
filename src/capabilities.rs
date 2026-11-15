@@ -16,7 +16,6 @@ pub(crate) const PATH: &str = "/api/capabilities";
 pub(crate) const FEATURES: &[&str] = &[
     "activity",
     "app_sign_in",
-    crate::companions::ART_FEATURE,
     "companion_milestones",
     "companion_unlocks",
     "cookie_session",

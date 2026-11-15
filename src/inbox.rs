@@ -2,7 +2,6 @@
 
 use crate::access::require_owner;
 use crate::app::{App, now_ms};
-use crate::companions::Drawable;
 use crate::web_util::{base_url, failed_for, store_error};
 use crate::{challenges, decks, i18n, notifications, reminders, shares, wins};
 use axum::extract::{Path as UrlPath, Query, State};
@@ -32,7 +31,7 @@ pub(crate) async fn get_notifications(
     let base = base_url(&app, &headers);
     let language = i18n::owned(&headers, &store, &user).map_err(store_error)?;
     for mut notice in store
-        .notifications_for(&user, now, peer_study, Drawable::of(&headers))
+        .notifications_for(&user, now, peer_study)
         .map_err(store_error)?
     {
         if notice.kind.starts_with("reminder_") {
@@ -111,7 +110,6 @@ async fn activity(
                 category: query.category,
                 unread_only: query.unread_only.unwrap_or(false),
                 peer_study: peer_study(&app, &user),
-                drawable: Drawable::of(&headers),
             },
         )
         .map_err(store_error)?;
