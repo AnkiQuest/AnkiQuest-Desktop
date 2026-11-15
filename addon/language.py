@@ -2028,7 +2028,7 @@ PORTUGUESE.update({
     "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Ninguém novo recebeu: os teus amigos já têm, ou ainda não tens amigos no AnkiQuest.",
 })
 
-# Aki's greeting on the first open. Android has these in English only so far.
+# Aki's greeting on the first open; Android uses the same wording.
 SPANISH.update({
     "Hi, I’m Aki!": "¡Hola, soy Aki!",
     "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "AnkiQuest añade rachas, amigos y clasificaciones a Anki. Te haré compañía mientras estudias.",
