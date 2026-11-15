@@ -113,8 +113,8 @@ def reached(progress, tr):
 
 
 class Taps:
-    """Counts taps on `target` in a row; a tap elsewhere, a long gap or a time that does not
-    increase starts again."""
+    """Counts taps on `target` in a row; a tap elsewhere, a long gap or an earlier time starts
+    again."""
 
     def __init__(self, target):
         self._target = target
@@ -127,8 +127,8 @@ class Taps:
             self._run, self._last_ms = 0, None
             return False
 
-        # A late, repeated or earlier tap is the first of a new run.
-        quick = self._last_ms is not None and 0 < at_ms - self._last_ms <= MAX_GAP_MS
+        # A late or earlier tap is the first of a new run.
+        quick = self._last_ms is not None and 0 <= at_ms - self._last_ms <= MAX_GAP_MS
         self._run = self._run + 1 if quick else 1
         self._last_ms = at_ms
         if self._run < TAPS:

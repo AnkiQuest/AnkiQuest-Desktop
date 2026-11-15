@@ -186,8 +186,8 @@ enum Measure {
 enum Counts {
     /// A value the server derives from the player's reviews.
     Measured(Measure),
-    /// A run of taps on the unlocked companion `on`, each later than the one before and at most
-    /// `max_gap_ms` after it, that the client reports.
+    /// A run of taps on the unlocked companion `on`, each not earlier than the one before and at
+    /// most `max_gap_ms` after it, that the client reports.
     Taps { on: Unlock, max_gap_ms: i64 },
 }
 
@@ -376,7 +376,7 @@ impl TapRun {
             return false;
         }
 
-        // A late, repeated or earlier tap is the first of a new run.
+        // A late or earlier tap is the first of a new run.
         let taps = match self.run {
             Run::Counting { taps, last_ms } if self.quick(last_ms, *at_ms) => taps + 1,
             Run::Idle | Run::Counting { .. } => 1,
@@ -392,12 +392,12 @@ impl TapRun {
         true
     }
 
-    /// Whether a tap at `at_ms` comes after one at `last_ms` and within the gap. The client
-    /// sends any i64, so the subtraction is checked: a wrapped gap could look quick.
+    /// Whether a tap at `at_ms` is not earlier than one at `last_ms` and within the gap. The
+    /// client sends any i64, so the subtraction is checked: a wrapped gap could look quick.
     fn quick(&self, last_ms: i64, at_ms: i64) -> bool {
         at_ms
             .checked_sub(last_ms)
-            .is_some_and(|gap| (1..=self.max_gap_ms).contains(&gap))
+            .is_some_and(|gap| (0..=self.max_gap_ms).contains(&gap))
     }
 }
 
