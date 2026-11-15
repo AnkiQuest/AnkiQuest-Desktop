@@ -11,6 +11,7 @@ from aqt.qt import (
     QLabel,
     QPushButton,
     QVBoxLayout,
+    QWidget,
     Qt,
 )
 
@@ -72,6 +73,28 @@ def copy_text(win, server):
 
 def same_account(api, current):
     return [api.base, api.user, api.token] == [current.base, current.user, current.token]
+
+
+class Superseded(Exception):
+    """Queued work did not start: the account or profile it was for is no longer open."""
+
+
+def run_owned(background, owns, work, done, **options):
+    """Runs `work` with `background` only while `owns()`: when queued, when it starts and when
+    its reply arrives. Signing out or switching profile cancels writes that have not started."""
+    if not owns():
+        return
+
+    def guarded():
+        if not owns():
+            raise Superseded()
+        return work()
+
+    def arrived(future):
+        if owns():
+            done(future)
+
+    background(guarded, arrived, **options)
 
 
 def _plain(text, bold=False):
@@ -254,3 +277,18 @@ def offer(parent, api, win, companion, current_client, run):
     _corner(dialog, parent)
     dialog.show()
     return dialog
+
+
+def share_toggle(sharing, buttons):
+    """A checkable "Share" button and a hidden column of `buttons` that it shows and hides.
+    On servers with the recipient picker, the button opens the picker instead."""
+    column = QWidget()
+    layout = QVBoxLayout(column)
+    layout.setContentsMargins(0, 0, 0, 0)
+    for button in buttons:
+        layout.addWidget(button)
+    column.hide()
+    toggle = QPushButton(tr("Share"))
+    toggle.setCheckable(True)
+    toggle.toggled.connect(lambda checked: _route(sharing, lambda: column.setVisible(checked)))
+    return toggle, column

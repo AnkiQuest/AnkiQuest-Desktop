@@ -663,6 +663,9 @@ def on_js_message(handled, message, context):
     if message == "ankiquest:retry-connection" and context is mw.deckBrowser:
         poll(quiet=True)
         return (True, None)
+    if message == board.COMPANION_COMMAND:
+        open_companion()
+        return (True, None)
     if message == "ankiquest:account":
         open_account()
         return (True, None)
@@ -1168,16 +1171,38 @@ def open_companion(parent=None):
     account = [api.base, api.user, api.token]
 
     def saved(companion):
-        # A picker left open across an account change must not set the new account's companion.
-        if [client().base, client().user, client().token] != account:
-            return
-        state["companion"], state["companion_account"] = companion, account
-        state["polling"] = None
-        poll(quiet=True)
-        redraw()
-        tooltip(tr("Study companion saved."))
+        _companion_saved(account, companion)
 
-    return companion_ui.open_picker(parent or mw, mw, api, current_companion(), saved)
+    return companion_ui.open_picker(parent or mw, mw, api, current_companion(), saved, home.today_mood())
+
+
+def choose_companion(api, companion, run):
+    """Saves `companion` as `api`'s account's, as the unlock reveal's "Choose" asks. `run(work, done)`
+    runs the save in the background only while that account and profile are still open."""
+    if not api.configured:
+        return
+    account = [api.base, api.user, api.token]
+
+    def done(future):
+        try:
+            future.result()
+        except Exception as error:
+            tooltip(tr("Could not save your study companion (%s).") % error)
+            return
+        _companion_saved(account, companion)
+
+    run(lambda: api.set_companion(companion), done)
+
+
+def _companion_saved(account, companion):
+    # A save that finishes after an account change must not set the new account's companion.
+    if [client().base, client().user, client().token] != account:
+        return
+    state["companion"], state["companion_account"] = companion, account
+    state["polling"] = None
+    poll(quiet=True)
+    redraw()
+    tooltip(tr("Study companion saved."))
 
 
 def open_native_inbox():
