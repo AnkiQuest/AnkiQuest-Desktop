@@ -1176,9 +1176,9 @@ def open_companion(parent=None):
     return companion_ui.open_picker(parent or mw, mw, api, current_companion(), saved, home.today_mood())
 
 
-def choose_companion(companion):
-    """Saves `companion` as the signed-in account's, as the unlock reveal's "Choose" asks."""
-    api = client()
+def choose_companion(api, companion, run):
+    """Saves `companion` as `api`'s account's, as the unlock reveal's "Choose" asks. `run(work, done)`
+    runs the save in the background only while that account and profile are still open."""
     if not api.configured:
         return
     account = [api.base, api.user, api.token]
@@ -1191,7 +1191,7 @@ def choose_companion(companion):
             return
         _companion_saved(account, companion)
 
-    mw.taskman.run_in_background(lambda: api.set_companion(companion), done)
+    run(lambda: api.set_companion(companion), done)
 
 
 def _companion_saved(account, companion):

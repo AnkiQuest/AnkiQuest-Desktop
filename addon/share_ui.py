@@ -75,6 +75,28 @@ def same_account(api, current):
     return [api.base, api.user, api.token] == [current.base, current.user, current.token]
 
 
+class Superseded(Exception):
+    """Queued work did not start: the account or profile it was for is no longer open."""
+
+
+def run_owned(background, owns, work, done, **options):
+    """Runs `work` with `background` only while `owns()`: when queued, when it starts and when
+    its reply arrives. Signing out or switching profile cancels writes that have not started."""
+    if not owns():
+        return
+
+    def guarded():
+        if not owns():
+            raise Superseded()
+        return work()
+
+    def arrived(future):
+        if owns():
+            done(future)
+
+    background(guarded, arrived, **options)
+
+
 def _plain(text, bold=False):
     label = QLabel(text)
     label.setTextFormat(Qt.TextFormat.PlainText)

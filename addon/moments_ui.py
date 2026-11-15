@@ -191,22 +191,34 @@ class _Presenter:
                 return None
             return share_ui.Sharing(dialog, api, item["share"], self._addon.client, run, status, moments.joined(item))
 
+        # Choose, Share and marking the row read act for the account and profile the reveal
+        # opened for; a sign-out or profile change cancels them, even once queued.
+        profile = self._profile
+
+        def owns():
+            return self._owns(api, profile)
+
+        def run(work, done):
+            share_ui.run_owned(mw.taskman.run_in_background, owns, work, done)
+
+        def choose(companion):
+            if owns():
+                self._addon.choose_companion(api, companion, run)
+
         window = self._reveal = reveal_ui.play(
-            mw, item, reveal_ui.motion(self._addon.config()), self._addon.current_companion(),
-            lambda companion: self._addon.choose_companion(companion), sharing, mw.taskman.run_in_background,
+            mw, item, reveal_ui.motion(self._addon.config()), self._addon.current_companion(), choose, sharing, run,
         )
         self._phase = _Phase.REVEALING
-        profile = self._profile
 
         def finished(_result):
             if self._reveal is not window:
                 return
             self._reveal = None
             self._phase = _Phase.READY
-            if not self._owns(api, profile):
+            if not owns():
                 return
             moments._acknowledge(profile, (api.base, api.user), [item["key"]])
-            mw.taskman.run_in_background(lambda: inbox.mark_read(api, [item["notice"]]), _marked)
+            run(lambda: inbox.mark_read(api, [item["notice"]]), _marked)
             self._addon.redraw()
             self._schedule()
 
@@ -309,11 +321,10 @@ class _Card:
     def _run(self, work, done, uses_collection=False):
         rendered = self._rendered
 
-        def arrived(future):
-            if self._owned() and self._rendered is rendered:
-                done(future)
+        def current():
+            return self._owned() and self._rendered is rendered
 
-        self._addon.mw.taskman.run_in_background(work, arrived, uses_collection=uses_collection)
+        share_ui.run_owned(self._addon.mw.taskman.run_in_background, current, work, done, uses_collection=uses_collection)
 
     def _append(self, items, summary):
         selected = self._choices.currentData()

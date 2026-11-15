@@ -218,7 +218,8 @@ class Moments(unittest.TestCase):
         reveal._skip()
         reveal.choose.click()
         self.flush()
-        self.addon.choose_companion.assert_called_once_with("cow")
+        api, companion, _run = self.addon.choose_companion.call_args.args
+        self.assertEqual((self.api, "cow"), (api, companion))
         self.assertIn(("/api/activity/sam/read", {"ids": [5]}, None), self.requests)
         self.assertEqual(["level:4"], [item["key"] for item in self.presenter._card._items])
 
@@ -253,6 +254,51 @@ class Moments(unittest.TestCase):
         self.flush()
         self.assertEqual(0, self.presenter._count())
         self.assertIsNone(self.presenter._card)
+
+    def revealed(self):
+        self.offer(self.joined())
+        self.transition("overview", "review")
+        reveal = self.presenter._reveal
+        reveal._skip()
+        return reveal
+
+    def switch_account(self):
+        self.api = SimpleNamespace(**dict(vars(self.api), token="new-token"))
+
+    def test_choose_after_an_account_change_saves_nothing(self):
+        self.addon.choose_companion = Mock()
+        reveal = self.revealed()
+        self.switch_account()
+        reveal.choose.click()
+        self.flush()
+        self.addon.choose_companion.assert_not_called()
+
+    def test_a_queued_choose_is_dropped_after_an_account_change(self):
+        self.addon.choose_companion = Mock()
+        reveal = self.revealed()
+        reveal.choose.click()
+        api, companion, run = self.addon.choose_companion.call_args.args
+        self.assertEqual(("token", "cow"), (api.token, companion))
+
+        # The save waits in the task queue while the account changes.
+        saved, done = [], Mock()
+        self.defer = True
+        run(lambda: saved.append(companion), done)
+        self.switch_account()
+        while self.tasks:
+            self.complete(self.tasks.pop(0))
+        self.assertEqual([], saved)
+        done.assert_not_called()
+
+    def test_a_queued_read_is_dropped_after_an_account_change(self):
+        reveal = self.revealed()
+        self.defer = True
+        reveal.later.click()
+        self.flush()
+        self.switch_account()
+        while self.tasks:
+            self.complete(self.tasks.pop(0))
+        self.assertNotIn("/api/activity/sam/read", [path for path, _body, _method in self.requests])
 
     def test_conquest_load_is_read_only_and_a_new_win_keeps_the_draft_label(self):
         control = self.conquest()
@@ -330,6 +376,7 @@ class Moments(unittest.TestCase):
         self.api = SimpleNamespace(**dict(vars(self.api), token="new-token"))
         self.complete(self.tasks.pop(0))
         self.assertEqual([], self.tasks)
+        self.assertFalse([path for path, _body, _method in self.requests if path.endswith("/label")], "the queued save never starts")
         self.presenter._sync_owner()
         self.assertIsNone(self.presenter._card)
         self.assertEqual(1, len(ui.moments._pending(old_profile, (old_api.base, old_api.user))))
