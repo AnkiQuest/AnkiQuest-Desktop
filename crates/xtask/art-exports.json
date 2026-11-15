@@ -202,6 +202,54 @@
     {
       "file": "docs/branding/core-poses-2026-11/aki-core-review.png",
       "why": "Review sheet for Aki's core poses (#288); a record in the docs, not a copy anything shows."
+    },
+    {
+      "file": "assets/retired/addon/aki_face-e7ab7876.png",
+      "why": "addon/aki_face.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/face.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/ankilope_face-9d4dbb66.png",
+      "why": "addon/ankilope_face.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/face.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_celebrate-5017d3a0.png",
+      "why": "addon/art/aki_celebrate.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/celebrate.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_freeze-c3640637.png",
+      "why": "addon/art/aki_freeze.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/freeze.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_hopeful-600724bf.png",
+      "why": "addon/art/aki_hopeful.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/hopeful.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_review-763f5fa4.png",
+      "why": "addon/art/aki_review.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/review.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_streak-bfb9293c.png",
+      "why": "addon/art/aki_streak.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/streak.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_welcome-6eedf264.png",
+      "why": "addon/art/aki_welcome.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/welcome.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_winner-354b5519.png",
+      "why": "addon/art/aki_winner.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/winner.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/ankilope_celebrate-fc3ddf49.png",
+      "why": "addon/art/ankilope_celebrate.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/celebrate.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/ankilope_study-277abb2e.png",
+      "why": "addon/art/ankilope_study.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/study.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/ankilope_welcome-2fe2d900.png",
+      "why": "addon/art/ankilope_welcome.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/welcome.png. Unreferenced."
     }
   ]
 }
