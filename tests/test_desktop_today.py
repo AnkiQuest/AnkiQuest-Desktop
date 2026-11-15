@@ -848,6 +848,9 @@ class HomeTests(unittest.TestCase):
     def test_an_unconnected_profile_gets_one_sign_in_offer(self):
         self.settings.update(url="", user="", token="")
         self.addon.QTimer = SimpleNamespace(singleShot=lambda delay, callback: callback())
+        # Aki greeted on this computer before; test_addon_greeting covers the first open.
+        self.mw.pm.meta = {self.addon.greeting.KEY: self.addon.greeting.State.SHOWN.value}
+        self.addon.QApplication = SimpleNamespace(activeModalWidget=lambda: None)
         self.addon.ask_account = Mock(return_value=None)
         for name in ("refresh_shared_decks", "refresh", "poll", "maybe_check_updates"):
             setattr(self.addon, name, Mock())

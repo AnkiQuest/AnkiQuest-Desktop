@@ -1980,6 +1980,28 @@ PORTUGUESE.update({
     "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Ninguém novo recebeu: os teus amigos já têm, ou ainda não tens amigos no AnkiQuest.",
 })
 
+# Aki's greeting on the first open. Android has these in English only so far.
+SPANISH.update({
+    "Hi, I’m Aki!": "¡Hola, soy Aki!",
+    "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "AnkiQuest añade rachas, amigos y clasificaciones a Anki. Te haré compañía mientras estudias.",
+    "Aki waving hello": "Aki saludando", "Later": "Más tarde", "Let’s study": "Vamos a estudiar",
+})
+GERMAN.update({
+    "Hi, I’m Aki!": "Hallo, ich bin Aki!",
+    "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "AnkiQuest ergänzt Anki um Lernserien, Freunde und Ranglisten. Ich leiste dir beim Lernen Gesellschaft.",
+    "Aki waving hello": "Aki winkt zur Begrüßung", "Later": "Später", "Let’s study": "Auf zum Lernen",
+})
+FRENCH.update({
+    "Hi, I’m Aki!": "Salut, je suis Aki !",
+    "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "AnkiQuest ajoute des séries, des amis et des classements à Anki. Je te tiens compagnie pendant que tu révises.",
+    "Aki waving hello": "Aki fait coucou", "Later": "Plus tard", "Let’s study": "Allons réviser",
+})
+PORTUGUESE.update({
+    "Hi, I’m Aki!": "Olá, sou a Aki!",
+    "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "O AnkiQuest acrescenta sequências, amigos e classificações ao Anki. Faço-te companhia enquanto estudas.",
+    "Aki waving hello": "Aki a acenar", "Later": "Mais tarde", "Let’s study": "Vamos estudar",
+})
+
 # Anki-tan credit, as on Android's About screen (ankiquest_about_anki_tan).
 _ANKI_TAN = '<a href="%s">Anki-tan</a> by <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 SPANISH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
