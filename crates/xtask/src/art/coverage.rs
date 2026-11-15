@@ -2,9 +2,11 @@
 //! `tests/fixtures/companion_poses.json` and every other per-companion
 //! picture the clients show, for each companion, as a Markdown table.
 //!
-//! A pose's master is `static/<folder>/<file>.png`, where the file is the
-//! pose's name unless [`RENAMES`] gives an older one. A missing extension
-//! shows the first pose its fallback chain reaches that exists. Read-only.
+//! A pose's master is `static/<folder>/<pose>.png`, or the older name
+//! [`RENAMES`] gives when that file is absent. A missing extension shows
+//! the first pose its fallback chain reaches that exists. It counts named
+//! masters only, not art the apps map from other files (such as Anki-tan's
+//! pack). Read-only.
 
 use std::fs;
 use std::path::Path;
@@ -27,7 +29,8 @@ const COMPANIONS: &[(&str, &str)] = &[
     ("leech_tan", "leech-tan"),
 ];
 
-/// Poses whose masters keep the file name they had before the fixture.
+/// Poses whose masters may still have the file name they had before the
+/// fixture; the pose's own name is checked first.
 const RENAMES: &[(&str, &str)] = &[
     ("asleep", "sleeping"),
     ("happy", "celebrate"),
@@ -119,17 +122,19 @@ fn poses(path: &Path) -> Result<Poses, String> {
     Ok(Poses { core, extensions })
 }
 
-/// The master's file name for a pose or picture.
-fn file(kind: &str) -> &str {
+/// The older file name a pose's master may still have.
+fn old_name(kind: &str) -> Option<&str> {
     RENAMES
         .iter()
         .find(|(pose, _)| *pose == kind)
-        .map_or(kind, |(_, file)| file)
+        .map(|(_, file)| *file)
 }
 
-/// Whether `folder` has a master for `kind`.
+/// Whether `folder` has a master for `kind`: under its own name first,
+/// then under its older name.
 fn has(folder: &Path, kind: &str) -> bool {
-    folder.join(format!("{}.png", file(kind))).is_file()
+    let png = |name: &str| folder.join(format!("{name}.png")).is_file();
+    png(kind) || old_name(kind).is_some_and(png)
 }
 
 /// The status of `kind` in `folder`, following extension fallbacks.
@@ -157,7 +162,8 @@ fn report(root: &Path, poses: &Poses) -> String {
         .map(|(_, folder)| root.join("static").join(folder))
         .collect();
     let mut out = String::from(
-        "yes: master exists; (pose): missing, the clients show that pose; **no**: missing\n\n",
+        "Named masters in static/<folder>/ only. yes: master exists; (pose): missing, \
+         the clients show that pose; **no**: missing\n\n",
     );
     out += "| image | kind |";
     for (companion, _) in COMPANIONS {
@@ -195,7 +201,7 @@ fn report(root: &Path, poses: &Poses) -> String {
         }
     }
 
-    // Totals: present of each group.
+    // Totals: named masters present in each group.
     out += "\n";
     for ((companion, _), [core, extension, picture]) in COMPANIONS.iter().zip(counts) {
         let (all_core, all_ext) = (poses.core.len(), poses.extensions.len());
@@ -247,6 +253,28 @@ mod tests {
 
         // A renamed pose is found under its old file name.
         fs::write(folder.path().join("freeze.png"), b"").unwrap();
+        assert_eq!(Status::Fallback("frozen".into()), check("frozen_2"));
+    }
+
+    #[test]
+    fn pose_name_found_before_old_name() {
+        let poses = Poses {
+            core: vec!["frozen".into()],
+            extensions: vec![("frozen_2".into(), "frozen".into())],
+        };
+
+        // Only the standard name, as Aki's frozen.png on master.
+        let standard = tempfile::tempdir().unwrap();
+        fs::write(standard.path().join("frozen.png"), b"").unwrap();
+        let check = |kind| status(standard.path(), &poses, kind);
+        assert_eq!(Status::Present, check("frozen"));
+        assert_eq!(Status::Fallback("frozen".into()), check("frozen_2"));
+
+        // Only the old name still counts.
+        let old = tempfile::tempdir().unwrap();
+        fs::write(old.path().join("freeze.png"), b"").unwrap();
+        let check = |kind| status(old.path(), &poses, kind);
+        assert_eq!(Status::Present, check("frozen"));
         assert_eq!(Status::Fallback("frozen".into()), check("frozen_2"));
     }
 
