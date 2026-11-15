@@ -643,7 +643,8 @@ def on_deck_browser(deck_browser, content):
     mascot = None if companion == "none" else "/_addons/%s/%s_face.png" % (mw.addonManager.addonFromModule(__name__), moods.art_owner(companion))
     today = home.today_view(deck_browser, companion)
     profile = today["profile"] if today is not None else home._profile_for_display(state["profile"])
-    content.stats += board.html(profile, state["place"], waiting, tr, mascot, today, actions=actions)
+    flame = today["flame"] if today is not None else home.streak_flame(profile)
+    content.stats += board.html(profile, state["place"], waiting, tr, mascot, today, actions=actions, flame=flame)
     content.stats += board._connection_note(state["profile"], state["poll_failure"], tr)
     content.stats += '<p style="text-align:center;font-size:12px">%s</p>' % html.escape(_upload_status(api))
 
