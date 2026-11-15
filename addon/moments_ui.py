@@ -400,6 +400,7 @@ class _Card:
         win = item.get("share")
         if not win:
             return
+        win = dict(win, picture_pose=pose)
         sharing = share_ui.Sharing(self._dialog, self._api, win, self._addon.client, self._run, self._status, companion)
         friends, *options = share_ui._buttons(sharing)
         friends.setText(tr("Tell friends"))

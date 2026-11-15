@@ -15,7 +15,6 @@ SPANISH = {
     "It is too late to undo this share.": "Ya es demasiado tarde para deshacer lo compartido.",
     "Label saved.": "Etiqueta guardada.", "Label removed.": "Etiqueta eliminada.",
     "Share taken back where possible.": "Se ha retirado lo compartido donde ha sido posible.",
-    "a difficult card": "una tarjeta difícil", "I learned %s in %s.": "He aprendido %s en %s.", "I learned %s.": "He aprendido %s.",
     "I conquered a card!": "¡He conquistado una tarjeta!",
     "%d lapses · %d answers · %d days since the first answer": "%d olvidos · %d respuestas · %d días desde la primera respuesta",
     "Your study companion.": "Tu compañero de estudio.",
@@ -163,7 +162,6 @@ GERMAN = {
     "It is too late to undo this share.": "Das Teilen lässt sich nicht mehr rückgängig machen.",
     "Label saved.": "Bezeichnung gespeichert.", "Label removed.": "Bezeichnung entfernt.",
     "Share taken back where possible.": "Das Teilen wurde soweit möglich rückgängig gemacht.",
-    "a difficult card": "eine schwierige Karte", "I learned %s in %s.": "Ich habe %s in %s gelernt.", "I learned %s.": "Ich habe %s gelernt.",
     "I conquered a card!": "Ich habe eine Karte gemeistert!",
     "%d lapses · %d answers · %d days since the first answer": "%d Fehler · %d Antworten · %d Tage seit der ersten Antwort",
     "Your study companion.": "Dein Lernbegleiter.",
@@ -278,7 +276,6 @@ FRENCH = {
     "It is too late to undo this share.": "Il est trop tard pour annuler ce partage.",
     "Label saved.": "Nom enregistré.", "Label removed.": "Nom supprimé.",
     "Share taken back where possible.": "Le partage a été annulé dans la mesure du possible.",
-    "a difficult card": "une carte difficile", "I learned %s in %s.": "J’ai appris %s dans %s.", "I learned %s.": "J’ai appris %s.",
     "I conquered a card!": "J’ai maîtrisé une carte !",
     "%d lapses · %d answers · %d days since the first answer": "%d oublis · %d réponses · %d jours depuis la première réponse",
     "Your study companion.": "Ton compagnon d’étude.",
@@ -393,7 +390,6 @@ PORTUGUESE = {
     "It is too late to undo this share.": "Já é tarde para anular esta partilha.",
     "Label saved.": "Nome guardado.", "Label removed.": "Nome removido.",
     "Share taken back where possible.": "A partilha foi anulada onde foi possível.",
-    "a difficult card": "um cartão difícil", "I learned %s in %s.": "Aprendi %s em %s.", "I learned %s.": "Aprendi %s.",
     "I conquered a card!": "Conquistei um cartão!",
     "%d lapses · %d answers · %d days since the first answer": "%d esquecimentos · %d respostas · %d dias desde a primeira resposta",
     "Your study companion.": "O teu companheiro de estudo.",
@@ -2060,3 +2056,41 @@ SPANISH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, 
 GERMAN[_ANKI_TAN] = '<a href="%s">Anki-tan</a> von <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 FRENCH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> par <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 PORTUGUESE[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+
+# Conquest exports use Android's first-person caption and public counts.
+SPANISH.update({
+    "I finally learned a card I had forgotten %d time.": "Por fin aprendí una tarjeta que había olvidado %d vez.",
+    "I finally learned a card I had forgotten %d times.": "Por fin aprendí una tarjeta que había olvidado %d veces.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Por fin aprendí «%s», una tarjeta que había olvidado %d vez.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Por fin aprendí «%s», una tarjeta que había olvidado %d veces.",
+    "From my deck “%s”.": "De mi mazo «%s».",
+    "%d answer": "%d respuesta", "%d answers": "%d respuestas",
+    "%d day to learn": "%d día para aprenderla", "%d days to learn": "%d días para aprenderla",
+})
+GERMAN.update({
+    "I finally learned a card I had forgotten %d time.": "Ich habe endlich eine Karte gelernt, die ich %d-mal vergessen hatte.",
+    "I finally learned a card I had forgotten %d times.": "Ich habe endlich eine Karte gelernt, die ich %d-mal vergessen hatte.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Ich habe endlich „%s“ gelernt, eine Karte, die ich %d-mal vergessen hatte.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Ich habe endlich „%s“ gelernt, eine Karte, die ich %d-mal vergessen hatte.",
+    "From my deck “%s”.": "Aus meinem Stapel „%s“.",
+    "%d answer": "%d Antwort", "%d answers": "%d Antworten",
+    "%d day to learn": "%d Tag zum Lernen", "%d days to learn": "%d Tage zum Lernen",
+})
+FRENCH.update({
+    "I finally learned a card I had forgotten %d time.": "J’ai enfin appris une carte que j’avais oubliée %d fois.",
+    "I finally learned a card I had forgotten %d times.": "J’ai enfin appris une carte que j’avais oubliée %d fois.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "J’ai enfin appris « %s », une carte que j’avais oubliée %d fois.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "J’ai enfin appris « %s », une carte que j’avais oubliée %d fois.",
+    "From my deck “%s”.": "De mon paquet « %s ».",
+    "%d answer": "%d réponse", "%d answers": "%d réponses",
+    "%d day to learn": "%d jour pour l’apprendre", "%d days to learn": "%d jours pour l’apprendre",
+})
+PORTUGUESE.update({
+    "I finally learned a card I had forgotten %d time.": "Finalmente aprendi um cartão que tinha esquecido %d vez.",
+    "I finally learned a card I had forgotten %d times.": "Finalmente aprendi um cartão que tinha esquecido %d vezes.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Finalmente aprendi «%s», um cartão que tinha esquecido %d vez.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Finalmente aprendi «%s», um cartão que tinha esquecido %d vezes.",
+    "From my deck “%s”.": "Do meu baralho «%s».",
+    "%d answer": "%d resposta", "%d answers": "%d respostas",
+    "%d day to learn": "%d dia para aprender", "%d days to learn": "%d dias para aprender",
+})

@@ -4,7 +4,7 @@ import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from addon_loader import load_in_package
 import test_deck_completion as base
@@ -113,11 +113,23 @@ class ShareWindowTests(unittest.TestCase):
         sharing_window.to_clipboard()
         share_ui.share.card.assert_not_called()
 
-    def test_a_failed_fetch_says_why_and_tries_again_next_time(self):
+    def test_a_failed_fetch_uses_a_private_local_picture(self):
+        share_ui, sharing_window, status = self.window({"title": "Level 5!", "body": "", "win": 17})
+        share_ui.share.card.side_effect = OSError("timed out")
+        renderer = SimpleNamespace(render=Mock(return_value={"png": b"local png"}))
+        with patch.dict(sys.modules, {"ankiquest_test_addon.share_picture": renderer}):
+            sharing_window.to_clipboard()
+        renderer.render.assert_called_once()
+        self.assertEqual({"png": b"local png"}, sharing_window.found)
+        share_ui.share.link.assert_not_called()
+
+    def test_failed_download_and_render_say_why_and_allow_retry(self):
         share_ui, sharing_window, status = self.window({"title": "Level 5!", "body": "", "win": 17})
         share_ui.share.card.side_effect = [OSError("timed out"), {"text": "t", "png": b"png"}]
-        sharing_window.to_clipboard()
-        self.assertIn("timed out", status.setText.call_args.args[0])
+        renderer = SimpleNamespace(render=Mock(side_effect=OSError("cannot render")))
+        with patch.dict(sys.modules, {"ankiquest_test_addon.share_picture": renderer}):
+            sharing_window.to_clipboard()
+        self.assertIn("cannot render", status.setText.call_args.args[0])
         sharing_window.to_clipboard()
         self.assertEqual(2, share_ui.share.card.call_count)
 
