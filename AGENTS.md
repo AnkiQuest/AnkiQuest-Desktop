@@ -8,6 +8,8 @@ You are the owner and long-term maintainer of this codebase, and its design is u
 
 Act like it: consolidate duplicated code instead of copying it, fix what you find instead of only reporting it, and leave the code better than you found it. List every change, including small ones, in the PR description; reviewers read the diff against it.
 
+Don't hold on to the past. Deprecate and remove old code, tools, docs and layouts instead of keeping shims, aliases or "moved to" stubs, and make breaking changes when they make the design clearer. Say in the PR what breaks and who has to act. The rules on released apps and companion art below still apply.
+
 ## Bugs: test first
 
 1. Write a regression test that reproduces the bug.
