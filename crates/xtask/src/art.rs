@@ -40,6 +40,11 @@ const LINE_LUMA: f32 = 90.0;
 /// Alpha above which a pixel is part of the picture in [`Look::Outline`].
 const LINE_ALPHA: u8 = 128;
 
+/// How far [`Look::Cow`] turns Ankilope's hues, in degrees: CSS `hue-rotate(250deg)`, as the
+/// server's share cards (`src/cards.rs`) and the app (`AnkiquestCompanion`) draw Bluma, the cow,
+/// until she has art of her own (#88).
+const COW_HUE_DEGREES: f32 = 250.0;
+
 /// How a drawable shows its master.
 #[derive(Clone, Copy, PartialEq)]
 enum Look {
@@ -48,6 +53,8 @@ enum Look {
     /// Only the master's dark line art, in black on transparent: the
     /// monochrome layer of a themed launcher icon, which keeps alpha only.
     Outline,
+    /// Ankilope's master turned purple by [`hue_rotation`]: Bluma, the cow.
+    Cow,
 }
 
 /// One drawable: name, master PNG, square size, WebP quality and look.
@@ -78,6 +85,17 @@ const fn outline(name: &'static str, source: &'static str, size: u32) -> Art {
         size,
         quality: QUALITY,
         look: Look::Outline,
+    }
+}
+
+/// Bluma's version of an Ankilope master, turned purple.
+const fn cow(name: &'static str, source: &'static str, size: u32) -> Art {
+    Art {
+        name,
+        source,
+        size,
+        quality: QUALITY,
+        look: Look::Cow,
     }
 }
 
@@ -183,6 +201,11 @@ const ART: &[Art] = &[
         "static/anki-tan/emoji/Ankitan_00_smile.png",
         432,
     ),
+    // Ankilope's and Bluma's launcher icons: the face for every mood until mood faces exist.
+    // Bluma's themed icon reuses Ankilope's monochrome layer, which has the same shape.
+    art("ankilope_icon", "static/ankilope/face.png", 432),
+    outline("ankilope_icon_mono", "static/ankilope/face.png", 432),
+    cow("cow_icon", "static/ankilope/face.png", 432),
 ];
 
 /// Whether to write drawables or only compare their sizes.
@@ -315,11 +338,15 @@ fn load(path: &Path) -> Result<RgbaImage, String> {
 
 /// The master as [`Look`] asks for it.
 fn look(master: RgbaImage, look: Look) -> RgbaImage {
-    if look == Look::Colour {
-        return master;
+    match look {
+        Look::Colour => master,
+        Look::Outline => lines(master),
+        Look::Cow => purple(master),
     }
+}
 
-    // Keep opaque dark pixels as black line art; drop everything else.
+/// Keeps opaque dark pixels as black line art and drops everything else.
+fn lines(master: RgbaImage) -> RgbaImage {
     let mut lines = master;
     for pixel in lines.pixels_mut() {
         let [r, g, b, a] = pixel.0;
@@ -328,6 +355,46 @@ fn look(master: RgbaImage, look: Look) -> RgbaImage {
         pixel.0 = if line { [0, 0, 0, 255] } else { [0, 0, 0, 0] };
     }
     lines
+}
+
+/// Ankilope's art turned into Bluma's: every pixel's colour through [`hue_rotation`] of
+/// [`COW_HUE_DEGREES`], alpha unchanged.
+fn purple(master: RgbaImage) -> RgbaImage {
+    let matrix = hue_rotation(COW_HUE_DEGREES);
+    let mut cow = master;
+    for pixel in cow.pixels_mut() {
+        let rgb = [pixel[0], pixel[1], pixel[2]].map(f32::from);
+        for (channel, row) in pixel.0.iter_mut().zip(matrix) {
+            let value = row[0] * rgb[0] + row[1] * rgb[1] + row[2] * rgb[2];
+            *channel = value.round().clamp(0.0, 255.0) as u8;
+        }
+    }
+    cow
+}
+
+/// The colour matrix of CSS `hue-rotate(degrees)` (Filter Effects Module Level 1, `feColorMatrix`
+/// type `hueRotate`): rows are output red, green and blue, columns the input's. The web's
+/// `hue-rotate()`, the server's `src/cards.rs` and the app's `AnkiquestCompanion` use the same
+/// matrix, so Bluma is the same purple everywhere.
+fn hue_rotation(degrees: f32) -> [[f32; 3]; 3] {
+    let (sin, cos) = degrees.to_radians().sin_cos();
+    [
+        [
+            0.213 + cos * 0.787 - sin * 0.213,
+            0.715 - cos * 0.715 - sin * 0.715,
+            0.072 - cos * 0.072 + sin * 0.928,
+        ],
+        [
+            0.213 - cos * 0.213 + sin * 0.143,
+            0.715 + cos * 0.285 + sin * 0.140,
+            0.072 - cos * 0.072 - sin * 0.283,
+        ],
+        [
+            0.213 - cos * 0.213 - sin * 0.787,
+            0.715 - cos * 0.715 + sin * 0.715,
+            0.072 + cos * 0.928 + sin * 0.072,
+        ],
+    ]
 }
 
 /// A PNG's pixel size, read from its header.
@@ -477,6 +544,62 @@ mod tests {
         assert_eq!([0, 0, 0, 255], lines.get_pixel(0, 0).0, "black line");
         assert_eq!(0, lines.get_pixel(1, 0)[3], "skin");
         assert_eq!(0, lines.get_pixel(2, 0)[3], "faint dark pixel");
+    }
+
+    #[test]
+    fn every_companion_has_launcher_icons() {
+        // AnkiQuest-Android AnkiquestIcon shows these; a missing one fell back to Aki (#313 there).
+        for name in [
+            "aki_icon_happy",
+            "anki_tan_icon",
+            "anki_tan_icon_mono",
+            "ankilope_icon",
+            "ankilope_icon_mono",
+            "cow_icon",
+        ] {
+            let art = ART.iter().find(|art| art.name == name);
+            assert!(art.is_some_and(|art| art.size == 432), "{name}");
+        }
+    }
+
+    #[test]
+    fn the_cow_icon_is_ankilope_turned_purple() {
+        let find = |name| ART.iter().find(|art| art.name == name).unwrap();
+        let (ankilope, cow) = (find("ankilope_icon"), find("cow_icon"));
+        assert_eq!(ankilope.source, cow.source);
+        assert!(cow.look == Look::Cow);
+    }
+
+    #[test]
+    fn hue_rotation_matches_css() {
+        // Zero degrees is the identity; any angle keeps grey grey, as feColorMatrix's rows sum to 1.
+        let identity = hue_rotation(0.0);
+        for (row, values) in identity.iter().enumerate() {
+            for (column, value) in values.iter().enumerate() {
+                let expected = if row == column { 1.0 } else { 0.0 };
+                assert!((value - expected).abs() < 1e-6, "{row},{column}: {value}");
+            }
+        }
+        for row in hue_rotation(COW_HUE_DEGREES) {
+            assert!((row.iter().sum::<f32>() - 1.0).abs() < 1e-3, "{row:?}");
+        }
+    }
+
+    #[test]
+    fn the_cow_turns_tan_purple_and_keeps_alpha() {
+        // Ankilope's tan fur; blue above red and green is purple.
+        let image = RgbaImage::from_pixel(1, 1, image::Rgba([214, 150, 84, 200]));
+        let [r, g, b, a] = look(image, Look::Cow).get_pixel(0, 0).0;
+        assert_eq!(200, a);
+        assert!(b > g && r > g, "{:?}", [r, g, b]);
+
+        let grey = RgbaImage::from_pixel(1, 1, image::Rgba([90, 90, 90, 255]));
+        let [r, g, b, _] = look(grey, Look::Cow).get_pixel(0, 0).0;
+        assert!(
+            [r, g, b].iter().all(|c| c.abs_diff(90) <= 1),
+            "{:?}",
+            [r, g, b]
+        );
     }
 
     #[test]
