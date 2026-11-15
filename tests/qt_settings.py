@@ -210,6 +210,23 @@ class Settings(unittest.TestCase):
 
         self.assertIs(False, self.open(keep)["sync_settings"])
 
+    def test_reduce_motion_is_off_by_default_and_stays_on_this_device(self):
+        def turn_on(dialog):
+            box = self.checkbox(dialog, "Reduce motion")
+            self.assertFalse(box.isChecked())
+            self.assertIs(box.parent(), self.group(dialog, "App and privacy"))
+            box.setChecked(True)
+            self.button(dialog, "Save").click()
+
+        self.assertIs(True, self.open(turn_on)["reduce_motion"])
+        self.config["reduce_motion"] = True
+
+        def keep(dialog):
+            self.assertTrue(self.checkbox(dialog, "Reduce motion").isChecked())
+            self.button(dialog, "Save").click()
+
+        self.assertIs(True, self.open(keep)["reduce_motion"])
+
     def test_reminders_off_disables_local_warning_and_every_server_kind(self):
         self.reminders.update(gentle_daily=True, urgent_streak=True)
 

@@ -156,12 +156,17 @@ def _served_goal(profile):
     return moods.Goal.REACHED if served is True else moods.Goal.OPEN
 
 
-def pose_url(chosen_companion):
-    """The companion's pose for today's streak, by the one rule (moods.today_pose). The goal is
-    the server's word; the Today panel also counts reviews it has not uploaded yet."""
+def today_mood():
+    """Today's streak mood and streak, by the one rule (moods.today_mood). The goal is the
+    server's word; the Today panel also counts reviews it has not uploaded yet."""
     profile = addon().state["profile"]
     view = _profile_for_display(profile)
-    return _pose_url(moods.companion_pose(chosen_companion, moods.today_pose(view, _served_goal(profile))))
+    return moods.today_mood(view, _served_goal(profile)), int((view or {}).get("streak") or 0)
+
+
+def pose_url(chosen_companion):
+    """The companion's pose for today's streak."""
+    return _pose_url(moods.companion_pose(chosen_companion, moods.streak_pose(*today_mood())))
 
 
 def streak_flame(view):
