@@ -9,13 +9,21 @@ import time
 import unittest
 from unittest.mock import patch
 
-from aqt.qt import QApplication, QBuffer, QByteArray, QFont, QFontDatabase, QImage, QIODevice, QWidget
+from aqt.qt import QApplication, QBuffer, QByteArray, QColor, QFont, QFontDatabase, QImage, QIODevice, QPalette, QWidget
 
 from addon_loader import load_in_package
 
 app = QApplication.instance() or QApplication([])
+if os.environ.get("ANKIQUEST_QT_FONT"):
+    font = os.environ["ANKIQUEST_QT_FONT"]
+    family = QFontDatabase.applicationFontFamilies(QFontDatabase.addApplicationFont(font))[0]
+    app.setFont(QFont(family, 10))
+    for fallback in os.environ.get("ANKIQUEST_QT_FALLBACKS", "").split(os.pathsep):
+        if fallback:
+            QFontDatabase.addApplicationFont(fallback)
 ui = load_in_package("share_qt", "moment_share_ui")
 ui.tr = ui.share_ui.tr = lambda text: text
+picture = load_in_package("share_picture_qt", "share_picture")
 
 
 class ShareWindow(unittest.TestCase):
@@ -202,11 +210,61 @@ class ShareWindow(unittest.TestCase):
         self.assertFalse(app.clipboard().image().isNull())
         self.assertFalse(any(body for _, body, _ in self.requests))
 
+    def test_offline_preview_is_a_local_picture_without_publishing(self):
+        with patch.object(ui.share, "card", side_effect=OSError("offline")):
+            window = self.open()
+            self.assertTrue(window._preview.isVisible())
+            window._sharing.to_clipboard()
+            image = app.clipboard().image()
+            self.assertEqual(1080, image.width())
+            self.assertGreaterEqual(image.height(), 1080)
+            self.assertFalse(any(body for _, body, _ in self.requests))
+
+    def test_a_cached_picture_cannot_cross_an_account_or_profile_change(self):
+        for change in ("account", "profile"):
+            with self.subTest(change=change):
+                self.current = self.api
+                window = self.open()
+                app.clipboard().clear()
+                if change == "account":
+                    self.current = SimpleNamespace(base=self.api.base, user="other", token="other")
+                else:
+                    self.parent.pm.profile = {}
+                window._sharing.to_clipboard()
+                self.assertTrue(app.clipboard().image().isNull())
+
+    def test_late_offline_failure_does_not_render_for_a_changed_owner(self):
+        window = self.open()
+        window._sharing.found = None
+        self.defer = True
+        window._sharing.to_clipboard()
+        work, done = self.tasks.pop()
+        future = Future()
+        future.set_exception(OSError("offline"))
+        self.current = SimpleNamespace(base=self.api.base, user="other", token="other")
+        app.clipboard().clear()
+        done(future)
+        self.assertTrue(app.clipboard().image().isNull())
+
+    def test_a_win_without_a_server_id_still_offers_picture_actions(self):
+        self.win = {"title": "My weekly study recap", "body": "A little progress every day.", "notification": 91}
+        with patch.object(ui.share, "card", side_effect=AssertionError("no server image exists")) as fetch:
+            window = self.open()
+            window._more.click()
+            actions = [button.text() for button in window._exports.findChildren(ui.QPushButton)]
+            self.assertIn("Copy as image", actions)
+            self.assertIn("Save image…", actions)
+            self.assertNotIn("Copy public link", actions)
+            window._sharing.to_clipboard()
+            self.assertEqual(1080, app.clipboard().image().width())
+            fetch.assert_not_called()
+
     def test_capture_at_normal_and_large_font(self):
         folder = os.environ.get("ANKIQUEST_QT_CAPTURE")
         font = os.environ.get("ANKIQUEST_QT_FONT")
         family = QFontDatabase.applicationFontFamilies(QFontDatabase.addApplicationFont(font))[0] if font else "sans-serif"
-        window = self.open()
+        with patch.object(ui.share, "card", side_effect=OSError("offline")):
+            window = self.open()
         for size, name in ((10, "share"), (20, "share-large")):
             window._dialog.setFont(QFont(family, size))
             window._dialog.resize(520, 720)
@@ -214,6 +272,70 @@ class ShareWindow(unittest.TestCase):
             self.assertLessEqual(window._dialog.width(), 520)
             if folder:
                 self.assertTrue(window._dialog.grab().save(str(Path(folder) / (name + ".png"))))
+
+
+class LocalPicture(unittest.TestCase):
+    def image(self, win, companion="none", palette=None, scale=1):
+        found = picture.render(win, companion, palette or app.palette(), scale)
+        image = QImage()
+        self.assertTrue(image.loadFromData(found["png"], "PNG"))
+        return image
+
+    def test_unicode_and_long_words_wrap_without_clipping(self):
+        words = "Espa\u00f1ol \u65e5\u672c\u8a9e \U0001f331 " * 35
+        win = {"title": "A little progress", "body": words + "\n" + "x" * 120}
+        image = self.image(win)
+        self.assertEqual(1080, image.width())
+        self.assertGreater(image.height(), 1080)
+        self.assertLessEqual(image.height(), 4096)
+        layout, height = picture._words(words, 42, QFont.Weight.Normal)
+        self.assertEqual(len(words.encode("utf-16-le")) // 2, sum(layout.lineAt(i).textLength() for i in range(layout.lineCount())))
+        self.assertGreater(height, 42)
+        for index in range(layout.lineCount()):
+            line = layout.lineAt(index)
+            self.assertLessEqual(line.naturalTextWidth(), 936)
+
+    def test_capture_font_has_real_letter_glyphs(self):
+        if not os.environ.get("ANKIQUEST_QT_CAPTURE"):
+            return
+        layout, _ = picture._words("AnkiQuest \u65e5\u672c\u8a9e", 36, QFont.Weight.Bold)
+        glyphs = [index for run in layout.glyphRuns() for index in run.glyphIndexes()]
+        self.assertTrue(glyphs, "capture font must draw text")
+        self.assertNotIn(0, glyphs, "capture must not substitute missing-glyph boxes")
+
+    def test_hidden_fields_never_enter_the_picture(self):
+        win = {"title": "A win", "body": "Only these words"}
+        expected = self.image(win)
+        supplied = dict(win, token="private-token", label="unsaved label", deck="private deck", fields={"Front": "private"})
+        self.assertEqual(expected, self.image(supplied))
+
+    def test_invalid_or_excessive_content_fails_explicitly(self):
+        with self.assertRaises(ValueError):
+            self.image({"title": "Long", "body": "many words " * 10000})
+        with self.assertRaises(ValueError):
+            self.image({"title": "Invalid scale"}, scale=0)
+
+    def test_captures_light_dark_and_large_text(self):
+        folder = os.environ.get("ANKIQUEST_QT_CAPTURE")
+        win = {"title": "I reached level 30", "body": "A little progress, every day. Espa\u00f1ol, \u65e5\u672c\u8a9e."}
+        for dark in (False, True):
+            palette = QPalette(app.palette())
+            background, ink = ("#18212c", "#f2f4f8") if dark else ("#ffffff", "#263247")
+            palette.setColor(QPalette.ColorRole.Window, QColor(background))
+            palette.setColor(QPalette.ColorRole.WindowText, QColor(ink))
+            for scale in (1, 2):
+                image = self.image(win, "aki", palette, scale)
+                self.assertEqual(QColor(background), image.pixelColor(0, 0))
+                self.assertGreaterEqual(image.height(), 1080)
+                if folder:
+                    name = "offline-%s-%s.png" % ("dark" if dark else "light", scale)
+                    self.assertTrue(image.save(str(Path(folder) / name)))
+        conquest = load_in_package("share_picture_qt", "conquests")
+        found = {"label": "日本語", "conquest": {"at": 864000000, "since": 0, "lapses": 5, "answers": 20}}
+        win = conquest._win(SimpleNamespace(base="https://quest.test", user="sam"), 50, found, "My vocabulary", str)
+        image = self.image(win, "aki", palette)
+        if folder:
+            self.assertTrue(image.save(str(Path(folder) / "offline-conquest.png")))
 
 
 if __name__ == "__main__":

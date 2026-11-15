@@ -2056,3 +2056,41 @@ SPANISH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, 
 GERMAN[_ANKI_TAN] = '<a href="%s">Anki-tan</a> von <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 FRENCH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> par <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 PORTUGUESE[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+
+# Conquest exports use Android's first-person caption and public counts.
+SPANISH.update({
+    "I finally learned a card I had forgotten %d time.": "Por fin aprendí una tarjeta que había olvidado %d vez.",
+    "I finally learned a card I had forgotten %d times.": "Por fin aprendí una tarjeta que había olvidado %d veces.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Por fin aprendí «%s», una tarjeta que había olvidado %d vez.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Por fin aprendí «%s», una tarjeta que había olvidado %d veces.",
+    "From my deck “%s”.": "De mi mazo «%s».",
+    "%d answer": "%d respuesta", "%d answers": "%d respuestas",
+    "%d day to learn": "%d día para aprenderla", "%d days to learn": "%d días para aprenderla",
+})
+GERMAN.update({
+    "I finally learned a card I had forgotten %d time.": "Ich habe endlich eine Karte gelernt, die ich %d-mal vergessen hatte.",
+    "I finally learned a card I had forgotten %d times.": "Ich habe endlich eine Karte gelernt, die ich %d-mal vergessen hatte.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Ich habe endlich „%s“ gelernt, eine Karte, die ich %d-mal vergessen hatte.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Ich habe endlich „%s“ gelernt, eine Karte, die ich %d-mal vergessen hatte.",
+    "From my deck “%s”.": "Aus meinem Stapel „%s“.",
+    "%d answer": "%d Antwort", "%d answers": "%d Antworten",
+    "%d day to learn": "%d Tag zum Lernen", "%d days to learn": "%d Tage zum Lernen",
+})
+FRENCH.update({
+    "I finally learned a card I had forgotten %d time.": "J’ai enfin appris une carte que j’avais oubliée %d fois.",
+    "I finally learned a card I had forgotten %d times.": "J’ai enfin appris une carte que j’avais oubliée %d fois.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "J’ai enfin appris « %s », une carte que j’avais oubliée %d fois.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "J’ai enfin appris « %s », une carte que j’avais oubliée %d fois.",
+    "From my deck “%s”.": "De mon paquet « %s ».",
+    "%d answer": "%d réponse", "%d answers": "%d réponses",
+    "%d day to learn": "%d jour pour l’apprendre", "%d days to learn": "%d jours pour l’apprendre",
+})
+PORTUGUESE.update({
+    "I finally learned a card I had forgotten %d time.": "Finalmente aprendi um cartão que tinha esquecido %d vez.",
+    "I finally learned a card I had forgotten %d times.": "Finalmente aprendi um cartão que tinha esquecido %d vezes.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Finalmente aprendi «%s», um cartão que tinha esquecido %d vez.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Finalmente aprendi «%s», um cartão que tinha esquecido %d vezes.",
+    "From my deck “%s”.": "Do meu baralho «%s».",
+    "%d answer": "%d resposta", "%d answers": "%d respostas",
+    "%d day to learn": "%d dia para aprender", "%d days to learn": "%d dias para aprender",
+})

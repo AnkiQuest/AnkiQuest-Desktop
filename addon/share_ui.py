@@ -1,4 +1,4 @@
-"""Sharing a win from Anki: with friends through the server, or anywhere as the server's card picture."""
+"""Share a win with friends, or export its server picture with a private local fallback."""
 
 from pathlib import Path
 
@@ -36,7 +36,7 @@ def picture(png):
 
 
 def copy_card(found):
-    """Puts the server's card on the clipboard. Nothing is published."""
+    """Puts the card on the clipboard. Nothing is published."""
     image = picture(found["png"])
     if image is None:
         return tr("Could not read the picture.")
@@ -45,7 +45,7 @@ def copy_card(found):
 
 
 def save_card(path, found):
-    """Writes the server's card to `path`. Nothing is published."""
+    """Writes the card to `path`. Nothing is published."""
     try:
         Path(path).write_bytes(found["png"])
     except OSError:
@@ -121,7 +121,7 @@ def _head(win, companion):
 
 
 class Sharing:
-    """What the share window's buttons do. The card is fetched once, in the background, and kept."""
+    """Fetch a server picture or draw it locally; reuse it only for its account and profile."""
 
     def __init__(self, dialog, api, win, current_client, run, status, companion=None):
         self.dialog, self.api, self.win = dialog, api, win
@@ -155,24 +155,38 @@ class Sharing:
 
     def with_card(self, then):
         """Runs `then(found)` once the card is here, fetching it first if needed."""
-        if self.found is not None:
-            then(self.found)
-            return
         if not self.owned():
             return
         self.waiting.append(then)
         if len(self.waiting) > 1:
             return
         self.status.setText(tr("Getting the picture…"))
-        self.run(lambda: share.card(self.api, self.win), self.fetched)
+
+        # Cached pictures still pass through the account/profile-bound runner.
+        def fetch():
+            if self.found is not None:
+                return self.found
+            return share.card(self.api, self.win) if share.has_card(self.win) else None
+
+        self.run(fetch, self.fetched)
 
     def fetched(self, future):
         waiting, self.waiting = self.waiting, []
+        if not self.owned():
+            return
         try:
             self.found = future.result()
-        except Exception as error:
-            self.status.setText(tr("Could not get the picture (%s).") % error_text(error))
-            return
+        except Exception:
+            self.found = None
+        if self.found is None or picture(self.found["png"]) is None:
+            # Qt's bundled art is read on this UI callback, after ownership is checked.
+            from . import share_picture
+            try:
+                palette = self.dialog.palette() if self.dialog is not None else QApplication.palette()
+                self.found = share_picture.render(self.win, self._companion, palette)
+            except Exception as error:
+                self.status.setText(tr("Could not get the picture (%s).") % error_text(error))
+                return
         for action in waiting:
             action(self.found)
 
@@ -209,18 +223,18 @@ class Sharing:
 def _buttons(sharing):
     friends = QPushButton(tr("Share with friends"))
     friends.clicked.connect(lambda: _route(sharing, lambda: sharing.to_friends(friends)))
-    if not share.has_card(sharing.win):
-        text = QPushButton(tr("Copy text"))
-        text.clicked.connect(sharing.to_text)
-        return [friends, text]
     copy = QPushButton(tr("Copy as image"))
     save = QPushButton(tr("Save image…"))
-    public = QPushButton(tr("Copy public link"))
-    public.setToolTip(tr("Makes a public page for this card. Anyone with the link can see it."))
+    text = QPushButton(tr("Copy text"))
+    text.clicked.connect(sharing.to_text)
     copy.clicked.connect(sharing.to_clipboard)
     save.clicked.connect(sharing.to_file)
+    if not share.has_card(sharing.win):
+        return [friends, copy, save, text]
+    public = QPushButton(tr("Copy public link"))
+    public.setToolTip(tr("Makes a public page for this card. Anyone with the link can see it."))
     public.clicked.connect(lambda: sharing.to_link(public))
-    return [friends, copy, save, public]
+    return [friends, copy, save, text, public]
 
 
 def _route(sharing, legacy):

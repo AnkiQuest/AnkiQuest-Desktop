@@ -3,7 +3,7 @@
 import html
 import re
 
-from . import deck_names, share
+from . import deck_names, language, share
 
 _HIDDEN = re.compile(r"<(style|script)\b[^>]*>.*?</\1\s*>|<!--.*?-->", re.I | re.S)
 _SOUND = re.compile(r"\[(?:sound|anki:play):[^\]]*\]")
@@ -15,6 +15,7 @@ _PLACEHOLDER = re.compile(r"\[\[type:[\s\S]*?(?:\]\]|$)|\{\{[\s\S]*?(?:\}\}|$)")
 _SPECIAL = {"Tags", "Type", "Deck", "Subdeck", "CardFlag", "Card", "FrontSide"}
 _SHORT_LABEL = 40
 _LABEL_LIMIT = 120
+_DAY_MS = 86_400_000
 
 
 def _line(value):
@@ -154,10 +155,33 @@ def _can_undo(found, now):
 
 
 def _win(api, at, found, deck, translate):
-    label = found.get("label") or translate("a difficult card")
-    words = translate("I learned %s in %s.") % (label, deck) if deck else translate("I learned %s.") % label
+    # Only the saved server label is public. Suggestions and note fields stay local.
+    label, card = found.get("label"), found.get("conquest", {})
+    title = translate("I conquered a card!")
+    if "lapses" not in card:
+        words = label or title
+    elif label:
+        words = language._plural("I finally learned “%s”, a card I had forgotten %d time.",
+                                 "I finally learned “%s”, a card I had forgotten %d times.",
+                                 card["lapses"], translate) % (label, card["lapses"])
+    else:
+        words = language._plural("I finally learned a card I had forgotten %d time.",
+                                 "I finally learned a card I had forgotten %d times.",
+                                 card["lapses"], translate) % card["lapses"]
+    if deck:
+        words += "\n" + translate("From my deck “%s”.") % deck
+
+    # The local picture includes the same public counts as Android, without a page link.
+    details = [words]
+    if "answers" in card:
+        details.append(language._plural("%d answer", "%d answers", card["answers"], translate) % card["answers"])
+    if "at" in card and "since" in card:
+        days = max(0, (card["at"] - card["since"]) // _DAY_MS)
+        details.append(language._plural("%d day to learn", "%d days to learn", days, translate) % days)
     page = "%s/conquered/%s/%d" % (api.base, api.user, at)
-    return {"title": translate("I conquered a card!"), "body": words + "\n" + page, "win": share.win_id(found)}
+    return {"title": title, "body": words + "\n" + page, "win": share.win_id(found),
+            "picture_body": "\n".join(details),
+            "picture_pose": "aki_winner" if card.get("leech") else "aki_deck_conquered"}
 
 
 def _stats(found, translate):
