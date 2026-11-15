@@ -3,6 +3,7 @@ server's card picture.
 
 Plain Python, so the tests load it without Anki; share_ui.py shows it."""
 
+import re
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -12,6 +13,7 @@ from .language import _plural
 MAX_IMAGE = 4 * 1024 * 1024
 IMAGE_TIMEOUT = 15
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+_MAX_STREAK = 2_147_483_647  # Android's signed integer event-key count.
 
 
 def win_id(entry):
@@ -32,7 +34,17 @@ def win_from_entry(entry):
     return {
         **_share_words(entry),
         "notification": int(entry["id"]), "place": None, "win": win_id(entry),
+        "picture_streak": _streak(entry),
     }
+
+
+def _streak(entry):
+    # Only the server's event key supplies a count; translated titles are not data.
+    if entry.get("kind") != "celebration" or entry.get("topic") != "streak":
+        return None
+    found = re.fullmatch(r"streak:[^:]*:([0-9]{1,10})", str(entry.get("moment") or ""))
+    days = int(found[1]) if found else 0
+    return days if 0 < days <= _MAX_STREAK else None
 
 
 def win_from_place(change, place):

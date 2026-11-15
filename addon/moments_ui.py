@@ -401,6 +401,8 @@ class _Card:
         if not win:
             return
         win = dict(win, picture_pose=pose)
+        if item["topic"] == "secured" and item.get("streak"):
+            win["picture_streak"] = item["streak"]
         sharing = share_ui.Sharing(self._dialog, self._api, win, self._addon.client, self._run, self._status, companion)
         friends, *options = share_ui._buttons(sharing)
         friends.setText(tr("Tell friends"))

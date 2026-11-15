@@ -166,6 +166,9 @@ class Sharing:
         def fetch():
             if self.found is not None:
                 return self.found
+            # Streak exports use the same heat design online and offline.
+            if self.win.get("picture_streak") is not None:
+                return None
             return share.card(self.api, self.win) if share.has_card(self.win) else None
 
         self.run(fetch, self.fetched)
