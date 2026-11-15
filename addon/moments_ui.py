@@ -5,7 +5,7 @@ from enum import Enum, auto
 
 from aqt.qt import QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QScrollArea, QTimer, QVBoxLayout, QWidget, Qt
 
-from . import companion_art, conquests_ui, inbox, moments, share_ui, today
+from . import companion_art, companion_reveal, conquests_ui, inbox, moments, reveal_ui, share_ui, today
 from .language import tr
 
 _RESTING = ("overview", "deckBrowser", "congrats")
@@ -13,8 +13,12 @@ _RESTING = ("overview", "deckBrowser", "congrats")
 
 class _Phase(Enum):
     READY = auto()
+    # A companion's unlock reveal is on screen; the card waits for it.
+    REVEALING = auto()
     SHOWING = auto()
     DISMISSED = auto()
+    # Aki's greeting is in front; cards wait until it closes.
+    WAITING = auto()
 
 
 class _Permission(Enum):
@@ -34,6 +38,7 @@ class _Presenter:
         self._owner = None
         self._profile = None
         self._card = None
+        self._reveal = None
         self._phase = _Phase.READY
         self._permission = _Permission.UNKNOWN
         self._origin = _Origin.AUTOMATIC
@@ -51,6 +56,7 @@ class _Presenter:
 
     def _clear(self):
         card, self._card = self._card, None
+        self._close_reveal()
         self._owner = self._profile = self._request = self._summary = None
         self._phase, self._permission = _Phase.READY, _Permission.UNKNOWN
         self._origin = _Origin.AUTOMATIC
@@ -99,11 +105,23 @@ class _Presenter:
     def _schedule(self):
         QTimer.singleShot(0, self._show)
 
+    def _hold(self):
+        """Keeps cards back while Aki's greeting is open."""
+        self._sync_owner()
+        self._phase = _Phase.WAITING
+
+    def _release(self):
+        if self._phase is not _Phase.WAITING:
+            return
+        self._phase = _Phase.READY
+        self._schedule()
+
     def _transition(self, new_state, old_state):
         self._sync_owner()
         if new_state == "review":
             # Starting another review defers an open card; a pause never closes it.
             card, self._card = self._card, None
+            self._close_reveal()
             self._phase, self._origin = _Phase.READY, _Origin.AUTOMATIC
             self._summary = None
             if card is not None:
@@ -133,13 +151,21 @@ class _Presenter:
 
     def _show(self):
         api = self._sync_owner()
-        if not api.configured or self._profile is None or self._addon.mw.state not in _RESTING or self._phase is _Phase.DISMISSED:
+        if (not api.configured or self._profile is None or self._addon.mw.state not in _RESTING
+                or self._phase in (_Phase.DISMISSED, _Phase.WAITING)):
             return
         items = [item for item in moments._pending(self._profile, self._owner[:2]) if self._allowed(item)]
-        if not items:
+        # A greeting can open and close over a reveal, so the open window decides, not the phase.
+        if not items or self._reveal is not None:
             return
         if self._card is not None:
             self._card._append(items, self._summary)
+            return
+
+        # A companion that joined is revealed first; the card shows the rest afterwards.
+        joined = next((item for item in items if companion_reveal.due(item)), None)
+        if joined is not None:
+            self._play(api, joined)
             return
         card = self._card = _Card(self._addon, api, self._profile, items, self._summary)
         self._phase = _Phase.SHOWING
@@ -156,12 +182,72 @@ class _Presenter:
         card._dialog.finished.connect(finished)
         card._dialog.show()
 
+    def _play(self, api, item):
+        """Plays the reveal for `item`. Closing it consumes the moment and marks its row read,
+        so other devices show the moment card instead."""
+        mw = self._addon.mw
+
+        def sharing(dialog, run, status):
+            if not item.get("share"):
+                return None
+            return share_ui.Sharing(dialog, api, item["share"], self._addon.client, run, status, moments.joined(item))
+
+        # Choose, Share and marking the row read act for the account and profile the reveal
+        # opened for; a sign-out or profile change cancels them, even once queued.
+        profile = self._profile
+
+        def owns():
+            return self._owns(api, profile)
+
+        def run(work, done):
+            share_ui.run_owned(mw.taskman.run_in_background, owns, work, done)
+
+        def choose(companion):
+            if owns():
+                self._addon.choose_companion(api, companion, run)
+
+        window = self._reveal = reveal_ui.play(
+            mw, item, reveal_ui.motion(self._addon.config()), self._addon.current_companion(), choose, sharing, run,
+        )
+        self._phase = _Phase.REVEALING
+
+        def finished(_result):
+            if self._reveal is not window:
+                return
+            self._reveal = None
+            if self._phase is _Phase.REVEALING:
+                self._phase = _Phase.READY
+            if not owns():
+                return
+            moments._acknowledge(profile, (api.base, api.user), [item["key"]])
+            run(lambda: inbox.mark_read(api, [item["notice"]]), _marked)
+            self._addon.redraw()
+            self._schedule()
+
+        window.dialog.finished.connect(finished)
+
+    def _close_reveal(self):
+        """Closes a reveal without consuming its moment, so it plays again later."""
+        window, self._reveal = self._reveal, None
+        if window is None:
+            return
+        if self._phase is _Phase.REVEALING:
+            self._phase = _Phase.READY
+        window.dialog.close()
+
     def _allowed(self, item):
         if self._origin is _Origin.PLAYER:
             return True
         if (item["topic"] == "secured" or item.get("local") and item["topic"] == "goal") and not self._addon.config().get("goal_celebrations", True):
             return False
         return item.get("local") or self._permission is _Permission.ENABLED
+
+
+def _marked(future):
+    try:
+        future.result()
+    except Exception as error:
+        print("ankiquest moments:", error)
 
 
 class _Card:
@@ -237,11 +323,10 @@ class _Card:
     def _run(self, work, done, uses_collection=False):
         rendered = self._rendered
 
-        def arrived(future):
-            if self._owned() and self._rendered is rendered:
-                done(future)
+        def current():
+            return self._owned() and self._rendered is rendered
 
-        self._addon.mw.taskman.run_in_background(work, arrived, uses_collection=uses_collection)
+        share_ui.run_owned(self._addon.mw.taskman.run_in_background, current, work, done, uses_collection=uses_collection)
 
     def _append(self, items, summary):
         selected = self._choices.currentData()
@@ -315,22 +400,14 @@ class _Card:
         win = item.get("share")
         if not win:
             return
-        sharing = share_ui.Sharing(self._dialog, self._api, win, self._addon.client, self._run, self._status)
+        sharing = share_ui.Sharing(self._dialog, self._api, win, self._addon.client, self._run, self._status, companion)
         friends, *options = share_ui._buttons(sharing)
         friends.setText(tr("Tell friends"))
+        toggle, choices = share_ui.share_toggle(sharing, options)
         bar = QWidget()
         buttons = QHBoxLayout(bar)
         buttons.setContentsMargins(0, 0, 0, 0)
         buttons.addWidget(friends)
-        toggle = QPushButton(tr("Share"))
-        toggle.setCheckable(True)
         buttons.addWidget(toggle)
         self._actions.addWidget(bar)
-        choices = QWidget()
-        row = QVBoxLayout(choices)
-        row.setContentsMargins(0, 0, 0, 0)
-        for button in options:
-            row.addWidget(button)
-        choices.hide()
-        toggle.toggled.connect(choices.setVisible)
         self._actions.addWidget(choices)

@@ -4,12 +4,20 @@
 //! Each pose is a 256 px square, 256-colour palette PNG with transparency;
 //! an icon pose (`ankiquest_art::ICON_POSES`) is 64 px, and export adds one
 //! for every companion with its master. A companion without one shows the
-//! pose's fallback. Export writes them all and records each file's SHA-256
-//! in the manifest.
+//! pose's fallback. Export writes every pose whose picture changed, retires
+//! the file it replaces, and records each file's SHA-256 in the manifest.
 //! `--check` writes nothing and fails when a pose differs from what export
 //! would write, or from the hash in the manifest.
+//!
+//! Linux exports are canonical. Another platform, or a new quantiser
+//! version, maps a few colours to other palette entries: a few hundred
+//! pixels move far while the mean barely moves. Export and check therefore
+//! treat a pose as current when it is `close` to a fresh render, so a
+//! clean checkout passes everywhere and export leaves the committed files
+//! alone.
 
 use std::fs;
+use std::path::Path;
 use std::process::ExitCode;
 
 use color_quant::NeuQuant;
@@ -17,7 +25,7 @@ use image::RgbaImage;
 
 use ankiquest_art::{ICON_POSES, companions_with};
 
-use super::exports::{self, Export, Exporter};
+use super::exports::{self, Export, Exporter, Retired};
 use super::{load, root, shrink, target};
 
 /// Pose edge in pixels: the Today panel shows 96 px at up to 2x, and
@@ -38,13 +46,21 @@ const COLOURS: usize = 256;
 const SAMPLING: i32 = 1;
 
 /// Largest mean channel difference, out of 255, between a committed pose
-/// and a fresh export: float rounding on another machine can move a few
-/// palette entries, a different picture moves far more.
+/// and a fresh export: drift moves a few palette entries, a different
+/// picture moves far more.
 const MEAN_TOLERANCE: f64 = 0.5;
 
-/// Largest single channel difference between a committed pose and a fresh
-/// export.
-const PIXEL_TOLERANCE: u8 = 48;
+/// A pixel has drifted when one of its channels moves more than this.
+const DRIFT: u8 = 16;
+
+/// Largest share of drifted pixels. Drift from Windows/MSVC and from
+/// color_quant 2 moves at most 0.4% of a pose; no single pixel is bounded,
+/// since one swapped palette entry can move a pixel by 150.
+const DRIFTED_SHARE: f64 = 0.01;
+
+/// Where export moves a pose it replaces: companion art is never deleted
+/// (AGENTS.md, Companion art), and nothing packaged reads this folder.
+const RETIRED: &str = "assets/retired";
 
 /// What the command does.
 #[derive(PartialEq)]
@@ -115,9 +131,11 @@ fn icons() -> Result<Vec<Export>, String> {
     Ok(icons)
 }
 
-/// Writes every pose and records its hash in the manifest.
+/// Writes every pose whose picture changed, retiring the file it replaces,
+/// and records each pose's hash in the manifest.
 fn export() -> Result<ExitCode, String> {
     let mut manifest = exports::read()?;
+    let mut retired = Vec::new();
 
     // List icons whose masters were added since the last export.
     for icon in icons()? {
@@ -130,17 +148,84 @@ fn export() -> Result<ExitCode, String> {
         }
     }
     for export in manifest.exports.iter_mut().filter(|export| is_pose(export)) {
-        let bytes = render(export)?;
+        let fresh = render(export)?;
         let path = root().join(&export.file);
-        if let Some(folder) = path.parent() {
-            fs::create_dir_all(folder).map_err(|e| format!("{}: {e}", folder.display()))?;
+        let committed = fs::read(&path).ok();
+        match step(committed.as_deref(), &fresh)? {
+            // Keep a committed pose that differs only by drift.
+            Step::Keep => {
+                let committed = committed.unwrap_or_default();
+                export.sha256 = exports::sha256(&committed);
+                println!("{}: current", export.file);
+                continue;
+            }
+            Step::Add => {}
+
+            // Move the previous picture aside before replacing it.
+            Step::Replace => {
+                let committed = committed.unwrap_or_default();
+                retired.push(retire(export, &committed)?);
+            }
         }
-        fs::write(&path, &bytes).map_err(|e| format!("{}: {e}", path.display()))?;
-        export.sha256 = exports::sha256(&bytes);
-        println!("{}: {} bytes", export.file, bytes.len());
+        save(&path, &fresh)?;
+        export.sha256 = exports::sha256(&fresh);
+        println!("{}: {} bytes", export.file, fresh.len());
     }
+    manifest.retired.extend(retired);
     exports::write(&manifest)?;
     Ok(ExitCode::SUCCESS)
+}
+
+/// What export does with one pose.
+#[derive(PartialEq, Debug)]
+enum Step {
+    /// No file yet: write it.
+    Add,
+    /// The committed file is current: leave it.
+    Keep,
+    /// The picture changed: retire the committed file, then write.
+    Replace,
+}
+
+/// What export does with a pose, given the committed file and a fresh render.
+fn step(committed: Option<&[u8]>, fresh: &[u8]) -> Result<Step, String> {
+    let Some(committed) = committed else {
+        return Ok(Step::Add);
+    };
+    if committed == fresh || close(fresh, committed)? {
+        return Ok(Step::Keep);
+    }
+    Ok(Step::Replace)
+}
+
+/// Keeps `bytes`, the pose `export` is about to replace, under `RETIRED`
+/// with its hash in the name, and returns its manifest entry.
+fn retire(export: &Export, bytes: &[u8]) -> Result<Retired, String> {
+    let file = retired_path(&export.file, &exports::sha256(bytes));
+    save(&root().join(&file), bytes)?;
+    println!("{}: retired to {file}", export.file);
+    Ok(Retired {
+        file,
+        why: format!(
+            "Earlier {}, replaced when export-addon-art wrote a new export of {}. Unreferenced.",
+            export.file, export.master
+        ),
+    })
+}
+
+/// Where a replaced pose goes: `addon/art/aki_happy.png` with hash
+/// `0123abcd…` becomes `assets/retired/addon/art/aki_happy-0123abcd.png`.
+fn retired_path(file: &str, sha256: &str) -> String {
+    let (stem, extension) = file.rsplit_once('.').unwrap_or((file, "png"));
+    format!("{RETIRED}/{stem}-{}.{extension}", &sha256[..8])
+}
+
+/// Writes `bytes` to `path`, creating its folder.
+fn save(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    if let Some(folder) = path.parent() {
+        fs::create_dir_all(folder).map_err(|e| format!("{}: {e}", folder.display()))?;
+    }
+    fs::write(path, bytes).map_err(|e| format!("{}: {e}", path.display()))
 }
 
 /// Compares every pose with a fresh export and with the manifest.
@@ -189,7 +274,8 @@ fn stale() -> Result<Vec<String>, String> {
     Ok(failed)
 }
 
-/// Whether two PNGs show the same pixels up to float rounding.
+/// Whether two PNGs show the same picture up to drift: a small mean
+/// difference and few drifted pixels.
 fn close(a: &[u8], b: &[u8]) -> Result<bool, String> {
     let decode = |bytes: &[u8]| {
         image::load_from_memory(bytes)
@@ -206,10 +292,17 @@ fn close(a: &[u8], b: &[u8]) -> Result<bool, String> {
         .zip(b.as_raw())
         .map(|(x, y)| x.abs_diff(*y))
         .collect();
+
+    // Mean over every channel, share over pixels.
     let total: f64 = differences.iter().map(|&d| f64::from(d)).sum();
     let mean = total / differences.len().max(1) as f64;
-    let worst = differences.iter().copied().max().unwrap_or(0);
-    Ok(mean <= MEAN_TOLERANCE && worst <= PIXEL_TOLERANCE)
+    let (pixels, _) = differences.as_chunks::<4>();
+    let drifted = pixels
+        .iter()
+        .filter(|pixel| pixel.iter().any(|&d| d > DRIFT))
+        .count();
+    let share = drifted as f64 / pixels.len().max(1) as f64;
+    Ok(mean <= MEAN_TOLERANCE && share <= DRIFTED_SHARE)
 }
 
 /// Encodes `image` as an indexed PNG with a 256-colour RGBA palette.
@@ -280,5 +373,59 @@ mod tests {
         let (red, blue) = (encode(&red).unwrap(), encode(&blue).unwrap());
         assert!(close(&red, &red).unwrap());
         assert!(!close(&red, &blue).unwrap());
+    }
+
+    /// `image` as a plain RGBA PNG.
+    fn png(image: &RgbaImage) -> Vec<u8> {
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        image.write_to(&mut bytes, image::ImageFormat::Png).unwrap();
+        bytes.into_inner()
+    }
+
+    /// The committed Aki winner pose, decoded.
+    fn winner() -> RgbaImage {
+        let path = root().join("addon/art/aki_winner.png");
+        image::open(path).unwrap().into_rgba8()
+    }
+
+    /// The drift reported on Windows/MSVC for aki_winner.png: one pixel
+    /// off by 64, everything else the same.
+    #[test]
+    fn one_drifted_pixel_is_close() {
+        let committed = winner();
+        let mut fresh = committed.clone();
+        fresh.put_pixel(146, 160, image::Rgba([116, 98, 114, 253]));
+        assert!(close(&png(&fresh), &png(&committed)).unwrap());
+        assert_eq!(step(Some(&png(&committed)), &png(&fresh)), Ok(Step::Keep));
+    }
+
+    /// A 40 px patch painted over the pose is an edit, not drift.
+    #[test]
+    fn a_painted_patch_is_not_close() {
+        let committed = winner();
+        let mut edited = committed.clone();
+        for (x, y, pixel) in edited.enumerate_pixels_mut() {
+            if (100..140).contains(&x) && (100..140).contains(&y) {
+                *pixel = image::Rgba([255, 0, 255, 255]);
+            }
+        }
+        assert!(!close(&png(&edited), &png(&committed)).unwrap());
+        assert_eq!(
+            step(Some(&png(&committed)), &png(&edited)),
+            Ok(Step::Replace)
+        );
+    }
+
+    #[test]
+    fn a_missing_pose_is_added() {
+        assert_eq!(step(None, &png(&winner())), Ok(Step::Add));
+    }
+
+    #[test]
+    fn replaced_poses_keep_their_hash() {
+        assert_eq!(
+            retired_path("addon/art/aki_winner.png", "0123abcd4567"),
+            "assets/retired/addon/art/aki_winner-0123abcd.png"
+        );
     }
 }

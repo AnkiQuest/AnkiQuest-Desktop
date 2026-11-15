@@ -1532,7 +1532,8 @@ mod tests {
                 "aki/frozen",
                 "aki/streak",
                 "aki/winner",
-                "ankilope/celebrate"
+                "ankilope/celebrate",
+                "ankilope/frozen"
             ]
         );
         for (_, _, png) in CARD_ART {
@@ -1557,7 +1558,8 @@ mod tests {
         assert_eq!(art("aki", "happy"), art("aki", "celebrate"));
         assert_eq!(stem(art("aki", "frozen")), Some("frozen"));
         assert_eq!(stem(art("aki", "freeze")), Some("freeze"));
-        assert_eq!(stem(art("ankilope", "frozen")), Some("celebrate"));
+        assert_eq!(stem(art("ankilope", "frozen")), Some("frozen"));
+        assert_eq!(stem(art("ankilope", "freeze")), Some("celebrate"));
     }
 
     #[test]

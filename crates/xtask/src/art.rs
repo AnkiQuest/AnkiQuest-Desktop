@@ -13,8 +13,11 @@ use std::process::ExitCode;
 use ankiquest_art::{ICON_POSES, companions_with, load, png_size, shrink, target};
 use image::RgbaImage;
 
+use crate::root;
+
 mod addon;
 mod banner;
+mod coverage;
 mod exports;
 #[cfg(test)]
 mod guard;
@@ -107,6 +110,11 @@ const ART: &[Art] = &[
     widget("aki_frozen", "static/aki/frozen.png"),
     widget("aki_neglected", "static/aki/neglected.png"),
     widget("ankilope_face", "static/ankilope/face.png"),
+    widget("ankilope_sad", "static/ankilope/sad.png"),
+    widget("ankilope_hopeful", "static/ankilope/hopeful.png"),
+    widget("ankilope_frozen", "static/ankilope/frozen.png"),
+    widget("ankilope_sleeping", "static/ankilope/sleeping.png"),
+    widget("ankilope_neglected", "static/ankilope/neglected.png"),
     widget("aki_celebrate", "static/aki/celebrate.png"),
     widget("aki_streak", "static/aki/streak.png"),
     widget("ankilope_celebrate", "static/ankilope/celebrate.png"),
@@ -233,6 +241,11 @@ pub fn addon(args: &[String]) -> ExitCode {
     addon::run(args)
 }
 
+/// Runs the art coverage report.
+pub fn coverage(args: &[String]) -> ExitCode {
+    coverage::run(args)
+}
+
 /// Runs the banner command: `[--social] [--out <file>]`.
 pub fn banner(args: &[String]) -> ExitCode {
     banner::run(args)
@@ -242,11 +255,6 @@ pub fn banner(args: &[String]) -> ExitCode {
 fn usage() -> ExitCode {
     eprintln!("usage: xtask export-android-art [--check] <android-checkout>");
     ExitCode::FAILURE
-}
-
-/// The repository root, where the masters live.
-fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
 /// The drawable's path relative to an Android checkout.
@@ -395,6 +403,11 @@ mod tests {
             "aki_frozen",
             "aki_neglected",
             "ankilope_face",
+            "ankilope_sad",
+            "ankilope_hopeful",
+            "ankilope_frozen",
+            "ankilope_sleeping",
+            "ankilope_neglected",
             "aki_celebrate",
             "aki_streak",
             "ankilope_celebrate",

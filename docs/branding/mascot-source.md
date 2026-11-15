@@ -52,9 +52,17 @@ and the fixture, so `nix build` runs the same export.
 because a consumer reads them straight from a checkout:
 
 - `addon/art/*.png` and `addon/*_face.png`: the desktop add-on loads them at
-  runtime. `cargo run -p ankiquest-xtask -- export-addon-art` rewrites them
-  and records each file's SHA-256; the tests fail when a file differs from
-  that hash or from a fresh export of its master.
+  runtime. `cargo run -p ankiquest-xtask -- export-addon-art` writes each
+  one whose picture changed, moves the file it replaces to
+  `assets/retired/` (listed as retired), and records each file's SHA-256;
+  the tests fail when a file differs from that hash or from a fresh export
+  of its master.
+
+Linux exports are canonical. Other platforms and quantiser versions move a
+few palette entries, so a committed pose is current when a fresh export
+differs from it by a mean under 0.5/255 per channel and in under 1% of its
+pixels. A clean checkout passes on every platform, and export there leaves
+the committed files alone.
 
 The README banner and social preview are drawn by `xtask banner` and
 checked by its own tests against a fresh render. Android's WebPs live in
@@ -71,6 +79,9 @@ code under `src/`, `web/`, `addon/`, `crates/` or `build.rs` names one:
 - `static/aki/face-192.png`, `static/aki/face-32.png`,
   `static/ankilope/face-192.png`: hand-made icon copies, now exported by
   `build.rs`.
+- `assets/retired/addon/`: add-on copies replaced by `export-addon-art`,
+  named with the first 8 hex digits of their SHA-256; the twelve from
+  before #297 include hand-made ones.
 - `docs/branding/ankilope-celebrate-review/review.png` and
   `docs/branding/core-poses-2026-11/aki-core-*.png`: review sheets.
 

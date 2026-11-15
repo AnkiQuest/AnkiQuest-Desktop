@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QImage, QLabel
+from aqt.qt import QApplication, QImage, QLabel, QPushButton
 
 from addon_loader import load_in_package
 
@@ -99,6 +99,20 @@ class Picker(unittest.TestCase):
         for companion, count in (("aki", 3), ("ankilope", 2), ("none", 1)):
             labels = [label for label in self.card(picker, companion).findChildren(QLabel) if label.pixmap() is not None and not label.pixmap().isNull()]
             self.assertEqual(count if companion != "none" else 0, len(labels), companion)
+
+    def test_each_card_fits_its_poses_and_lines(self):
+        # A button does not size itself by the layout inside it, so the card says how big it is.
+        picker = self.picker()
+        for companion, card in picker._cards.items():
+            with self.subTest(companion=companion):
+                wanted = card.layout().sizeHint()
+                self.assertGreaterEqual(card.minimumWidth(), wanted.width())
+                self.assertGreaterEqual(card.minimumHeight(), wanted.height())
+
+    def test_cards_replaced_by_the_answer_are_hidden_at_once(self):
+        picker = self.picker()
+        shown = [card for card in picker.dialog.findChildren(QPushButton, companion_ui.CARD) if card.isVisibleTo(picker.dialog)]
+        self.assertEqual(sorted(picker._cards.values(), key=id), sorted(shown, key=id))
 
     def test_a_silhouette_keeps_the_shape_and_drops_the_colours(self):
         face = companion_art.pixmap(share.face_path("ankilope"), "ankilope")
