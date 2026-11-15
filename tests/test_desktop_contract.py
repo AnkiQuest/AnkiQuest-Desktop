@@ -25,7 +25,7 @@ def example(name):
 class Contracts(unittest.TestCase):
     def setUp(self):
         self.api = client.Client("https://quest.test", "hill", "example-token", "de")
-        self.routes, self.sent = {}, []
+        self.routes, self.sent, self.headers = {}, [], {}
         transport = patch.object(client, "open_url", side_effect=self.response)
         transport.start()
         self.addCleanup(transport.stop)
@@ -41,6 +41,7 @@ class Contracts(unittest.TestCase):
             self.assertEqual("de", headers["Accept-Language"])
         response = BytesIO((EXAMPLES / (self.routes[verb, route] + ".json")).read_bytes())
         response.status = HTTPStatus.OK
+        response.headers = self.headers
         return response
 
     def test_profile_and_upload_produce_the_same_confirmed_day(self):
@@ -87,6 +88,24 @@ class Contracts(unittest.TestCase):
                     stranger = next(row for _, row, mine in ranked if not mine)
                     self.assertNotIn("today_reviews", stranger)
                     self.assertNotIn("streak_state", stranger)
+
+    def test_a_player_who_never_uploaded_learns_why_the_board_and_feed_are_empty(self):
+        self.api.name = self.api.user = "newcomer"
+        self.routes = {("GET", "/api/leaderboard?period=week&scope=friends"): "leaderboard_locked",
+                       ("GET", "/api/activity/newcomer?limit=50"): "activity_locked"}
+        self.headers = {"X-Ankiquest-Locked": "upload_first"}
+        rows = self.api.leaderboard("week", "friends")
+        self.assertEqual([], rows)
+        self.assertEqual("upload_first", rows.locked)
+        page = activity._load(self.api)
+        self.assertEqual([], page.items)
+        self.assertEqual("upload_first", page.locked)
+
+    def test_answers_without_the_lock_header_are_not_locked(self):
+        self.routes = {("GET", "/api/leaderboard?period=week&scope=friends"): "leaderboard"}
+        self.assertIsNone(getattr(self.api.leaderboard("week", "friends"), "locked", None))
+        self.routes = {("GET", "/api/activity/hill?limit=50"): "activity"}
+        self.assertIsNone(activity._load(self.api).locked)
 
     def test_activity_and_legacy_notices_keep_actions_and_share_ids(self):
         self.routes = {("GET", "/api/activity/hill?limit=50"): "activity",

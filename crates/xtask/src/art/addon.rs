@@ -42,6 +42,18 @@ const fn pose(name: &'static str, source: &'static str) -> Pose {
 /// Every pose the add-on shows, as Android names its drawables.
 const POSES: &[Pose] = &[
     pose("aki_face", "static/aki/face.png"),
+    pose("aki_sad", "static/aki/sad.png"),
+    pose("aki_hopeful", "static/aki/hopeful.png"),
+    pose("aki_frozen", "static/aki/frozen.png"),
+    pose("aki_neglected", "static/aki/neglected.png"),
+    pose(
+        "anki_tan_frozen",
+        "static/anki-tan/generated/frozen-full.png",
+    ),
+    pose(
+        "anki_tan_chibi_frozen",
+        "static/anki-tan/generated/frozen-chibi.png",
+    ),
     pose("aki_welcome", "static/aki/welcome.png"),
     pose("aki_review", "static/aki/review.png"),
     pose("aki_celebrate", "static/aki/celebrate.png"),

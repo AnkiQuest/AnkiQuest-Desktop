@@ -31,6 +31,8 @@ class _Board:
     rows: list
     scopes: list
     can_hide: bool
+    # Why the server showed no other players ("upload_first"), or None.
+    locked: object = None
 
 
 def _key(api):
@@ -74,7 +76,7 @@ def _fetch(api, query):
         query = replace(query, scope="friends")
     features = api.server_info()[0] if "global" in dict(scopes) else frozenset()
     rows = api.leaderboard(**query._params())
-    return _Board(query, rows, scopes, "global_leaderboard_hide" in features)
+    return _Board(query, rows, scopes, "global_leaderboard_hide" in features, getattr(rows, "locked", None))
 
 
 def _rows(board, me):
