@@ -1,5 +1,5 @@
 {
-  "_about": "How a player earns each companion but Aki. The server decides from what it already knows and keeps the unlock for good; clients only show the condition and the progress `GET /api/unlocks/{user}` answers. `kind` is what counts: `level` (the player's level), `study_hours` (whole hours studied in total), `streak` (days in a row), `taps` (taps in a row on the companion `requires` names, in the companion picker, once that one is unlocked: the client reports the run that unlocked it with `POST /api/unlocks/{user}`, and the server checks it against the tap rule; `goal` equals `taps`), `leeches_tamed` (cards with at least 8 lapses that later reached a 21-day interval, each card counted once). `goal` is the value that unlocks. A `secret` companion stays hidden until earned; the others show as a locked card with their condition. `status` is `live` when the companion can be earned, `planned` while it has no art yet: servers and clients ignore planned ones. Each check is a measured value of the companion's `kind` and whether it unlocks; the server (src/companions.rs) tests against them, planned companions included. The tap rule: `taps` taps on the `requires` companion in a row, each at most `max_gap_ms` after the one before; a tap on another choice, or a longer gap, starts the count again (a late tap counts as the first of a new run). Each case lists the taps as [choice, milliseconds] and whether the last one unlocks.",
+  "_about": "How a player earns each companion but Aki. The server decides from what it already knows and keeps the unlock for good; clients only show the condition and the progress `GET /api/unlocks/{user}` answers. `kind` is what counts: `level` (the player's level), `study_hours` (whole hours studied in total), `streak` (days in a row), `taps` (taps in a row on the companion `requires` names, in the companion picker, once that one is unlocked: the client reports the run that unlocked it with `POST /api/unlocks/{user}`, and the server checks it against the tap rule; `goal` equals `taps`), `leeches_tamed` (cards with at least 8 lapses that later reached a 21-day interval, each card counted once). `goal` is the value that unlocks. A `secret` companion stays hidden until earned; the others show as a locked card with their condition. `status` is `live` when the companion can be earned, `planned` while it has no art yet: servers and clients ignore planned ones. Each check is a measured value of the companion's `kind` and whether it unlocks; the server (src/companions.rs) tests against them, planned companions included. The tap rule: `taps` taps on the `requires` companion in a row, each later than the one before and at most `max_gap_ms` after it; a tap on another choice, a longer gap, or a time equal to or before the one before starts the count again (that tap counts as the first of a new run). Times are 64-bit signed milliseconds; compute the gap without overflow. Each case lists the taps as [choice, milliseconds] and whether the last one unlocks.",
   "companions": [
     {"companion": "ankilope", "kind": "level", "goal": 30, "secret": false, "status": "live"},
     {"companion": "cow", "kind": "study_hours", "goal": 10, "secret": false, "status": "live"},
@@ -50,6 +50,26 @@
     {
       "name": "a tap on another choice starts again",
       "sequence": [["anki_tan", 0], ["anki_tan", 100], ["anki_tan", 200], ["anki_tan", 300], ["aki", 400], ["anki_tan", 500], ["anki_tan", 600], ["anki_tan", 700], ["anki_tan", 800]],
+      "unlocks": false
+    },
+    {
+      "name": "an earlier tap starts again",
+      "sequence": [["anki_tan", 9000], ["anki_tan", 8000], ["anki_tan", 7000], ["anki_tan", 6000], ["anki_tan", 5000], ["anki_tan", 4000], ["anki_tan", 3000], ["anki_tan", 2000], ["anki_tan", 1000]],
+      "unlocks": false
+    },
+    {
+      "name": "a tap at the same time starts again",
+      "sequence": [["anki_tan", 1000], ["anki_tan", 1000], ["anki_tan", 1000], ["anki_tan", 1000], ["anki_tan", 1000], ["anki_tan", 1000], ["anki_tan", 1000], ["anki_tan", 1000], ["anki_tan", 1000]],
+      "unlocks": false
+    },
+    {
+      "name": "a gap too wide for 64 bits starts again",
+      "sequence": [["anki_tan", -9223372036854775808], ["anki_tan", -9223372036854775508], ["anki_tan", -9223372036854775208], ["anki_tan", -9223372036854774908], ["anki_tan", -9223372036854774608], ["anki_tan", -9223372036854774308], ["anki_tan", -9223372036854774008], ["anki_tan", -9223372036854773708], ["anki_tan", 9223372036854775807]],
+      "unlocks": false
+    },
+    {
+      "name": "a tap that wraps around to the earliest time starts again",
+      "sequence": [["anki_tan", 9223372036854773707], ["anki_tan", 9223372036854774007], ["anki_tan", 9223372036854774307], ["anki_tan", 9223372036854774607], ["anki_tan", 9223372036854774907], ["anki_tan", 9223372036854775207], ["anki_tan", 9223372036854775507], ["anki_tan", 9223372036854775807], ["anki_tan", -9223372036854775808]],
       "unlocks": false
     },
     {
