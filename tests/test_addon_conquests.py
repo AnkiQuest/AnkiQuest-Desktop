@@ -125,6 +125,16 @@ class ConquestApi(unittest.TestCase):
             with self.subTest(language=code):
                 self.assertFalse(keys - table.keys(), "missing conquest translation")
 
+    def test_shared_days_round_like_android_and_the_website(self):
+        cases = json.loads((Path(__file__).parent / "fixtures/conquest_share.json").read_text("utf-8"))["days"]
+        for case in cases:
+            with self.subTest(elapsed=case["elapsed_ms"]):
+                found = {"conquest": {"at": case["elapsed_ms"], "since": 0, "answers": 4, "lapses": 2}}
+                days = case["expected"]
+                win = conquests._win(self.api, 50, found, "", str)
+                self.assertTrue(win["picture_body"].endswith("%d %s to learn" % (days, "day" if days == 1 else "days")))
+                self.assertIn("%d days since the first answer" % days, conquests._stats(found, str))
+
 
 if __name__ == "__main__":
     unittest.main()

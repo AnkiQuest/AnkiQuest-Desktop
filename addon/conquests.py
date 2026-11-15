@@ -154,6 +154,11 @@ def _can_undo(found, now):
     return bool(found.get("told") and (found.get("undo_until") or 0) > now)
 
 
+def _days(card):
+    # Android and the website round half-days up, with at least one day to learn.
+    return max(1, (card["at"] - card["since"] + _DAY_MS // 2) // _DAY_MS)
+
+
 def _win(api, at, found, deck, translate):
     # Only the saved server label is public. Suggestions and note fields stay local.
     label, card = found.get("label"), found.get("conquest", {})
@@ -176,7 +181,7 @@ def _win(api, at, found, deck, translate):
     if "answers" in card:
         details.append(language._plural("%d answer", "%d answers", card["answers"], translate) % card["answers"])
     if "at" in card and "since" in card:
-        days = max(0, (card["at"] - card["since"]) // _DAY_MS)
+        days = _days(card)
         details.append(language._plural("%d day to learn", "%d days to learn", days, translate) % days)
     page = "%s/conquered/%s/%d" % (api.base, api.user, at)
     return {"title": title, "body": words + "\n" + page, "win": share.win_id(found),
@@ -186,5 +191,5 @@ def _win(api, at, found, deck, translate):
 
 def _stats(found, translate):
     card = found["conquest"]
-    days = max(0, (card["at"] - card["since"]) // 86_400_000)
+    days = _days(card)
     return translate("%d lapses · %d answers · %d days since the first answer") % (card["lapses"], card["answers"], days)
