@@ -300,6 +300,28 @@ class Moments(unittest.TestCase):
             self.complete(self.tasks.pop(0))
         self.assertNotIn("/api/activity/sam/read", [path for path, _body, _method in self.requests])
 
+    def test_a_greeting_that_opens_over_the_reveal_still_holds_the_card(self):
+        self.offer()
+        reveal = self.revealed()
+        self.presenter._hold()
+        reveal.later.click()
+        self.flush()
+        self.assertIsNone(self.presenter._card, "the card waits for the greeting")
+        self.presenter._release()
+        self.flush()
+        self.assertEqual(["level:4"], [item["key"] for item in self.presenter._card._items])
+
+    def test_a_greeting_that_closes_first_keeps_the_reveal_in_front(self):
+        self.offer()
+        reveal = self.revealed()
+        self.presenter._hold()
+        self.presenter._release()
+        self.flush()
+        self.assertIsNone(self.presenter._card, "the card waits for the reveal")
+        reveal.later.click()
+        self.flush()
+        self.assertEqual(["level:4"], [item["key"] for item in self.presenter._card._items])
+
     def test_conquest_load_is_read_only_and_a_new_win_keeps_the_draft_label(self):
         control = self.conquest()
         self.assertEqual("der Hund", control._label.text())

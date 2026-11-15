@@ -155,7 +155,8 @@ class _Presenter:
                 or self._phase in (_Phase.DISMISSED, _Phase.WAITING)):
             return
         items = [item for item in moments._pending(self._profile, self._owner[:2]) if self._allowed(item)]
-        if not items or self._phase is _Phase.REVEALING:
+        # A greeting can open and close over a reveal, so the open window decides, not the phase.
+        if not items or self._reveal is not None:
             return
         if self._card is not None:
             self._card._append(items, self._summary)
@@ -214,7 +215,8 @@ class _Presenter:
             if self._reveal is not window:
                 return
             self._reveal = None
-            self._phase = _Phase.READY
+            if self._phase is _Phase.REVEALING:
+                self._phase = _Phase.READY
             if not owns():
                 return
             moments._acknowledge(profile, (api.base, api.user), [item["key"]])
