@@ -1,6 +1,12 @@
 # Agent instructions
 
-ankiquest is the AnkiQuest server (Rust), its web pages (TypeScript) and the Anki desktop add-on (Python). The Android app lives in [AnkiQuest/AnkiQuest-Android](https://github.com/AnkiQuest/AnkiQuest-Android). These rules apply to every agent (Claude, Codex, others) and to people too.
+AnkiQuest-Desktop is the AnkiQuest add-on for Anki desktop (Python). AnkiQuest has three repositories:
+
+- [AnkiQuest/AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server): the server (Rust), its web pages (TypeScript), the API examples and the shared fixtures.
+- [AnkiQuest/AnkiQuest-Desktop](https://github.com/AnkiQuest/AnkiQuest-Desktop): this repository, the Anki desktop add-on.
+- [AnkiQuest/AnkiQuest-Android](https://github.com/AnkiQuest/AnkiQuest-Android): the Android app, an AnkiDroid fork.
+
+These rules apply to every agent (Claude, Codex, others) and to people too.
 
 ## Ownership
 
@@ -46,10 +52,10 @@ Write new code in Rust, or TypeScript for the web, when the platform allows it. 
 
 ## Desktop and Android parity
 
-AnkiQuest has two clients: the Android app ([AnkiQuest/AnkiQuest-Android](https://github.com/AnkiQuest/AnkiQuest-Android)) and the Anki desktop add-on (`addon/` in [AnkiQuest/ankiquest](https://github.com/AnkiQuest/ankiquest)). A player should get the same AnkiQuest on both.
+AnkiQuest has two clients: the Android app ([AnkiQuest/AnkiQuest-Android](https://github.com/AnkiQuest/AnkiQuest-Android)) and the Anki desktop add-on (`addon/` in this repository). A player should get the same AnkiQuest on both.
 
 - A user-facing feature or behaviour change lands on both clients, unless the platform can't do it (home-screen widgets, for example). Do both in one go when you can. Otherwise open an issue in the other repository, labelled `parity`, and link it from the PR.
-- Rules both clients compute (streak verdicts, heatmap, card labels, deck names) are defined once, as cases in `tests/fixtures/*.json` in AnkiQuest/ankiquest. Both clients test against the same cases. Change the fixture first, then both implementations.
+- Rules both clients compute (streak verdicts, heatmap, card labels, deck names) are defined once, as cases in `tests/fixtures/*.json` in AnkiQuest/AnkiQuest-Server. Both clients test against the same cases. Change the fixture first, then both implementations.
 - Use the same names, wording and order for the same thing on both clients.
 - When you find a gap between the clients, open a `parity` issue for it.
 
@@ -60,7 +66,7 @@ Companion art means every picture of a character: poses, moment and card picture
 - Never delete companion art, even when nothing uses it any more. Remove the references, keep the files, so they can be reused or merged later.
 - Each character needs a core set of poses before it goes live in the apps: face, asleep, happy, streak (on fire), sad, hopeful, frozen and neglected. A character without the full core set stays hidden.
 - Every other pose is an extension: streak tiers, milestones, frozen days 2 and 3, hurt, dead, welcome, a defeated leech, and poses for other rare moments. Extensions are optional. A missing extension falls back to its core pose (a streak tier to streak, frozen 3 to frozen, a defeated leech to happy).
-- The core set, the extensions and their fallbacks are defined once, in `tests/fixtures/companion_poses.json`; both clients use that list.
+- The core set, the extensions and their fallbacks are defined once, in AnkiQuest/AnkiQuest-Server `tests/fixtures/companion_poses.json`; both clients use that list.
 
 ## Writing
 
@@ -70,8 +76,7 @@ Mannered prose substitutes metaphor and flourish for direct statement. Instead o
 
 ## This repository
 
-- **Layout.** `src/` and `crates/`: the Rust server. `web/`: TypeScript for the pages in `static/`. `addon/`: the Anki desktop add-on, Python because Anki requires it. `tests/`: add-on tests (Python) and web tests (TypeScript). `crates/xtask` holds the repository tools (`cargo run -p ankiquest-xtask -- <command>`). `.github/scripts/package-addon.py` is the last Python tool; port it to `xtask` the next time it changes.
-- **API examples are a contract.** `docs/api/examples/*.json` and `tests/fixtures/*.json` are copied into the Android app at a pinned commit (AnkiQuest/AnkiQuest-Android#203). Adding an example is fine: Android picks it up through its bump PR. Never remove or reshape an example released apps read (#230); retire it only after Android stops reading it. Document API changes in `docs/mobile-api.md`.
-- **Released apps talk to the deployed server.** Keep old endpoints and fields working until no supported client uses them.
-- **Deployment** is the NixOS module in `flake.nix`, used from a separate NixOS configuration. Secrets are files on the hosts (passed with systemd `LoadCredential`), never values in this repository.
-- **Checks to run** before pushing, for what you changed: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `npm run typecheck`, `npm run test:web`, `python -m unittest discover -s tests`. Leave the full matrix to CI.
+- **Layout.** `addon/`: the Anki desktop add-on, Python because Anki requires it. `tests/`: add-on tests (Python). `static/<companion>/`: the companion art masters, for now. `crates/xtask` holds the repository tools (`cargo run -p ankiquest-xtask -- <command>`). `.github/scripts/package-addon.py` is the last Python tool; port it to `xtask` the next time it changes.
+- **The server moved to [AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server).** The server, web and deployment code still here (`src/`, `crates/` other than `xtask`, `web/`, the web tests in `tests/`, `docs/api/`, `flake.nix`) is being removed by the split. Make server, web, API, fixture and deployment changes in AnkiQuest-Server, not here. The add-on tests read `tests/fixtures/*.json`; change a fixture in AnkiQuest-Server first.
+- **Releases** are the `addon-*` tags and GitHub releases of this repository; AnkiWeb lists the add-on as 414948448.
+- **Checks to run** before pushing, for what you changed: `python -m unittest discover -s tests` for the add-on; `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` for `xtask`. Leave the full matrix to CI.
