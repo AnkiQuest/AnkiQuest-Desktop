@@ -34,7 +34,8 @@ SPANISH = {
     "Warn me before my streak ends": "Avísame antes de que termine mi racha",
     "Deck completion notifications": "Avisos de mazos completados",
     "The people you pick hear once a day when you finish a shared deck.": "Se avisa una vez al día a las personas elegidas cuando completas un mazo compartido.",
-    "Nobody else plays yet.": "Todavía no hay otros jugadores.", "All / none": "Todos / ninguno",
+    "Nobody else plays yet.": "Todavía no hay otros jugadores.",
+    "Study and sync once to see how others are doing.": "Estudia y sincroniza una vez para ver cómo les va a los demás.", "All / none": "Todos / ninguno",
     "Nudge me when a place, my best day or the next level is within reach": "Dame un toque cuando pueda alcanzar un puesto, mi mejor día o el siguiente nivel",
     "Celebrate achievements, streak milestones and personal bests": "Celebrar logros, rachas y récords personales",
     "Update channel": "Canal de actualizaciones", "Stable releases": "Versiones estables",
@@ -47,7 +48,8 @@ SPANISH = {
     "AnkiQuest: the update could not be installed (%s)": "AnkiQuest: no se pudo instalar la actualización (%s)",
     "AnkiQuest was updated. Restart Anki to use the new version.": "AnkiQuest se ha actualizado. Reinicia Anki para usar la nueva versión.",
     "#%d this week": "Puesto %d esta semana", "Last week still counting: %s XP · closes at %s": "La semana pasada aún cuenta: %s XP · cierra a las %s", "Lv %d  %s/%s XP": "Nv. %d  %s/%s XP",
-    "🔥 %d day streak": "🔥 Racha de %d días", "streak at risk today": "racha en riesgo hoy", "📬 %d new": "📬 %d nuevos",
+    "🔥 %d day streak": "🔥 Racha de %d días",
+    "%d day streak": "Racha de %d días", "streak at risk today": "racha en riesgo hoy", "📬 %d new": "📬 %d nuevos",
     "Set the server in AnkiQuest settings first.": "Configura primero el servidor en los ajustes de AnkiQuest.",
     "AnkiQuest settings saved.": "Ajustes de AnkiQuest guardados.",
     "Fill in the server, player and token first.": "Rellena primero el servidor, el jugador y el token.",
@@ -169,7 +171,8 @@ GERMAN = {
     "Warn me before my streak ends": "Warne mich, bevor meine Lernserie endet",
     "Deck completion notifications": "Benachrichtigungen über abgeschlossene Stapel",
     "The people you pick hear once a day when you finish a shared deck.": "Die ausgewählten Personen erfahren einmal am Tag, wenn du einen geteilten Stapel abschließt.",
-    "Nobody else plays yet.": "Noch spielt sonst niemand.", "All / none": "Alle / keine",
+    "Nobody else plays yet.": "Noch spielt sonst niemand.",
+    "Study and sync once to see how others are doing.": "Lerne und synchronisiere einmal, um zu sehen, wie es den anderen geht.", "All / none": "Alle / keine",
     "Nudge me when a place, my best day or the next level is within reach": "Stups mich an, wenn ein Platz, mein bester Tag oder die nächste Stufe in Reichweite ist",
     "Celebrate achievements, streak milestones and personal bests": "Erfolge, Meilensteine der Lernserie und persönliche Bestleistungen feiern",
     "Update channel": "Update-Kanal", "Stable releases": "Stabile Versionen",
@@ -182,7 +185,8 @@ GERMAN = {
     "AnkiQuest: the update could not be installed (%s)": "AnkiQuest: Update konnte nicht installiert werden (%s)",
     "AnkiQuest was updated. Restart Anki to use the new version.": "AnkiQuest wurde aktualisiert. Starte Anki neu, um die neue Version zu nutzen.",
     "#%d this week": "Platz %d diese Woche", "Last week still counting: %s XP · closes at %s": "Letzte Woche zählt noch: %s XP · endet um %s", "Lv %d  %s/%s XP": "Stufe %d  %s/%s XP",
-    "🔥 %d day streak": "🔥 Lernserie: %d Tage", "streak at risk today": "Lernserie heute in Gefahr", "📬 %d new": "📬 %d neu",
+    "🔥 %d day streak": "🔥 Lernserie: %d Tage",
+    "%d day streak": "Lernserie: %d Tage", "streak at risk today": "Lernserie heute in Gefahr", "📬 %d new": "📬 %d neu",
     "Set the server in AnkiQuest settings first.": "Richte zuerst den Server in den AnkiQuest-Einstellungen ein.",
     "AnkiQuest settings saved.": "AnkiQuest-Einstellungen gespeichert.",
     "Fill in the server, player and token first.": "Gib zuerst Server, Spieler und Token ein.",
@@ -272,7 +276,8 @@ FRENCH = {
     "Warn me before my streak ends": "Préviens-moi avant la fin de ma série",
     "Deck completion notifications": "Notifications de paquets terminés",
     "The people you pick hear once a day when you finish a shared deck.": "Les personnes choisies sont prévenues une fois par jour quand tu termines un paquet partagé.",
-    "Nobody else plays yet.": "Personne d’autre ne joue encore.", "All / none": "Tous / aucun",
+    "Nobody else plays yet.": "Personne d’autre ne joue encore.",
+    "Study and sync once to see how others are doing.": "Étudie et synchronise une fois pour voir où en sont les autres.", "All / none": "Tous / aucun",
     "Nudge me when a place, my best day or the next level is within reach": "Donne-moi un coup de pouce quand une place, mon meilleur jour ou le prochain niveau est à portée",
     "Celebrate achievements, streak milestones and personal bests": "Fêter les réussites, les étapes de série et les records personnels",
     "Update channel": "Canal de mise à jour", "Stable releases": "Versions stables",
@@ -285,7 +290,8 @@ FRENCH = {
     "AnkiQuest: the update could not be installed (%s)": "AnkiQuest : impossible d’installer la mise à jour (%s)",
     "AnkiQuest was updated. Restart Anki to use the new version.": "AnkiQuest a été mis à jour. Redémarre Anki pour utiliser la nouvelle version.",
     "#%d this week": "%de place cette semaine", "Last week still counting: %s XP · closes at %s": "La semaine dernière compte encore : %s XP · se termine à %s", "Lv %d  %s/%s XP": "Niv. %d  %s/%s XP",
-    "🔥 %d day streak": "🔥 Série de %d jours", "streak at risk today": "série en danger aujourd’hui", "📬 %d new": "📬 %d nouveaux",
+    "🔥 %d day streak": "🔥 Série de %d jours",
+    "%d day streak": "Série de %d jours", "streak at risk today": "série en danger aujourd’hui", "📬 %d new": "📬 %d nouveaux",
     "Set the server in AnkiQuest settings first.": "Configure d’abord le serveur dans les réglages AnkiQuest.",
     "AnkiQuest settings saved.": "Réglages AnkiQuest enregistrés.",
     "Fill in the server, player and token first.": "Renseigne d’abord le serveur, le joueur et le jeton.",
@@ -375,7 +381,8 @@ PORTUGUESE = {
     "Warn me before my streak ends": "Avisa-me antes de a minha sequência terminar",
     "Deck completion notifications": "Notificações de baralhos concluídos",
     "The people you pick hear once a day when you finish a shared deck.": "As pessoas escolhidas são avisadas uma vez por dia quando concluis um baralho partilhado.",
-    "Nobody else plays yet.": "Ainda não há mais ninguém a jogar.", "All / none": "Todos / nenhum",
+    "Nobody else plays yet.": "Ainda não há mais ninguém a jogar.",
+    "Study and sync once to see how others are doing.": "Estuda e sincroniza uma vez para veres como estão os outros.", "All / none": "Todos / nenhum",
     "Nudge me when a place, my best day or the next level is within reach": "Avisa-me quando uma posição, o meu melhor dia ou o próximo nível estiver ao alcance",
     "Celebrate achievements, streak milestones and personal bests": "Celebrar conquistas, marcos da sequência e recordes pessoais",
     "Update channel": "Canal de atualizações", "Stable releases": "Versões estáveis",
@@ -388,7 +395,8 @@ PORTUGUESE = {
     "AnkiQuest: the update could not be installed (%s)": "AnkiQuest: não foi possível instalar a atualização (%s)",
     "AnkiQuest was updated. Restart Anki to use the new version.": "O AnkiQuest foi atualizado. Reinicia o Anki para usar a nova versão.",
     "#%d this week": "%dº lugar esta semana", "Last week still counting: %s XP · closes at %s": "A semana passada ainda conta: %s XP · fecha às %s", "Lv %d  %s/%s XP": "Nv. %d  %s/%s XP",
-    "🔥 %d day streak": "🔥 Sequência de %d dias", "streak at risk today": "sequência em risco hoje", "📬 %d new": "📬 %d novas",
+    "🔥 %d day streak": "🔥 Sequência de %d dias",
+    "%d day streak": "Sequência de %d dias", "streak at risk today": "sequência em risco hoje", "📬 %d new": "📬 %d novas",
     "Set the server in AnkiQuest settings first.": "Configura primeiro o servidor nas definições do AnkiQuest.",
     "AnkiQuest settings saved.": "Definições do AnkiQuest guardadas.",
     "Fill in the server, player and token first.": "Preenche primeiro o servidor, o jogador e o token.",
@@ -1902,6 +1910,36 @@ PORTUGUESE.update({
     "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalação é atualizada pelo AnkiWeb. Usa Ferramentas → Extras → Procurar atualizações.",
 })
 
+# Native moment recipients; wording matches Android's share sheet.
+SPANISH.update({
+    "Search friends and groups": "Buscar amigos y grupos", "All friends": "Todos los amigos",
+    "Retry": "Reintentar",
+    "Add a note (optional)": "Añadir una nota (opcional)", "More apps…": "Más aplicaciones…",
+    "Add friends in AnkiQuest to send them your moments.": "Añade amigos en AnkiQuest para enviarles tus momentos.",
+    "Invite a friend": "Invitar a un amigo", "Couldn't load friends (%s).": "No se pudieron cargar los amigos (%s).",
+})
+GERMAN.update({
+    "Search friends and groups": "Freunde und Gruppen suchen", "All friends": "Alle Freunde",
+    "Retry": "Erneut versuchen",
+    "Add a note (optional)": "Nachricht hinzufügen (optional)", "More apps…": "Weitere Apps…",
+    "Add friends in AnkiQuest to send them your moments.": "Füge Freunde in AnkiQuest hinzu, um deine Momente mit ihnen zu teilen.",
+    "Invite a friend": "Freund einladen", "Couldn't load friends (%s).": "Freunde konnten nicht geladen werden (%s).",
+})
+FRENCH.update({
+    "Search friends and groups": "Chercher des amis et des groupes", "All friends": "Tous les amis",
+    "Retry": "Réessayer",
+    "Add a note (optional)": "Ajouter un message (facultatif)", "More apps…": "Autres applis…",
+    "Add friends in AnkiQuest to send them your moments.": "Ajoute des amis dans AnkiQuest pour leur envoyer tes moments.",
+    "Invite a friend": "Inviter un ami", "Couldn't load friends (%s).": "Impossible de charger les amis (%s).",
+})
+PORTUGUESE.update({
+    "Search friends and groups": "Procurar amigos e grupos", "All friends": "Todos os amigos",
+    "Retry": "Tentar novamente",
+    "Add a note (optional)": "Adicionar uma nota (opcional)", "More apps…": "Mais apps…",
+    "Add friends in AnkiQuest to send them your moments.": "Adiciona amigos no AnkiQuest para lhes enviares os teus momentos.",
+    "Invite a friend": "Convidar um amigo", "Couldn't load friends (%s).": "Não foi possível carregar os amigos (%s).",
+})
+
 # Shared settings, moments and sharing wording; see tests/fixtures/desktop-wording.json.
 SPANISH.update({
     "Notify me about": "Avísame de",
@@ -1941,3 +1979,10 @@ PORTUGUESE.update({
     "App and privacy": "App e privacidade",
     "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Ninguém novo recebeu: os teus amigos já têm, ou ainda não tens amigos no AnkiQuest.",
 })
+
+# Anki-tan credit, as on Android's About screen (ankiquest_about_anki_tan).
+_ANKI_TAN = '<a href="%s">Anki-tan</a> by <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+SPANISH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+GERMAN[_ANKI_TAN] = '<a href="%s">Anki-tan</a> von <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+FRENCH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> par <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+PORTUGUESE[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'

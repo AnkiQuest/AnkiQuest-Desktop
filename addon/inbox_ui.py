@@ -22,7 +22,7 @@ from aqt.qt import (
     Qt,
 )
 
-from . import activity, inbox, share, share_ui
+from . import activity, board, inbox, share, share_ui
 from .language import tr
 
 SHORTCUT = "Ctrl+Shift+M"
@@ -529,6 +529,8 @@ class _Inbox:
             self._unread.setVisible(not legacy)
             if legacy:
                 self._counts.setText(tr("This server provides recent messages without read counts or filters."))
+            if page.locked:
+                self._rows.addWidget(_plain(tr(board.UPLOAD_FIRST), muted=True))
             attention = page.attention if self._category.currentData() is activity._Category.ALL else []
             if attention:
                 self._rows.addWidget(_plain(tr("Needs action"), bold=True))
