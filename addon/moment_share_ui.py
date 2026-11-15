@@ -269,7 +269,7 @@ class _Picker:
                     self._refresh()
                 else:
                     self._phase = delivered
-                    self._status.setText(tr("Couldn't share it (%s).") % error_text(error))
+                    self._status.setText(tr("Couldn't undo this share (%s).") % error_text(error))
             else:
                 self._phase = _Phase.READY
                 self._form.setEnabled(True)
