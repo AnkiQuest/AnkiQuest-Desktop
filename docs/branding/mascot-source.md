@@ -80,7 +80,12 @@ repository. An image is companion art when its path names a companion (Aki,
 the companions in `tests/fixtures/companion_unlock.json`, or a folder in
 `static/`), or when its 16 px fingerprint matches a master at another size.
 It fails unless such an image is a master in `static/<companion>/`, an
-export in the manifest, or retired there.
+export in the manifest, or retired there. Animated PNGs get no fingerprint:
+their frames are not a scaled copy of one still.
+
+Anki-tan's folder holds Shigeyuki's asset pack as published
+(`static/anki-tan/README.md` maps its files to poses). It has no
+`<pose>.png` masters yet, so share cards show no art for her.
 
 ## Icon poses
 
