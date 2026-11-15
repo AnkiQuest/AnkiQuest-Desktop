@@ -16,6 +16,7 @@ use crate::root;
 
 mod addon;
 mod banner;
+mod coverage;
 
 /// Drawable folder inside an AnkiQuest-Android checkout.
 const DRAWABLES: &str = "AnkiDroid/src/main/res/drawable-nodpi";
@@ -225,6 +226,11 @@ pub fn run(args: &[String]) -> ExitCode {
 /// Runs the add-on pose exporter: `[--check | --replace]`.
 pub fn addon(args: &[String]) -> ExitCode {
     addon::run(args)
+}
+
+/// Runs the art coverage report.
+pub fn coverage(args: &[String]) -> ExitCode {
+    coverage::run(args)
 }
 
 /// Runs the banner command: `[--social] [--out <file>]`.
