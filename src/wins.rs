@@ -141,10 +141,7 @@ const OWN_WORDS: [(&str, &str); 16] = [
         "You kept a {0}-day streak.",
         phrase("I kept a {0}-day streak."),
     ),
-    (
-        "You tapped {0} {1} times in a row.",
-        phrase("I tapped {0} {1} times in a row."),
-    ),
+    ("You found {0}.", phrase("I found {0}.")),
     ("You tamed {0} leeches.", phrase("I tamed {0} leeches.")),
     // Records: the span is one of `Records::SPANS`, each its own catalog entry.
     (

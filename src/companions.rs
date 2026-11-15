@@ -122,9 +122,7 @@ impl Unlock {
             }
             Counts::Measured(Measure::Streak) => english("You kept a {0}-day streak.", &[&goal]),
             Counts::Measured(Measure::LeechesTamed) => english("You tamed {0} leeches.", &[&goal]),
-            Counts::Taps { on, .. } => {
-                english("You tapped {0} {1} times in a row.", &[on.name(), &goal])
-            }
+            Counts::Taps { .. } => english("You found {0}.", &[self.name()]),
         };
         Event {
             key: format!("{MOMENT_PREFIX}{}", self.id()),
@@ -167,9 +165,6 @@ const MILESTONES: &str = "milestones";
 /// The conditions both clients show, defined once with the cases they test against.
 const RULES: &str = include_str!("../tests/fixtures/companion_unlock.json");
 
-/// The most taps a client may report for one run; a run needs far fewer.
-const MAX_REPORTED_TAPS: usize = 64;
-
 /// What the server measures toward a milestone, as the fixture's `kind` names it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -186,9 +181,9 @@ enum Measure {
 enum Counts {
     /// A value the server derives from the player's reviews.
     Measured(Measure),
-    /// A run of taps on the unlocked companion `on`, each not earlier than the one before and at
-    /// most `max_gap_ms` after it, that the client reports.
-    Taps { on: Unlock, max_gap_ms: i64 },
+    /// A chibi: the client counts taps on its base `on` by the fixture's tap rule and asks for
+    /// the chibi on the last one. The server only checks that `on` is unlocked.
+    Taps { on: Unlock },
 }
 
 /// The fixture's `kind` for [`Counts::Taps`].
@@ -224,7 +219,6 @@ struct Rule {
 #[derive(Deserialize)]
 struct Rules {
     companions: Vec<Rule>,
-    max_gap_ms: i64,
 }
 
 /// How one unlock is earned.
@@ -237,45 +231,48 @@ struct Milestone {
     status: Status,
 }
 
-/// Every milestone of a fixture, planned ones included, in its order.
-fn parse(source: &str) -> Vec<Milestone> {
-    let rules: Rules = serde_json::from_str(source).expect("the unlock fixture parses");
-    let max_gap_ms = rules.max_gap_ms;
-    rules
-        .companions
-        .into_iter()
-        .map(|rule| {
-            let unlock = Unlock::parse(&rule.companion).expect("every companion is an unlock");
+/// Every milestone of a fixture, planned ones included, in its order; an error names what the
+/// fixture gets wrong.
+fn parse(source: &str) -> Result<Vec<Milestone>, String> {
+    let rules: Rules = serde_json::from_str(source).map_err(|error| error.to_string())?;
+    rules.companions.into_iter().map(read).collect()
+}
 
-            // A tap run needs the companion tapped; every other kind is measured.
-            let counts = if rule.kind == TAPS_KIND {
-                let on = rule.requires.as_deref().and_then(Unlock::parse);
-                Counts::Taps {
-                    on: on.expect("a tapped companion requires an unlock"),
-                    max_gap_ms,
-                }
-            } else {
-                let kind = serde_json::Value::String(rule.kind);
-                Counts::Measured(serde_json::from_value(kind).expect("a known kind"))
-            };
-            Milestone {
-                unlock,
-                counts,
-                goal: rule.goal,
-                visibility: if rule.secret {
-                    Visibility::Secret
-                } else {
-                    Visibility::Shown
-                },
-                status: rule.status,
-            }
-        })
-        .collect()
+/// One fixture entry as a milestone.
+fn read(rule: Rule) -> Result<Milestone, String> {
+    let unlock = Unlock::parse(&rule.companion)
+        .ok_or_else(|| format!("{} is not an unlock", rule.companion))?;
+
+    // A chibi names its base, another unlock; every other kind is measured.
+    let counts = if rule.kind == TAPS_KIND {
+        let on = rule
+            .requires
+            .as_deref()
+            .and_then(Unlock::parse)
+            .filter(|on| *on != unlock)
+            .ok_or_else(|| format!("{} needs its base in `requires`", rule.companion))?;
+        Counts::Taps { on }
+    } else {
+        let kind = serde_json::Value::String(rule.kind);
+        Counts::Measured(serde_json::from_value(kind).map_err(|error| error.to_string())?)
+    };
+    let visibility = if rule.secret {
+        Visibility::Secret
+    } else {
+        Visibility::Shown
+    };
+    Ok(Milestone {
+        unlock,
+        counts,
+        goal: rule.goal,
+        visibility,
+        status: rule.status,
+    })
 }
 
 fn milestones() -> &'static [Milestone] {
     static PARSED: OnceLock<Vec<Milestone>> = OnceLock::new();
-    PARSED.get_or_init(|| parse(RULES))
+    PARSED.get_or_init(|| parse(RULES).expect("the unlock fixture is valid"))
 }
 
 fn milestone(unlock: Unlock) -> Milestone {
@@ -322,7 +319,7 @@ impl Measures {
         }
     }
 
-    /// Whether these reach `milestone`. Tap runs are reported, never measured.
+    /// Whether these reach `milestone`. A chibi is found by the client, never measured.
     fn reached(self, milestone: &Milestone) -> bool {
         match milestone.counts {
             Counts::Measured(measure) => self.value(measure) >= milestone.goal,
@@ -331,120 +328,37 @@ impl Measures {
     }
 }
 
-/// One tap in a client's companion picker: the companion tapped and when, in milliseconds.
-#[derive(Clone, Debug, Deserialize)]
-struct Tap(String, i64);
-
-/// Where a run of taps stands.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Run {
-    /// No tap counts yet.
-    Idle,
-    /// `taps` on the target so far, the last at `last_ms`.
-    Counting { taps: u64, last_ms: i64 },
-}
-
-/// The fixture's tap rule for one tapped milestone, as both clients count it.
-struct TapRun {
-    on: Unlock,
-    goal: u64,
-    max_gap_ms: i64,
-    run: Run,
-}
-
-impl TapRun {
-    /// None for a milestone that is not a tap run.
-    fn new(milestone: &Milestone) -> Option<TapRun> {
-        let Counts::Taps { on, max_gap_ms } = milestone.counts else {
-            return None;
-        };
-        Some(TapRun {
-            on,
-            goal: milestone.goal,
-            max_gap_ms,
-            run: Run::Idle,
-        })
-    }
-
-    /// Records `tap`; true on the tap that completes a run, which starts the count again.
-    fn tap(&mut self, tap: &Tap) -> bool {
-        let Tap(choice, at_ms) = tap;
-
-        // A tap on another choice starts again.
-        if choice != self.on.id() {
-            self.run = Run::Idle;
-            return false;
-        }
-
-        // A late or earlier tap is the first of a new run.
-        let taps = match self.run {
-            Run::Counting { taps, last_ms } if self.quick(last_ms, *at_ms) => taps + 1,
-            Run::Idle | Run::Counting { .. } => 1,
-        };
-        if taps < self.goal {
-            self.run = Run::Counting {
-                taps,
-                last_ms: *at_ms,
-            };
-            return false;
-        }
-        self.run = Run::Idle;
-        true
-    }
-
-    /// Whether a tap at `at_ms` is not earlier than one at `last_ms` and within the gap. The
-    /// client sends any i64, so the subtraction is checked: a wrapped gap could look quick.
-    fn quick(&self, last_ms: i64, at_ms: i64) -> bool {
-        at_ms
-            .checked_sub(last_ms)
-            .is_some_and(|gap| (0..=self.max_gap_ms).contains(&gap))
-    }
-}
-
-/// Whether the last of `taps` completes a run for `milestone`.
-fn completes(milestone: &Milestone, taps: &[Tap]) -> bool {
-    let Some(mut run) = TapRun::new(milestone) else {
-        return false;
-    };
-    taps.iter().map(|tap| run.tap(tap)).last().unwrap_or(false)
-}
-
 /// What a client asking for an unlock comes to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Verdict {
     /// Already unlocked: answer the list.
     Kept,
-    /// A reported tap run earned it now.
+    /// A chibi whose base is unlocked: grant it now.
     Grant,
     /// Not earned: `409`.
     Locked,
-    /// Taps for a measured unlock, a tap run without taps, or too many: `400`.
-    Malformed,
 }
 
-/// Judges a request for `milestone` from a player who has `unlocked`, with the reported `taps`.
-fn judge(milestone: &Milestone, unlocked: &[Unlock], taps: Option<&[Tap]>) -> Verdict {
-    let has = unlocked.contains(&milestone.unlock);
-    let Counts::Taps { on, .. } = milestone.counts else {
-        // The server grants measured unlocks itself; a client only asks after them.
-        return match (taps, has) {
-            (Some(_), _) => Verdict::Malformed,
-            (None, true) => Verdict::Kept,
-            (None, false) => Verdict::Locked,
-        };
-    };
-    if has {
+impl Verdict {
+    /// The answer's status.
+    fn status(self) -> StatusCode {
+        match self {
+            Verdict::Kept | Verdict::Grant => StatusCode::OK,
+            Verdict::Locked => StatusCode::CONFLICT,
+        }
+    }
+}
+
+/// Judges a request for `milestone` from a player who has `unlocked`. The server grants
+/// measured unlocks itself, so a client only asks after them; a chibi is granted once its base
+/// is unlocked.
+fn judge(milestone: &Milestone, unlocked: &[Unlock]) -> Verdict {
+    if unlocked.contains(&milestone.unlock) {
         return Verdict::Kept;
     }
-    let Some(taps) = taps.filter(|taps| taps.len() <= MAX_REPORTED_TAPS) else {
-        return Verdict::Malformed;
-    };
-
-    // The tapped companion must be unlocked, and the run complete.
-    if unlocked.contains(&on) && completes(milestone, taps) {
-        Verdict::Grant
-    } else {
-        Verdict::Locked
+    match milestone.counts {
+        Counts::Taps { on } if unlocked.contains(&on) => Verdict::Grant,
+        Counts::Taps { .. } | Counts::Measured(_) => Verdict::Locked,
     }
 }
 
@@ -640,8 +554,10 @@ pub struct Unlocks {
 #[serde(deny_unknown_fields)]
 pub struct UnlockRequest {
     unlock: String,
-    /// The run that unlocked a tapped companion, oldest first; absent for every other unlock.
-    taps: Option<Vec<Tap>>,
+    /// The tap run apps released before the chibi became an Easter egg send with her. The
+    /// server no longer checks it, but still accepts it so those apps keep working.
+    #[serde(default, rename = "taps")]
+    _taps: Option<serde::de::IgnoredAny>,
 }
 
 /// `unlocks` with the progress toward every other live, measured companion of `milestones`
@@ -693,9 +609,9 @@ pub async fn get_unlocks(
 }
 
 /// The server grants measured unlocks itself, so asking for one already granted answers the
-/// list, as it did when clients reported the cow, and any other is `409`. A tapped companion is
-/// granted when the client reports a complete run on the companion it requires, once that one
-/// is unlocked. Unknown ids, and companions the fixture lists as planned, are `400`.
+/// list, as it did when clients reported the cow, and any other is `409`. A chibi, found by
+/// tapping its base in the client, is granted once its base is unlocked, and is `409` before.
+/// Unknown ids, and companions the fixture lists as planned, are `400`.
 pub async fn add_unlock(
     State(app): State<Arc<App>>,
     Path(user): Path<String>,
@@ -712,10 +628,9 @@ pub async fn add_unlock(
         .iter()
         .filter_map(|id| Unlock::parse(id))
         .collect();
-    match judge(&milestone(unlock), &unlocked, request.taps.as_deref()) {
+    match judge(&milestone(unlock), &unlocked) {
         Verdict::Kept => Ok(Json(answer)),
-        Verdict::Locked => Err(StatusCode::CONFLICT),
-        Verdict::Malformed => Err(StatusCode::BAD_REQUEST),
+        verdict @ Verdict::Locked => Err(verdict.status()),
         Verdict::Grant => {
             // The worker announces it with its moment, as it does every unlock.
             app.store
@@ -759,16 +674,11 @@ mod tests {
 
     /// The fixture with every planned companion live, as it will be once their art ships.
     fn all_live() -> Vec<Milestone> {
-        parse(&RULES.replace("\"status\": \"planned\"", "\"status\": \"live\""))
+        parse(&RULES.replace("\"status\": \"planned\"", "\"status\": \"live\"")).unwrap()
     }
 
     fn find(milestones: &[Milestone], unlock: Unlock) -> Milestone {
         *milestones.iter().find(|m| m.unlock == unlock).unwrap()
-    }
-
-    /// A fixture case's taps.
-    fn taps(case: &Value) -> Vec<Tap> {
-        serde_json::from_value(case["sequence"].clone()).unwrap()
     }
 
     #[test]
@@ -849,30 +759,52 @@ mod tests {
     }
 
     #[test]
-    fn the_fixture_cases_decide_each_tap_run() {
+    fn every_chibi_names_its_unlocked_base() {
         let rules: Value = serde_json::from_str(RULES).unwrap();
         let chibi = milestone(Unlock::AnkiTanChibi);
-        let Counts::Taps { on, max_gap_ms } = chibi.counts else {
-            panic!("the chibi counts taps");
-        };
-        assert_eq!(on, Unlock::AnkiTan);
-        assert_eq!(max_gap_ms, rules["max_gap_ms"].as_i64().unwrap());
+        assert_eq!(
+            chibi.counts,
+            Counts::Taps {
+                on: Unlock::AnkiTan
+            }
+        );
         assert_eq!(chibi.goal, rules["taps"].as_u64().unwrap());
         assert_eq!(chibi.visibility, Visibility::Secret);
+    }
 
-        let cases = rules["cases"].as_array().unwrap();
-        assert!(!cases.is_empty());
-        for case in cases {
-            let expected = case["unlocks"].as_bool().unwrap();
-            assert_eq!(completes(&chibi, &taps(case)), expected, "{}", case["name"]);
+    #[test]
+    fn a_chibi_without_its_base_fails_the_fixture() {
+        let base = "\"requires\": \"anki_tan\", ";
+        assert!(RULES.contains(base));
+        assert!(parse(&RULES.replace(base, "")).is_err());
 
-            // Only the last tap may complete the run, as on both clients.
-            let mut run = TapRun::new(&chibi).unwrap();
-            let found: Vec<bool> = taps(case).iter().map(|tap| run.tap(tap)).collect();
-            assert!(
-                !found[..found.len() - 1].contains(&true),
+        // A chibi of itself or of an unknown companion has no base either.
+        let own = RULES.replace(base, "\"requires\": \"anki_tan_chibi\", ");
+        assert!(parse(&own).is_err());
+        let unknown = RULES.replace(base, "\"requires\": \"horse\", ");
+        assert!(parse(&unknown).is_err());
+    }
+
+    #[test]
+    fn the_fixture_requests_decide_each_chibi_unlock() {
+        let live = all_live();
+        let rules: Value = serde_json::from_str(RULES).unwrap();
+        let requests = rules["requests"].as_array().unwrap();
+        assert!(!requests.is_empty());
+        for request in requests {
+            let unlock = Unlock::parse(request["unlock"].as_str().unwrap()).unwrap();
+            let unlocked: Vec<Unlock> = request["unlocked"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|id| Unlock::parse(id.as_str().unwrap()).unwrap())
+                .collect();
+            let status = judge(&find(&live, unlock), &unlocked).status();
+            assert_eq!(
+                u64::from(status.as_u16()),
+                request["status"].as_u64().unwrap(),
                 "{}",
-                case["name"]
+                request["name"]
             );
         }
     }
@@ -955,37 +887,21 @@ mod tests {
     }
 
     #[test]
-    fn a_reported_tap_run_brings_the_chibi_only_after_anki_tan() {
+    fn the_chibi_joins_only_after_her_base() {
         let live = all_live();
         let chibi = find(&live, Unlock::AnkiTanChibi);
-        let rules: Value = serde_json::from_str(RULES).unwrap();
-        let quick = taps(&rules["cases"][0]);
-        let short = taps(&rules["cases"][1]);
-        let judge = |unlocked: &[Unlock], taps: Option<&[Tap]>| judge(&chibi, unlocked, taps);
 
-        // Anki-tan first, then a full run; a short run or no run is not enough.
-        assert_eq!(judge(&[], Some(&quick)), Verdict::Locked);
-        assert_eq!(judge(&[Unlock::AnkiTan], Some(&quick)), Verdict::Grant);
-        assert_eq!(judge(&[Unlock::AnkiTan], Some(&short)), Verdict::Locked);
-        assert_eq!(judge(&[Unlock::AnkiTan], None), Verdict::Malformed);
-        let endless = vec![Tap("anki_tan".into(), 0); MAX_REPORTED_TAPS + 1];
-        assert_eq!(
-            judge(&[Unlock::AnkiTan], Some(&endless)),
-            Verdict::Malformed
-        );
-
-        // Asking again once she joined answers the list.
+        // Her base first; then asking brings her, and asking again answers the list.
+        assert_eq!(judge(&chibi, &[]), Verdict::Locked);
+        assert_eq!(judge(&chibi, &[Unlock::Cow]), Verdict::Locked);
+        assert_eq!(judge(&chibi, &[Unlock::AnkiTan]), Verdict::Grant);
         let both = [Unlock::AnkiTan, Unlock::AnkiTanChibi];
-        assert_eq!(judge(&both, None), Verdict::Kept);
+        assert_eq!(judge(&chibi, &both), Verdict::Kept);
 
-        // Measured unlocks take no taps.
+        // Measured unlocks are granted by the server; asking only answers.
         let cow = find(&live, Unlock::Cow);
-        assert_eq!(super::judge(&cow, &[Unlock::Cow], None), Verdict::Kept);
-        assert_eq!(super::judge(&cow, &[], None), Verdict::Locked);
-        assert_eq!(
-            super::judge(&cow, &[Unlock::Cow], Some(&quick)),
-            Verdict::Malformed
-        );
+        assert_eq!(judge(&cow, &[Unlock::Cow]), Verdict::Kept);
+        assert_eq!(judge(&cow, &[]), Verdict::Locked);
     }
 
     #[test]
@@ -1072,8 +988,8 @@ mod tests {
             (
                 Unlock::AnkiTanChibi,
                 "Chibi Anki-tan joined you!",
-                "You tapped Anki-tan 9 times in a row.",
-                "I tapped Anki-tan 9 times in a row.",
+                "You found Chibi Anki-tan.",
+                "I found Chibi Anki-tan.",
             ),
             (
                 Unlock::LeechTan,
@@ -1225,14 +1141,25 @@ mod tests {
             assert_eq!(bad.0, StatusCode::BAD_REQUEST, "{unknown}");
         }
 
-        // A tap run for a planned companion, or taps for a measured one, are refused too.
+        // Released apps may still send a tap run: it is ignored, whatever the unlock.
         let run: Vec<Value> = (0..9).map(|i| json!(["anki_tan", i * 100])).collect();
         let tapped = json!({"unlock": "anki_tan_chibi", "taps": run});
         let bad = call(&app, "POST", unlocks, "hill-secret", tapped).await;
-        assert_eq!(bad.0, StatusCode::BAD_REQUEST);
+        assert_eq!(bad.0, StatusCode::BAD_REQUEST, "she is planned");
         let tapped = json!({"unlock": "ankilope", "taps": run});
-        let bad = call(&app, "POST", unlocks, "hill-secret", tapped).await;
-        assert_eq!(bad.0, StatusCode::BAD_REQUEST);
+        let kept = call(&app, "POST", unlocks, "hill-secret", tapped).await;
+        assert_eq!(kept.0, StatusCode::OK);
+        assert_eq!(kept.1["unlocks"], json!(["ankilope"]));
+        let tapped = json!({"unlock": "cow", "taps": "anything"});
+        let locked = call(&app, "POST", unlocks, "hill-secret", tapped).await;
+        assert_eq!(locked.0, StatusCode::CONFLICT);
+        let odd = json!({"unlock": "cow", "proof": true});
+        let bad = call(&app, "POST", unlocks, "hill-secret", odd).await;
+        assert_eq!(
+            bad.0,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "other fields are still refused"
+        );
 
         // Only the player's own token reads or asks.
         let other = call(&app, "GET", unlocks, "cerro-secret", Value::Null).await;

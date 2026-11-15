@@ -3,15 +3,31 @@ companion with a preview of its poses.
 
 Companions earned at a milestone show as a greyed silhouette with their condition and progress
 until the server has unlocked them (companion_unlock); secret ones stay hidden. Settings,
-Tools > AnkiQuest > Study companion and the companion in the Today panel open this one tab."""
+Tools > AnkiQuest > Study companion and the companion in the Today panel open this one tab.
 
-from aqt.qt import QButtonGroup, QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget, Qt
+Tapping the companion's picture counts toward its chibi, if it has one and the server lists it
+as unlocked: a hint from the fourth tap, and on the last the picture turns chibi and the server
+is told. The art has no marked face area, so the whole picture counts."""
+
+import time
+
+from aqt.qt import (
+    QButtonGroup, QDialog, QEasingCurve, QHBoxLayout, QLabel, QPushButton, QVariantAnimation, QVBoxLayout, QWidget, Qt,
+)
 
 from . import companion_art, companion_unlock, moods
+from .companion_reveal import Motion
 from .companion_unlock import Choice
 from .language import tr
 
 TODAY_PX = 128
+TODAY_ART = "ankiquest_companion_today"
+
+# The chibi grows in from this share of her size, overshooting a little, as a pop.
+POP_FROM = 0.4
+POP_MS = 350
+# Room around the picture for the overshoot, so the tab does not move.
+POP_ROOM = 1.15
 FACE_PX = 64
 POSE_PX = 44
 CARD = "ankiquest_companion_card"
@@ -84,6 +100,28 @@ def _card(companion, progress=None):
     return card
 
 
+class _Art(QLabel):
+    """The companion's picture; a click is a tap, passed to `on_tap`."""
+
+    def __init__(self):
+        super().__init__()
+        self.on_tap = None
+
+    def tap(self):
+        if self.on_tap is not None:
+            self.on_tap(self)
+
+    def mousePressEvent(self, event):
+        self.tap()
+        super().mousePressEvent(event)
+
+
+def _chibi_pose(pose, base, chibi):
+    """The chibi's version of her base's `pose`; poses drawn for no one in particular stay."""
+    prefix = base + "_"
+    return chibi + "_" + pose[len(prefix):] if pose.startswith(prefix) else pose
+
+
 def _today(companion, mood, streak):
     """The chosen companion large in today's pose, its name and a line saying why it feels so."""
     box = QWidget()
@@ -91,11 +129,14 @@ def _today(companion, mood, streak):
     layout.setContentsMargins(0, 0, 0, 0)
     pose = moods.companion_pose(companion, moods.streak_pose(mood, streak))
     if pose is not None:
-        art = QLabel()
-        art.setObjectName("ankiquest_companion_today")
+        art = _Art()
+        art.setObjectName(TODAY_ART)
+        art.setProperty("companion", companion)
+        art.setProperty("pose", pose)
         art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), companion, TODAY_PX))
-        art.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        layout.addWidget(art)
+        art.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        art.setFixedSize(round(TODAY_PX * POP_ROOM), round(TODAY_PX * POP_ROOM))
+        layout.addWidget(art, 0, Qt.AlignmentFlag.AlignHCenter)
     name = _label(moods.NAMES.get(companion) or tr("No companion"))
     name.setStyleSheet("font-weight:bold;font-size:15px")
     layout.addWidget(name)
@@ -111,14 +152,21 @@ def _today(companion, mood, streak):
 
 class Picker:
     """The companion tab for `api`'s account, `today` being the streak mood and streak
-    (moods.today_mood). `on_saved(companion)` runs after a save."""
+    (moods.today_mood). `on_saved(companion)` runs after a save. `motion` says whether a found
+    chibi pops in; `clock` answers milliseconds for counting taps."""
 
-    def __init__(self, parent, mw, api, current, on_saved, today=(moods.MOOD_UNKNOWN, 0)):
+    def __init__(self, parent, mw, api, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL, clock=None):
         self._mw, self._api, self._on_saved = mw, api, on_saved
         self._loaded = current
         # None until the server answers; until then only the current companion is offered.
         self._found = None
         self._cards = {}
+
+        # Nothing counts toward a chibi until the server lists what is unlocked.
+        self._egg = companion_unlock.Egg(())
+        self._motion = motion
+        self._clock = clock or (lambda: time.monotonic_ns() // 1_000_000)
+        self._pop = None
 
         dialog = self.dialog = QDialog(parent)
         dialog.setWindowTitle(tr("Study companion"))
@@ -126,6 +174,15 @@ class Picker:
         layout = QVBoxLayout(dialog)
         self.today = _today(current or moods.AKI, *today)
         layout.addWidget(self.today)
+        art = self.today.findChild(QLabel, TODAY_ART)
+        if art is not None:
+            art.on_tap = self._tapped
+        self._hint = QLabel()
+        self._hint.setObjectName("ankiquest_companion_hint")
+        self._hint.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self._hint.setTextFormat(Qt.TextFormat.PlainText)
+        self._hint.hide()
+        self.today.layout().addWidget(self._hint)
         layout.addWidget(QLabel(tr("Choose who cheers you on.")))
         self._row = QHBoxLayout()
         layout.addLayout(self._row)
@@ -181,7 +238,54 @@ class Picker:
             return
         self._status.hide()
         self._loaded, self._found = companion, found
+        self._egg = companion_unlock.Egg(found.unlocks)
         self._show_cards(companion)
+
+    def _tapped(self, art):
+        """Counts a tap on the companion's picture: shows the hint, or on the last tap turns it
+        chibi and asks the server for her."""
+        base = art.property("companion")
+        tapped = self._egg.tap(base, self._clock(), tr)
+        self._hint.setText(tapped.hint or "")
+        self._hint.setVisible(tapped.hint is not None)
+        if tapped.chibi is None:
+            return
+        self._become(art, base, tapped.chibi)
+        self._mw.taskman.run_in_background(lambda: self._api.unlock(tapped.chibi), self._unlocked)
+
+    def _become(self, art, base, chibi):
+        """Swaps the picture for the chibi's, popping in unless motion is reduced."""
+        pose = _chibi_pose(art.property("pose"), base, chibi)
+        picture = companion_art.pixmap(companion_art.pose_path(pose), chibi, TODAY_PX)
+        art.setProperty("companion", chibi)
+        art.setProperty("pose", pose)
+        if self._motion == Motion.REDUCED:
+            art.setPixmap(picture)
+            return
+
+        # A short grow with an overshoot.
+        def grow(scale):
+            size = max(1, round(TODAY_PX * scale))
+            art.setPixmap(picture.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+
+        pop = self._pop = QVariantAnimation(art)
+        pop.setStartValue(POP_FROM)
+        pop.setEndValue(1.0)
+        pop.setDuration(POP_MS)
+        pop.setEasingCurve(QEasingCurve.Type.OutBack)
+        pop.valueChanged.connect(grow)
+        grow(POP_FROM)
+        pop.start()
+
+    def _unlocked(self, future):
+        try:
+            future.result()
+        except RuntimeError:
+            return
+        except Exception as error:
+            print("ankiquest companion:", error)
+            self._status.setText(tr("Could not save your study companion (%s).") % error)
+            self._status.show()
 
     def chosen(self):
         card = self._group.checkedButton()
@@ -210,9 +314,9 @@ class Picker:
         self.dialog.accept()
 
 
-def open_picker(parent, mw, api, current, on_saved, today=(moods.MOOD_UNKNOWN, 0)):
+def open_picker(parent, mw, api, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL):
     """Shows the companion tab for `api`'s account and returns it."""
-    picker = Picker(parent, mw, api, current, on_saved, today)
+    picker = Picker(parent, mw, api, current, on_saved, today, motion)
     picker.dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
     picker.dialog.show()
     return picker

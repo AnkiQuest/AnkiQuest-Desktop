@@ -210,6 +210,11 @@ class Client:
         how far they are toward the others."""
         return self._request("/api/unlocks/" + self.user)
 
+    def unlock(self, unlock):
+        """Asks for a chibi the player found; the server grants it once its base is unlocked and
+        answers as `unlocks`."""
+        return self._request("/api/unlocks/" + self.user, {"unlock": unlock})
+
     def notifications(self):
         return self._request("/api/notifications/" + self.user)
 

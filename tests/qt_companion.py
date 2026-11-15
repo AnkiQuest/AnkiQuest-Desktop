@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QImage, QLabel, QPushButton
+from aqt.qt import QApplication, QImage, QLabel, QPushButton, QSize
 
 from addon_loader import load_in_package
 
@@ -13,6 +13,7 @@ app = QApplication.instance() or QApplication([])
 companion_ui = load_in_package("companion_qt", "companion_ui")
 companion_art = load_in_package("companion_qt", "companion_art")
 companion_unlock = load_in_package("companion_qt", "companion_unlock")
+companion_reveal = load_in_package("companion_qt", "companion_reveal")
 share = load_in_package("companion_qt", "share")
 companion_ui.tr = lambda text: text
 
@@ -30,6 +31,7 @@ class Picker(unittest.TestCase):
             base="https://example.test", name="hill",
             capabilities=Mock(return_value=UNLOCKS), companion=Mock(return_value="aki"),
             unlocks=Mock(side_effect=lambda: self.answer), set_companion=Mock(),
+            unlock=Mock(side_effect=lambda unlock: self.answer),
         )
         self.mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=self.run_task))
         self.saved = []
@@ -113,6 +115,65 @@ class Picker(unittest.TestCase):
         picker = self.picker()
         shown = [card for card in picker.dialog.findChildren(QPushButton, companion_ui.CARD) if card.isVisibleTo(picker.dialog)]
         self.assertEqual(sorted(picker._cards.values(), key=id), sorted(shown, key=id))
+
+    def tap(self, picker, times, clock):
+        """Taps the companion's picture `times` times, 300 ms apart on `clock`."""
+        art = picker.today.findChild(QLabel, companion_ui.TODAY_ART)
+        for _ in range(times):
+            clock[0] += 300
+            art.tap()
+        return art
+
+    def egg(self, unlocks, motion=companion_reveal.Motion.REDUCED):
+        """The tab for a player whose companion is Anki-tan, with `unlocks`, on a fake clock."""
+        self.answer = {"unlocks": unlocks, "progress": {}}
+        self.api.companion.return_value = "anki_tan"
+        clock = [0]
+        picker = companion_ui.Picker(None, self.mw, self.api, "anki_tan", self.saved.append, motion=motion, clock=lambda: clock[0])
+        return picker, clock
+
+    def test_tapping_an_unlocked_base_hints_and_finds_her_chibi(self):
+        picker, clock = self.egg(["anki_tan"])
+        art = self.tap(picker, 3, clock)
+        self.assertTrue(picker._hint.isHidden())
+        self.tap(picker, 1, clock)
+        self.assertEqual("You are 5 taps away from chibi", picker._hint.text())
+        self.assertFalse(picker._hint.isHidden())
+        self.tap(picker, 4, clock)
+        self.assertEqual("You are 1 tap away from chibi", picker._hint.text())
+        self.api.unlock.assert_not_called()
+        self.assertEqual("anki_tan", art.property("companion"))
+
+        # The ninth tap turns her chibi and tells the server, without proof.
+        self.tap(picker, 1, clock)
+        self.assertEqual("anki_tan_chibi", art.property("companion"))
+        self.assertTrue(picker._hint.isHidden())
+        self.api.unlock.assert_called_once_with("anki_tan_chibi")
+
+    def test_the_chibi_pops_in_unless_motion_is_reduced(self):
+        picker, clock = self.egg(["anki_tan"], companion_reveal.Motion.FULL)
+        art = self.tap(picker, 9, clock)
+        self.assertIsNotNone(picker._pop, "she grows in")
+        picker._pop.setCurrentTime(picker._pop.duration())
+        self.assertEqual(companion_ui.TODAY_PX, max(art.pixmap().width(), art.pixmap().height()))
+        reduced, clock = self.egg(["anki_tan"])
+        self.tap(reduced, 9, clock)
+        self.assertIsNone(reduced._pop, "no animation with reduced motion")
+
+    def test_tapping_a_locked_base_counts_nothing(self):
+        # The server does not list her as unlocked: no hint and no chibi.
+        picker, clock = self.egg([])
+        art = self.tap(picker, 9, clock)
+        self.assertTrue(picker._hint.isHidden())
+        self.assertEqual("anki_tan", art.property("companion"))
+        self.api.unlock.assert_not_called()
+
+    def test_tapping_a_companion_without_a_chibi_counts_nothing(self):
+        picker = self.picker()
+        art = self.tap(picker, 9, [0])
+        self.assertTrue(picker._hint.isHidden())
+        self.assertEqual("aki", art.property("companion"))
+        self.api.unlock.assert_not_called()
 
     def test_a_silhouette_keeps_the_shape_and_drops_the_colours(self):
         face = companion_art.pixmap(share.face_path("ankilope"), "ankilope")
