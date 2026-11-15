@@ -120,6 +120,21 @@ class Client(unittest.TestCase):
         api._request.assert_called_with("/api/companion/hill", {"companion": "cow"}, extra={"X-AnkiQuest-Companions": "milestones"})
         self.assertFalse(hasattr(api, "unlock"), "the server grants unlocks")
 
+    def test_every_request_names_the_companions_the_add_on_draws(self):
+        sent = {}
+
+        def request_json(url, body, headers, method=None):
+            sent.update(headers)
+            return {}
+
+        api = client.Client("https://example.test", "hill", "secret")
+        original, client.request_json = client.request_json, request_json
+        try:
+            api.notifications()
+        finally:
+            client.request_json = original
+        self.assertEqual("aki, ankilope, cow", sent.get("X-AnkiQuest-Companion-Art"))
+
     def test_the_cow_can_be_saved_and_read(self):
         self.assertIn("cow", client.COMPANIONS)
         api = client.Client("https://example.test", "hill", "secret")
@@ -137,8 +152,12 @@ class UnlockMoment(unittest.TestCase):
         self.assertEqual("ankilope_celebrate", moments._pose(item, moments.shown_companion(item, "none")))
         level = moments._notice({**row, "moment": "level:3", "topic": "level"})
         self.assertEqual("aki", moments.shown_companion(level, "aki"))
-        horse = moments._notice({**row, "moment": "companion:horse"})
-        self.assertEqual("aki", moments.shown_companion(horse, "aki"))
+
+    def test_a_companion_the_add_on_cannot_draw_is_no_moment(self):
+        # Shown, it would announce the horse with the chosen companion's art.
+        row = next(row for row in example("notifications_companion") if row.get("moment") == "companion:cow")
+        self.assertIsNone(moments._notice({**row, "moment": "companion:horse"}))
+        self.assertIsNone(moments._notice({**row, "moment": None}))
 
     def test_the_sharing_settings_name_the_new_kind(self):
         sharing = load_in_package("aq_cow", "sharing")
