@@ -140,18 +140,7 @@ class _Picker:
                 and share_ui.same_account(self._api, self._current()))
 
     def _run(self, work, done):
-        if not self._owns():
-            return
-
-        def guarded():
-            # A queued request must not start after the account or profile changed.
-            return work() if self._owns() else None
-
-        def arrived(future):
-            if self._owns():
-                done(future)
-
-        self._background(guarded, arrived)
+        share_ui.run_owned(self._background, self._owns, work, done)
 
     def _load(self):
         if not self._owns():
@@ -280,7 +269,7 @@ class _Picker:
                     self._refresh()
                 else:
                     self._phase = delivered
-                    self._status.setText(tr("Couldn't share it (%s).") % error_text(error))
+                    self._status.setText(tr("Couldn't undo this share (%s).") % error_text(error))
             else:
                 self._phase = _Phase.READY
                 self._form.setEnabled(True)

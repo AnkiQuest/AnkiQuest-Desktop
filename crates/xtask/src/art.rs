@@ -12,8 +12,11 @@ use std::process::ExitCode;
 use image::imageops::{self, FilterType};
 use image::{Rgba32FImage, RgbaImage};
 
+use crate::root;
+
 mod addon;
 mod banner;
+mod coverage;
 
 /// Drawable folder inside an AnkiQuest-Android checkout.
 const DRAWABLES: &str = "AnkiDroid/src/main/res/drawable-nodpi";
@@ -230,6 +233,11 @@ pub fn addon(args: &[String]) -> ExitCode {
     addon::run(args)
 }
 
+/// Runs the art coverage report.
+pub fn coverage(args: &[String]) -> ExitCode {
+    coverage::run(args)
+}
+
 /// Runs the banner command: `[--social] [--out <file>]`.
 pub fn banner(args: &[String]) -> ExitCode {
     banner::run(args)
@@ -239,11 +247,6 @@ pub fn banner(args: &[String]) -> ExitCode {
 fn usage() -> ExitCode {
     eprintln!("usage: xtask export-android-art [--check] <android-checkout>");
     ExitCode::FAILURE
-}
-
-/// The repository root, where the masters live.
-fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
 /// The drawable's path relative to an Android checkout.
