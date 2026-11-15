@@ -133,6 +133,20 @@ class ShareWindow(unittest.TestCase):
         self.features = {"share_moments"}
         self._two_sends()
 
+    def test_failed_undo_keeps_the_send_and_can_retry(self):
+        window = self.open()
+        self.tap(window, "user:ana")
+        window._send.click()
+        receipt = window._phase
+        with patch.object(ui.model, "_retract", side_effect=RuntimeError("offline")):
+            window._undo.click()
+        self.assertIn("Couldn't undo", window._status.text())
+        self.assertIs(window._phase, receipt)
+        self.assertTrue(window._undo.isEnabled())
+        self.assertEqual({"ana"}, set(self.delivered))
+        window._undo.click()
+        self.assertEqual({}, self.delivered)
+
     def _two_sends(self):
         first = self.open()
         self.tap(first, "user:ana")
