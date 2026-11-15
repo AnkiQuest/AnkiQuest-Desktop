@@ -8,9 +8,9 @@ import time
 import tempfile
 from pathlib import Path
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QFont, QFontDatabase, QPushButton, QScrollArea, QWidget
+from aqt.qt import QApplication, QDialog, QFont, QFontDatabase, QPushButton, QScrollArea, QWidget
 from anki.collection import Collection
 
 from addon_loader import load_in_package
@@ -308,6 +308,60 @@ class Moments(unittest.TestCase):
         self.assertEqual("Spanish::Animals", control._deck_record["path"].removeprefix("5 Archive::"))
         control._deck_name.lineEdit().textEdited.emit("")
         self.assertNotIn(" in ", control._win()["body"])
+
+    def test_unlock_and_conquest_shares_open_the_recipient_picker(self):
+        self.api.capabilities = lambda: {"share_moments", "share_undo_send"}
+        request = self.api._request
+        self.api._request = lambda path, body=None, method=None: (
+            {"friends": [{"user": "ana", "display": "Ana"}], "groups": []}
+            if path.startswith("/api/social/") else request(path, body, method))
+        with patch.object(ui.share_ui.share, "card", side_effect=OSError("offline")):
+            self.offer(dict(self.item("companion_unlocked:ankilope", "companion_unlocked"),
+                            share={"title": "Ankilope unlocked", "body": "Level 30", "win": 17}))
+            self.transition("overview", "review")
+            card = self.presenter._card
+            next(button for button in card._dialog.findChildren(QPushButton) if button.text() == "Tell friends").click()
+            self.flush()
+            opened = next(dialog for dialog in card._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+            self.assertEqual(17, opened._picker._win["win"])
+            self.assertTrue(opened._picker._form.isVisible())
+            opened.close()
+            self.presenter._clear()
+            self.mw.state = "review"
+            control = self.conquest()
+            self.assertTrue(control._deck_name.isVisible())
+            control._deck_name.lineEdit().textEdited.emit("My vocabulary")
+            control._tell.click()
+            self.flush()
+            opened = next(dialog for dialog in self.presenter._card._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+            self.assertEqual(50, opened._picker._win["conquest"])
+            self.assertIn("My vocabulary", opened._picker._win["body"])
+            self.assertTrue(opened._picker._form.isVisible())
+            self.assertFalse(any(path.endswith("/tell") for path, _, _ in self.requests))
+            opened.close()
+
+    def test_share_loading_survives_selecting_another_moment(self):
+        self.api.capabilities = lambda: {"share_moments", "share_undo_send"}
+        request = self.api._request
+        self.api._request = lambda path, body=None, method=None: (
+            {"friends": [{"user": "ana", "display": "Ana"}], "groups": []}
+            if path.startswith("/api/social/") else request(path, body, method))
+        with patch.object(ui.share_ui.share, "card", side_effect=OSError("offline")):
+            self.offer(dict(self.item(), share={"title": "Level 4", "body": "A win", "win": 17}))
+            self.offer(self.item("goal:2", "goal"))
+            self.transition("overview", "review")
+            card = self.presenter._card
+            card._choices.setCurrentIndex(card._choices.findData("level:4"))
+            self.defer = True
+            next(button for button in card._dialog.findChildren(QPushButton) if button.text() == "Tell friends").click()
+            self.complete(self.tasks.pop(0))
+            self.flush()
+            opened = next(dialog for dialog in card._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+            card._choices.setCurrentIndex(card._choices.findData("goal:2"))
+            self.complete(self.tasks.pop(0))
+            self.assertTrue(opened._picker._form.isVisible())
+            self.assertEqual(17, opened._picker._win["win"])
+            opened.close()
 
     def test_a_stale_local_deck_reply_cannot_change_another_account(self):
         control = self.conquest()
