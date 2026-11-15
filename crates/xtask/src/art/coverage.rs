@@ -39,8 +39,9 @@ const RENAMES: &[(&str, &str)] = &[
 ];
 
 /// Per-companion pictures that are not poses: moment, notification,
-/// leaderboard and icon art (export lists in `art.rs`, Android
-/// `AnkiquestArt`, `AnkiquestMomentCard`) and the web's face sizes.
+/// leaderboard and icon art (export lists in `art.rs` and
+/// `art-exports.json`, Android `AnkiquestArt`, `AnkiquestMomentCard`) and
+/// the web's face sizes.
 const PICTURES: &[&str] = &[
     "achievement",
     "at_risk",
@@ -58,7 +59,6 @@ const PICTURES: &[&str] = &[
     "place_1",
     "place_2",
     "place_3",
-    "winner",
     "icon_happy",
     "icon_worried",
     "icon_frozen",

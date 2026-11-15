@@ -121,7 +121,10 @@ class Picker(unittest.TestCase):
         colours = set()
         for x in range(0, plain.width(), 4):
             y = plain.height() // 2
-            self.assertEqual(plain.pixelColor(x, y).alpha() > 0, shadow.pixelColor(x, y).alpha() > 0)
+            # The shadow is the shape at the shadow colour's opacity (110 of 255),
+            # so an edge pixel of alpha 1 rightly disappears.
+            expected = plain.pixelColor(x, y).alpha() * 110 / 255
+            self.assertAlmostEqual(expected, shadow.pixelColor(x, y).alpha(), delta=1, msg=x)
             if shadow.pixelColor(x, y).alpha() > 0:
                 colour = shadow.pixelColor(x, y)
                 colours.add(colour.red() == colour.green() == colour.blue())
