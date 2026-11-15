@@ -323,6 +323,11 @@ class LocalPicture(unittest.TestCase):
         supplied = dict(win, token="private-token", label="unsaved label", deck="private deck", fields={"Front": "private"})
         self.assertEqual(expected, self.image(supplied))
 
+    def test_a_missing_extension_keeps_the_companion_in_the_picture(self):
+        win = {"title": "A win", "body": "A little progress"}
+        expected = self.image(win, "aki")
+        self.assertEqual(expected, self.image(dict(win, picture_pose="aki_missing_extension"), "aki"))
+
     def test_invalid_or_excessive_content_fails_explicitly(self):
         with self.assertRaises(ValueError):
             self.image({"title": "Long", "body": "many words " * 10000})

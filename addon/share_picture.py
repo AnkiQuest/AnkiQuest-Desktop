@@ -47,10 +47,16 @@ def render(win, companion, palette, scale=1):
     pose = win.get("picture_pose") or "aki_celebrate"
     if pose.startswith("aki_"):
         pose = moods.companion_pose(companion, pose)
-    if companion != moods.NONE and pose and re.fullmatch(r"[a-z0-9_]+", pose):
-        art = companion_art.pixmap(companion_art.pose_path(pose), companion, _HERO).toImage()
-        if not art.isNull():
-            pieces.append((art, _HERO))
+    if companion != moods.NONE:
+        # Extensions missing from this add-on version fall back to its bundled happy pose.
+        fallback = moods.companion_pose(companion, "aki_celebrate")
+        for chosen in dict.fromkeys((pose, fallback)):
+            if not chosen or not re.fullmatch(r"[a-z0-9_]+", chosen):
+                continue
+            art = companion_art.pixmap(companion_art.pose_path(chosen), companion, _HERO).toImage()
+            if not art.isNull():
+                pieces.append((art, _HERO))
+                break
     pieces.append(_words(win.get("title", ""), _TITLE * scale, QFont.Weight.Bold))
     body = win.get("picture_body", win.get("body", ""))
     if body:
