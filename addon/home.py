@@ -150,16 +150,29 @@ def _pose_url(name):
     return "/_addons/%s/art/%s.png" % (mw.addonManager.addonFromModule(__name__), name)
 
 
-def pose_url(chosen_companion):
-    """The companion's pose for today's streak, by the one rule (moods.today_pose). The goal is
-    the server's word; the Today panel also counts reviews it has not uploaded yet."""
+def _served_goal(profile):
+    """Today's goal by the server's word: only a profile that still describes today says it is reached."""
+    served = ((moods.current(profile, now_ms()) or {}).get("goal") or {}).get("reached")
+    return moods.Goal.REACHED if served is True else moods.Goal.OPEN
+
+
+def today_mood():
+    """Today's streak mood and streak, by the one rule (moods.today_mood). The goal is the
+    server's word; the Today panel also counts reviews it has not uploaded yet."""
     profile = addon().state["profile"]
     view = _profile_for_display(profile)
+    return moods.today_mood(view, _served_goal(profile)), int((view or {}).get("streak") or 0)
 
-    # Only a profile that still describes today says whether today's goal is reached.
-    served = ((moods.current(profile, now_ms()) or {}).get("goal") or {}).get("reached")
-    goal = moods.Goal.REACHED if served is True else moods.Goal.OPEN
-    return _pose_url(moods.companion_pose(chosen_companion, moods.today_pose(view, goal)))
+
+def pose_url(chosen_companion):
+    """The companion's pose for today's streak."""
+    return _pose_url(moods.companion_pose(chosen_companion, moods.streak_pose(*today_mood())))
+
+
+def streak_flame(view):
+    """The flame beside the streak length of a displayed profile, with the server's goal, for
+    when the collection cannot be read; the Today panel's comes with today_view."""
+    return moods.today_flame(view, _served_goal(addon().state["profile"]))
 
 
 def days_for(deck_browser=None):
@@ -427,7 +440,7 @@ def board_view(api, profile=None):
         entry["avatar"] = pictures._get(entry.get("user"))
         rows.append((place, entry, mine))
     pictures._load([row[1]["user"] for row in rows], addon().redraw)
-    return {"period": chosen, "scope": board.query.scope, "scopes": board.scopes, "rows": rows}
+    return {"period": chosen, "scope": board.query.scope, "scopes": board.scopes, "rows": rows, "locked": board.locked}
 
 
 def _pictures():
@@ -500,6 +513,7 @@ def today_view(deck_browser, chosen_companion):
     return {
         "profile": profile,
         "art": _pose_url(pose),
+        "flame": moods.today_flame(profile, goal),
         "mood": tr(moods.message(chosen_companion, mood)) if chosen_companion != "none" else None,
         "winner": art_url(chosen_companion, moods.WINNER),
         "focus": focus_view(focus),
