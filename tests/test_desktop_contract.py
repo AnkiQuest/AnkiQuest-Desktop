@@ -15,6 +15,7 @@ client, verdict, goals, boards, activity, inbox, share, conquests, notify = (
     )
 )
 EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
+moment_share = load_in_package("desktop_contract", "moment_share")
 
 
 def example(name):
@@ -24,7 +25,7 @@ def example(name):
 class Contracts(unittest.TestCase):
     def setUp(self):
         self.api = client.Client("https://quest.test", "hill", "example-token", "de")
-        self.routes, self.sent = {}, []
+        self.routes, self.sent, self.headers = {}, [], {}
         transport = patch.object(client, "open_url", side_effect=self.response)
         transport.start()
         self.addCleanup(transport.stop)
@@ -40,6 +41,7 @@ class Contracts(unittest.TestCase):
             self.assertEqual("de", headers["Accept-Language"])
         response = BytesIO((EXAMPLES / (self.routes[verb, route] + ".json")).read_bytes())
         response.status = HTTPStatus.OK
+        response.headers = self.headers
         return response
 
     def test_profile_and_upload_produce_the_same_confirmed_day(self):
@@ -86,6 +88,24 @@ class Contracts(unittest.TestCase):
                     stranger = next(row for _, row, mine in ranked if not mine)
                     self.assertNotIn("today_reviews", stranger)
                     self.assertNotIn("streak_state", stranger)
+
+    def test_a_player_who_never_uploaded_learns_why_the_board_and_feed_are_empty(self):
+        self.api.name = self.api.user = "newcomer"
+        self.routes = {("GET", "/api/leaderboard?period=week&scope=friends"): "leaderboard_locked",
+                       ("GET", "/api/activity/newcomer?limit=50"): "activity_locked"}
+        self.headers = {"X-Ankiquest-Locked": "upload_first"}
+        rows = self.api.leaderboard("week", "friends")
+        self.assertEqual([], rows)
+        self.assertEqual("upload_first", rows.locked)
+        page = activity._load(self.api)
+        self.assertEqual([], page.items)
+        self.assertEqual("upload_first", page.locked)
+
+    def test_answers_without_the_lock_header_are_not_locked(self):
+        self.routes = {("GET", "/api/leaderboard?period=week&scope=friends"): "leaderboard"}
+        self.assertIsNone(getattr(self.api.leaderboard("week", "friends"), "locked", None))
+        self.routes = {("GET", "/api/activity/hill?limit=50"): "activity"}
+        self.assertIsNone(activity._load(self.api).locked)
 
     def test_activity_and_legacy_notices_keep_actions_and_share_ids(self):
         self.routes = {("GET", "/api/activity/hill?limit=50"): "activity",
@@ -142,6 +162,23 @@ class Contracts(unittest.TestCase):
         self.assertFalse(conquests._can_undo(found, 0))
         self.assertEqual({"told": 0}, conquests._tell(self.api, at))
         self.assertEqual({"retracted": 0}, conquests._undo(self.api, at))
+
+    def test_moment_recipients_and_send_specific_undo_use_recorded_contracts(self):
+        self.routes = {("GET", "/api/capabilities"): "capabilities", ("GET", "/api/social/hill"): "social",
+                       ("POST", "/api/share/hill"): "share_moment",
+                       ("DELETE", "/api/share/hill/6?until=1793269800000"): "share_undo_send"}
+        win = {"win": 6, "title": "Anki-tan unlocked", "body": "A 66-day streak.", "kind": "companion_unlocked"}
+        targets = moment_share._load(self.api, win, [])
+        self.assertEqual(["user:friend", "group:2", "group:1"], [target._key for target in targets])
+        picked = moment_share._Picked((targets[0], targets[1]))
+        receipt = moment_share._send(self.api, win, picked, "  A\nsmall win ")
+        self.assertEqual({"moment": {"win": 6}, "to": {"friends": ["friend"], "groups": [2]}, "note": "A small win"}, self.sent[-1][2])
+        self.assertEqual(1, moment_share._retract(self.api, receipt))
+
+    def test_conquest_share_uses_its_review_id_and_no_automatic_publication(self):
+        self.routes = {("POST", "/api/share/hill"): "share_moment_group"}
+        moment_share._send(self.api, {"conquest": 1793097000000}, moment_share._Choice.CIRCLE, "")
+        self.assertEqual([("POST", "/api/share/hill", {"moment": {"conquest": 1793097000000}, "to": "circle"})], self.sent)
 
 
 if __name__ == "__main__":
