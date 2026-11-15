@@ -57,6 +57,11 @@ show white and dark backgrounds, with 64 px and 32 px copies. The frozen
 master uses `frozen`, distinct from a used-freeze picture. The asleep master
 uses the established `sleeping` export name.
 [Desktop and Android exports](ankilope-core-exports.png) are compared at
-matching sizes. These previews were exported on Windows; Android's files
-must be checked against the canonical Linux export before the parity PR
-is ready. Existing art is preserved.
+matching sizes. Linux re-export at `0f12507` verified all five Android
+files byte for byte. Four desktop files also match; the hopeful PNG uses
+the canonical Linux export from `1fd6068` (SHA-256
+`8bc4f948b6ab82d32e47ffbf5100f25fb73fd95e03e498bd2223f39836d04585`).
+The preview sheet predates that palette-only change, whose alpha is
+unchanged. Existing art is preserved. Verification:
+[desktop #310](https://github.com/AnkiQuest/AnkiQuest-Desktop/pull/310#issuecomment-6894935747),
+[Android #323](https://github.com/AnkiQuest/AnkiQuest-Android/pull/323#issuecomment-6894937822).
