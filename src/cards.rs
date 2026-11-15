@@ -1529,6 +1529,7 @@ mod tests {
             [
                 "aki/celebrate",
                 "aki/freeze",
+                "aki/frozen",
                 "aki/streak",
                 "aki/winner",
                 "ankilope/celebrate"
@@ -1550,11 +1551,13 @@ mod tests {
 
     #[test]
     fn fixture_pose_names_pick_their_masters() {
-        // companion_poses.json names poses happy and frozen; their masters are
-        // celebrate.png and freeze.png.
-        assert_eq!(art("aki", "frozen"), art("aki", "freeze"));
+        // companion_poses.json names the happy pose; its master is celebrate.png. Frozen has
+        // its own master, apart from freeze.png (a used streak freeze).
+        let stem = |art: Option<Art>| art.map(|art| CARD_ART[art.file].1);
         assert_eq!(art("aki", "happy"), art("aki", "celebrate"));
-        assert_ne!(art("aki", "frozen"), art("aki", "celebrate"));
+        assert_eq!(stem(art("aki", "frozen")), Some("frozen"));
+        assert_eq!(stem(art("aki", "freeze")), Some("freeze"));
+        assert_eq!(stem(art("ankilope", "frozen")), Some("celebrate"));
     }
 
     #[test]
