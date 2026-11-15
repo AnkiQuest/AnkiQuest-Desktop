@@ -57,6 +57,13 @@ class TodayPanel(unittest.TestCase):
         self.assertIn(command, board.html(None, mascot="/m.png"))
         self.assertNotIn(command, board.head({"art": None}, None, None, lambda text: text))
 
+    def test_the_companion_shortcut_is_a_labelled_button(self):
+        # A button takes focus and opens on Enter or Space; an image with onclick does neither.
+        today = {"art": "/a.png", "mood": None}
+        for page in (board.head(today, None, None, lambda text: text), board.html(None, mascot="/m.png")):
+            self.assertRegex(page, r'<button type=button [^>]*aria-label="Study companion"[^>]*><img [^>]*alt=""[^>]*></button>')
+            self.assertNotRegex(page, r"<img [^>]*onclick")
+
 
 class RevealStates(unittest.TestCase):
     def test_the_full_reveal_falls_beams_bursts_then_shows(self):

@@ -15,9 +15,16 @@ COMPANION_CLASS = "aq-companion"
 COMPANION_COMMAND = "ankiquest:companion"
 
 
-def _opens_tab(translate):
-    """The attributes that make a companion picture open the companion tab."""
-    return ' onclick="pycmd(\'%s\')" title="%s"' % (COMPANION_COMMAND, escape(translate("Study companion")))
+# Strips the browser's button look, so only the companion picture shows.
+_COMPANION_BUTTON_STYLE = "background:none;border:0;padding:0;margin:0;cursor:pointer;flex:none;line-height:0"
+
+
+def _opens_tab(picture, translate):
+    """`picture` in a labelled button that opens the companion tab, so Tab and Enter or
+    Space reach it as well as a click."""
+    label = escape(translate("Study companion"))
+    return '<button type=button class=aq-companion-open aria-label="%s" title="%s" style="%s" onclick="pycmd(\'%s\')">%s</button>' % (
+        label, label, _COMPANION_BUTTON_STYLE, COMPANION_COMMAND, picture)
 
 
 def companion_style(companion):
@@ -247,11 +254,10 @@ def html(profile, place=None, unread=0, translate=lambda value: value, mascot=No
     if today is not None:
         return panel(profile, place, unread, translate, today, actions, flame)
     parts = summary_parts(profile, place, translate, flame)
-    mascot_html = (
-        '<img class=%s src="%s" width=40 height=40 alt="" style="object-fit:contain;cursor:pointer"%s>'
-        % (COMPANION_CLASS, escape(mascot), _opens_tab(translate))
-        if mascot else ""
-    )
+    mascot_html = _opens_tab(
+        '<img class=%s src="%s" width=40 height=40 alt="" style="object-fit:contain">' % (COMPANION_CLASS, escape(mascot)),
+        translate,
+    ) if mascot else ""
     return (
         "<div id=ankiquest style='max-width:600px;margin:2em auto 0;font-size:13px;"
         "display:flex;flex-wrap:wrap;justify-content:space-between;gap:.3em'>"
@@ -336,7 +342,7 @@ def _day_label(profile, translate):
 
 def head(today, profile, place, translate, flame=moods.Flame.NONE):
     art = today.get("art")
-    image = '<img class=%s src="%s" alt="" style="cursor:pointer"%s>' % (COMPANION_CLASS, escape(art), _opens_tab(translate)) if art else ""
+    image = _opens_tab('<img class=%s src="%s" alt="">' % (COMPANION_CLASS, escape(art)), translate) if art else ""
     mood = "<div class=aq-bubble>%s</div>" % escape(today["mood"]) if today.get("mood") else ""
     return "<div class=aq-hero>%s<div>%s%s%s</div></div>" % (image, mood, pills(profile, place, translate, flame), _freeze_pills(profile, translate))
 
