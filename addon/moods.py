@@ -1,8 +1,9 @@
 """The companion's mood for today, and its artwork, chosen like the phone app's Aki.
 
-Two rules live here. `streak_mood` picks the pose from today's streak, as the phone's
-AnkiquestMood does, pinned by tests/fixtures/streak_moods.json. `mood` picks the encouraging
-line from the collection's due cards.
+Two rules live here. `streak_mood` picks the pose, and `flame` the flame beside the streak
+number, from today's streak, as the phone's AnkiquestMood does, pinned by
+tests/fixtures/streak_moods.json. `mood` picks the encouraging line from the collection's due
+cards.
 """
 
 from enum import Enum, auto
@@ -44,6 +45,31 @@ _MOOD_POSES = {
 
 # A counted day's pose by heat: the first streak length each pose starts at, hottest first.
 HEAT = ((100, "aki_streak_legend"), (30, "aki_streak_blazing"), (7, "aki_streak_hot"), (1, "aki_streak"))
+
+
+class Flame(Enum):
+    """The flame beside the streak number: lit only once today counts. Values as the fixture names them."""
+    # No streak, or nothing known about today.
+    NONE = "none"
+    # Today counts: the usual flame.
+    LIT = "lit"
+    # A streak that today has not counted for yet: grey.
+    UNLIT = "unlit"
+    # A freeze kept the days before today, and today has not counted yet: icy blue.
+    ICY = "icy"
+
+
+# The flame for each streak mood, so the flame says what Aki would even with no companion shown.
+_FLAMES = {
+    MOOD_UNKNOWN: Flame.NONE,
+    ASLEEP: Flame.NONE,
+    SAD: Flame.UNLIT,
+    HOPEFUL: Flame.UNLIT,
+    FROZEN_1: Flame.ICY,
+    FROZEN_2: Flame.ICY,
+    FROZEN_3: Flame.ICY,
+    FIRE: Flame.LIT,
+}
 
 
 class Goal(Enum):
@@ -132,6 +158,11 @@ def streak_pose(chosen, streak):
     return next((pose for days, pose in HEAT if streak >= days), HEAT[-1][1])
 
 
+def flame(chosen):
+    """The flame beside the streak number for a streak mood."""
+    return _FLAMES[chosen]
+
+
 def frozen_run(heatmap):
     """The frozen days in a row ending yesterday in a profile's heatmap, whose last cell is today."""
     days = 0
@@ -150,12 +181,21 @@ def day_state(view):
     return state
 
 
-def today_pose(view, goal):
-    """Aki's pose for the displayed profile's day: the one streak rule every surface uses."""
+def today_mood(view, goal):
+    """The streak mood for the displayed profile's day: the one streak rule every surface uses."""
     view = view or {}
     streak = int(view.get("streak") or 0)
-    chosen = streak_mood(day_state(view), _reviews_today(view), streak, frozen_run(view.get("heatmap")), goal)
-    return streak_pose(chosen, streak)
+    return streak_mood(day_state(view), _reviews_today(view), streak, frozen_run(view.get("heatmap")), goal)
+
+
+def today_pose(view, goal):
+    """Aki's pose for the displayed profile's day."""
+    return streak_pose(today_mood(view, goal), int((view or {}).get("streak") or 0))
+
+
+def today_flame(view, goal):
+    """The flame beside the displayed profile's streak number."""
+    return flame(today_mood(view, goal))
 
 
 def art_owner(companion):
