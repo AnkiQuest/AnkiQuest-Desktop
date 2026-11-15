@@ -1910,6 +1910,36 @@ PORTUGUESE.update({
     "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalação é atualizada pelo AnkiWeb. Usa Ferramentas → Extras → Procurar atualizações.",
 })
 
+# Native moment recipients; wording matches Android's share sheet.
+SPANISH.update({
+    "Search friends and groups": "Buscar amigos y grupos", "All friends": "Todos los amigos",
+    "Retry": "Reintentar",
+    "Add a note (optional)": "Añadir una nota (opcional)", "More apps…": "Más aplicaciones…",
+    "Add friends in AnkiQuest to send them your moments.": "Añade amigos en AnkiQuest para enviarles tus momentos.",
+    "Invite a friend": "Invitar a un amigo", "Couldn't load friends (%s).": "No se pudieron cargar los amigos (%s).",
+})
+GERMAN.update({
+    "Search friends and groups": "Freunde und Gruppen suchen", "All friends": "Alle Freunde",
+    "Retry": "Erneut versuchen",
+    "Add a note (optional)": "Nachricht hinzufügen (optional)", "More apps…": "Weitere Apps…",
+    "Add friends in AnkiQuest to send them your moments.": "Füge Freunde in AnkiQuest hinzu, um deine Momente mit ihnen zu teilen.",
+    "Invite a friend": "Freund einladen", "Couldn't load friends (%s).": "Freunde konnten nicht geladen werden (%s).",
+})
+FRENCH.update({
+    "Search friends and groups": "Chercher des amis et des groupes", "All friends": "Tous les amis",
+    "Retry": "Réessayer",
+    "Add a note (optional)": "Ajouter un message (facultatif)", "More apps…": "Autres applis…",
+    "Add friends in AnkiQuest to send them your moments.": "Ajoute des amis dans AnkiQuest pour leur envoyer tes moments.",
+    "Invite a friend": "Inviter un ami", "Couldn't load friends (%s).": "Impossible de charger les amis (%s).",
+})
+PORTUGUESE.update({
+    "Search friends and groups": "Procurar amigos e grupos", "All friends": "Todos os amigos",
+    "Retry": "Tentar novamente",
+    "Add a note (optional)": "Adicionar uma nota (opcional)", "More apps…": "Mais apps…",
+    "Add friends in AnkiQuest to send them your moments.": "Adiciona amigos no AnkiQuest para lhes enviares os teus momentos.",
+    "Invite a friend": "Convidar um amigo", "Couldn't load friends (%s).": "Não foi possível carregar os amigos (%s).",
+})
+
 # Shared settings, moments and sharing wording; see tests/fixtures/desktop-wording.json.
 SPANISH.update({
     "Notify me about": "Avísame de",

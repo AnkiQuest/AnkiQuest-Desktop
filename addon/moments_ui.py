@@ -315,7 +315,7 @@ class _Card:
         win = item.get("share")
         if not win:
             return
-        sharing = share_ui.Sharing(self._dialog, self._api, win, self._addon.client, self._run, self._status)
+        sharing = share_ui.Sharing(self._dialog, self._api, win, self._addon.client, self._run, self._status, companion)
         friends, *options = share_ui._buttons(sharing)
         friends.setText(tr("Tell friends"))
         bar = QWidget()
@@ -332,5 +332,5 @@ class _Card:
         for button in options:
             row.addWidget(button)
         choices.hide()
-        toggle.toggled.connect(choices.setVisible)
+        toggle.toggled.connect(lambda checked: share_ui._route(sharing, lambda: choices.setVisible(checked)))
         self._actions.addWidget(choices)
