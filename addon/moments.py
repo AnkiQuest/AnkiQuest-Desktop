@@ -75,7 +75,7 @@ def _notice(entry):
     # Cheers and friends' shares may carry our key too; only our own win belongs here.
     if not inbox.shareable(entry):
         return None
-    return {
+    item = {
         "key": entry.get("moment") or "notice:%d" % entry["id"],
         "topic": entry.get("topic") or "unlocks",
         "title": entry.get("title") or "", "body": entry.get("body") or "",
@@ -84,6 +84,10 @@ def _notice(entry):
         # The row, and whether another device has read it yet (companion_reveal.due).
         "notice": entry.get("id"), "unread": not entry.get("read_at"),
     }
+    # A companion without art here is no moment: its card would show another companion.
+    if item["topic"] == "companion" and joined(item) is None:
+        return None
+    return item
 
 
 def _rank(change, place, week, at):

@@ -1,5 +1,6 @@
 //! The durable inbox: notifications, the activity feed, replies, and the push queue.
 
+use crate::companions::Drawable;
 use crate::decks::completion_allowed_sql;
 use crate::game::{DAY_MS, Event};
 use crate::store::{Error, Store};
@@ -46,6 +47,8 @@ pub struct ActivityOptions {
     pub category: Option<ActivityCategory>,
     pub unread_only: bool,
     pub peer_study: PeerStudy,
+    /// The unlock moments the client can draw; see [`crate::companions::Drawable`].
+    pub drawable: Drawable,
 }
 
 /// Whether a feed includes notifications that report another player's study; see
@@ -314,24 +317,27 @@ fn next_page<T>(items: &mut Vec<T>, limit: u32, id: impl Fn(&T) -> i64) -> Optio
 
 impl Store {
     pub fn notifications(&self, user: &str, now_ms: i64) -> Result<Vec<Notification>, Error> {
-        self.notifications_for(user, now_ms, PeerStudy::Shown)
+        self.notifications_for(user, now_ms, PeerStudy::Shown, Drawable::all())
     }
 
-    /// [`Store::notifications`], leaving out others' study when `peer_study` says so.
-    pub fn notifications_for(
+    /// [`Store::notifications`], leaving out others' study when `peer_study` says so, and
+    /// unlock moments the client cannot draw.
+    pub(crate) fn notifications_for(
         &self,
         user: &str,
         now_ms: i64,
         peer_study: PeerStudy,
+        drawable: Drawable,
     ) -> Result<Vec<Notification>, Error> {
         let mut stmt = self.conn.prepare(&format!(
             "select {NOTICE_COLUMNS} from notifications n where n.id in (
                  select id from notifications where recipient=?1 and push_only=0
                  and created_at>=?3
-                 and {} and {}
+                 and {} and {} and {}
                  order by id desc limit 500) order by n.id",
             completion_visible_sql("notifications", "?1"),
-            peer_study_sql("notifications", "?1", peer_study)
+            peer_study_sql("notifications", "?1", peer_study),
+            drawable.sql("notifications")
         ))?;
         Ok(stmt
             .query_map(params![user, now_ms, now_ms - INBOX_AGE_MS], notification)?
@@ -357,6 +363,7 @@ impl Store {
                 category: None,
                 unread_only: false,
                 peer_study: PeerStudy::Shown,
+                drawable: Drawable::all(),
             },
         )
     }
@@ -374,14 +381,20 @@ impl Store {
             category,
             unread_only,
             peer_study,
+            drawable,
         } = options;
-        let peers = peer_study_sql("n", "?1", peer_study);
+        // Rows the caller may see: peers' study once uploaded, and companions it can draw.
+        let shown = format!(
+            "{} and {}",
+            peer_study_sql("n", "?1", peer_study),
+            drawable.sql("n")
+        );
         let cutoff = now_ms - i64::from(days) * DAY_MS;
         let category = category.map(ActivityCategory::as_str);
         let mut stmt = self.conn.prepare(&format!(
             "select {NOTICE_COLUMNS} from notifications n
             where n.recipient=?1 and n.push_only=0 and n.created_at>=?3 and (?4 is null or n.id<?4)
-            and {} and {peers}
+            and {} and {shown}
             and (?6 is null or (?6='needs_action' and {ACTION_REQUIRED_SQL})
                 or (?6!='needs_action' and ({ACTIVITY_CATEGORY_SQL})=?6))
             and (?7=0 or n.read_at is null)
@@ -416,7 +429,7 @@ impl Store {
             &format!(
                 "select coalesce(sum(n.read_at is null),0),coalesce(sum({ACTION_REQUIRED_SQL}),0),max(n.id)
                  from notifications n where n.recipient=?1 and n.push_only=0 and n.created_at>=?3
-                 and {} and {peers}",
+                 and {} and {shown}",
                 completion_visible_sql("n", "?1")
             ),
             params![user, now_ms, cutoff],
@@ -904,6 +917,7 @@ mod tests {
             category: Some(ActivityCategory::Messages),
             unread_only: false,
             peer_study: PeerStudy::Shown,
+            drawable: Drawable::all(),
         };
         let page = store.activity_filtered("hill", NOW, options).unwrap();
         assert_eq!(page.items[0].id, sent[5]);
@@ -1002,6 +1016,7 @@ mod tests {
             category: Some(ActivityCategory::NeedsAction),
             unread_only: false,
             peer_study: PeerStudy::Shown,
+            drawable: Drawable::all(),
         };
         let pending = store.activity_filtered("hill", NOW, options).unwrap();
         assert_eq!(pending.items[0].id, id);
