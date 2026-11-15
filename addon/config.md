@@ -1,6 +1,8 @@
 AnkiQuest needs Anki 23.10 or newer with Qt 6.
 
-An unconnected profile offers sign-in when it opens. **Not now** dismisses the offer for that profile. You can sign in later from **Tools → AnkiQuest → Settings → Account** or the link under the deck list.
+On the first profile open after you install AnkiQuest, or update to a version with the greeting, Aki greets you once on this computer, after Anki's own startup dialogs. Signed out, she offers **Sign in** and **Later**; signed in, **Let’s study**.
+
+After that, an unconnected profile offers sign-in when it opens. **Not now** dismisses the offer for that profile; **Later** on Aki's greeting does the same for the profile she greeted in. You can sign in later from **Tools → AnkiQuest → Settings → Account** or the link under the deck list.
 
 The sign-in dialog starts with the main AnkiQuest server. If you self-host, enter your server address. Use HTTPS for a server outside your local network. After sign-in the add-on keeps a token for this computer.
 

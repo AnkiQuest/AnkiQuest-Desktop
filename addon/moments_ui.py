@@ -15,6 +15,8 @@ class _Phase(Enum):
     READY = auto()
     SHOWING = auto()
     DISMISSED = auto()
+    # Aki's greeting is in front; cards wait until it closes.
+    WAITING = auto()
 
 
 class _Permission(Enum):
@@ -99,6 +101,17 @@ class _Presenter:
     def _schedule(self):
         QTimer.singleShot(0, self._show)
 
+    def _hold(self):
+        """Keeps cards back while Aki's greeting is open."""
+        self._sync_owner()
+        self._phase = _Phase.WAITING
+
+    def _release(self):
+        if self._phase is not _Phase.WAITING:
+            return
+        self._phase = _Phase.READY
+        self._schedule()
+
     def _transition(self, new_state, old_state):
         self._sync_owner()
         if new_state == "review":
@@ -133,7 +146,8 @@ class _Presenter:
 
     def _show(self):
         api = self._sync_owner()
-        if not api.configured or self._profile is None or self._addon.mw.state not in _RESTING or self._phase is _Phase.DISMISSED:
+        if (not api.configured or self._profile is None or self._addon.mw.state not in _RESTING
+                or self._phase in (_Phase.DISMISSED, _Phase.WAITING)):
             return
         items = [item for item in moments._pending(self._profile, self._owner[:2]) if self._allowed(item)]
         if not items:
@@ -315,7 +329,7 @@ class _Card:
         win = item.get("share")
         if not win:
             return
-        sharing = share_ui.Sharing(self._dialog, self._api, win, self._addon.client, self._run, self._status)
+        sharing = share_ui.Sharing(self._dialog, self._api, win, self._addon.client, self._run, self._status, companion)
         friends, *options = share_ui._buttons(sharing)
         friends.setText(tr("Tell friends"))
         bar = QWidget()
@@ -332,5 +346,5 @@ class _Card:
         for button in options:
             row.addWidget(button)
         choices.hide()
-        toggle.toggled.connect(choices.setVisible)
+        toggle.toggled.connect(lambda checked: share_ui._route(sharing, lambda: choices.setVisible(checked)))
         self._actions.addWidget(choices)
