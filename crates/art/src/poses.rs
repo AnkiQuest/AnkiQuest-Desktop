@@ -6,11 +6,7 @@ use std::collections::BTreeMap;
 /// Poses whose masters were named before the fixture: pose, then the
 /// master's file name without `.png`. Wins store these file names (the
 /// `art` field of the wins API), so they stay.
-const LEGACY: [(&str, &str); 3] = [
-    ("happy", "celebrate"),
-    ("frozen", "freeze"),
-    ("asleep", "sleeping"),
-];
+const LEGACY: [(&str, &str); 2] = [("happy", "celebrate"), ("asleep", "sleeping")];
 
 /// The core poses and the extensions with their fallbacks.
 pub struct Poses {
@@ -127,10 +123,10 @@ mod tests {
     #[test]
     fn legacy_masters_keep_their_file_names() {
         assert_eq!(stem("happy"), "celebrate");
-        assert_eq!(stem("frozen"), "freeze");
+        assert_eq!(stem("frozen"), "frozen");
         assert_eq!(stem("streak"), "streak");
         assert_eq!(pose_of("celebrate"), "happy");
-        assert_eq!(pose_of("freeze"), "frozen");
+        assert_eq!(pose_of("freeze"), "freeze");
         assert_eq!(pose_of("winner"), "winner");
     }
 }

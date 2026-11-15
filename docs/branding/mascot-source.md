@@ -7,8 +7,8 @@ hand-made copy (AGENTS.md, Companion art).
 
 Pose names and fallbacks come from `tests/fixtures/companion_poses.json`.
 Masters named before the fixture keep their file names: `happy` is
-`celebrate.png`, `frozen` is `freeze.png`, `asleep` is `sleeping.png`
-(`crates/art/src/poses.rs`). Wins store those file names in their `art`
+`celebrate.png`, `asleep` is `sleeping.png` (`crates/art/src/poses.rs`).
+`freeze.png` (a used streak freeze) is not the core `frozen` pose. Wins store those file names in their `art`
 field.
 
 ```text
@@ -35,7 +35,7 @@ pose list with its fallbacks. `build.rs` and `crates/xtask` both call it.
 them from there:
 
 - Share-card art, 512 px: for every folder in `static/` with a `happy`
-  master, each card pose it has (`happy`, `streak`, `frozen`, `winner`),
+  master, each card pose it has (`happy`, `streak`, `frozen`, `freeze`, `winner`),
   listed in a generated `cards.rs`. `src/cards.rs` picks the pose, else its
   fallback from the fixture, else `happy`; a companion without masters shows
   no art. The cow has no masters yet (#88) and shows Ankilope's art turned
@@ -71,7 +71,8 @@ code under `src/`, `web/`, `addon/`, `crates/` or `build.rs` names one:
 - `static/aki/face-192.png`, `static/aki/face-32.png`,
   `static/ankilope/face-192.png`: hand-made icon copies, now exported by
   `build.rs`.
-- `docs/branding/ankilope-celebrate-review/review.png`: a review sheet.
+- `docs/branding/ankilope-celebrate-review/review.png` and
+  `docs/branding/core-poses-2026-11/aki-core-*.png`: review sheets.
 
 ## The guard
 

@@ -32,9 +32,10 @@ const PAGES: [&str; 8] = [
     "oauth",
 ];
 
-/// Poses a share card shows, as the fixture names them; a companion
+/// Poses a share card shows, as the fixture names them, and `freeze`
+/// (a used streak freeze), which the fixture does not name. A companion
 /// without one falls back through the fixture when the card is drawn.
-const CARD_POSES: [&str; 4] = ["happy", "streak", "frozen", "winner"];
+const CARD_POSES: [&str; 5] = ["happy", "streak", "frozen", "freeze", "winner"];
 
 /// Share-card art edge in pixels: cards draw it at up to 470 px.
 const CARD_SIZE: u32 = 512;

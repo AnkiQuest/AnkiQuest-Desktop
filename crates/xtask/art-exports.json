@@ -120,6 +120,42 @@
       "file": "addon/art/ankilope_celebrate.png",
       "master": "static/ankilope/celebrate.png",
       "sha256": "3907226ec780c3d06dab59cc13f2d64920fd85624a2226969391f80e21ba4aa5"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_sad.png",
+      "master": "static/aki/sad.png",
+      "sha256": "b1b11cc0c049b2e745f270c6d38e22c2bb772d2df82b2f957a2fcd293b934700"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_hopeful.png",
+      "master": "static/aki/hopeful.png",
+      "sha256": "cbffb2764a5b9f2316114062881eeca9f6a11c5b82d8e4371d28b4ebc011a3db"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_frozen.png",
+      "master": "static/aki/frozen.png",
+      "sha256": "010666ac339b485b0eef0aeb7ef807a95059c4511d4e8fa534b1420e1e7125d0"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_neglected.png",
+      "master": "static/aki/neglected.png",
+      "sha256": "ec2daaaa043605ccd2ca79e734a408074456e529a9fd1db4963e8776de41ab03"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_frozen.png",
+      "master": "static/anki-tan/generated/frozen-full.png",
+      "sha256": "07a2be6981a7c5a5f918d9c038d745620d71b7187025cf9b0e1e7d77d5da475d"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_chibi_frozen.png",
+      "master": "static/anki-tan/generated/frozen-chibi.png",
+      "sha256": "0f2834baa7e24ab06eb5301794cf0db8237d9a7f7e3495e6c5646f2f493643fb"
     }
   ],
   "retired": [
@@ -158,6 +194,14 @@
     {
       "file": "docs/branding/ankilope-celebrate-review/review.png",
       "why": "Review sheet comparing Ankilope's celebrate pose before and after its cleanup; a record in the docs, not a copy anything shows."
+    },
+    {
+      "file": "docs/branding/core-poses-2026-11/aki-core-exports.png",
+      "why": "Review sheet for Aki's core poses (#288); a record in the docs, not a copy anything shows."
+    },
+    {
+      "file": "docs/branding/core-poses-2026-11/aki-core-review.png",
+      "why": "Review sheet for Aki's core poses (#288); a record in the docs, not a copy anything shows."
     }
   ]
 }
