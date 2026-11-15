@@ -155,7 +155,9 @@ class _Window:
                 item = QTreeWidgetItem([str(place), title, str(entry["xp"]), str(entry.get("level", "")), str(entry.get("streak", ""))])
                 item.setData(1, Qt.ItemDataRole.UserRole, entry)
                 table.addTopLevelItem(item)
-            if not table.topLevelItemCount():
+            if self._board.locked:
+                self._note("board", tr(board.UPLOAD_FIRST))
+            elif not table.topLevelItemCount():
                 self._note("board", tr("No uploaded players on this board yet."))
             self._resize(table)
             self._paint_faces()
@@ -226,7 +228,9 @@ class _Window:
                         value = int(holder.get("value", 0))
                         text = tr("%d days") % value if record.get("unit") == "days" else "%d XP" % value
                         table.addTopLevelItem(QTreeWidgetItem([title, holder.get("display") or holder["user"], text]))
-                if not table.topLevelItemCount():
+                if getattr(data, "locked", None):
+                    self._note(key, tr(board.UPLOAD_FIRST))
+                elif not table.topLevelItemCount():
                     self._note(key, tr("No records yet."))
             else:
                 for entry in data:
