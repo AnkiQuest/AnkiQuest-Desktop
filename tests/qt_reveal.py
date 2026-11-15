@@ -67,7 +67,9 @@ class Reveal(unittest.TestCase):
         def sharing(dialog, run, status):
             if not shared:
                 return None
-            return share_ui.Sharing(dialog, SimpleNamespace(base="https://quest.test"), item["share"], Mock(), run, status)
+            # The signed-in account still owns the win, so Share opens its choices.
+            api = SimpleNamespace(base="https://quest.test", user="sam", token="t")
+            return share_ui.Sharing(dialog, api, item["share"], lambda: api, run, status)
 
         window = reveal_ui.RevealWindow(None, item, how, chosen, self.chosen.append, sharing, run_now)
         self.addCleanup(window.dialog.close)

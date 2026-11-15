@@ -5,6 +5,9 @@ from html import escape
 from . import moods
 from .language import _clock
 
+# Shown instead of other players until the server holds one of the player's reviews.
+UPLOAD_FIRST = "Study and sync once to see how others are doing."
+
 # The class of every companion picture in the deck list, the Today panel's and the heatmap's.
 COMPANION_CLASS = "aq-companion"
 
@@ -47,6 +50,22 @@ STATUS_CLASS = {"done": "aq-done-today", "learning_later": "aq-learning-later"}
 AVATAR_COLOURS = ("#58cc02", "#1cb0f6", "#ff9600", "#ce82ff", "#ff4b4b", "#2b70c9", "#ffc800")
 _FRIENDS, _GLOBAL = "friends", "global"
 
+# The flame colours before today counts, as the phone's ankiquest_streak_flames_unlit.xml: at
+# least 3:1 on white, on black and on both card backgrounds.
+UNLIT_COLOUR, ICY_COLOUR = "#767676", "#2F86D6"
+_FLAME_COLOURS = {moods.Flame.UNLIT: UNLIT_COLOUR, moods.Flame.ICY: ICY_COLOUR}
+
+# The phone's flame outline, in a 24-unit box.
+FLAME_PATH = "M12,2C13,6 18,8 18,13C18,17 15,20 11,20C7,20 4,17 4,13C4,10 6,7 8,5C8,8 9,9 10,10C12,8 13,5 12,2Z"
+
+# The streak pill's class for each flame: only a lit flame keeps the orange pill.
+_STREAK_PILLS = {
+    moods.Flame.NONE: "streak-none",
+    moods.Flame.LIT: "streak",
+    moods.Flame.UNLIT: "streak-unlit",
+    moods.Flame.ICY: "streak-icy",
+}
+
 STYLE = """<style>
 #ankiquest.aq-today{--aq-bg:#fff;--aq-line:#e5e5e5;--aq-text:#3c3c3c;--aq-muted:#777;--aq-soft:#f7f7f7;
 --aq-green:#58cc02;--aq-green-dark:#46a302;--aq-blue:#1cb0f6;--aq-blue-dark:#1899d6;--aq-orange:#ff9600;
@@ -66,6 +85,8 @@ border-left:2px solid var(--aq-line);border-bottom:2px solid var(--aq-line);tran
 #ankiquest .aq-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;
 font-weight:800;font-size:13px;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
 #ankiquest .aq-pill.aq-streak{background:var(--aq-orange)}
+#ankiquest .aq-pill.aq-streak-none,#ankiquest .aq-pill.aq-streak-unlit,#ankiquest .aq-pill.aq-streak-icy{
+background:var(--aq-bg);color:var(--aq-text);box-shadow:inset 0 0 0 2px var(--aq-line)}
 #ankiquest .aq-pill.aq-level{background:var(--aq-purple)}
 #ankiquest .aq-pill.aq-rank{background:var(--aq-gold);color:#5c4400}
 #ankiquest .aq-pill.aq-risk{background:var(--aq-red)}
@@ -170,22 +191,41 @@ def closing_week(profile, translate, now_ms=None, show_time=clock):
     )
 
 
-def summary_parts(profile, place, translate):
+def flame_icon(flame):
+    """The grey or icy flame, inline at the text's size; empty for a lit flame or none."""
+    colour = _FLAME_COLOURS.get(flame)
+    if colour is None:
+        return ""
+    return (
+        "<svg class=aq-flame viewBox='0 0 24 24' width='1em' height='1em' aria-hidden=true style='vertical-align:-.125em'>"
+        "<path fill='%s' stroke='%s' stroke-width='1.6' d='%s'/></svg> " % (colour, colour, FLAME_PATH)
+    )
+
+
+def streak_html(streak, flame, translate):
+    """The streak length with its flame, as HTML: the lit emoji once today counts."""
+    if flame == moods.Flame.LIT:
+        return escape(translate("\U0001f525 %d day streak") % streak)
+    return flame_icon(flame) + escape(translate("%d day streak") % streak)
+
+
+def summary_parts(profile, place, translate, flame=moods.Flame.NONE):
+    """The deck list line's parts, as HTML."""
     parts = []
     if place:
-        parts.append(translate("#%d this week") % place)
+        parts.append(escape(translate("#%d this week") % place))
     closing = closing_week(profile, translate)
     if closing:
-        parts.append(closing)
+        parts.append(escape(closing))
     if profile:
-        parts.append(level_text(profile, translate))
+        parts.append(escape(level_text(profile, translate)))
         if profile.get("streak"):
-            parts.append(translate("\U0001f525 %d day streak") % profile["streak"])
+            parts.append(streak_html(profile["streak"], flame, translate))
         if profile.get("at_risk"):
-            parts.append(translate("streak at risk today"))
+            parts.append(escape(translate("streak at risk today")))
         label = _day_label(profile, translate)
         if label:
-            parts.append(label)
+            parts.append(escape(label))
     return parts
 
 
@@ -197,14 +237,16 @@ def level_text(profile, translate):
     )
 
 
-def html(profile, place=None, unread=0, translate=lambda value: value, mascot=None, today=None, actions=0):
+def html(profile, place=None, unread=0, translate=lambda value: value, mascot=None, today=None, actions=0,
+         flame=moods.Flame.NONE):
     """A block for `deck_browser_will_render_content`, so it lands under the stats.
 
-    Given `today`, the view home.today_view builds, it is the Today panel instead.
+    Given `today`, the view home.today_view builds, it is the Today panel instead. `flame` is
+    the flame beside the streak length (moods.today_flame).
     """
     if today is not None:
-        return panel(profile, place, unread, translate, today, actions)
-    parts = summary_parts(profile, place, translate)
+        return panel(profile, place, unread, translate, today, actions, flame)
+    parts = summary_parts(profile, place, translate, flame)
     mascot_html = (
         '<img class=%s src="%s" width=40 height=40 alt="" style="object-fit:contain;cursor:pointer"%s>'
         % (COMPANION_CLASS, escape(mascot), _opens_tab(translate))
@@ -214,7 +256,7 @@ def html(profile, place=None, unread=0, translate=lambda value: value, mascot=No
         "<div id=ankiquest style='max-width:600px;margin:2em auto 0;font-size:13px;"
         "display:flex;flex-wrap:wrap;justify-content:space-between;gap:.3em'>"
         "<div style='display:flex;align-items:center;gap:.5em'>%s<div><b>AnkiQuest</b> <span style='opacity:.7'>%s</span></div></div><div>%s</div></div>"
-        % (mascot_html, escape("  ·  ".join(parts)), plain_links(unread, translate, actions))
+        % (mascot_html, "  ·  ".join(parts), plain_links(unread, translate, actions))
     )
 
 
@@ -262,10 +304,10 @@ def pill(text, kind):
     return "<span class='aq-pill aq-%s'>%s</span>" % (kind, escape(text))
 
 
-def pills(profile, place, translate):
+def pills(profile, place, translate, flame=moods.Flame.NONE):
     found = ""
     if profile and profile.get("streak"):
-        found += pill(translate("\U0001f525 %d day streak") % profile["streak"], "streak")
+        found += "<span class='aq-pill aq-%s'>%s</span>" % (_STREAK_PILLS[flame], streak_html(profile["streak"], flame, translate))
     if profile:
         found += pill(level_text(profile, translate), "level")
     if place:
@@ -292,11 +334,11 @@ def _day_label(profile, translate):
     return ""
 
 
-def head(today, profile, place, translate):
+def head(today, profile, place, translate, flame=moods.Flame.NONE):
     art = today.get("art")
     image = '<img class=%s src="%s" alt="" style="cursor:pointer"%s>' % (COMPANION_CLASS, escape(art), _opens_tab(translate)) if art else ""
     mood = "<div class=aq-bubble>%s</div>" % escape(today["mood"]) if today.get("mood") else ""
-    return "<div class=aq-hero>%s<div>%s%s%s</div></div>" % (image, mood, pills(profile, place, translate), _freeze_pills(profile, translate))
+    return "<div class=aq-hero>%s<div>%s%s%s</div></div>" % (image, mood, pills(profile, place, translate, flame), _freeze_pills(profile, translate))
 
 
 def _freeze_pills(profile, translate):
@@ -464,9 +506,11 @@ def board_card(today, translate, profile=None):
             )
         )
     rows = "".join(board_row(*row, translate) for row in standing["rows"])
-    if not rows:
+    if standing.get("locked"):
+        rows += "<div class=aq-empty-note>%s</div>" % escape(translate(UPLOAD_FIRST))
+    elif not rows:
         rows = "<div class=aq-empty-note>%s</div>" % escape(translate("Nobody else plays yet."))
-    if not any(not mine for _, _, mine in standing["rows"]):
+    if not standing.get("locked") and not any(not mine for _, _, mine in standing["rows"]):
         rows += "<div class=aq-empty-note>%s</div>" % link("challenges", translate("Add friends to study together"))
     closing = closing_week(profile, translate)
     if closing:
@@ -485,12 +529,12 @@ def session_line(today, translate):
     return "<div class=aq-session>%s %s</div>" % (pill("%s: %s" % (translate("Your last study session"), today["session"]), "ghost"), status)
 
 
-def panel(profile, place, unread, translate, today, actions=0):
+def panel(profile, place, unread, translate, today, actions=0, flame=moods.Flame.NONE):
     cards = next_deck(today, translate) + goal_card(today, translate) + quests_card(profile, today, translate) + board_card(today, translate, profile)
     cards += _weekly_card(today, translate)
     moments = ('<button type=button onclick="pycmd(\'ankiquest:moments\')">%s</button>'
                % escape(translate("Your moments (%d)") % today["moments"])) if today.get("moments") else ""
     return (
         "%s<div id=ankiquest class=aq-today>%s<div class=aq-grid>%s</div>%s<div class=aq-links>%s</div></div>"
-        % (STYLE, head(today, profile, place, translate), cards, session_line(today, translate), moments + links(unread, translate, actions))
+        % (STYLE, head(today, profile, place, translate, flame), cards, session_line(today, translate), moments + links(unread, translate, actions))
     )

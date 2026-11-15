@@ -2,11 +2,12 @@
 
 from concurrent.futures import Future
 from copy import deepcopy
+import re
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QPushButton, QScrollArea, QTimer
+from aqt.qt import QApplication, QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QPushButton, QScrollArea, QTextDocument, QTimer
 
 from addon_loader import load_in_package
 
@@ -124,6 +125,24 @@ class Settings(unittest.TestCase):
         with patch.object(ui.updates, "installed", return_value={"release": 11, "nightly": 0, "commit": "abc"}), \
                 patch.object(ui.updates, "_source", return_value=ui.updates._Source.ANKIWEB):
             self.open(inspect)
+
+    def test_credits_shigeyuki_for_anki_tan(self):
+        def inspect(dialog):
+            credit = dialog.findChild(QLabel, "ankiquest_anki_tan_credit")
+            self.assertIs(credit.parent(), self.group(dialog, "App and privacy"))
+            document = QTextDocument()
+            document.setHtml(credit.text())
+            self.assertEqual("Anki-tan by Shigeyuki, CC BY-SA 4.0.", document.toPlainText())
+            links = re.findall(r'href="([^"]+)"', credit.text())
+            self.assertEqual([
+                "https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html",
+                "https://www.patreon.com/Shigeyuki",
+                "https://creativecommons.org/licenses/by-sa/4.0/",
+            ], links)
+            self.assertTrue(credit.openExternalLinks())
+            dialog.reject()
+
+        self.open(inspect)
 
     def test_reads_server_choices_and_saves_only_changed_fields(self):
         def edit(dialog):

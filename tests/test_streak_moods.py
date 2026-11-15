@@ -32,6 +32,31 @@ class StreakMoods(unittest.TestCase):
             with self.subTest(case=case["name"]):
                 self.assertEqual(case["expected"], moods.frozen_run(case["heatmap"]))
 
+    def test_every_shared_flame(self):
+        # The flame beside the streak number is lit only once today counts.
+        for case in self.fixture["flames"]:
+            with self.subTest(mood=case["mood"]):
+                self.assertEqual(case["flame"], moods.flame(case["mood"]).value)
+
+    def test_every_mood_has_a_flame(self):
+        covered = [case["mood"] for case in self.fixture["flames"]]
+        self.assertEqual(sorted(moods.STREAK_MOODS), sorted(covered))
+
+    def test_the_displayed_day_sets_the_flame(self):
+        def view(status, reviews=0, streak=7, heatmap=None):
+            return {"_day_status": status, "today": {"reviews": reviews}, "streak": streak, "heatmap": heatmap or []}
+
+        frozen = [{"frozen": True}, {"frozen": False}]
+        self.assertEqual(moods.Flame.LIT, moods.today_flame(view("met"), moods.Goal.OPEN))
+        self.assertEqual(moods.Flame.LIT, moods.today_flame(view("pending"), moods.Goal.REACHED))
+        self.assertEqual(moods.Flame.UNLIT, moods.today_flame(view("pending"), moods.Goal.OPEN))
+        self.assertEqual(moods.Flame.UNLIT, moods.today_flame(view("pending", 2), moods.Goal.OPEN))
+        self.assertEqual(moods.Flame.ICY, moods.today_flame(view("protected"), moods.Goal.OPEN))
+        self.assertEqual(moods.Flame.ICY, moods.today_flame(view("pending", heatmap=frozen), moods.Goal.OPEN))
+        self.assertEqual(moods.Flame.NONE, moods.today_flame(view("pending", streak=0), moods.Goal.OPEN))
+        self.assertEqual(moods.Flame.NONE, moods.today_flame(view("unknown"), moods.Goal.OPEN))
+        self.assertEqual(moods.Flame.NONE, moods.today_flame(None, moods.Goal.OPEN))
+
     def test_every_mood_is_covered(self):
         covered = {case["expected"]["mood"] for case in self.fixture["moods"]}
         self.assertEqual(set(moods.STREAK_MOODS), covered)

@@ -4,7 +4,6 @@ from pathlib import Path
 
 from aqt.qt import (
     QApplication,
-    QDialog,
     QFileDialog,
     QFont,
     QHBoxLayout,
@@ -102,9 +101,10 @@ def _head(win, companion):
 class Sharing:
     """What the share window's buttons do. The card is fetched once, in the background, and kept."""
 
-    def __init__(self, dialog, api, win, current_client, run, status):
+    def __init__(self, dialog, api, win, current_client, run, status, companion=None):
         self.dialog, self.api, self.win = dialog, api, win
         self.current_client, self.run, self.status = current_client, run, status
+        self._companion = companion
         self.found = None
         self.waiting = []
 
@@ -186,7 +186,7 @@ class Sharing:
 
 def _buttons(sharing):
     friends = QPushButton(tr("Share with friends"))
-    friends.clicked.connect(lambda: sharing.to_friends(friends))
+    friends.clicked.connect(lambda: _route(sharing, lambda: sharing.to_friends(friends)))
     if not share.has_card(sharing.win):
         text = QPushButton(tr("Copy text"))
         text.clicked.connect(sharing.to_text)
@@ -201,28 +201,34 @@ def _buttons(sharing):
     return [friends, copy, save, public]
 
 
+def _route(sharing, legacy):
+    """Existing entry points open the recipient picker only on supporting servers."""
+    from . import moment_share
+    if not sharing.owned():
+        return
+    if moment_share._moment(sharing.win) is None or not hasattr(sharing.api, "capabilities"):
+        legacy()
+        return
+
+    def checked(future):
+        if not sharing.owned():
+            return
+        try:
+            features = future.result()
+        except Exception as error:
+            sharing.status.setText(tr("Couldn't load friends (%s).") % error_text(error))
+            return
+        if moment_share._FEATURE not in features:
+            legacy()
+            return
+        win_dialog(sharing.dialog, sharing.api, sharing.win, sharing._companion, sharing.current_client, sharing.run).show()
+
+    sharing.run(sharing.api.capabilities, checked)
+
+
 def win_dialog(parent, api, win, companion, current_client, run):
-    """A small non-modal window offering the win to friends or as a picture.
-    `current_client()` is the signed-in account now; `run` is mw.taskman.run_in_background."""
-    dialog = QDialog(parent)
-    dialog.setWindowTitle(tr("Share this win"))
-    dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-    layout = QVBoxLayout(dialog)
-    layout.addLayout(_head(win, companion))
-    status = _plain("")
-    layout.addWidget(status)
-    sharing = Sharing(dialog, api, win, current_client, run, status)
-    close = QPushButton(tr("Close"))
-    close.clicked.connect(dialog.close)
-    row = QHBoxLayout()
-    for button in _buttons(sharing):
-        row.addWidget(button)
-    row.addStretch(1)
-    row.addWidget(close)
-    layout.addLayout(row)
-    dialog.sharing = sharing
-    dialog.resize(520, dialog.sizeHint().height())
-    return dialog
+    from . import moment_share_ui
+    return moment_share_ui._dialog(parent, api, win, companion, current_client, run)
 
 
 def _corner(dialog, parent):
@@ -251,8 +257,9 @@ def offer(parent, api, win, companion, current_client, run):
     return dialog
 
 
-def share_toggle(buttons):
-    """A checkable "Share" button and a hidden column of `buttons` that it shows and hides."""
+def share_toggle(sharing, buttons):
+    """A checkable "Share" button and a hidden column of `buttons` that it shows and hides.
+    On servers with the recipient picker, the button opens the picker instead."""
     column = QWidget()
     layout = QVBoxLayout(column)
     layout.setContentsMargins(0, 0, 0, 0)
@@ -261,5 +268,5 @@ def share_toggle(buttons):
     column.hide()
     toggle = QPushButton(tr("Share"))
     toggle.setCheckable(True)
-    toggle.toggled.connect(column.setVisible)
+    toggle.toggled.connect(lambda checked: _route(sharing, lambda: column.setVisible(checked)))
     return toggle, column

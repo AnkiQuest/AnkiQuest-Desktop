@@ -117,7 +117,7 @@ class RevealWindow:
         if found is not None:
             friends, *options = share_ui._buttons(found)
             friends.setText(tr("Tell friends"))
-            self.share, column = share_ui.share_toggle([friends, *options])
+            self.share, column = share_ui.share_toggle(found, [friends, *options])
             buttons.addWidget(self.share)
         later = self.later = QPushButton(tr("Later"))
         later.clicked.connect(dialog.reject)
