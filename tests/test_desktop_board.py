@@ -17,6 +17,9 @@ client = load_module("ankiquest_client_shared", "client.py")
 progress = load_module("ankiquest_progress_shared", "deck_completion.py")
 
 
+# The least the Today panel needs.
+PANEL = {"focus": None, "goal": None, "board": None, "session": None, "art": None, "mood": None}
+
 FIXTURES = json.loads((Path(__file__).resolve().parent / "fixtures" / "clients.json").read_text("utf-8"))
 
 
@@ -33,12 +36,40 @@ class SummaryTests(unittest.TestCase):
         self.assertIn('&quot;', html)
 
     def test_the_deck_list_line_shows_place_level_streak_and_links(self):
-        html = board.html({"level": 4, "xp_into_level": 1200, "xp_for_next": 2000, "streak": 3}, 2, 0)
+        profile = {"level": 4, "xp_into_level": 1200, "xp_for_next": 2000, "streak": 3}
+        html = board.html(profile, 2, 0, flame=board.moods.Flame.LIT)
         self.assertIn("#2 this week", html)
         self.assertIn("Lv 4  1,200/2,000 XP", html)
         self.assertIn("\U0001f525 3 day streak", html)
         self.assertIn("pycmd('ankiquest:web:board')", html)
         self.assertNotIn("ankiquest:web:inbox", html)
+
+    def test_the_flame_is_lit_only_once_today_counts(self):
+        # Grey before today counts, icy blue after a freeze, none without a known day.
+        profile = {"level": 4, "streak": 64}
+        flames = board.moods.Flame
+        for flame, colour in ((flames.UNLIT, "#767676"), (flames.ICY, "#2F86D6"), (flames.NONE, None)):
+            for html in (board.html(profile, flame=flame), board.html(profile, flame=flame, today=PANEL)):
+                with self.subTest(flame=flame, panel="aq-today" in html):
+                    self.assertIn("64 day streak", html)
+                    self.assertNotIn("\U0001f525", html)
+                    if colour is None:
+                        self.assertNotIn("<svg", html)
+                    else:
+                        self.assertIn("fill='%s'" % colour, html)
+        for html in (board.html(profile, flame=flames.LIT), board.html(profile, flame=flames.LIT, today=PANEL)):
+            self.assertIn("\U0001f525 64 day streak", html)
+            self.assertNotIn("<svg", html)
+
+    def test_an_unlit_streak_pill_is_not_orange(self):
+        # The grey and blue flames need a plain background to stand out.
+        html = board.html({"streak": 64}, flame=board.moods.Flame.UNLIT, today=PANEL)
+        self.assertIn("aq-pill aq-streak-unlit", html)
+        self.assertNotIn("aq-pill aq-streak'", html)
+        html = board.html({"streak": 64}, flame=board.moods.Flame.ICY, today=PANEL)
+        self.assertIn("aq-pill aq-streak-icy", html)
+        html = board.html({"streak": 64}, flame=board.moods.Flame.LIT, today=PANEL)
+        self.assertIn("aq-pill aq-streak'", html)
 
     def test_a_waiting_inbox_and_a_risky_streak_are_visible(self):
         html = board.html({"level": 1, "streak": 5, "at_risk": True}, None, 2)

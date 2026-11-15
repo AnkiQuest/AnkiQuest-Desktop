@@ -75,6 +75,33 @@ class DayState(unittest.TestCase):
         self.assertNotIn("Protected by a freeze", html)
         self.assertIn("Streak unknown", html)
 
+    def test_the_flame_follows_todays_mood(self):
+        # Short of the minimum: grey; counted: lit; a freeze: icy blue; an ended day: none.
+        self.pending_day()
+        html = self.render().stats
+        self.assertIn("7 day streak", html)
+        self.assertNotIn("\U0001f525 7 day streak", html)
+        self.assertIn("fill='#767676'", html)
+        self.addon.state["profile"].update(streak_state="studied")
+        self.assertIn("\U0001f525 7 day streak", self.render().stats)
+        # A freeze with no study yet; any review would make Aki hopeful and the flame grey.
+        self.addon.state["profile"].update(streak_state="protected", at_risk=False)
+        self.addon.state["profile"]["today"].update(reviews=0, time_ms=0, minutes=0)
+        self.assertIn("fill='#2F86D6'", self.render().stats)
+        self.addon.state["profile"]["day_ends_at"] = int(time.time() * 1000) - 1
+        html = self.render().stats
+        self.assertNotIn("<svg", html)
+        self.assertNotIn("\U0001f525 7 day streak", html)
+
+    def test_without_the_collection_the_servers_goal_lights_the_flame(self):
+        # The deck list line falls back to the server's goal when the collection cannot be read.
+        self.pending_day()
+        flames = self.home.moods.Flame
+        view = self.home._profile_for_display(self.addon.state["profile"])
+        self.assertEqual(flames.UNLIT, self.home.streak_flame(view))
+        self.addon.state["profile"]["goal"] = {"reached": True}
+        self.assertEqual(flames.LIT, self.home.streak_flame(view))
+
     def test_the_session_day_waits_for_upload_and_expires_with_the_profile(self):
         self.pending_day()
         finished = int(time.time() * 1000) - 1
