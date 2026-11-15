@@ -24,6 +24,9 @@ WINDOW_SQL = (
 )
 PENDING_SQL = WINDOW_SQL + " limit %d" % MAX_PENDING
 COUNT_SQL = "select count(*) from revlog " + REVIEW_FILTER
+# Why the server left other players out of an answer: "upload_first" until the player's
+# first uploaded review, "sign_in" for nobody signed in. Absent otherwise.
+LOCK_HEADER = "X-Ankiquest-Locked"
 
 
 def offset_west_min():
@@ -67,6 +70,21 @@ def open_url(url, data=None, headers=None, method=None, timeout=20):
         raise ServerError(error.code, _error_text(error)) from None
 
 
+class Rows(list):
+    """A list answer, and why the server left other players out of it (LOCK_HEADER)."""
+    locked = None
+
+
+def _locked(answer, response):
+    # A list answer keeps the lock with its rows; an object answer names it itself.
+    lock = (getattr(response, "headers", None) or {}).get(LOCK_HEADER)
+    if lock is None or not isinstance(answer, list):
+        return answer
+    rows = Rows(answer)
+    rows.locked = lock
+    return rows
+
+
 def request_json(url, body=None, headers=None, timeout=20, method=None):
     """Sends `body` as JSON (a GET when it is None, else a POST unless `method` says otherwise)
     and returns the decoded answer."""
@@ -75,7 +93,7 @@ def request_json(url, body=None, headers=None, timeout=20, method=None):
     with open_url(url, data, headers, method=method, timeout=timeout) as response:
         if response.status == HTTPStatus.NO_CONTENT:
             return None
-        return json.load(response)
+        return _locked(json.load(response), response)
 
 
 def _local_host(host):

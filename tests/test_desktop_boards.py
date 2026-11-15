@@ -31,6 +31,16 @@ class Boards(unittest.TestCase):
         self.assertEqual([(1, 107), (12, 20)], [(place, row["xp"]) for place, row, _ in found["rows"]])
         self.api.leaderboard.assert_called_once_with(period="day", scope="friends")
 
+    def test_a_player_who_never_uploaded_is_told_to_study_first(self):
+        class Locked(list):
+            locked = "upload_first"
+
+        self.api.leaderboard.return_value = Locked(example("leaderboard_locked"))
+        html = self.render().stats
+        self.assertIn("Study and sync once to see how others are doing.", html)
+        self.assertNotIn("Nobody else plays yet.", html)
+        self.assertNotIn("Add friends to study together", html)
+
     def test_a_hidden_own_row_explains_its_visibility(self):
         self.api.name = self.api.user = "ana"
         self.api.leaderboard.return_value = example("leaderboard_global_hidden")
