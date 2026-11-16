@@ -10,9 +10,11 @@ from enum import Enum, auto
 
 WELCOME, REVIEW, CELEBRATE, STREAK, FREEZE, WINNER = "welcome", "review", "celebrate", "streak", "freeze", "winner"
 
+MOODS = (WELCOME, REVIEW, CELEBRATE, STREAK, FREEZE, WINNER)
+
+# Each mood's line. Cards due (REVIEW) get none: the next-step card below already says what to do.
 MESSAGES = {
     WELCOME: "Aki is here to help. One card, one small step.",
-    REVIEW: "A small step starts with one card.",
     CELEBRATE: "Your cards are done for now. Nice work!",
     STREAK: "You showed up today. That is progress worth keeping.",
     FREEZE: "Your streak is protected by a freeze. A fresh start is waiting.",
@@ -262,11 +264,14 @@ def preview(companion):
 
 def art(companion, chosen):
     """The file name, without folder or extension, of `companion`'s art for a mood; None for no companion."""
-    return companion_pose(companion, "aki_" + chosen if chosen in MESSAGES else "aki_welcome")
+    return companion_pose(companion, "aki_" + chosen if chosen in MOODS else "aki_welcome")
 
 
 def message(companion, chosen):
-    """The mood line; the welcome names Aki, so other companions get a plainer one."""
+    """The mood line, or None for a mood without one; the welcome names Aki, so other
+    companions get a plainer one."""
+    if chosen == REVIEW:
+        return None
     if chosen == WELCOME and companion != AKI:
         return COMPANION_WELCOME
     return MESSAGES.get(chosen, MESSAGES[WELCOME])

@@ -509,12 +509,13 @@ def today_view(deck_browser, chosen_companion):
     mood = moods.mood([day.due for day in days], focus.due if focus else 0, profile, now_ms())
     goal = moods.Goal.REACHED if status.goal_done else moods.Goal.OPEN
     pose = moods.companion_pose(chosen_companion, moods.today_pose(profile, goal))
+    line = moods.message(chosen_companion, mood) if chosen_companion != "none" else None
     session = last_session(api)
     return {
         "profile": profile,
         "art": _pose_url(pose),
         "flame": moods.today_flame(profile, goal),
-        "mood": tr(moods.message(chosen_companion, mood)) if chosen_companion != "none" else None,
+        "mood": tr(line) if line else None,
         "winner": art_url(chosen_companion, moods.WINNER),
         "focus": focus_view(focus),
         "goal": goal_view(status),

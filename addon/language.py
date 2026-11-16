@@ -540,7 +540,6 @@ def _hour(hour):
 
 SPANISH.update({
     "Aki is here to help. One card, one small step.": "Aki está aquí para ayudarte. Una tarjeta, un pequeño paso.",
-    "A small step starts with one card.": "Un pequeño paso empieza con una tarjeta.",
     "Your cards are done for now. Nice work!": "Ya terminaste tus tarjetas por ahora. ¡Buen trabajo!",
     "You showed up today. That is progress worth keeping.": "Hoy estuviste presente. Ese progreso vale la pena.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Un protector mantiene tu racha. Te espera un nuevo comienzo.",
@@ -587,7 +586,6 @@ SPANISH.update({
 
 GERMAN.update({
     "Aki is here to help. One card, one small step.": "Aki ist für dich da. Eine Karte, ein kleiner Schritt.",
-    "A small step starts with one card.": "Ein kleiner Schritt beginnt mit einer Karte.",
     "Your cards are done for now. Nice work!": "Deine Karten sind für jetzt erledigt. Gut gemacht!",
     "You showed up today. That is progress worth keeping.": "Du warst heute da. Dieser Fortschritt zählt.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Ein Schutz hält deine Serie. Ein Neustart wartet.",
@@ -632,7 +630,6 @@ GERMAN.update({
 
 FRENCH.update({
     "Aki is here to help. One card, one small step.": "Aki est là pour t’aider. Une carte, un petit pas.",
-    "A small step starts with one card.": "Un petit pas commence par une carte.",
     "Your cards are done for now. Nice work!": "Tes cartes sont terminées pour l’instant. Bravo !",
     "You showed up today. That is progress worth keeping.": "Tu étais là aujourd’hui. Ce progrès compte.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Une protection garde ta série. Un nouveau départ t’attend.",
@@ -677,7 +674,6 @@ FRENCH.update({
 
 PORTUGUESE.update({
     "Aki is here to help. One card, one small step.": "O Aki está aqui para ajudar. Uma carta, um pequeno passo.",
-    "A small step starts with one card.": "Um pequeno passo começa com uma carta.",
     "Your cards are done for now. Nice work!": "As tuas cartas estão feitas por agora. Bom trabalho!",
     "You showed up today. That is progress worth keeping.": "Apareceste hoje. Esse progresso conta.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Uma proteção guarda a tua sequência. Um recomeço espera-te.",
@@ -2023,7 +2019,6 @@ FRENCH.update({
 PORTUGUESE.update({
     "Don’t show this again": "Não voltar a mostrar",
     "Aki is here to help. One card, one small step.": "Aki está aqui para te ajudar. Um cartão, um pequeno passo.",
-    "A small step starts with one card.": "Um pequeno passo começa com um cartão.",
     "Your cards are done for now. Nice work!": "Já terminaste os cartões por agora. Bom trabalho!",
     "You showed up today. That is progress worth keeping.": "Estudaste hoje. Vale a pena preservar esse progresso.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Uma proteção salvou a tua sequência. Um novo começo espera por ti.",
