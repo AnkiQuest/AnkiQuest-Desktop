@@ -1,7 +1,9 @@
 """One upload at a time: a refresh asked for during an upload runs once it ends, with what was asked."""
 
+import ssl
 import time
 import unittest
+import urllib.error
 from copy import deepcopy
 from http import HTTPStatus
 from types import SimpleNamespace
@@ -261,6 +263,18 @@ class UploadBatches(HeldTasks):
 
         self.assertEqual(2, self.api.upload.call_count)
         self.assertNotIn("will retry", self.addon._upload_status(self.api))
+
+    def test_a_certificate_for_another_name_is_not_called_offline(self):
+        # A server address whose host now serves another site's certificate looked offline.
+        mismatch = ssl.SSLCertVerificationError(1, "certificate verify failed: Hostname mismatch")
+        self.api.upload.side_effect = [urllib.error.URLError(mismatch), {}]
+        self.addon.refresh(False)
+        self.finish()
+
+        status = self.addon._upload_status(self.api)
+        self.assertNotIn("Offline", status)
+        self.assertIn("certificate", status)
+        self.assertIn("will retry", status)
 
     def test_unauthorized_upload_asks_for_sign_in_until_the_token_changes(self):
         self.api.upload.side_effect = [self.addon.ServerError(HTTPStatus.UNAUTHORIZED, "unauthorized"), {}]

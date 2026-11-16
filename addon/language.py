@@ -1111,6 +1111,7 @@ SPANISH.update({
     "Could not upload review history (%s).": "No se pudo subir el historial de repasos (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Vuelve a iniciar sesión en AnkiQuest para reanudar las subidas.",
     "Offline, will retry": "Sin conexión. Se volverá a intentar",
+    "The server's certificate is not valid for its address, will retry": "El certificado del servidor no es válido para su dirección. Se volverá a intentar",
     "Last upload failed (%s), will retry": "Falló la última subida (%s). Se volverá a intentar",
     "Last upload failed (%s)": "Falló la última subida (%s)",
 })
@@ -1121,6 +1122,7 @@ GERMAN.update({
     "Could not upload review history (%s).": "Der Wiederholungsverlauf konnte nicht hochgeladen werden (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Melde dich erneut bei AnkiQuest an, um Uploads fortzusetzen.",
     "Offline, will retry": "Offline. Erneuter Versuch folgt",
+    "The server's certificate is not valid for its address, will retry": "Das Zertifikat des Servers gilt nicht für seine Adresse. Erneuter Versuch folgt",
     "Last upload failed (%s), will retry": "Letzter Upload fehlgeschlagen (%s). Erneuter Versuch folgt",
     "Last upload failed (%s)": "Letzter Upload fehlgeschlagen (%s)",
 })
@@ -1131,6 +1133,7 @@ FRENCH.update({
     "Could not upload review history (%s).": "Impossible d’envoyer l’historique des révisions (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Reconnecte-toi à AnkiQuest pour reprendre les envois.",
     "Offline, will retry": "Hors ligne. Nouvel essai prévu",
+    "The server's certificate is not valid for its address, will retry": "Le certificat du serveur n’est pas valide pour son adresse. Nouvel essai prévu",
     "Last upload failed (%s), will retry": "Échec du dernier envoi (%s). Nouvel essai prévu",
     "Last upload failed (%s)": "Échec du dernier envoi (%s)",
 })
@@ -1141,6 +1144,7 @@ PORTUGUESE.update({
     "Could not upload review history (%s).": "Não foi possível enviar o histórico de revisões (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Volta a iniciar sessão no AnkiQuest para retomar os envios.",
     "Offline, will retry": "Sem ligação. Nova tentativa em breve",
+    "The server's certificate is not valid for its address, will retry": "O certificado do servidor não é válido para o seu endereço. Nova tentativa em breve",
     "Last upload failed (%s), will retry": "O último envio falhou (%s). Nova tentativa em breve",
     "Last upload failed (%s)": "O último envio falhou (%s)",
 })

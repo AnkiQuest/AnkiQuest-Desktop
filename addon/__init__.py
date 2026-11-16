@@ -1,5 +1,6 @@
 import html
 import platform
+import ssl
 import sys
 import tempfile
 import time
@@ -299,6 +300,12 @@ def _retry_upload(waiting):
     _request_upload(waiting.request, attempts=waiting.attempts)
 
 
+def _bad_certificate(error):
+    """Whether `error` is a certificate the server's address cannot be verified with, which
+    urllib wraps in a URLError. That is a server or address problem, not being offline."""
+    return isinstance(getattr(error, "reason", error), ssl.SSLCertVerificationError)
+
+
 def _upload_failed(upload, error):
     # Recover from transient failures without re-sending on every answer.
     print("ankiquest:", error)
@@ -310,6 +317,8 @@ def _upload_failed(upload, error):
         return
     elif isinstance(error, ServerError) and (error.status == HTTPStatus.TOO_MANY_REQUESTS or error.status >= HTTPStatus.INTERNAL_SERVER_ERROR):
         message = tr("Last upload failed (%s), will retry") % error
+    elif _bad_certificate(error):
+        message = tr("The server's certificate is not valid for its address, will retry")
     elif isinstance(error, OSError):
         message = tr("Offline, will retry")
     else:
