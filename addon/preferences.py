@@ -63,6 +63,7 @@ class _AlertChange(Enum):
 class _AlertResult(Enum):
     CHANGED = auto()
     UNCHANGED = auto()
+    UNAVAILABLE = auto()
     STALE = auto()
 
 
@@ -78,7 +79,9 @@ def _change_alert(api, sender, change, owns):
         raise ValueError("missing deck alert preference")
     people, before = alert_senders(fresh)
     if change is _AlertChange.STOP:
-        if sender in before or sender not in {user for user, _ in people}:
+        if sender not in {user for user, _ in people}:
+            return _AlertResult.UNAVAILABLE
+        if sender in before:
             return _AlertResult.UNCHANGED
         after = before | {sender}
     else:

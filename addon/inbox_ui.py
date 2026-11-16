@@ -309,6 +309,7 @@ class _AlertState(Enum):
     STOPPED = auto()
     RESTORING = auto()
     ALREADY_STOPPED = auto()
+    UNAVAILABLE = auto()
 
 
 class _DeckAlerts:
@@ -316,7 +317,7 @@ class _DeckAlerts:
         self._sender, self._context, self._status = sender, context, status
         self._identity = (context.api.base, context.api.user, context.api.token)
         self._state = _AlertState.READY
-        self._button = QPushButton(tr("Stop deck alerts"))
+        self._button = QPushButton(tr("Stop deck alerts from %s") % sender)
         self._button.clicked.connect(self._clicked)
 
     def _owns(self):
@@ -324,8 +325,10 @@ class _DeckAlerts:
         return self._context._owns() and self._identity == (api.base, api.user, api.token)
 
     def _controls(self):
-        self._button.setText(tr("Undo") if self._state is _AlertState.STOPPED else tr("Stop deck alerts"))
+        label = tr("Undo") if self._state is _AlertState.STOPPED else tr("Stop deck alerts from %s") % self._sender
+        self._button.setText(label)
         self._button.setEnabled(self._state in (_AlertState.READY, _AlertState.STOPPED))
+        self._button.setVisible(self._state not in (_AlertState.ALREADY_STOPPED, _AlertState.UNAVAILABLE))
 
     def _clicked(self):
         if not self._owns() or self._state not in (_AlertState.READY, _AlertState.STOPPED):
@@ -361,15 +364,18 @@ class _DeckAlerts:
         if result is preferences._AlertResult.STALE:
             self._state = before
             self._status.clear()
+        elif result is preferences._AlertResult.UNAVAILABLE:
+            self._state = _AlertState.UNAVAILABLE
+            self._status.setText(tr("%s no longer shares deck alerts.") % self._sender)
         elif before is _AlertState.STOPPED:
             self._state = _AlertState.READY
-            self._status.setText(tr("Deck alerts restored."))
+            self._status.setText(tr("You'll get deck alerts from %s again.") % self._sender)
         elif result is preferences._AlertResult.CHANGED:
             self._state = _AlertState.STOPPED
-            self._status.setText(tr("Deck alerts stopped."))
+            self._status.setText(tr("You won't get deck alerts from %s.") % self._sender)
         else:
             self._state = _AlertState.ALREADY_STOPPED
-            self._status.setText(tr("Deck alerts are already stopped."))
+            self._status.setText(tr("You aren't getting deck alerts from %s.") % self._sender)
         self._controls()
 
 

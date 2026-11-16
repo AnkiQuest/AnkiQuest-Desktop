@@ -205,7 +205,7 @@ class DeckAlerts(unittest.TestCase):
         return row
 
     def stop(self, row):
-        return next(button for button in row.findChildren(QPushButton) if button.text() == "Stop deck alerts")
+        return next(button for button in row.findChildren(QPushButton) if button.text() == "Stop deck alerts from ana")
 
     def undo(self, row):
         return next(button for button in row.findChildren(QPushButton) if button.text() == "Undo")
@@ -220,12 +220,28 @@ class DeckAlerts(unittest.TestCase):
         self.assertNotIn("Undo", [b.text() for b in row.findChildren(QPushButton)])
         self.finish()
         self.assertEqual(["ana", "other"], self.calls[-1][1]["unsubscribed_senders"])
+        self.assertIn("You won't get deck alerts from ana.", [label.text() for label in row.findChildren(QLabel)])
         self.choices.update(enabled=False)
         self.choices["unsubscribed_senders"].append("remote")
         self.undo(row).click()
         self.finish()
         self.assertEqual({"enabled": False, "unsubscribed_senders": ["other", "remote"]}, self.calls[-1][1])
         self.assertTrue(self.stop(row).isEnabled())
+        self.assertIn("You'll get deck alerts from ana again.", [label.text() for label in row.findChildren(QLabel)])
+
+    def test_action_names_the_sender(self):
+        row = self.row()
+        self.assertIn("Stop deck alerts from ana", [b.text() for b in row.findChildren(QPushButton)])
+
+    def test_missing_sender_is_explained(self):
+        row = self.row()
+        self.choices["sharing_senders"] = []
+        self.stop(row).click()
+        self.finish()
+        self.assertIn("ana no longer shares deck alerts.", [label.text() for label in row.findChildren(QLabel)])
+        self.assertNotIn("Undo", [b.text() for b in row.findChildren(QPushButton)])
+        self.assertEqual(1, len(self.calls))
+        self.assertTrue(self.stop(row).isHidden())
 
     def test_failed_stop_retries(self):
         row = self.row()
@@ -253,6 +269,7 @@ class DeckAlerts(unittest.TestCase):
         self.finish()
         self.assertEqual(1, len(self.calls))
         self.assertNotIn("Undo", [b.text() for b in row.findChildren(QPushButton)])
+        self.assertTrue(self.stop(row).isHidden())
 
     def test_old_queue_cannot_write(self):
         row = self.row()
@@ -327,7 +344,7 @@ class DeckAlerts(unittest.TestCase):
         for changes in ({"sender": "hill"}, {"sender": ""}, {"kind": "reply"}, {"kind": "share"}):
             with self.subTest(changes=changes):
                 row = self.row(**changes)
-                self.assertNotIn("Stop deck alerts", [b.text() for b in row.findChildren(QPushButton)])
+                self.assertFalse(any(b.text().startswith("Stop deck alerts from ") for b in row.findChildren(QPushButton)))
 
     def test_live_inbox_keeps_action(self):
         self.page["items"][0]["kind"] = "completion"
@@ -335,7 +352,7 @@ class DeckAlerts(unittest.TestCase):
         self.dialog.reload()
         self.finish()
         gc.collect()
-        button = next(b for b in self.dialog.findChildren(QPushButton) if b.text() == "Stop deck alerts")
+        button = next(b for b in self.dialog.findChildren(QPushButton) if b.text() == "Stop deck alerts from ana")
         button.click()
         self.assertEqual(1, len(self.tasks))
         self.finish()

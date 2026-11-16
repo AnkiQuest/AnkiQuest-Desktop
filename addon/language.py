@@ -2097,30 +2097,34 @@ PORTUGUESE.update({
 
 # Received deck alerts share Android's Stop and Undo wording.
 SPANISH.update({
-    "Stop deck alerts": "Dejar de recibir avisos de mazos",
-    "Deck alerts stopped.": "Avisos de mazos desactivados.",
-    "Deck alerts restored.": "Avisos de mazos restaurados.",
-    "Deck alerts are already stopped.": "Los avisos de mazos ya están desactivados.",
+    "Stop deck alerts from %s": "Dejar de recibir avisos de mazos de %s",
+    "You won't get deck alerts from %s.": "No recibirás avisos de mazos de %s.",
+    "You'll get deck alerts from %s again.": "Volverás a recibir avisos de mazos de %s.",
+    "You aren't getting deck alerts from %s.": "Ya no recibes avisos de mazos de %s.",
+    "%s no longer shares deck alerts.": "%s ya no comparte avisos de mazos.",
     "Couldn't change deck alerts. Try again.": "No se pudieron cambiar los avisos de mazos. Inténtalo de nuevo.",
 })
 GERMAN.update({
-    "Stop deck alerts": "Stapelmeldungen stoppen",
-    "Deck alerts stopped.": "Stapelmeldungen gestoppt.",
-    "Deck alerts restored.": "Stapelmeldungen wieder aktiviert.",
-    "Deck alerts are already stopped.": "Stapelmeldungen sind bereits gestoppt.",
+    "Stop deck alerts from %s": "Stapelmeldungen von %s stoppen",
+    "You won't get deck alerts from %s.": "Du erhältst keine Stapelmeldungen mehr von %s.",
+    "You'll get deck alerts from %s again.": "Du erhältst wieder Stapelmeldungen von %s.",
+    "You aren't getting deck alerts from %s.": "Du erhältst bereits keine Stapelmeldungen von %s.",
+    "%s no longer shares deck alerts.": "%s teilt keine Stapelmeldungen mehr.",
     "Couldn't change deck alerts. Try again.": "Stapelmeldungen konnten nicht geändert werden. Versuche es erneut.",
 })
 FRENCH.update({
-    "Stop deck alerts": "Arrêter les alertes de paquets",
-    "Deck alerts stopped.": "Alertes de paquets arrêtées.",
-    "Deck alerts restored.": "Alertes de paquets rétablies.",
-    "Deck alerts are already stopped.": "Les alertes de paquets sont déjà arrêtées.",
+    "Stop deck alerts from %s": "Arrêter les alertes de paquets de %s",
+    "You won't get deck alerts from %s.": "Tu ne recevras plus d’alertes de paquets de %s.",
+    "You'll get deck alerts from %s again.": "Tu recevras à nouveau les alertes de paquets de %s.",
+    "You aren't getting deck alerts from %s.": "Tu ne reçois déjà plus d’alertes de paquets de %s.",
+    "%s no longer shares deck alerts.": "%s ne partage plus d’alertes de paquets.",
     "Couldn't change deck alerts. Try again.": "Impossible de modifier les alertes de paquets. Réessaie.",
 })
 PORTUGUESE.update({
-    "Stop deck alerts": "Parar avisos de baralhos",
-    "Deck alerts stopped.": "Avisos de baralhos desativados.",
-    "Deck alerts restored.": "Avisos de baralhos restaurados.",
-    "Deck alerts are already stopped.": "Os avisos de baralhos já estão desativados.",
+    "Stop deck alerts from %s": "Parar avisos de baralhos de %s",
+    "You won't get deck alerts from %s.": "Não receberás avisos de baralhos de %s.",
+    "You'll get deck alerts from %s again.": "Voltarás a receber avisos de baralhos de %s.",
+    "You aren't getting deck alerts from %s.": "Já não recebes avisos de baralhos de %s.",
+    "%s no longer shares deck alerts.": "%s já não partilha avisos de baralhos.",
     "Couldn't change deck alerts. Try again.": "Não foi possível alterar os avisos de baralhos. Tenta novamente.",
 })

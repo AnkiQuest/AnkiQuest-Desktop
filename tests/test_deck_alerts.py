@@ -40,12 +40,13 @@ class DeckAlerts(unittest.TestCase):
         self.assertEqual({"enabled": True, "unsubscribed_senders": ["legacy", "other", "remote"]}, self.sent[-1][1])
 
     def test_no_new_subscription(self):
-        for updates in ({"unsubscribed_senders": ["ana"]}, {"sharing_senders": []}):
+        for updates, expected in (({"unsubscribed_senders": ["ana"]}, prefs._AlertResult.UNCHANGED),
+                                  ({"sharing_senders": []}, prefs._AlertResult.UNAVAILABLE)):
             with self.subTest(updates=updates):
                 self.fresh.update(unsubscribed_senders=[], sharing_senders=["ana"])
                 self.fresh.update(updates)
                 self.sent.clear()
-                self.assertIs(prefs._AlertResult.UNCHANGED, self.change(prefs._AlertChange.STOP))
+                self.assertIs(expected, self.change(prefs._AlertChange.STOP))
                 self.assertEqual(1, len(self.sent))
                 self.assertIsNone(self.sent[0][1])
 
