@@ -28,13 +28,16 @@ class Picker(unittest.TestCase):
     def setUp(self):
         self.answer = LOCKED
         self.api = SimpleNamespace(
-            base="https://example.test", name="hill",
+            base="https://example.test", user="hill", token="secret", name="hill",
             capabilities=Mock(return_value=UNLOCKS), companion=Mock(return_value="aki"),
             unlocks=Mock(side_effect=lambda: self.answer), set_companion=Mock(),
             unlock=Mock(side_effect=lambda unlock: self.answer),
         )
         self.mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=self.run_task))
         self.saved = []
+        # The client signed in now; a sign-out or account switch replaces it.
+        self.current = self.api
+        self.queued = []
 
     def run_task(self, work, done):
         future = Future()
@@ -45,7 +48,7 @@ class Picker(unittest.TestCase):
         done(future)
 
     def picker(self):
-        return companion_ui.Picker(None, self.mw, self.api, "aki", self.saved.append)
+        return companion_ui.Picker(None, self.mw, self.api, lambda: self.current, "aki", self.saved.append)
 
     def cards(self, picker):
         """The cards in the order the picker shows them."""
@@ -91,7 +94,7 @@ class Picker(unittest.TestCase):
     def test_the_current_companion_shows_before_the_server_answers(self):
         self.api.capabilities.side_effect = OSError("offline")
         self.api.companion.return_value = "cow"
-        picker = companion_ui.Picker(None, self.mw, self.api, "cow", self.saved.append)
+        picker = companion_ui.Picker(None, self.mw, self.api, lambda: self.current, "cow", self.saved.append)
         self.assertEqual(["aki", "cow", "none"], self.cards(picker))
         self.assertEqual("cow", picker.chosen())
 
@@ -129,7 +132,7 @@ class Picker(unittest.TestCase):
         self.answer = {"unlocks": unlocks, "progress": {}}
         self.api.companion.return_value = "anki_tan"
         clock = [0]
-        picker = companion_ui.Picker(None, self.mw, self.api, "anki_tan", self.saved.append, motion=motion, clock=lambda: clock[0])
+        picker = companion_ui.Picker(None, self.mw, self.api, lambda: self.current, "anki_tan", self.saved.append, motion=motion, clock=lambda: clock[0])
         return picker, clock
 
     def test_tapping_an_unlocked_base_hints_and_finds_her_chibi(self):
@@ -149,6 +152,59 @@ class Picker(unittest.TestCase):
         self.assertEqual("anki_tan_chibi", art.property("companion"))
         self.assertTrue(picker._hint.isHidden())
         self.api.unlock.assert_called_once_with("anki_tan_chibi")
+
+    def queue(self):
+        """Holds background work in `self.queued` instead of running it."""
+        self.mw.taskman.run_in_background = lambda work, done: self.queued.append((work, done))
+
+    def run_queued(self):
+        for work, done in self.queued:
+            self.run_task(work, done)
+        self.queued = []
+
+    def test_a_profile_change_cancels_a_queued_chibi_unlock(self):
+        picker, clock = self.egg(["anki_tan"])
+        self.queue()
+        self.tap(picker, 9, clock)
+        self.mw.pm.profile = {}
+        self.run_queued()
+        self.api.unlock.assert_not_called()
+
+    def test_an_account_switch_cancels_a_queued_chibi_unlock(self):
+        picker, clock = self.egg(["anki_tan"])
+        self.queue()
+        self.tap(picker, 9, clock)
+        self.current = SimpleNamespace(base=self.api.base, user="other", token="other")
+        self.run_queued()
+        self.api.unlock.assert_not_called()
+
+    def test_an_account_switch_cancels_a_queued_save(self):
+        self.answer = {"unlocks": ["cow"], "progress": {}}
+        picker = self.picker()
+        self.card(picker, "cow").click()
+        self.queue()
+        picker._save()
+        self.current = SimpleNamespace(base=self.api.base, user="other", token="other")
+        self.run_queued()
+        self.api.set_companion.assert_not_called()
+        self.assertEqual([], self.saved)
+
+    def test_a_late_chibi_unlock_reply_is_dropped(self):
+        # The reply arrives after the profile changed: the stale picker shows nothing of it.
+        picker, clock = self.egg(["anki_tan"])
+        self.api.unlock.side_effect = OSError("offline")
+        self.queue()
+        self.tap(picker, 9, clock)
+        ((work, done),) = self.queued
+        future = Future()
+        try:
+            future.set_result(work())
+        except OSError as error:
+            future.set_exception(error)
+        self.mw.pm.profile = {}
+        done(future)
+        self.api.unlock.assert_called_once_with("anki_tan_chibi")
+        self.assertTrue(picker._status.isHidden())
 
     def test_the_chibi_pops_in_unless_motion_is_reduced(self):
         picker, clock = self.egg(["anki_tan"], companion_reveal.Motion.FULL)

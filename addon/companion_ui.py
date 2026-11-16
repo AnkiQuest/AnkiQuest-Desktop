@@ -15,7 +15,7 @@ from aqt.qt import (
     QButtonGroup, QDialog, QEasingCurve, QHBoxLayout, QLabel, QPushButton, QVariantAnimation, QVBoxLayout, QWidget, Qt,
 )
 
-from . import companion_art, companion_unlock, moods
+from . import companion_art, companion_unlock, moods, share_ui
 from .companion_reveal import Motion
 from .companion_unlock import Choice
 from .language import tr
@@ -152,11 +152,14 @@ def _today(companion, mood, streak):
 
 class Picker:
     """The companion tab for `api`'s account, `today` being the streak mood and streak
-    (moods.today_mood). `on_saved(companion)` runs after a save. `motion` says whether a found
-    chibi pops in; `clock` answers milliseconds for counting taps."""
+    (moods.today_mood). `client()` answers the signed-in client; the tab's server work runs only
+    while that is still `api`'s account and the profile it opened for. `on_saved(companion)` runs
+    after a save. `motion` says whether a found chibi pops in; `clock` answers milliseconds for
+    counting taps."""
 
-    def __init__(self, parent, mw, api, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL, clock=None):
-        self._mw, self._api, self._on_saved = mw, api, on_saved
+    def __init__(self, parent, mw, api, client, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL, clock=None):
+        self._mw, self._api, self._client, self._on_saved = mw, api, client, on_saved
+        self._profile = mw.pm.profile
         self._loaded = current
         # None until the server answers; until then only the current companion is offered.
         self._found = None
@@ -205,7 +208,16 @@ class Picker:
         layout.addLayout(buttons)
 
         self._show_cards(current)
-        mw.taskman.run_in_background(lambda: _load(api), self._arrived)
+        self._run(lambda: _load(api), self._arrived)
+
+    def _owns(self):
+        """Whether `api`'s account is still signed in on the profile the tab opened for."""
+        return self._profile is self._mw.pm.profile and share_ui.same_account(self._api, self._client())
+
+    def _run(self, work, done):
+        """Runs `work` in the background for this tab's account and profile; a sign-out or
+        profile change cancels it, even once queued, and drops its reply."""
+        share_ui.run_owned(self._mw.taskman.run_in_background, self._owns, work, done)
 
     def _show_cards(self, selected):
         """One card per companion the picker offers, in its order, `selected` checked."""
@@ -251,7 +263,7 @@ class Picker:
         if tapped.chibi is None:
             return
         self._become(art, base, tapped.chibi)
-        self._mw.taskman.run_in_background(lambda: self._api.unlock(tapped.chibi), self._unlocked)
+        self._run(lambda: self._api.unlock(tapped.chibi), self._unlocked)
 
     def _become(self, art, base, chibi):
         """Swaps the picture for the chibi's, popping in unless motion is reduced."""
@@ -296,8 +308,13 @@ class Picker:
         if chosen is None or chosen == self._loaded:
             self.dialog.accept()
             return
+
+        # A tab left open across a sign-out or profile change saves nothing.
+        if not self._owns():
+            self.dialog.reject()
+            return
         self._save_button.setEnabled(False)
-        self._mw.taskman.run_in_background(lambda: self._api.set_companion(chosen), lambda future: self._saved(future, chosen))
+        self._run(lambda: self._api.set_companion(chosen), lambda future: self._saved(future, chosen))
 
     def _saved(self, future, chosen):
         try:
@@ -314,9 +331,10 @@ class Picker:
         self.dialog.accept()
 
 
-def open_picker(parent, mw, api, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL):
-    """Shows the companion tab for `api`'s account and returns it."""
-    picker = Picker(parent, mw, api, current, on_saved, today, motion)
+def open_picker(parent, mw, api, client, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL):
+    """Shows the companion tab for `api`'s account and returns it; `client()` answers the
+    signed-in client."""
+    picker = Picker(parent, mw, api, client, current, on_saved, today, motion)
     picker.dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
     picker.dialog.show()
     return picker

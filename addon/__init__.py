@@ -1174,7 +1174,7 @@ def open_companion(parent=None):
         _companion_saved(account, companion)
 
     motion = reveal_ui.motion(config())
-    return companion_ui.open_picker(parent or mw, mw, api, current_companion(), saved, home.today_mood(), motion)
+    return companion_ui.open_picker(parent or mw, mw, api, client, current_companion(), saved, home.today_mood(), motion)
 
 
 def choose_companion(api, companion, run):
