@@ -95,7 +95,7 @@ class Announcements(unittest.TestCase):
         cases = json.loads(path.read_text("utf-8"))["cases"]
         self.assertTrue(cases)
         for case in cases:
-            for offset in (-120, 0, 180):
+            for offset in (-330, -120, 0, 180):
                 with self.subTest(case=case["name"], offset=offset):
                     settings = {"quiet_start": case["start"], "quiet_end": case["end"]}
                     # Exercise local-hour conversion on both sides of UTC.
