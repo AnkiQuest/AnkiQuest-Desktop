@@ -5,7 +5,7 @@ from enum import Enum, auto
 
 from aqt.qt import QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QScrollArea, QTimer, QVBoxLayout, QWidget, Qt
 
-from . import companion_art, companion_reveal, conquests_ui, inbox, moments, reveal_ui, share_ui, today
+from . import companion_art, companion_reveal, conquests_ui, deck_moments_ui, inbox, moments, reveal_ui, share_ui, today
 from .language import tr
 
 _RESTING = ("overview", "deckBrowser", "congrats")
@@ -39,6 +39,7 @@ class _Presenter:
         self._profile = None
         self._card = None
         self._reveal = None
+        self._completion = None
         self._phase = _Phase.READY
         self._permission = _Permission.UNKNOWN
         self._origin = _Origin.AUTOMATIC
@@ -56,6 +57,7 @@ class _Presenter:
 
     def _clear(self):
         card, self._card = self._card, None
+        self._close_completion()
         self._close_reveal()
         self._owner = self._profile = self._request = self._summary = None
         self._phase, self._permission = _Phase.READY, _Permission.UNKNOWN
@@ -77,9 +79,25 @@ class _Presenter:
         moments._offer(profile, self._owner[:2], items)
         if summary is not None:
             self._summary = summary
+            self._offer_completion(api, summary)
         if any(not item.get("local") for item in items):
             self._refresh_permission()
         self._schedule()
+
+    def _offer_completion(self, api, summary):
+        if not deck_moments_ui.deck_moments._prompt_due(self._profile, api, summary):
+            return
+        key = (summary["day"], summary["deck"]["id"])
+        if self._completion is not None and self._completion._key == key:
+            return
+        self._close_completion()
+        self._completion = deck_moments_ui._Prompt(self, api, summary)
+        self._completion._start()
+
+    def _close_completion(self):
+        prompt, self._completion = self._completion, None
+        if prompt is not None:
+            prompt._close()
 
     def _refresh_permission(self):
         api = self._sync_owner()
@@ -121,6 +139,7 @@ class _Presenter:
         if new_state == "review":
             # Starting another review defers an open card; a pause never closes it.
             card, self._card = self._card, None
+            self._close_completion()
             self._close_reveal()
             self._phase, self._origin = _Phase.READY, _Origin.AUTOMATIC
             self._summary = None
@@ -152,11 +171,18 @@ class _Presenter:
     def _show(self):
         api = self._sync_owner()
         if (not api.configured or self._profile is None or self._addon.mw.state not in _RESTING
-                or self._phase in (_Phase.DISMISSED, _Phase.WAITING)):
+                or self._phase is _Phase.WAITING):
+            return
+        if self._completion is not None and self._completion._showing():
             return
         items = [item for item in moments._pending(self._profile, self._owner[:2]) if self._allowed(item)]
         # A greeting can open and close over a reveal, so the open window decides, not the phase.
-        if not items or self._reveal is not None:
+        if self._reveal is not None:
+            return
+        # The independent completion prompt follows the last session card.
+        if not items or self._phase is _Phase.DISMISSED:
+            if self._card is None and self._completion is not None:
+                self._completion._show()
             return
         if self._card is not None:
             self._card._append(items, self._summary)
@@ -178,6 +204,7 @@ class _Presenter:
                 moments._acknowledge(card._profile, (api.base, api.user), [item["key"] for item in card._items])
                 self._phase = _Phase.DISMISSED
                 self._addon.redraw()
+                self._schedule()
 
         card._dialog.finished.connect(finished)
         card._dialog.show()
@@ -295,7 +322,7 @@ class _Card:
         self._quiet = QCheckBox(tr("Don’t show session recaps again"))
         self._quiet.setChecked(not addon.config().get("session_summary", True))
         layout.addWidget(self._quiet)
-        self._quiet.toggled.connect(lambda checked: addon.save_config({"session_summary": not checked}))
+        self._quiet.toggled.connect(self._recaps)
         row = QHBoxLayout()
         progress = QPushButton(tr("View progress"))
         progress.clicked.connect(addon.home.open_progress)
@@ -316,6 +343,9 @@ class _Card:
     def _resume(self):
         self._dialog.accept()
         self._addon.home.continue_studying()
+
+    def _recaps(self, checked):
+        self._addon.save_config({"session_summary": not checked})
 
     def _owned(self):
         return not self._closed and self._profile is self._addon.mw.pm.profile and share_ui.same_account(self._api, self._addon.client())

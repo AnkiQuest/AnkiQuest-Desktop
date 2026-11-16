@@ -31,9 +31,10 @@ class _Delivered:
 
 
 class _Picker:
-    def __init__(self, parent, api, win, companion, current_client, run):
+    def __init__(self, parent, api, win, companion, current_client, run, on_sent=None):
         self._api, self._win = api, win
         self._current = current_client
+        self._on_sent = on_sent
         self._phase, self._choice = _Phase.LOADING, model._Choice.NOBODY
         self._targets, self._rows = (), []
         host = self._host(parent)
@@ -236,6 +237,8 @@ class _Picker:
             self._phase = _Delivered(receipt)
             self._status.setText(share.sent_text(receipt._recipients, tr))
             self._undo_state()
+            if self._on_sent is not None:
+                self._on_sent()
 
         self._run(lambda: model._send(self._api, self._win, choice, note), sent)
 
@@ -283,7 +286,7 @@ class _Picker:
             self._status.setText(share_ui.copy_text(self._win, self._api.base))
 
 
-def _dialog(parent, api, win, companion, current_client, run):
-    picker = _Picker(parent, api, win, companion, current_client, run)
+def _dialog(parent, api, win, companion, current_client, run, on_sent=None):
+    picker = _Picker(parent, api, win, companion, current_client, run, on_sent)
     picker._dialog._picker = picker
     return picker._dialog

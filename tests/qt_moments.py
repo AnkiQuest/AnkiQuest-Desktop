@@ -10,7 +10,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QDialog, QFont, QFontDatabase, QPushButton, QScrollArea, QWidget
+from aqt.qt import QApplication, QCheckBox, QDialog, QFont, QFontDatabase, QPushButton, QScrollArea, QWidget
 from anki.collection import Collection
 
 from addon_loader import load_in_package
@@ -523,6 +523,224 @@ class Moments(unittest.TestCase):
             self.assertTrue(opened._picker._form.isVisible())
             self.assertEqual(17, opened._picker._win["win"])
             opened.close()
+
+    def completion(self):
+        self.api.capabilities = Mock(return_value={"share_moments", "share_deck_moment", "share_undo_send"})
+        self.api.deck_settings = lambda: {"celebrations": True, "decks": [], "recipients": [{"user": "ana"}]}
+        summary = {"reviews": 2, "minutes": 1, "remaining": 0, "finished_at": int(time.time() * 1000), "day": "2026-11-16",
+                   "deck": {"id": "5", "path": "01 Languages::Spanish::Animals"}}
+        self.offer(dict(self.item("session:50", "session"), local=True, summary=summary), summary)
+        self.transition("overview", "review")
+        return self.presenter._completion
+
+    def open_completion(self):
+        control = self.completion()
+        self.presenter._card._dialog.close()
+        self.flush()
+        return control
+
+    def completion_dialog(self):
+        return next((dialog for dialog in self.mw.findChildren(QDialog)
+                     if dialog.isVisible() and dialog.windowTitle() == "Deck complete"), None)
+
+    def test_deck_prompt_follows_recap(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            self.completion()
+            self.assertIsNone(self.completion_dialog())
+            self.presenter._card._dialog.close()
+            self.flush()
+            self.assertIsNotNone(self.completion_dialog())
+
+    def test_deck_prompt_without_recap(self):
+        module = ui.deck_moments_ui
+        self.addon.config = lambda: {"session_summary": False}
+        self.api.capabilities = Mock(return_value={"share_moments", "share_deck_moment"})
+        self.api.deck_settings = lambda: {"decks": [], "recipients": [{"user": "ana"}]}
+        summary = {"reviews": 2, "finished_at": int(time.time() * 1000), "day": "2026-11-16",
+                   "deck": {"id": "5", "path": "Spanish::Animals"}}
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            self.presenter._offer(self.api, [], summary)
+            self.transition("overview", "review")
+            self.assertIsNone(self.presenter._card)
+            prompt = self.completion_dialog()
+            self.assertIsNotNone(prompt)
+            prompt.close()
+            self.flush()
+            self.presenter._offer(self.api, [], summary)
+            self.flush()
+            self.assertIsNone(self.completion_dialog(), "Cancel still counts as today's prompt")
+            tomorrow = dict(summary, day="2026-11-17", finished_at=summary["finished_at"] + 86400000)
+            self.presenter._offer(self.api, [], tomorrow)
+            self.flush()
+            self.assertIsNotNone(self.completion_dialog(), "the next study day can ask again")
+
+    def test_deck_optout_is_independent(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            self.completion()
+            self.presenter._card._dialog.close()
+            self.flush()
+            prompt = self.completion_dialog()
+            self.assertIsNotNone(prompt)
+            next(box for box in prompt.findChildren(QCheckBox) if box.text() == "Don't ask again").click()
+            prompt.close()
+            self.flush()
+            self.addon.save_config.assert_not_called()
+            self.presenter._offer(self.api, [], {"finished_at": int(time.time() * 1000), "day": "2026-11-17",
+                                               "deck": {"id": "6", "path": "French"}})
+            self.flush()
+            self.assertIsNone(self.completion_dialog())
+
+    def test_new_win_waits_for_deck(self):
+        module = ui.deck_moments_ui
+        self.api.capabilities = Mock(return_value={"share_moments", "share_deck_moment"})
+        self.api.deck_settings = lambda: {"celebrations": True, "decks": [], "recipients": [{"user": "ana"}]}
+        summary = {"reviews": 2, "minutes": 1, "remaining": 0, "finished_at": int(time.time() * 1000), "day": "2026-11-16",
+                   "deck": {"id": "5", "path": "Spanish"}}
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            self.presenter._offer(self.api, [], summary)
+            self.transition("overview", "review")
+            prompt = self.completion_dialog()
+            self.assertIsNotNone(prompt)
+            self.offer(self.item())
+            self.assertIsNone(self.presenter._card)
+            prompt.close()
+            self.flush()
+            self.assertIsNotNone(self.presenter._card)
+
+    def test_completed_deck_uses_clean_editable_name_and_picker(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            control = self.open_completion()
+        self.assertTrue(control._widget.isVisible())
+        self.assertEqual("Animals", control._name.text())
+        control._name.setText("My Spanish words")
+        self.api._request = Mock(return_value={"friends": [{"user": "ana", "display": "Ana"}], "groups": []})
+        control._share.click()
+        self.flush()
+        opened = next(dialog for dialog in control._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+        self.assertEqual({"id": "5", "name": "My Spanish words"}, opened._picker._win["deck"])
+        self.assertIn("My Spanish words", opened._picker._win["body"])
+        self.assertFalse(opened._picker._send.isEnabled())
+        self.assertFalse(any(call.args[1:] for call in self.api._request.call_args_list))
+        opened.close()
+
+    def test_cancel_keeps_saved_name(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            control = self.open_completion()
+        control._name.setText("An unsent name")
+        self.api._request = Mock(return_value={"friends": [{"user": "ana", "display": "Ana"}], "groups": []})
+        control._share.click()
+        self.flush()
+        opened = next(dialog for dialog in control._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+        opened.close()
+        self.flush()
+        self.assertEqual("Animals", module.deck_names._choice(self.mw.pm.profile, self.api, control._record))
+
+    def test_deck_name_keeps_unicode(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            control = self.open_completion()
+        control._name.setText("\U00020000" * 120)
+        self.assertEqual("\U00020000" * 120, control._name.text())
+        control._name.setText("\U00020000" * 121)
+        self.assertEqual("\U00020000" * 120, control._name.text())
+
+    def test_deck_check_loses_collection(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record) as checked:
+            self.defer = True
+            self.completion()
+            self.mw.col = None
+            while self.tasks:
+                self.complete(self.tasks.pop(0))
+            checked.assert_not_called()
+            self.api.capabilities.assert_not_called()
+
+    def test_recap_optout_keeps_deck(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            self.completion()
+            self.presenter._card._quiet.click()
+            self.addon.config = lambda: {"session_summary": False}
+            self.presenter._card._dialog.close()
+            self.flush()
+        self.assertIsNotNone(self.completion_dialog())
+
+    def test_send_remembers_deck_name(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+            control = self.open_completion()
+        control._name.setText("My chosen studies")
+        self.api._request = Mock(return_value={"friends": [{"user": "ana", "display": "Ana"}], "groups": []})
+        control._share.click()
+        self.flush()
+        opened = next(dialog for dialog in control._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+        next(box for box in opened.findChildren(QCheckBox) if box.text() == "Ana").click()
+        self.api._request = Mock(side_effect=OSError("offline"))
+        opened._picker._send.click()
+        self.flush()
+        self.assertEqual("Animals", module.deck_names._choice(self.mw.pm.profile, self.api, control._record))
+        self.api._request = Mock(return_value={"recipients": 1, "win": 17, "undo_until": int(time.time() * 1000) + 10000})
+        opened._picker._send.click()
+        self.flush()
+        self.assertEqual("My chosen studies", module.deck_names._choice(self.mw.pm.profile, self.api, control._record))
+        opened.close()
+
+    def test_completed_deck_check_cannot_outlive_profile_or_window(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record) as checked:
+            self.defer = True
+            control = self.completion()
+            self.assertFalse(control._widget.isVisible())
+            self.mw.pm.profile = {}
+            while self.tasks:
+                self.complete(self.tasks.pop(0))
+            checked.assert_not_called()
+            self.api.capabilities.assert_not_called()
+        self.presenter._clear()
+
+    def test_completed_deck_stays_hidden_when_unavailable(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", return_value=None):
+            control = self.completion()
+        self.assertFalse(control._widget.isVisible())
+        self.api.capabilities.assert_not_called()
+
+    def test_completed_deck_check_stops_when_study_resumes(self):
+        module = ui.deck_moments_ui
+        with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record) as checked:
+            self.defer = True
+            self.completion()
+            self.transition("review", "overview")
+            while self.tasks:
+                self.complete(self.tasks.pop(0))
+            checked.assert_not_called()
+            self.api.capabilities.assert_not_called()
+
+    def test_old_server_and_automatic_decks_keep_the_existing_recap(self):
+        module = ui.deck_moments_ui
+        for kind in ("old", "automatic", "opted_out"):
+            self.presenter._clear()
+            self.mw.state = "review"
+            self.defer = True
+            if kind == "opted_out":
+                module.deck_moments._prompts(self.mw.pm.profile, self.api)["muted"] = True
+            with patch.object(module.deck_moments, "_finished", side_effect=lambda _col, record, _at: record):
+                control = self.completion()
+                if kind == "old":
+                    self.api.capabilities.return_value = {"share_moments"}
+                elif kind == "automatic":
+                    self.api.deck_settings = lambda: {"celebrations": True, "recipients": [{"user": "ana"}],
+                                                     "decks": [{"id": "5", "enabled": True, "recipients": ["ana"]}]}
+                while self.tasks:
+                    self.complete(self.tasks.pop(0))
+                if kind == "opted_out":
+                    self.assertIsNone(control)
+                else:
+                    self.assertFalse(control._widget.isVisible(), kind)
 
     def test_a_stale_local_deck_reply_cannot_change_another_account(self):
         control = self.conquest()
