@@ -9,7 +9,7 @@ other agent owns pose selection and unlock activation.
 |---|---|---|---|---|
 | ![Original](../../../static/anki-tan/illust/anki_tan_main.png) | ![Frozen](../../../static/anki-tan/generated/frozen-full.png) | ![Asleep](../../../static/anki-tan/generated/asleep-full.png) | ![Sad](../../../static/anki-tan/generated/sad-full.png) | ![Neglected](../../../static/anki-tan/generated/neglected-full.png) |
 
-The owner approved these three images on 2026-11-16. Three candidates
+Aldana approved these three images on 2026-11-16. Three candidates
 were generated per pose using OpenAI's `image_gen` tool; its model
 identifier was not exposed. Selections: asleep A, sad A, neglected C.
 The approved frozen derivative and Shigeyuki's main illustration were
@@ -37,3 +37,10 @@ The Android companion work is tracked in
 The Companion art exports workflow retains both clients' output, the
 manifest and its diff for seven days. It never commits files; contributors
 inspect the artifact and commit the selected exports before final CI.
+
+The inventory counts exporter-registered masters as well as standard pose
+filenames. This keeps all Anki-tan derivatives under their existing licence
+directory while recognizing the full-size poses and chibi frozen fallback.
+The regression failed before the fix in CI run 43793210490: asleep was
+reported Missing instead of Present (48 xtask tests passed, one failed).
+Registration alone never counts a master whose file is absent.
