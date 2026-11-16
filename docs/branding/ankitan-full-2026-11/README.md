@@ -43,7 +43,17 @@ The active masters use the fixture's pose names directly under
 under the same licence. The earlier asleep, sad and neglected master names
 are kept byte for byte in `static/anki-tan/archive/`. The published generated
 frozen files remain in place. These canonical
-paths are exact copies of those approved masters, without new processing.
+asleep and sad paths are exact copies of those approved masters.
+
+Hill requested one unlit headband star for neglected, two for abandoned and
+three for dead in [#88](https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/88#issuecomment-6920200927).
+Aldana approved the revised neglected image on 2026-11-16. Only neglected
+changes here; the other two poses remain future work. The earlier neglected
+master stays byte for byte in `static/anki-tan/archive/neglected-full.png`.
+[The edit record](neglected-revision.json) contains the prompt, model
+disclosure, hashes and cleanup measurements. The new master was inspected
+at full size and 64 px on light and dark backgrounds. Its exports need a
+fresh canonical Linux run.
 
 The asleep export is now `anki_tan_asleep`. Its PNG is the byte-identical
 Linux export formerly named `anki_tan_sleeping`, which is preserved under

@@ -1,6 +1,6 @@
 # Preserved Anki-tan files
 
-Earlier names for approved generated poses and one generated desktop export.
+Earlier approved generated poses and one generated desktop export.
 These files are retained byte for byte; active masters use the core pose names
 in the parent directory. The archived export is outside the add-on package.
 
@@ -17,6 +17,8 @@ Generated with OpenAI image_gen; its model identifier was not exposed.
 
 The three master paths were relative to static/anki-tan/. The export path
 was relative to the repository. Published generated frozen files stay in place.
+The archived neglected pose retains all three blue headband stars; the active
+revision has one unlit star, requested by hill and approved by Aldana.
 
 [Aldana Belen Rodriguez approved this archive](https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/88#issuecomment-6918911105).
 Generation and cleanup records are in
