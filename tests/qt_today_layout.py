@@ -1,16 +1,19 @@
-"""The Today panel laid out by Qt WebEngine, the engine Anki shows it in."""
+"""The Today panel laid out by Qt WebEngine, the engine Anki shows it in. Runs in its own
+process (test_today_layout.py): WebEngine needs a QApplication it was set up for."""
 
 import json
 import os
+import sys
 import unittest
 
 os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--no-sandbox --disable-gpu")
 
-from aqt.qt import QApplication, QEventLoop, QTimer, QUrl
+from aqt.qt import QApplication, QCoreApplication, QEventLoop, Qt, QTimer, QUrl
 from aqt.qt import QWebEngineView
 from addon_loader import load_in_package
 
-app = QApplication.instance() or QApplication([])
+QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+app = QApplication([sys.argv[0]])
 board = load_in_package("board_layout", "board")
 
 # Wide enough for two cards side by side, as in the deck list of a usual Anki window.
