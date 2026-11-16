@@ -6,7 +6,6 @@ on:
       - 'static/aki/**'
       - 'static/ankilope/**'
       - 'static/anki-tan/**'
-      - 'static/bluma/**'
       - 'static/cow/**'
       - 'crates/art/**'
       - 'crates/xtask/**'

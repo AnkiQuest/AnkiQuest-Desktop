@@ -360,12 +360,12 @@
       "why": "Earlier name for the canonical anki_tan_asleep export. Preserved unchanged outside the app package. Unreferenced."
     },
     {
-      "file": "addon/art/bluma_sleeping.png",
-      "why": "Earlier name for the canonical bluma_asleep export, preserved unchanged. Unreferenced."
+      "file": "static/cow/archive/addon/bluma_sleeping.png",
+      "why": "Earlier name for the canonical bluma_asleep export. Preserved unchanged outside the app package. Unreferenced."
     },
     {
-      "file": "addon/art/bluma_celebrate.png",
-      "why": "Earlier name for the canonical bluma_happy export, preserved unchanged. Unreferenced."
+      "file": "static/cow/archive/addon/bluma_celebrate.png",
+      "why": "Earlier name for the canonical bluma_happy export. Preserved unchanged outside the app package. Unreferenced."
     }
   ]
 }

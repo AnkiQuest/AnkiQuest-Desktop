@@ -1533,10 +1533,7 @@ mod tests {
                 "aki/streak",
                 "aki/winner",
                 "ankilope/celebrate",
-                "ankilope/frozen",
-                "bluma/celebrate",
-                "bluma/frozen",
-                "bluma/streak"
+                "ankilope/frozen"
             ]
         );
         for (_, _, png) in CARD_ART {
