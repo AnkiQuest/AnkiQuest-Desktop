@@ -340,6 +340,32 @@ class LocalPicture(unittest.TestCase):
         self.assertTrue(image.loadFromData(found["png"], "PNG"))
         return image
 
+    def test_streak_unit_matches_phone(self):
+        units = {
+            "en": ("day streak", "day streak"),
+            "es": ("día de racha", "días de racha"),
+            "de": ("Tag Lernserie", "Tage Lernserie"),
+            "fr": ("jour de série", "jours de série"),
+            "pt": ("dia de sequência", "dias de sequência"),
+        }
+        for language, expected in units.items():
+            for days, unit in zip((1, 30), expected):
+                with self.subTest(language=language, days=days), patch("anki.lang.current_lang", language), \
+                        patch.object(picture, "_words", wraps=picture._words) as words:
+                    self.image({"title": "A good day", "picture_streak": days})
+                    self.assertIn(unit, [call.args[0] for call in words.call_args_list])
+
+    def test_repeated_streak_body_hidden(self):
+        for body in ("30 day streak", "One more day of practice"):
+            with self.subTest(body=body), patch("anki.lang.current_lang", "en"), \
+                    patch.object(picture, "_words", wraps=picture._words) as words:
+                self.image({"title": "A good day", "body": body, "picture_streak": 30})
+                text = [call.args[0] for call in words.call_args_list]
+                if body == "30 day streak":
+                    self.assertNotIn(body, text)
+                else:
+                    self.assertIn(body, text)
+
     def test_streak_heat_and_next_milestones_match_shared_cases(self):
         for case in STREAKS["pictures"]:
             with self.subTest(streak=case["streak"]), patch.object(picture, "_words", wraps=picture._words) as words:

@@ -7,17 +7,17 @@ from aqt.qt import (
     QPalette, QPointF, QRectF, QTextLayout, QTextOption, Qt,
 )
 
-from . import companion_art, moods
+from . import companion_art, moods, share
 from .language import _locale, _plural
 
 _WIDTH, _MAX_HEIGHT, _MARGIN = 1080, 4096, 72
 _HERO, _GAP = 288, 24
 _BRAND, _TITLE, _BODY = 36, 60, 42
 _STREAK_HERO, _NUMBER = 400, 240
-_MAX_STREAK = 2_147_483_647  # The shared count fits Android's integer and Qt's formatter.
 _GOLD, _WHITE = "#FFD54F", "#FFFFFF"
 _MILESTONES = (7, 30, 100, 365)
-_HEAT = {
+# Gradients only; moods.HEAT owns the thresholds and selects the pose.
+_HEAT_COLORS = {
     "aki_streak": ("#B45309", "#92400E"),
     "aki_streak_hot": ("#C2410C", "#B91C1C"),
     "aki_streak_blazing": ("#DC2626", "#7F1D1D"),
@@ -81,6 +81,12 @@ def _plain(win, companion, ink, scale):
     return pieces
 
 
+def _streak_unit(count):
+    # English has one unit for both counts; the other languages keep their reviewed plurals.
+    unit = _plural("streak day", "streak days", count)
+    return "day streak" if unit in ("streak day", "streak days") else unit
+
+
 def _fiery(win, companion, streak, scale):
     pieces = [_text("AnkiQuest", _BRAND * scale, QFont.Weight.Bold, _WHITE)]
     art = _art(companion, moods.streak_pose(moods.FIRE, streak), _STREAK_HERO, "aki_streak")
@@ -94,10 +100,11 @@ def _fiery(win, companion, streak, scale):
     width = QFontMetricsF(font).horizontalAdvance(number)
     size = min(_NUMBER, int(_NUMBER * (_WIDTH - 2 * _MARGIN) / max(1, width)))
     pieces.append(_text(number, size, QFont.Weight.Black, _GOLD))
-    pieces.append(_text(_plural("streak day", "streak days", streak), _TITLE * scale, QFont.Weight.Bold, _GOLD))
+    days = _streak_unit(streak)
+    pieces.append(_text(days, _TITLE * scale, QFont.Weight.Bold, _GOLD))
     pieces.append(_text(win.get("title", ""), _TITLE * scale, QFont.Weight.Bold, _WHITE))
     body = win.get("picture_body", win.get("body", ""))
-    if body:
+    if body.strip() and body != "%s %s" % (number, days):
         pieces.append(_text(body, _BODY * scale, QFont.Weight.Normal, _WHITE))
     milestone = next((day for day in _MILESTONES if day > streak), None)
     if milestone is not None:
@@ -112,7 +119,7 @@ def render(win, companion, palette, scale=1):
     if not 0 < scale <= 3:
         raise ValueError("Invalid picture font scale")
     streak = win.get("picture_streak")
-    if streak is not None and (type(streak) is not int or not 0 < streak <= _MAX_STREAK):
+    if streak is not None and (type(streak) is not int or not 0 < streak <= share.MAX_STREAK):
         raise ValueError("Invalid picture streak")
     pieces = (_plain(win, companion, palette.color(QPalette.ColorRole.WindowText), scale) if streak is None
               else _fiery(win, companion, streak, scale))
@@ -131,7 +138,7 @@ def render(win, companion, palette, scale=1):
         painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         if streak is not None:
-            colors = _HEAT[moods.streak_pose(moods.FIRE, streak)]
+            colors = _HEAT_COLORS[moods.streak_pose(moods.FIRE, streak)]
             gradient = QLinearGradient(0, 0, 0, height - 1)
             gradient.setColorAt(0, QColor(colors[0]))
             gradient.setColorAt(1, QColor(colors[1]))

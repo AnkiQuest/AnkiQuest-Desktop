@@ -13,7 +13,7 @@ from .language import _plural
 MAX_IMAGE = 4 * 1024 * 1024
 IMAGE_TIMEOUT = 15
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
-_MAX_STREAK = 2_147_483_647  # Android's signed integer event-key count.
+MAX_STREAK = 2_147_483_647  # Android's signed integer event-key count, also used by the renderer.
 
 
 def win_id(entry):
@@ -44,7 +44,7 @@ def _streak(entry):
         return None
     found = re.fullmatch(r"streak:[^:]*:([0-9]{1,10})", str(entry.get("moment") or ""))
     days = int(found[1]) if found else 0
-    return days if 0 < days <= _MAX_STREAK else None
+    return days if 0 < days <= MAX_STREAK else None
 
 
 def win_from_place(change, place):
