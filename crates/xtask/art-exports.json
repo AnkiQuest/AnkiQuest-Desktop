@@ -308,8 +308,8 @@
       "why": "addon/art/ankilope_welcome.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/welcome.png. Unreferenced."
     },
     {
-      "file": "addon/art/anki_tan_sleeping.png",
-      "why": "Earlier name for the canonical anki_tan_asleep export, preserved unchanged. Unreferenced."
+      "file": "static/anki-tan/archive/addon/anki_tan_sleeping.png",
+      "why": "Earlier name for the canonical anki_tan_asleep export. Preserved unchanged outside the app package. Unreferenced."
     }
   ]
 }
