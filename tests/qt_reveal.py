@@ -35,9 +35,9 @@ def texts(widget, kind):
 
 class CompanionTab(unittest.TestCase):
     def tab(self, current, today):
-        api = SimpleNamespace(capabilities=Mock(return_value=frozenset()), companion=Mock(return_value=current), unlocks=Mock())
-        mw = SimpleNamespace(taskman=SimpleNamespace(run_in_background=run_now))
-        return companion_ui.Picker(None, mw, api, current, Mock(), today)
+        api = SimpleNamespace(base="https://quest.test", user="sam", token="t", capabilities=Mock(return_value=frozenset()), companion=Mock(return_value=current), unlocks=Mock())
+        mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=run_now))
+        return companion_ui.Picker(None, mw, api, lambda: api, current, Mock(), today)
 
     def test_the_chosen_companion_shows_in_todays_mood(self):
         tab = self.tab("aki", (moods.SAD, 64))
