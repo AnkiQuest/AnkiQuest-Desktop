@@ -186,6 +186,24 @@
       "file": "addon/art/anki_tan_chibi_frozen.png",
       "master": "static/anki-tan/generated/frozen-chibi.png",
       "sha256": "0f2834baa7e24ab06eb5301794cf0db8237d9a7f7e3495e6c5646f2f493643fb"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_sleeping.png",
+      "master": "static/anki-tan/generated/asleep-full.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_sad.png",
+      "master": "static/anki-tan/generated/sad-full.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_neglected.png",
+      "master": "static/anki-tan/generated/neglected-full.png",
+      "sha256": ""
     }
   ],
   "retired": [

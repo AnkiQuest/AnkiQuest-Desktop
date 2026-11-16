@@ -168,6 +168,15 @@ const ART: &[Art] = &[
         "static/anki-tan/generated/frozen-full.png",
     ),
     widget(
+        "anki_tan_sleeping",
+        "static/anki-tan/generated/asleep-full.png",
+    ),
+    widget("anki_tan_sad", "static/anki-tan/generated/sad-full.png"),
+    widget(
+        "anki_tan_neglected",
+        "static/anki-tan/generated/neglected-full.png",
+    ),
+    widget(
         "anki_tan_chibi_frozen",
         "static/anki-tan/generated/frozen-chibi.png",
     ),
@@ -391,6 +400,9 @@ mod tests {
             "aki_sleeping",
             "aki_at_risk",
             "anki_tan_frozen",
+            "anki_tan_sleeping",
+            "anki_tan_sad",
+            "anki_tan_neglected",
             "anki_tan_chibi_frozen",
         ];
         let large: Vec<_> = ART.iter().filter(|art| art.size == WIDGET).collect();
