@@ -1,0 +1,63 @@
+name: Agents Copy
+
+# AGENTS.md is shared by AnkiQuest-Server, AnkiQuest-Desktop and
+# AnkiQuest-Android: everything above "## This repository" is the same in
+# all three. AnkiQuest-Server holds the source; this job fails while this
+# repository's copy differs from it, or while CLAUDE.md is more than
+# "@AGENTS.md".
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/workflows/agents-copy.yml
+  pull_request:
+    paths:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/workflows/agents-copy.yml
+  schedule:
+    - cron: "47 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_URL: https://raw.githubusercontent.com/AnkiQuest/AnkiQuest-Server/master/AGENTS.md
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            AGENTS.md
+            CLAUDE.md
+          sparse-checkout-cone-mode: false
+
+      - name: Compare the shared part with AnkiQuest-Server's AGENTS.md
+        shell: bash
+        run: |
+          # The shared part is everything before the "## This repository" line.
+          shared() { sed '/^## This repository$/,$d' "$1"; }
+
+          curl -fsSL --retry 3 "$SOURCE_URL" -o server-agents.md
+          if ! grep -qx '## This repository' AGENTS.md; then
+            echo "::error file=AGENTS.md::No '## This repository' section."
+            exit 1
+          fi
+          if ! diff -u <(shared server-agents.md) <(shared AGENTS.md); then
+            echo "::error file=AGENTS.md::The shared part differs from AnkiQuest-Server master; copy it from there."
+            exit 1
+          fi
+          if [[ "$(cat CLAUDE.md)" != "@AGENTS.md" ]]; then
+            echo "::error file=CLAUDE.md::CLAUDE.md must be '@AGENTS.md' only."
+            exit 1
+          fi

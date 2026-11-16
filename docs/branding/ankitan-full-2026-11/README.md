@@ -40,13 +40,15 @@ inspect the artifact and commit the selected exports before final CI.
 
 The active masters use the fixture's pose names directly under
 `static/anki-tan/`; chibi frozen uses `static/anki-tan/chibi/frozen.png`,
-under the same licence. The original `generated/*-full.png` and
-`generated/frozen-chibi.png` files remain byte-identical. These canonical
+under the same licence. The earlier asleep, sad and neglected master names
+are kept byte for byte in `static/anki-tan/archive/`. The published generated
+frozen files remain in place. These canonical
 paths are exact copies of those approved masters, without new processing.
 
 The asleep export is now `anki_tan_asleep`. Its PNG is the byte-identical
-Linux export formerly named `anki_tan_sleeping`, which remains preserved
-as a retired image in the manifest. No existing artwork was overwritten.
+Linux export formerly named `anki_tan_sleeping`, which is preserved under
+`static/anki-tan/archive/addon/` and remains recorded in the retired manifest.
+It is excluded from the app package. No existing artwork was overwritten.
 
 The inventory uses canonical paths, without an exporter-registration
 fallback. Its regression still checks the same full-size poses and chibi
