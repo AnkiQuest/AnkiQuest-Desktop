@@ -4,9 +4,9 @@
 //!
 //! A pose's master is `static/<folder>/<pose>.png`, or the older name
 //! [`RENAMES`] gives when that file is absent. A missing extension shows
-//! the first pose its fallback chain reaches that exists. Exporter-registered
-//! masters also count, so generated Anki-tan art stays under its licence.
-//! Unregistered runtime mappings are not inferred. Read-only.
+//! the first pose its fallback chain reaches that exists. Anki-tan's chibi
+//! masters stay below the same character's licensed folder. Runtime
+//! mappings are not inferred. Read-only.
 
 use std::fs;
 use std::path::Path;
@@ -14,7 +14,7 @@ use std::process::ExitCode;
 
 use serde_json::Value;
 
-use super::{ART, root};
+use super::root;
 
 /// The pose list both clients use.
 const FIXTURE: &str = "tests/fixtures/companion_poses.json";
@@ -25,7 +25,7 @@ const COMPANIONS: &[(&str, &str)] = &[
     ("ankilope", "ankilope"),
     ("cow", "bluma"),
     ("anki_tan", "anki-tan"),
-    ("anki_tan_chibi", "anki-tan-chibi"),
+    ("anki_tan_chibi", "anki-tan/chibi"),
     ("leech_tan", "leech-tan"),
 ];
 
@@ -130,34 +130,10 @@ fn old_name(kind: &str) -> Option<&str> {
         .map(|(_, file)| *file)
 }
 
-/// Whether the exporter registers an existing master for this pose.
-fn registered(folder: &Path, kind: &str) -> bool {
-    let Some(repo) = folder
-        .parent()
-        .filter(|path| path.ends_with("static"))
-        .and_then(Path::parent)
-    else {
-        return false;
-    };
-    let Some(companion) = folder.file_name().and_then(|name| name.to_str()) else {
-        return false;
-    };
-
-    // The exporter names full-size and chibi poses separately while their
-    // source files can share the character's licensed master directory.
-    let prefix = format!("{}_", companion.replace('-', "_"));
-    ART.iter().any(|art| {
-        art.name
-            .strip_prefix(&prefix)
-            .is_some_and(|stem| stem == kind || old_name(kind) == Some(stem))
-            && repo.join(art.source).is_file()
-    })
-}
-
-/// Whether `folder` has a named or exporter-registered master for `kind`.
+/// Whether `folder` has a named master for `kind`.
 fn has(folder: &Path, kind: &str) -> bool {
     let png = |name: &str| folder.join(format!("{name}.png")).is_file();
-    png(kind) || old_name(kind).is_some_and(png) || registered(folder, kind)
+    png(kind) || old_name(kind).is_some_and(png)
 }
 
 /// The status of `kind` in `folder`, following extension fallbacks.
@@ -185,7 +161,7 @@ fn report(root: &Path, poses: &Poses) -> String {
         .map(|(_, folder)| root.join("static").join(folder))
         .collect();
     let mut out = String::from(
-        "Named or exporter-registered masters. yes: master exists; (pose): missing, \
+        "Named masters. yes: master exists; (pose): missing, \
          the clients show that pose; **no**: missing\n\n",
     );
     out += "| image | kind |";
@@ -339,7 +315,7 @@ mod tests {
     }
 
     #[test]
-    fn counts_registered_anki_tan_art() {
+    fn counts_named_anki_tan_art() {
         let poses = fixture();
         let full = root().join("static/anki-tan");
         for pose in ["asleep", "sad", "neglected", "frozen"] {
@@ -347,7 +323,7 @@ mod tests {
         }
 
         // Chibi's generated master stays under the same character licence.
-        let chibi = root().join("static/anki-tan-chibi");
+        let chibi = root().join("static/anki-tan/chibi");
         assert_eq!(Status::Present, status(&chibi, &poses, "frozen"));
         assert_eq!(
             Status::Fallback("frozen".into()),
@@ -356,7 +332,7 @@ mod tests {
     }
 
     #[test]
-    fn registration_requires_a_file() {
+    fn missing_masters_do_not_count() {
         let checkout = tempfile::tempdir().unwrap();
         let folder = checkout.path().join("static/anki-tan");
         assert!(!has(&folder, "asleep"));
