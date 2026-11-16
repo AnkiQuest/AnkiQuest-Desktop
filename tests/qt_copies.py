@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCoreApplication, QDialog, QEvent, QLabel, QPushButton, QWidget
+from aqt.qt import QApplication, QCheckBox, QComboBox, QCoreApplication, QDialog, QEvent, QLabel, QPushButton, QWidget
 from addon_loader import load_in_package
 
 app = QApplication.instance() or QApplication([])
@@ -162,6 +162,71 @@ class Copies(unittest.TestCase):
             self.finish()
         importer.assert_called_once()
         Path(importer.call_args.args[1]).unlink()
+
+    def form(self, inspect, focus=2):
+        def choose(dialog):
+            inspect(dialog)
+            return dialog.result()
+        with patch.object(QDialog, "exec", choose):
+            return ui.send_dialog(self.parent, [("Aardvarks", 1), ("Spanish", 2)], [{"user": "ana", "display": "Ana"}], "hill", focus)
+
+    def test_prefilled_copy_choice(self):
+        def choose(dialog):
+            deck = dialog.findChild(QComboBox)
+            send = next(b for b in dialog.findChildren(QPushButton) if b.text() == "Send")
+            self.assertEqual(2, deck.currentData())
+            self.assertEqual("Spanish", deck.currentText())
+            self.assertFalse(send.isEnabled())
+            dialog.findChild(QCheckBox).setChecked(True)
+            self.assertTrue(send.isEnabled())
+            send.click()
+        self.assertEqual((2, "Spanish", ["ana"]), self.form(choose))
+
+    def test_copy_change_keeps_people(self):
+        def choose(dialog):
+            person = dialog.findChild(QCheckBox)
+            person.setChecked(True)
+            deck = dialog.findChild(QComboBox)
+            self.assertTrue(deck.isEditable())
+            deck.setCurrentIndex(0)
+            self.assertTrue(person.isChecked())
+            next(b for b in dialog.findChildren(QPushButton) if b.text() == "Send").click()
+        self.assertEqual((1, "Aardvarks", ["ana"]), self.form(choose))
+
+    def test_unknown_copy_deck(self):
+        def choose(dialog):
+            deck = dialog.findChild(QComboBox)
+            send = next(b for b in dialog.findChildren(QPushButton) if b.text() == "Send")
+            self.assertEqual(-1, deck.currentIndex())
+            dialog.findChild(QCheckBox).setChecked(True)
+            self.assertFalse(send.isEnabled())
+            deck.setCurrentIndex(1)
+            self.assertTrue(send.isEnabled())
+            deck.setEditText("A name that is not a deck")
+            self.assertFalse(send.isEnabled())
+            self.assertEqual(QDialog.DialogCode.Rejected, dialog.result())
+        self.assertIsNone(self.form(choose, focus=404))
+
+    def test_copy_self_is_invalid(self):
+        def choose(dialog):
+            send = next(b for b in dialog.findChildren(QPushButton) if b.text() == "Send")
+            box = dialog.findChild(QCheckBox)
+            box.setChecked(True)
+            self.assertFalse(send.isEnabled())
+            return dialog.result()
+        with patch.object(QDialog, "exec", choose):
+            self.assertIsNone(ui.send_dialog(self.parent, [("Spanish", 2)], [{"user": "hill"}], "hill", 2))
+
+    def test_current_deck_is_passed(self):
+        self.parent.col = SimpleNamespace(decks=SimpleNamespace(
+            all_names_and_ids=Mock(return_value=[SimpleNamespace(name="Spanish", id=2), SimpleNamespace(name="Aardvarks", id=1)]),
+            get_current_id=Mock(return_value=2),
+        ))
+        self.api._request = Mock(return_value={"friends": [{"user": "ana"}]})
+        with patch.object(ui, "send_dialog", return_value=None) as form:
+            ui.open_send()
+            self.finish()
+        self.assertEqual(2, form.call_args.kwargs["focus"])
 
 
 if __name__ == "__main__":
