@@ -305,6 +305,16 @@ mod tests {
     }
 
     #[test]
+    fn bluma_has_the_complete_core() {
+        let poses = fixture();
+        let (_, folder) = COMPANIONS.iter().find(|(id, _)| *id == "cow").unwrap();
+        let folder = root().join("static").join(folder);
+        for pose in &poses.core {
+            assert_eq!(Status::Present, status(&folder, &poses, pose), "{pose}");
+        }
+    }
+
+    #[test]
     fn counts_named_anki_tan_art() {
         let poses = fixture();
         let full = root().join("static/anki-tan");
