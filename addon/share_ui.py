@@ -254,7 +254,7 @@ def _route(sharing, legacy):
         except Exception as error:
             sharing.status.setText(tr("Couldn't load friends (%s).") % error_text(error))
             return
-        if moment_share._FEATURE not in features:
+        if not moment_share._supported(sharing.win, features):
             legacy()
             return
         win_dialog(sharing.dialog, sharing.api, sharing.win, sharing._companion, sharing.current_client, sharing.run).show()

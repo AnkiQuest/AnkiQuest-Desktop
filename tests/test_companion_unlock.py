@@ -64,6 +64,34 @@ class SharedConditions(unittest.TestCase):
                 self.assertEqual(case["unlocks"], found[-1])
                 self.assertFalse(any(found[:-1]), "only the last tap may unlock")
 
+    def test_each_chibi_is_found_on_its_base(self):
+        chibis = {rule["requires"]: rule["companion"] for rule in FIXTURE["companions"] if rule["kind"] == "taps"}
+        self.assertEqual(chibis, unlock.CHIBIS)
+        self.assertEqual("anki_tan_chibi", unlock.chibi_of("anki_tan", {"anki_tan"}))
+        self.assertIsNone(unlock.chibi_of("anki_tan", {"cow"}), "her base is locked")
+        self.assertIsNone(unlock.chibi_of("cow", {"cow"}), "the cow has no chibi")
+
+    def test_the_hint_is_the_shared_one(self):
+        self.assertEqual(FIXTURE["hint_from"], unlock.HINT_FROM)
+        templates = FIXTURE["hint"]
+        self.assertEqual(templates["one"].replace("{0}", "1"), unlock.hint(unlock.TAPS - 1, str))
+        self.assertEqual(templates["other"].replace("{0}", "5"), unlock.hint(unlock.TAPS - 5, str))
+        self.assertEqual(list(range(1, unlock.TAPS + 1)), [case["taps"] for case in FIXTURE["hints"]])
+        for case in FIXTURE["hints"]:
+            with self.subTest(taps=case["taps"]):
+                self.assertEqual(case["hint"], unlock.hint(case["taps"], str))
+
+    def test_the_chibi_taps_are_the_shared_ones(self):
+        self.assertTrue(FIXTURE["chibi_taps"])
+        for case in FIXTURE["chibi_taps"]:
+            with self.subTest(case=case["name"]):
+                egg = unlock.Egg(case["unlocked"])
+                tapped = [egg.tap(choice, at_ms, str) for choice, at_ms in case["sequence"]]
+                self.assertEqual(case["hints"], [tap.hint for tap in tapped])
+                found = [tap.chibi is not None for tap in tapped]
+                self.assertEqual(case["unlocks"], found[-1])
+                self.assertFalse(any(found[:-1]), "only the last tap may unlock")
+
 
 class Offered(unittest.TestCase):
     def test_the_servers_answer_is_read_from_the_examples(self):
@@ -118,7 +146,12 @@ class Client(unittest.TestCase):
         api._request.assert_called_with("/api/unlocks/hill")
         self.assertEqual("cow", api.set_companion("cow"))
         api._request.assert_called_with("/api/companion/hill", {"companion": "cow"}, extra={"X-AnkiQuest-Companions": "milestones"})
-        self.assertFalse(hasattr(api, "unlock"), "the server grants unlocks")
+
+    def test_a_found_chibi_is_reported_without_proof(self):
+        api = client.Client("https://example.test", "hill", "secret")
+        api._request = Mock(return_value=example("unlocks_save"))
+        self.assertEqual(example("unlocks_save"), api.unlock("anki_tan_chibi"))
+        api._request.assert_called_with("/api/unlocks/hill", {"unlock": "anki_tan_chibi"})
 
     def test_every_request_names_the_companions_the_add_on_draws(self):
         sent = {}

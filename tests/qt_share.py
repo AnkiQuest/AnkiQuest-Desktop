@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import time
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from aqt.qt import QApplication, QBuffer, QByteArray, QColor, QFont, QFontDatabase, QImage, QIODevice, QPalette, QWidget
 
@@ -128,6 +128,37 @@ class ShareWindow(unittest.TestCase):
 
     def test_second_send_undo_preserves_the_first_recipient(self):
         self._two_sends()
+
+    def test_place_picker_and_undo(self):
+        self.features.add("share_place")
+        self.win = {"place": 2, "title": "Second place", "body": "A good study week"}
+        window = self.open()
+        self.assertIs(window._phase, ui._Phase.READY)
+        self.tap(window, "user:ana")
+        window._note.setText("A good study week")
+        window._send.click()
+        self.assertEqual({"moment": {"place": 2}, "to": {"friends": ["ana"], "groups": []},
+                          "note": "A good study week"}, self.requests[-1][1])
+        self.assertEqual({"ana"}, set(self.delivered))
+        self.assertTrue(window._undo.isVisible())
+        window._undo.click()
+        self.assertEqual({}, self.delivered)
+
+    def test_place_routing(self):
+        sharing = SimpleNamespace(owned=lambda: True, api=self.api, win={"place": 2},
+                                  status=Mock(), dialog=self.parent, _companion="none",
+                                  current_client=lambda: self.current, run=self.run_task)
+        legacy = Mock()
+        with patch.object(ui.share_ui, "win_dialog") as opened:
+            ui.share_ui._route(sharing, legacy)
+            legacy.assert_called_once()
+            opened.assert_not_called()
+            legacy.reset_mock()
+            self.features.add("share_place")
+            ui.share_ui._route(sharing, legacy)
+            legacy.assert_not_called()
+            opened.assert_called_once()
+            opened.return_value.show.assert_called_once()
 
     def test_stale_capabilities_do_not_retract_the_first_send(self):
         self.features = {"share_moments"}
