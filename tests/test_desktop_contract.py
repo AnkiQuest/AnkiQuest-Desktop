@@ -155,7 +155,7 @@ class Contracts(unittest.TestCase):
         self.routes = {("GET", path): "conquest", ("POST", path + "/tell"): "conquest_tell",
                        ("DELETE", path + "/tell"): "conquest_untell"}
         found = conquests._load(self.api, at)
-        self.assertEqual("4 lapses · 11 answers · 10 days since the first answer", conquests._stats(found, str))
+        self.assertEqual("4 lapses · 11 answers · 10 days to learn", conquests._stats(found, str))
         win = conquests._win(self.api, at, found, "Spanish", str)
         self.assertIn("I finally learned “el murciélago”, a card I had forgotten 4 times.", win["body"])
         self.assertIn("From my deck “Spanish”.", win["body"])
