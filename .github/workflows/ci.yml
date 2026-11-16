@@ -97,6 +97,17 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Read the authoritative quiet-hour cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: a499df34a819d423c4cbb7253dd4b1622f1b34bf # Server PR 24
+          path: server-contract
+          sparse-checkout: /tests/fixtures/quiet_hours.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared quiet-hour cases
+        run: cmp tests/fixtures/quiet_hours.json server-contract/tests/fixtures/quiet_hours.json
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
