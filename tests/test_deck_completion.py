@@ -8,10 +8,11 @@ from concurrent.futures import Future
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
-from addon_loader import load_module
+from addon_loader import load_in_package, load_module
 
 progress = load_module("ankiquest_progress", "deck_completion.py")
 client = load_module("ankiquest_client", "client.py")
+completions = load_in_package("deck_moment_test", "deck_moments")
 
 
 def node(deck_id, new=0, review=0, learn=0, intraday=0, children=()):
@@ -61,6 +62,26 @@ class DeckSnapshotTests(unittest.TestCase):
 
     def snapshots(self):
         return {d["id"]: d for d in progress.deck_snapshots(self.col, self.now, -120, 4)}
+
+    def test_manual_completion_requires_today_and_all_learning(self):
+        self.col.get_config = lambda *_args: 4
+        record = {"id": "1", "path": "Spanish"}
+        self.card(10, 1)
+        with patch.object(completions.time, "time", return_value=self.now / 1000):
+            self.assertIsNone(completions._finished(self.col, record, self.now))
+            self.review(10)
+            self.assertEqual(record, completions._finished(self.col, record, self.now))
+            self.assertIsNone(completions._finished(self.col, record, self.start - 1))
+            self.card(11, 1, queue=1, due=self.now // 1000 + 3600)
+            self.assertIsNone(completions._finished(self.col, record, self.now))
+
+    def test_manual_completion_keeps_selected_deck_and_skips_filtered(self):
+        self.decks.current.return_value = {"id": 1, "name": "Spanish", "dyn": 0}
+        kept = completions._capture(self.col)
+        self.decks.current.return_value = {"id": 3, "name": "Geography", "dyn": 0}
+        self.assertEqual({"id": "1", "path": "Spanish"}, kept)
+        self.decks.current.return_value = {"id": 9, "name": "Cram", "dyn": 1}
+        self.assertIsNone(completions._capture(self.col))
 
     def test_only_limits_reported_decks_but_keeps_subdeck_totals(self):
         decks = progress.deck_snapshots(self.col, self.now, -120, 4, only={"1"})

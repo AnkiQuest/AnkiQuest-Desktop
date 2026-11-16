@@ -5,7 +5,7 @@ from enum import Enum, auto
 
 from aqt.qt import QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QScrollArea, QTimer, QVBoxLayout, QWidget, Qt
 
-from . import companion_art, companion_reveal, conquests_ui, inbox, moments, reveal_ui, share_ui, today
+from . import companion_art, companion_reveal, conquests_ui, deck_moments_ui, inbox, moments, reveal_ui, share_ui, today
 from .language import tr
 
 _RESTING = ("overview", "deckBrowser", "congrats")
@@ -288,6 +288,8 @@ class _Card:
         layout.addWidget(self._session)
         self._day = share_ui._plain("")
         layout.addWidget(self._day)
+        self._completion = deck_moments_ui._Action(self)
+        layout.addWidget(self._completion._widget)
         self._status = share_ui._plain("")
         layout.addWidget(self._status)
         self._actions = QVBoxLayout()
@@ -295,7 +297,7 @@ class _Card:
         self._quiet = QCheckBox(tr("Don’t show session recaps again"))
         self._quiet.setChecked(not addon.config().get("session_summary", True))
         layout.addWidget(self._quiet)
-        self._quiet.toggled.connect(lambda checked: addon.save_config({"session_summary": not checked}))
+        self._quiet.toggled.connect(self._recaps)
         row = QHBoxLayout()
         progress = QPushButton(tr("View progress"))
         progress.clicked.connect(addon.home.open_progress)
@@ -316,6 +318,10 @@ class _Card:
     def _resume(self):
         self._dialog.accept()
         self._addon.home.continue_studying()
+
+    def _recaps(self, checked):
+        self._addon.save_config({"session_summary": not checked})
+        self._completion._update(None if checked else self._summary)
 
     def _owned(self):
         return not self._closed and self._profile is self._addon.mw.pm.profile and share_ui.same_account(self._api, self._addon.client())
@@ -354,6 +360,7 @@ class _Card:
 
     def _session_fields(self):
         key = self._choices.currentData()
+        self._completion._update(self._summary)
         self._session.setText(today.session_body(self._summary, tr) if self._summary else "")
         self._session.setVisible(self._summary is not None and not key.startswith("session:"))
         self._quiet.setVisible(self._summary is not None)

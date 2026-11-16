@@ -27,6 +27,30 @@ picture = load_in_package("share_picture_qt", "share_picture")
 
 
 class ShareWindow(unittest.TestCase):
+    def test_old_notice_and_deck_wait_for_chosen_send(self):
+        for reference, feature in (({"notification": 42}, "share_notification"),
+                                   ({"deck": {"id": "7", "name": "My Japanese"}}, "share_deck_moment")):
+            with self.subTest(feature=feature):
+                self.win = dict(reference, title="My study moment", body="A completed session.")
+                self.features.add(feature)
+                self.requests.clear()
+                self.delivered.clear()
+                window = self.open()
+                self.assertEqual(ui._Phase.READY, window._phase)
+                self.assertFalse(window._send.isEnabled())
+                self.assertFalse(any(body and "moment" in body for _, body, _ in self.requests))
+                self.tap(window, "user:cerro")
+                window._note.setText("Proud of this")
+                window._send.click()
+                sent = next(body for _, body, _ in self.requests if body and "moment" in body)
+                self.assertEqual(reference, sent["moment"])
+                self.assertEqual({"friends": ["cerro"], "groups": []}, sent["to"])
+                self.assertEqual("Proud of this", sent["note"])
+                self.assertTrue(window._undo.isVisible())
+                window._undo.click()
+                self.assertEqual({}, self.delivered)
+                window._dialog.close()
+
     def setUp(self):
         self.parent = QWidget()
         self.parent.pm = SimpleNamespace(profile={})
