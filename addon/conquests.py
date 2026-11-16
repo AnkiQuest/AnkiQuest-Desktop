@@ -192,4 +192,8 @@ def _win(api, at, found, deck, translate):
 def _stats(found, translate):
     card = found["conquest"]
     days = _days(card)
-    return translate("%d lapses · %d answers · %d days since the first answer") % (card["lapses"], card["answers"], days)
+    return " · ".join((
+        language._plural("%d lapse", "%d lapses", card["lapses"], translate) % card["lapses"],
+        language._plural("%d answer", "%d answers", card["answers"], translate) % card["answers"],
+        language._plural("%d day to learn", "%d days to learn", days, translate) % days,
+    ))
