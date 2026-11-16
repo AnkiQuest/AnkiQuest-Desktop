@@ -2,7 +2,7 @@
 
 Art for [#321](https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/321),
 part of [#88](https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/88).
-Aldana has not yet approved the appearance. This supplies assets;
+[hill approved all eight images](https://github.com/AnkiQuest/AnkiQuest-Desktop/pull/322#pullrequestreview-5919330018). This supplies assets;
 the other contributor owns pose selection and unlock activation.
 
 | Aki reference | Ankilope reference | Bluma face | Bluma happy |

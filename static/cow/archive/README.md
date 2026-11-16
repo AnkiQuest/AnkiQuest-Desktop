@@ -12,7 +12,7 @@ The old tinted Ankilope images are unchanged.
 
 [Prompts and cleanup](../../../docs/branding/bluma-core-2026-11/README.md).
 [Aldana approved these archives](https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/88#issuecomment-6918911105).
-Hill approved the appearance; Aldana's final appearance approval is pending.
+[hill approved the appearance](https://github.com/AnkiQuest/AnkiQuest-Desktop/pull/322#pullrequestreview-5919330018).
 
 | File | Original path | SHA-256 |
 |---|---|---|
