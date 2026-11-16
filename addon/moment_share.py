@@ -9,6 +9,7 @@ from . import share, social_data
 
 _FEATURE = "share_moments"
 _PLACE_FEATURE = "share_place"
+_REFERENCE_FEATURES = {"place": _PLACE_FEATURE, "notification": "share_notification", "deck": "share_deck_moment"}
 _MAX_NOTE = 140
 _MAX_RECENT = 20
 _RECENT = "ankiquestRecentShares"
@@ -92,6 +93,12 @@ def _moment(win):
     place = win.get("place")
     if isinstance(place, int) and not isinstance(place, bool) and 1 <= place <= 3:
         return {"place": place}
+    notice = win.get("notification")
+    if isinstance(notice, int) and not isinstance(notice, bool) and notice > 0:
+        return {"notification": notice}
+    deck = win.get("deck")
+    if isinstance(deck, dict) and all(isinstance(deck.get(key), str) and deck[key].strip() for key in ("id", "name")):
+        return {"deck": {key: deck[key] for key in ("id", "name")}}
     return None
 
 
@@ -99,7 +106,7 @@ def _supported(win, features):
     """New reference kinds stay off until this server advertises them."""
     moment = _moment(win)
     return (_FEATURE in features and moment is not None
-            and ("place" not in moment or _PLACE_FEATURE in features))
+            and all(kind not in moment or feature in features for kind, feature in _REFERENCE_FEATURES.items()))
 
 
 def _send(api, win, choice, note):

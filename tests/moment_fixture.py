@@ -27,6 +27,14 @@ class _Card:
         self._items, self._summary = list(items), summary
 
 
+class _Prompt:
+    def __init__(self, presenter, api, summary):
+        self._summary = summary
+        self._key = (summary["day"], summary["deck"]["id"])
+        self._start, self._close, self._show = Mock(), Mock(), Mock()
+        self._showing = Mock(return_value=False)
+
+
 def cards(case):
     module = case.addon.moments_ui
     factory = Mock(side_effect=_Card)
@@ -34,4 +42,7 @@ def cards(case):
         changed = patch.object(module, name, value)
         changed.start()
         case.addCleanup(changed.stop)
+    changed = patch.object(module.deck_moments_ui, "_Prompt", _Prompt)
+    changed.start()
+    case.addCleanup(changed.stop)
     return factory

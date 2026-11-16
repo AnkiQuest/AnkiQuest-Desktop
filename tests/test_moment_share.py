@@ -13,6 +13,31 @@ CASES = json.loads((Path(__file__).parent / "fixtures/share_targets.json").read_
 
 
 class Choices(unittest.TestCase):
+    def test_old_notice_and_deck_need_their_capabilities(self):
+        for win, feature, reference in (
+            ({"notification": 42}, "share_notification", {"notification": 42}),
+            ({"deck": {"id": "7", "name": "My Japanese"}}, "share_deck_moment",
+             {"deck": {"id": "7", "name": "My Japanese"}}),
+        ):
+            with self.subTest(feature=feature):
+                self.assertEqual(reference, model._moment(win))
+                self.assertFalse(model._supported(win, {"share_moments"}))
+                self.assertFalse(model._supported(win, {feature}))
+                self.assertTrue(model._supported(win, {"share_moments", feature}))
+                api = SimpleNamespace(user="hill", _request=Mock(return_value={
+                    "recipients": 1, "win": 17, "undo_until": 1900000000000}))
+                chosen = model._Picked((model._Target(model._Kind.FRIEND, "cerro", "Cerro"),))
+                model._send(api, win, chosen, "Proud of this")
+                api._request.assert_called_once_with("/api/share/hill", {
+                    "moment": reference, "to": {"friends": ["cerro"], "groups": []}, "note": "Proud of this"})
+
+    def test_saved_win_wins_over_older_notice(self):
+        self.assertEqual({"win": 17}, model._moment({"win": 17, "notification": 42}))
+        for notice in (True, False, 0, -1, "42", None):
+            self.assertIsNone(model._moment({"notification": notice}))
+        for deck in (None, {}, {"id": "7"}, {"id": "", "name": "Study"}, {"id": "7", "name": " "}):
+            self.assertIsNone(model._moment({"deck": deck}))
+
     def test_place_reference_and_send(self):
         for rank in (1, 2, 3):
             self.assertEqual({"place": rank}, model._moment({"place": rank}))

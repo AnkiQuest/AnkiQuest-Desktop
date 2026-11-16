@@ -262,9 +262,9 @@ def _route(sharing, legacy):
     sharing.run(sharing.api.capabilities, checked)
 
 
-def win_dialog(parent, api, win, companion, current_client, run):
+def win_dialog(parent, api, win, companion, current_client, run, on_sent=None):
     from . import moment_share_ui
-    return moment_share_ui._dialog(parent, api, win, companion, current_client, run)
+    return moment_share_ui._dialog(parent, api, win, companion, current_client, run, on_sent)
 
 
 def _corner(dialog, parent):
