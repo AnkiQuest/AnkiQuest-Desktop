@@ -16,7 +16,7 @@ from aqt.qt import QAction, QApplication, QKeySequence, QMenu, QTimer
 from aqt.utils import openLink, tooltip
 
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
-from . import companion_ui, greeting, inbox_ui, moments, moments_ui, moods, share, sharing
+from . import companion_ui, greeting, inbox_ui, moments, moments_ui, moods, reveal_ui, share, sharing
 from .inbox import CHALLENGE_ROUTE
 from .language import _plural, tr
 from .client import (
@@ -1173,7 +1173,8 @@ def open_companion(parent=None):
     def saved(companion):
         _companion_saved(account, companion)
 
-    return companion_ui.open_picker(parent or mw, mw, api, current_companion(), saved, home.today_mood())
+    motion = reveal_ui.motion(config())
+    return companion_ui.open_picker(parent or mw, mw, api, client, current_companion(), saved, home.today_mood(), motion)
 
 
 def choose_companion(api, companion, run):
