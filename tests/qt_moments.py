@@ -359,16 +359,48 @@ class Moments(unittest.TestCase):
         control._retract()
         self.assertEqual(1, len(self.requests))
 
-    def test_a_picture_can_be_requested_again_when_the_worker_has_not_created_it(self):
+    def test_a_local_picture_is_available_before_the_worker_keeps_a_win(self):
         self.found["win"] = None
         control = self.conquest()
-        self.assertFalse(control._image.isEnabled())
+        self.assertTrue(control._image.isEnabled())
+        self.assertTrue(control._file.isEnabled())
+        self.assertFalse(control._link.isEnabled())
         self.found["win"] = 9
         control._retry.click()
         self.assertTrue(control._image.isEnabled())
         control._copy.click()
-        self.assertIn("I learned a difficult card in German.", QApplication.clipboard().text())
+        self.assertIn("I finally learned a card I had forgotten 5 times.", QApplication.clipboard().text())
+        self.assertIn("From my deck “German”.", QApplication.clipboard().text())
         self.assertIn("/conquered/sam/50", QApplication.clipboard().text())
+
+    def test_removing_a_label_cancels_an_older_picture_request(self):
+        self.found["label"] = "shared words"
+        control = self.conquest()
+        self.defer = True
+        with patch.object(ui.share_ui.share, "card", side_effect=OSError("offline")):
+            control._image.click()
+            pending = self.tasks.pop()
+            self.defer = False
+            control._remove.click()
+            self.assertIsNone(control._found["label"])
+            QApplication.clipboard().clear()
+            self.complete(pending)
+        self.assertTrue(QApplication.clipboard().image().isNull(), "the old label must not be exported")
+
+    def test_removed_and_unsaved_labels_never_enter_a_new_local_picture(self):
+        self.found["label"] = "shared words"
+        control = self.conquest()
+        control._remove.click()
+        control._label.setText("private draft")
+        control._label.setModified(True)
+        renderer = load_in_package("moments_qt", "share_picture")
+        with patch.object(ui.share_ui.share, "card", side_effect=OSError("offline")), \
+                patch.object(renderer, "render", wraps=renderer.render) as draw:
+            control._image.click()
+        self.assertEqual(1, draw.call_count)
+        content = draw.call_args.args[0]
+        self.assertNotIn("shared words", content["body"])
+        self.assertNotIn("private draft", content["body"])
 
     def test_late_replies_cannot_write_a_closed_or_switched_card(self):
         control = self.conquest()

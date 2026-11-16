@@ -97,12 +97,51 @@ class ConquestApi(unittest.TestCase):
         self.api._request.assert_called_with("/api/conquests/sam/50/tell", method="DELETE")
 
     def test_share_words_name_the_saved_label_deck_and_page_in_first_person(self):
-        win = conquests._win(self.api, 50, {"label": "der Hund", "win": 7}, "German", lambda text: text)
+        found = {"label": "der Hund", "win": 7, "conquest": {"lapses": 5, "answers": 20, "at": 50, "since": 0}}
+        win = conquests._win(self.api, 50, found, "German", lambda text: text)
         self.assertEqual(7, win["win"])
         self.assertEqual("I conquered a card!", win["title"])
-        self.assertIn("I learned der Hund in German.", win["body"])
+        self.assertIn("I finally learned “der Hund”, a card I had forgotten 5 times.", win["body"])
+        self.assertIn("From my deck “German”.", win["body"])
         self.assertIn("https://quest.test/conquered/sam/50", win["body"])
         self.assertNotIn("None", conquests._win(self.api, 50, {}, "", lambda text: text)["body"])
+
+    def test_shared_picture_words_and_label_privacy(self):
+        cases = json.loads((Path(__file__).parent / "fixtures/conquest_share.json").read_text("utf-8"))["cases"]
+        for case in cases:
+            with self.subTest(case=case["name"]):
+                win = conquests._win(self.api, 50, case["found"], case["deck"], str)
+                self.assertEqual(case["caption"] + "\nhttps://quest.test/conquered/sam/50", win["body"])
+                self.assertEqual(case["picture"], win["picture_body"])
+                self.assertNotIn("https://", win["picture_body"])
+
+    def test_conquest_picture_words_have_every_translation(self):
+        keys = set()
+        for count in (1, 2):
+            for label in (None, "saved words"):
+                found = {"label": label, "conquest": {"lapses": count, "answers": count, "at": count * 86400000, "since": 0}}
+                conquests._win(self.api, 50, found, "My deck", lambda key: keys.add(key) or key)
+                conquests._stats(found, lambda key: keys.add(key) or key)
+        for code, table in conquests.language.TABLES.items():
+            with self.subTest(language=code):
+                self.assertFalse(keys - table.keys(), "missing conquest translation")
+
+    def test_shared_days_round_like_android_and_the_website(self):
+        cases = json.loads((Path(__file__).parent / "fixtures/conquest_share.json").read_text("utf-8"))["days"]
+        for case in cases:
+            with self.subTest(elapsed=case["elapsed_ms"]):
+                found = {"conquest": {"at": case["elapsed_ms"], "since": 0, "answers": 4, "lapses": 2}}
+                days = case["expected"]
+                win = conquests._win(self.api, 50, found, "", str)
+                self.assertTrue(win["picture_body"].endswith("%d %s to learn" % (days, "day" if days == 1 else "days")))
+                self.assertTrue(conquests._stats(found, str).endswith("%d %s to learn" % (days, "day" if days == 1 else "days")))
+
+    def test_stats_pluralize_each_count(self):
+        for count, expected in ((1, "1 lapse · 1 answer · 1 day to learn"),
+                                (2, "2 lapses · 2 answers · 2 days to learn")):
+            with self.subTest(count=count):
+                found = {"conquest": {"lapses": count, "answers": count, "at": count * 86400000, "since": 0}}
+                self.assertEqual(expected, conquests._stats(found, str))
 
 
 if __name__ == "__main__":

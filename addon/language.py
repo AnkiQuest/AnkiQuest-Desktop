@@ -15,13 +15,12 @@ SPANISH = {
     "It is too late to undo this share.": "Ya es demasiado tarde para deshacer lo compartido.",
     "Label saved.": "Etiqueta guardada.", "Label removed.": "Etiqueta eliminada.",
     "Share taken back where possible.": "Se ha retirado lo compartido donde ha sido posible.",
-    "a difficult card": "una tarjeta difícil", "I learned %s in %s.": "He aprendido %s en %s.", "I learned %s.": "He aprendido %s.",
     "I conquered a card!": "¡He conquistado una tarjeta!",
-    "%d lapses · %d answers · %d days since the first answer": "%d olvidos · %d respuestas · %d días desde la primera respuesta",
     "Your study companion.": "Tu compañero de estudio.",
     "Study companion": "Compañero de estudio",
     "No companion": "Sin compañero",
     "Choose who cheers you on.": "Elige quién te anima.",
+    "You are 1 tap away from chibi": "Estás a 1 toque de chibi", "You are %d taps away from chibi": "Estás a %d toques de chibi",
     "Reach level %d": "Alcanza el nivel %d", "Level %d of %d": "Nivel %d de %d",
     "Study for %d hours in total": "Estudia durante %d horas en total", "%d of %d hours": "%d de %d horas",
     "Could not load your study companion (%s).": "No se pudo cargar tu compañero de estudio (%s).",
@@ -163,13 +162,12 @@ GERMAN = {
     "It is too late to undo this share.": "Das Teilen lässt sich nicht mehr rückgängig machen.",
     "Label saved.": "Bezeichnung gespeichert.", "Label removed.": "Bezeichnung entfernt.",
     "Share taken back where possible.": "Das Teilen wurde soweit möglich rückgängig gemacht.",
-    "a difficult card": "eine schwierige Karte", "I learned %s in %s.": "Ich habe %s in %s gelernt.", "I learned %s.": "Ich habe %s gelernt.",
     "I conquered a card!": "Ich habe eine Karte gemeistert!",
-    "%d lapses · %d answers · %d days since the first answer": "%d Fehler · %d Antworten · %d Tage seit der ersten Antwort",
     "Your study companion.": "Dein Lernbegleiter.",
     "Study companion": "Lernbegleiter",
     "No companion": "Kein Begleiter",
     "Choose who cheers you on.": "Wähle, wer dich anfeuert.",
+    "You are 1 tap away from chibi": "Du bist 1 Tipp von Chibi entfernt", "You are %d taps away from chibi": "Du bist %d Tipps von Chibi entfernt",
     "Reach level %d": "Erreiche Level %d", "Level %d of %d": "Level %d von %d",
     "Study for %d hours in total": "Insgesamt %d Stunden lernen", "%d of %d hours": "%d von %d Stunden",
     "Could not load your study companion (%s).": "Dein Lernbegleiter konnte nicht geladen werden (%s).",
@@ -278,13 +276,12 @@ FRENCH = {
     "It is too late to undo this share.": "Il est trop tard pour annuler ce partage.",
     "Label saved.": "Nom enregistré.", "Label removed.": "Nom supprimé.",
     "Share taken back where possible.": "Le partage a été annulé dans la mesure du possible.",
-    "a difficult card": "une carte difficile", "I learned %s in %s.": "J’ai appris %s dans %s.", "I learned %s.": "J’ai appris %s.",
     "I conquered a card!": "J’ai maîtrisé une carte !",
-    "%d lapses · %d answers · %d days since the first answer": "%d oublis · %d réponses · %d jours depuis la première réponse",
     "Your study companion.": "Ton compagnon d’étude.",
     "Study companion": "Compagnon d’étude",
     "No companion": "Aucun compagnon",
     "Choose who cheers you on.": "Choisis qui t’encourage.",
+    "You are 1 tap away from chibi": "Vous êtes à 1 appui de chibi", "You are %d taps away from chibi": "Vous êtes à %d appuis de chibi",
     "Reach level %d": "Atteins le niveau %d", "Level %d of %d": "Niveau %d sur %d",
     "Study for %d hours in total": "Étudier %d heures au total", "%d of %d hours": "%d heures sur %d",
     "Could not load your study companion (%s).": "Impossible de charger ton compagnon d’étude (%s).",
@@ -393,13 +390,12 @@ PORTUGUESE = {
     "It is too late to undo this share.": "Já é tarde para anular esta partilha.",
     "Label saved.": "Nome guardado.", "Label removed.": "Nome removido.",
     "Share taken back where possible.": "A partilha foi anulada onde foi possível.",
-    "a difficult card": "um cartão difícil", "I learned %s in %s.": "Aprendi %s em %s.", "I learned %s.": "Aprendi %s.",
     "I conquered a card!": "Conquistei um cartão!",
-    "%d lapses · %d answers · %d days since the first answer": "%d esquecimentos · %d respostas · %d dias desde a primeira resposta",
     "Your study companion.": "O teu companheiro de estudo.",
     "Study companion": "Companheiro de estudo",
     "No companion": "Sem companheiro",
     "Choose who cheers you on.": "Escolhe quem te apoia.",
+    "You are 1 tap away from chibi": "Está a 1 toque de chibi", "You are %d taps away from chibi": "Está a %d toques de chibi",
     "Reach level %d": "Chega ao nível %d", "Level %d of %d": "Nível %d de %d",
     "Study for %d hours in total": "Estudar %d horas no total", "%d of %d hours": "%d de %d horas",
     "Could not load your study companion (%s).": "Não foi possível carregar o teu companheiro de estudo (%s).",
@@ -2032,7 +2028,7 @@ PORTUGUESE.update({
     "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Ninguém novo recebeu: os teus amigos já têm, ou ainda não tens amigos no AnkiQuest.",
 })
 
-# Aki's greeting on the first open. Android has these in English only so far.
+# Aki's greeting on the first open; Android uses the same wording.
 SPANISH.update({
     "Hi, I’m Aki!": "¡Hola, soy Aki!",
     "AnkiQuest adds streaks, friends and leaderboards to Anki. I’ll keep you company while you study.": "AnkiQuest añade rachas, amigos y clasificaciones a Anki. Te haré compañía mientras estudias.",
@@ -2060,3 +2056,79 @@ SPANISH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, 
 GERMAN[_ANKI_TAN] = '<a href="%s">Anki-tan</a> von <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 FRENCH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> par <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 PORTUGUESE[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+
+# Conquest exports use Android's first-person caption and public counts.
+SPANISH.update({
+    "I finally learned a card I had forgotten %d time.": "Por fin aprendí una tarjeta que había olvidado %d vez.",
+    "I finally learned a card I had forgotten %d times.": "Por fin aprendí una tarjeta que había olvidado %d veces.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Por fin aprendí «%s», una tarjeta que había olvidado %d vez.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Por fin aprendí «%s», una tarjeta que había olvidado %d veces.",
+    "From my deck “%s”.": "De mi mazo «%s».",
+    "%d answer": "%d respuesta", "%d answers": "%d respuestas",
+    "%d lapse": "%d olvido", "%d lapses": "%d olvidos",
+    "%d day to learn": "%d día para aprenderla", "%d days to learn": "%d días para aprenderla",
+})
+GERMAN.update({
+    "I finally learned a card I had forgotten %d time.": "Ich habe endlich eine Karte gelernt, die ich %d-mal vergessen hatte.",
+    "I finally learned a card I had forgotten %d times.": "Ich habe endlich eine Karte gelernt, die ich %d-mal vergessen hatte.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Ich habe endlich „%s“ gelernt, eine Karte, die ich %d-mal vergessen hatte.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Ich habe endlich „%s“ gelernt, eine Karte, die ich %d-mal vergessen hatte.",
+    "From my deck “%s”.": "Aus meinem Stapel „%s“.",
+    "%d answer": "%d Antwort", "%d answers": "%d Antworten",
+    "%d lapse": "%d Fehler", "%d lapses": "%d Fehler",
+    "%d day to learn": "%d Tag zum Lernen", "%d days to learn": "%d Tage zum Lernen",
+})
+FRENCH.update({
+    "I finally learned a card I had forgotten %d time.": "J’ai enfin appris une carte que j’avais oubliée %d fois.",
+    "I finally learned a card I had forgotten %d times.": "J’ai enfin appris une carte que j’avais oubliée %d fois.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "J’ai enfin appris « %s », une carte que j’avais oubliée %d fois.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "J’ai enfin appris « %s », une carte que j’avais oubliée %d fois.",
+    "From my deck “%s”.": "De mon paquet « %s ».",
+    "%d answer": "%d réponse", "%d answers": "%d réponses",
+    "%d lapse": "%d oubli", "%d lapses": "%d oublis",
+    "%d day to learn": "%d jour pour l’apprendre", "%d days to learn": "%d jours pour l’apprendre",
+})
+PORTUGUESE.update({
+    "I finally learned a card I had forgotten %d time.": "Finalmente aprendi um cartão que tinha esquecido %d vez.",
+    "I finally learned a card I had forgotten %d times.": "Finalmente aprendi um cartão que tinha esquecido %d vezes.",
+    "I finally learned “%s”, a card I had forgotten %d time.": "Finalmente aprendi «%s», um cartão que tinha esquecido %d vez.",
+    "I finally learned “%s”, a card I had forgotten %d times.": "Finalmente aprendi «%s», um cartão que tinha esquecido %d vezes.",
+    "From my deck “%s”.": "Do meu baralho «%s».",
+    "%d answer": "%d resposta", "%d answers": "%d respostas",
+    "%d lapse": "%d esquecimento", "%d lapses": "%d esquecimentos",
+    "%d day to learn": "%d dia para aprender", "%d days to learn": "%d dias para aprender",
+})
+
+# Received deck alerts share Android's Stop and Undo wording.
+SPANISH.update({
+    "Stop deck alerts from %s": "Dejar de recibir avisos de mazos de %s",
+    "You won't get deck alerts from %s.": "No recibirás avisos de mazos de %s.",
+    "You'll get deck alerts from %s again.": "Volverás a recibir avisos de mazos de %s.",
+    "You aren't getting deck alerts from %s.": "Ya no recibes avisos de mazos de %s.",
+    "%s no longer shares deck alerts.": "%s ya no comparte avisos de mazos.",
+    "Couldn't change deck alerts. Try again.": "No se pudieron cambiar los avisos de mazos. Inténtalo de nuevo.",
+})
+GERMAN.update({
+    "Stop deck alerts from %s": "Stapelmeldungen von %s stoppen",
+    "You won't get deck alerts from %s.": "Du erhältst keine Stapelmeldungen mehr von %s.",
+    "You'll get deck alerts from %s again.": "Du erhältst wieder Stapelmeldungen von %s.",
+    "You aren't getting deck alerts from %s.": "Du erhältst bereits keine Stapelmeldungen von %s.",
+    "%s no longer shares deck alerts.": "%s teilt keine Stapelmeldungen mehr.",
+    "Couldn't change deck alerts. Try again.": "Stapelmeldungen konnten nicht geändert werden. Versuche es erneut.",
+})
+FRENCH.update({
+    "Stop deck alerts from %s": "Arrêter les alertes de paquets de %s",
+    "You won't get deck alerts from %s.": "Tu ne recevras plus d’alertes de paquets de %s.",
+    "You'll get deck alerts from %s again.": "Tu recevras à nouveau les alertes de paquets de %s.",
+    "You aren't getting deck alerts from %s.": "Tu ne reçois déjà plus d’alertes de paquets de %s.",
+    "%s no longer shares deck alerts.": "%s ne partage plus d’alertes de paquets.",
+    "Couldn't change deck alerts. Try again.": "Impossible de modifier les alertes de paquets. Réessaie.",
+})
+PORTUGUESE.update({
+    "Stop deck alerts from %s": "Parar avisos de baralhos de %s",
+    "You won't get deck alerts from %s.": "Não receberás avisos de baralhos de %s.",
+    "You'll get deck alerts from %s again.": "Voltarás a receber avisos de baralhos de %s.",
+    "You aren't getting deck alerts from %s.": "Já não recebes avisos de baralhos de %s.",
+    "%s no longer shares deck alerts.": "%s já não partilha avisos de baralhos.",
+    "Couldn't change deck alerts. Try again.": "Não foi possível alterar os avisos de baralhos. Tenta novamente.",
+})
