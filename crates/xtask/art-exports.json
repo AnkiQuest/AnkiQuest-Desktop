@@ -208,49 +208,49 @@
     {
       "exporter": "addon",
       "file": "addon/art/bluma_face.png",
-      "master": "static/bluma/face.png",
+      "master": "static/cow/face.png",
       "sha256": "e8de3cc26fb4b94adeffad6a2c2f928e5d50e59ef536021044ac7541de56efce"
     },
     {
       "exporter": "addon",
-      "file": "addon/art/bluma_sleeping.png",
-      "master": "static/bluma/sleeping.png",
+      "file": "addon/art/bluma_asleep.png",
+      "master": "static/cow/asleep.png",
       "sha256": "f79255b238eece398ca5651fd8010500cff8850e4c6e9f3c2cdab9bcaae9de0f"
     },
     {
       "exporter": "addon",
-      "file": "addon/art/bluma_celebrate.png",
-      "master": "static/bluma/celebrate.png",
+      "file": "addon/art/bluma_happy.png",
+      "master": "static/cow/happy.png",
       "sha256": "cead5bed8df7032de8ef1877b2ab248c9d6cdba3f48197ac6a97069c03ad8230"
     },
     {
       "exporter": "addon",
       "file": "addon/art/bluma_streak.png",
-      "master": "static/bluma/streak.png",
+      "master": "static/cow/streak.png",
       "sha256": "86276a677ed815f2597b268d61b28415d165ef74ef2f3cdd35e352efefe282f2"
     },
     {
       "exporter": "addon",
       "file": "addon/art/bluma_sad.png",
-      "master": "static/bluma/sad.png",
+      "master": "static/cow/sad.png",
       "sha256": "1838cc61662aa886e97cf0667cf7c146fc4e7cb5e92a744364caf84a2d2c3af4"
     },
     {
       "exporter": "addon",
       "file": "addon/art/bluma_hopeful.png",
-      "master": "static/bluma/hopeful.png",
+      "master": "static/cow/hopeful.png",
       "sha256": "345f640aef4c698353e4b70f634dc5b157ae3e73b4085818255b4c6818d6a604"
     },
     {
       "exporter": "addon",
       "file": "addon/art/bluma_frozen.png",
-      "master": "static/bluma/frozen.png",
+      "master": "static/cow/frozen.png",
       "sha256": "bb9e520390772e9caeb7342f54a2e13a686daa531a32efb15798e888a7a1ea1d"
     },
     {
       "exporter": "addon",
       "file": "addon/art/bluma_neglected.png",
-      "master": "static/bluma/neglected.png",
+      "master": "static/cow/neglected.png",
       "sha256": "c3fa305a46ce0aca4a900fdaccba25a19aaf7cc46183bee3186299da59768b14"
     }
   ],
@@ -358,6 +358,14 @@
     {
       "file": "addon/art/anki_tan_sleeping.png",
       "why": "Earlier name for the canonical anki_tan_asleep export, preserved unchanged. Unreferenced."
+    },
+    {
+      "file": "addon/art/bluma_sleeping.png",
+      "why": "Earlier name for the canonical bluma_asleep export, preserved unchanged. Unreferenced."
+    },
+    {
+      "file": "addon/art/bluma_celebrate.png",
+      "why": "Earlier name for the canonical bluma_happy export, preserved unchanged. Unreferenced."
     }
   ]
 }

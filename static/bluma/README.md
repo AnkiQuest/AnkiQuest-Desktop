@@ -6,9 +6,11 @@ Ankilope supplied the illustration style; Bluma has her own cow silhouette,
 cream muzzle and eye patches, lavender forelock, ivory horns, indigo scarf
 and brown flashcard satchel. She is not based on a commercial cow mascot.
 
-The eight transparent 1254 px masters supply face, asleep (`sleeping`),
-happy (`celebrate`), streak, sad, hopeful, frozen and neglected poses.
-The old tinted Ankilope artwork is preserved.
+The eight transparent 1254 px originals are preserved here unchanged.
+Active masters use the canonical pose names under [static/cow](../cow/),
+matching the companion id. Those files are byte-identical copies; the
+earlier `sleeping` and `celebrate` names correspond to `asleep` and `happy`.
+The old tinted Ankilope artwork is also preserved.
 
 [Review and provenance](../../docs/branding/bluma-core-2026-11/README.md)
 include all 24 prompts, the selections, cleanup measurements and reusable

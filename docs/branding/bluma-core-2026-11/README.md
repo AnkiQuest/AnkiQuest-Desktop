@@ -7,15 +7,15 @@ the other contributor owns pose selection and unlock activation.
 
 | Aki reference | Ankilope reference | Bluma face | Bluma happy |
 |---|---|---|---|
-| ![Aki](../../../static/aki/face.png) | ![Ankilope](../../../static/ankilope/face.png) | ![Face](../../../static/bluma/face.png) | ![Happy](../../../static/bluma/celebrate.png) |
+| ![Aki](../../../static/aki/face.png) | ![Ankilope](../../../static/ankilope/face.png) | ![Face](../../../static/cow/face.png) | ![Happy](../../../static/cow/happy.png) |
 
 | Asleep | Streak | Sad |
 |---|---|---|
-| ![Asleep](../../../static/bluma/sleeping.png) | ![Streak](../../../static/bluma/streak.png) | ![Sad](../../../static/bluma/sad.png) |
+| ![Asleep](../../../static/cow/asleep.png) | ![Streak](../../../static/cow/streak.png) | ![Sad](../../../static/cow/sad.png) |
 
 | Hopeful | Frozen | Neglected |
 |---|---|---|
-| ![Hopeful](../../../static/bluma/hopeful.png) | ![Frozen](../../../static/bluma/frozen.png) | ![Neglected](../../../static/bluma/neglected.png) |
+| ![Hopeful](../../../static/cow/hopeful.png) | ![Frozen](../../../static/cow/frozen.png) | ![Neglected](../../../static/cow/neglected.png) |
 
 OpenAI `image_gen` generated three candidates per pose on 2026-11-16;
 its model identifier was not exposed. [Generation records](generation.json)
@@ -33,8 +33,12 @@ each pose on white, dark and grey, at native size and 64/128 px. Original
 artwork is preserved; these masters and exports use new `bluma_*` names.
 
 [Reusable prompts](prompts.md) supply a style prompt and one prompt per
-core pose for the custom-companion template. `celebrate` is the export
-name for happy; `sleeping` is the export name for asleep.
+core pose for the custom-companion template. Active masters now use the
+fixture names in `static/cow/`, matching the companion id. Happy and
+asleep export as `bluma_happy` and `bluma_asleep`. Earlier `static/bluma/`
+masters and the `celebrate`/`sleeping` exports remain byte-identical;
+the latter are marked retired in the export manifest. The canonical
+paths contain exact copies of the same generated art, without processing.
 
 The existing Rust exporters produced canonical 256 px add-on PNGs and
 1024 px Android WebPs on Linux in
@@ -42,5 +46,8 @@ The existing Rust exporters produced canonical 256 px add-on PNGs and
 source `d7b7b96e7c7a50ddb7559f898ef2b16932f63367`. All 34 existing add-on
 images remained byte-identical. [Export hashes](exports.json) record the
 eight new PNGs and WebPs; the PNG hashes also match the art manifest.
+That provenance record retains the original filenames. The two renamed
+PNG exports have the same bytes and hashes; final CI regenerates and
+checks them against the canonical master paths.
 Android parity is tracked in
 [#340](https://github.com/AnkiQuest/AnkiQuest-Android/issues/340).

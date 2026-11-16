@@ -23,7 +23,7 @@ const FIXTURE: &str = "tests/fixtures/companion_poses.json";
 const COMPANIONS: &[(&str, &str)] = &[
     ("aki", "aki"),
     ("ankilope", "ankilope"),
-    ("cow", "bluma"),
+    ("cow", "cow"),
     ("anki_tan", "anki-tan"),
     ("anki_tan_chibi", "anki-tan/chibi"),
     ("leech_tan", "leech-tan"),

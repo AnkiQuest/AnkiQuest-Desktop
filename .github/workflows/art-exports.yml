@@ -7,6 +7,7 @@ on:
       - 'static/ankilope/**'
       - 'static/anki-tan/**'
       - 'static/bluma/**'
+      - 'static/cow/**'
       - 'crates/art/**'
       - 'crates/xtask/**'
       - 'Cargo.lock'
