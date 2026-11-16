@@ -36,6 +36,11 @@ artwork is preserved; these masters and exports use new `bluma_*` names.
 core pose for the custom-companion template. `celebrate` is the export
 name for happy; `sleeping` is the export name for asleep.
 
-The existing Rust exporters produce canonical 256 px add-on PNGs and
-1024 px Android WebPs on Linux. Their run and hashes will be recorded
-before this draft becomes ready for review.
+The existing Rust exporters produced canonical 256 px add-on PNGs and
+1024 px Android WebPs on Linux in
+[run 43793906258](https://github.com/AnkiQuest/AnkiQuest-Desktop/actions/runs/43793906258),
+source `d7b7b96e7c7a50ddb7559f898ef2b16932f63367`. All 34 existing add-on
+images remained byte-identical. [Export hashes](exports.json) record the
+eight new PNGs and WebPs; the PNG hashes also match the art manifest.
+Android parity is tracked in
+[#340](https://github.com/AnkiQuest/AnkiQuest-Android/issues/340).
