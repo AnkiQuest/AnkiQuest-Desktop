@@ -13,6 +13,33 @@ CASES = json.loads((Path(__file__).parent / "fixtures/share_targets.json").read_
 
 
 class Choices(unittest.TestCase):
+    def test_place_reference_and_send(self):
+        for rank in (1, 2, 3):
+            self.assertEqual({"place": rank}, model._moment({"place": rank}))
+        for rank in (True, 0, 4, "2", None):
+            self.assertIsNone(model._moment({"place": rank}))
+        self.assertEqual({"win": 17}, model._moment({"win": 17, "place": 2}))
+        api = SimpleNamespace(user="hill", _request=Mock(return_value={
+            "recipients": 1, "win": 17, "undo_until": 1900000000000}))
+        chosen = model._Picked((model._Target(model._Kind.FRIEND, "cerro", "Cerro"),))
+        sent = model._send(api, {"place": 2}, chosen, " A good study week ")
+        api._request.assert_called_once_with("/api/share/hill", {
+            "moment": {"place": 2}, "to": {"friends": ["cerro"], "groups": []},
+            "note": "A good study week"})
+        self.assertEqual(model._Sent(1, 17, 1900000000000), sent)
+
+    def test_place_needs_capability(self):
+        features = {"share_moments"}
+        api = SimpleNamespace(user="hill", capabilities=lambda: features,
+                              _request=Mock(return_value={"friends": [], "groups": []}))
+        self.assertIsNone(model._load(api, {"place": 2}, []))
+        api._request.assert_not_called()
+        features.add("share_place")
+        self.assertEqual((), model._load(api, {"place": 2}, []))
+        api._request.assert_called_once()
+        features.remove("share_moments")
+        self.assertIsNone(model._load(api, {"place": 2}, []))
+
     def test_shared_order_and_group_membership(self):
         for case in CASES["order"]:
             with self.subTest(case=case["name"]):
