@@ -121,9 +121,27 @@ class ConquestApi(unittest.TestCase):
             for label in (None, "saved words"):
                 found = {"label": label, "conquest": {"lapses": count, "answers": count, "at": count * 86400000, "since": 0}}
                 conquests._win(self.api, 50, found, "My deck", lambda key: keys.add(key) or key)
+                conquests._stats(found, lambda key: keys.add(key) or key)
         for code, table in conquests.language.TABLES.items():
             with self.subTest(language=code):
                 self.assertFalse(keys - table.keys(), "missing conquest translation")
+
+    def test_shared_days_round_like_android_and_the_website(self):
+        cases = json.loads((Path(__file__).parent / "fixtures/conquest_share.json").read_text("utf-8"))["days"]
+        for case in cases:
+            with self.subTest(elapsed=case["elapsed_ms"]):
+                found = {"conquest": {"at": case["elapsed_ms"], "since": 0, "answers": 4, "lapses": 2}}
+                days = case["expected"]
+                win = conquests._win(self.api, 50, found, "", str)
+                self.assertTrue(win["picture_body"].endswith("%d %s to learn" % (days, "day" if days == 1 else "days")))
+                self.assertTrue(conquests._stats(found, str).endswith("%d %s to learn" % (days, "day" if days == 1 else "days")))
+
+    def test_stats_pluralize_each_count(self):
+        for count, expected in ((1, "1 lapse · 1 answer · 1 day to learn"),
+                                (2, "2 lapses · 2 answers · 2 days to learn")):
+            with self.subTest(count=count):
+                found = {"conquest": {"lapses": count, "answers": count, "at": count * 86400000, "since": 0}}
+                self.assertEqual(expected, conquests._stats(found, str))
 
 
 if __name__ == "__main__":

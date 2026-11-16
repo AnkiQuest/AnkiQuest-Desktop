@@ -69,9 +69,17 @@ class ReplyTextTests(unittest.TestCase):
 class ActionTests(unittest.TestCase):
     def test_a_friends_message_can_be_answered_until_it_has_been(self):
         entry = {"id": 4, "sender": "cerro", "kind": "completion"}
-        self.assertEqual(["reply", "cheer", "open", "read"], inbox.actions(entry))
-        self.assertEqual(["cheer", "open", "read"], inbox.actions(dict(entry, replied=True)))
-        self.assertEqual(["reply", "cheer", "open"], inbox.actions(dict(entry, read_at=1790000000)))
+        self.assertEqual(["reply", "cheer", "stop_alerts", "open", "read"], inbox.actions(entry))
+        self.assertEqual(["cheer", "stop_alerts", "open", "read"], inbox.actions(dict(entry, replied=True)))
+        self.assertEqual(["reply", "cheer", "stop_alerts", "open"], inbox.actions(dict(entry, read_at=1790000000)))
+
+    def test_stop_only_received_deck(self):
+        entry = {"id": 4, "sender": "cerro", "kind": "completion"}
+        self.assertIn("stop_alerts", inbox.actions(entry, "hill"))
+        self.assertNotIn("stop_alerts", inbox.actions(entry, "cerro"))
+        for other in ({"sender": ""}, {"sender": " "}, {"id": 0}, {"id": True}, {"kind": "reply"}, {"kind": "share"}):
+            with self.subTest(other=other):
+                self.assertNotIn("stop_alerts", inbox.actions(dict(entry, **other), "hill"))
 
     def test_a_message_can_be_answered_until_it_has_been(self):
         self.assertTrue(inbox.answerable({"sender": "cerro"}))
