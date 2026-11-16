@@ -204,6 +204,54 @@
       "file": "addon/art/anki_tan_neglected.png",
       "master": "static/anki-tan/generated/neglected-full.png",
       "sha256": "d3a1ec4c5fa784358b04bd7b32a05a0e1040296dfec42a70df4c6eb83c5a4ab1"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_face.png",
+      "master": "static/bluma/face.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_sleeping.png",
+      "master": "static/bluma/sleeping.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_celebrate.png",
+      "master": "static/bluma/celebrate.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_streak.png",
+      "master": "static/bluma/streak.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_sad.png",
+      "master": "static/bluma/sad.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_hopeful.png",
+      "master": "static/bluma/hopeful.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_frozen.png",
+      "master": "static/bluma/frozen.png",
+      "sha256": ""
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_neglected.png",
+      "master": "static/bluma/neglected.png",
+      "sha256": ""
     }
   ],
   "retired": [

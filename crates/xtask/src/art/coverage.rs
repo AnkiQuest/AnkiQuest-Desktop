@@ -23,7 +23,7 @@ const FIXTURE: &str = "tests/fixtures/companion_poses.json";
 const COMPANIONS: &[(&str, &str)] = &[
     ("aki", "aki"),
     ("ankilope", "ankilope"),
-    ("cow", "cow"),
+    ("cow", "bluma"),
     ("anki_tan", "anki-tan"),
     ("anki_tan_chibi", "anki-tan-chibi"),
     ("leech_tan", "leech-tan"),
@@ -302,6 +302,16 @@ mod tests {
         for companion in unlockable {
             let id = companion["companion"].as_str().unwrap();
             assert!(COMPANIONS.iter().any(|(known, _)| *known == id), "{id}");
+        }
+    }
+
+    #[test]
+    fn bluma_has_the_complete_core() {
+        let poses = fixture();
+        let (_, folder) = COMPANIONS.iter().find(|(id, _)| *id == "cow").unwrap();
+        let folder = root().join("static").join(folder);
+        for pose in &poses.core {
+            assert_eq!(Status::Present, status(&folder, &poses, pose), "{pose}");
         }
     }
 }
