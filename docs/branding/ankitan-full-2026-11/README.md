@@ -7,7 +7,7 @@ other agent owns pose selection and unlock activation.
 
 | Original reference | Existing frozen | Asleep | Sad | Neglected |
 |---|---|---|---|---|
-| ![Original](../../../static/anki-tan/illust/anki_tan_main.png) | ![Frozen](../../../static/anki-tan/generated/frozen-full.png) | ![Asleep](../../../static/anki-tan/generated/asleep-full.png) | ![Sad](../../../static/anki-tan/generated/sad-full.png) | ![Neglected](../../../static/anki-tan/generated/neglected-full.png) |
+| ![Original](../../../static/anki-tan/illust/anki_tan_main.png) | ![Frozen](../../../static/anki-tan/frozen.png) | ![Asleep](../../../static/anki-tan/asleep.png) | ![Sad](../../../static/anki-tan/sad.png) | ![Neglected](../../../static/anki-tan/neglected.png) |
 
 Aldana approved these three images on 2026-11-16. Three candidates
 were generated per pose using OpenAI's `image_gen` tool; its model
@@ -38,9 +38,18 @@ The Companion art exports workflow retains both clients' output, the
 manifest and its diff for seven days. It never commits files; contributors
 inspect the artifact and commit the selected exports before final CI.
 
-The inventory counts exporter-registered masters as well as standard pose
-filenames. This keeps all Anki-tan derivatives under their existing licence
-directory while recognizing the full-size poses and chibi frozen fallback.
-The regression failed before the fix in CI run 43793210490: asleep was
-reported Missing instead of Present (48 xtask tests passed, one failed).
-Registration alone never counts a master whose file is absent.
+The active masters use the fixture's pose names directly under
+`static/anki-tan/`; chibi frozen uses `static/anki-tan/chibi/frozen.png`,
+under the same licence. The original `generated/*-full.png` and
+`generated/frozen-chibi.png` files remain byte-identical. These canonical
+paths are exact copies of those approved masters, without new processing.
+
+The asleep export is now `anki_tan_asleep`. Its PNG is the byte-identical
+Linux export formerly named `anki_tan_sleeping`, which remains preserved
+as a retired image in the manifest. No existing artwork was overwritten.
+
+The inventory uses canonical paths, without an exporter-registration
+fallback. Its regression still checks the same full-size poses and chibi
+frozen fallback. That regression failed before the original fix in CI run
+43793210490: asleep was Missing instead of Present (48 xtask tests passed,
+one failed). Missing master files still do not count.
