@@ -5,6 +5,18 @@ import time
 from .client import offset_west_min
 from .deck_completion import DAY_MS, deck_snapshots
 
+_PROMPTS = "ankiquestDeckPrompts"
+
+
+def _prompts(profile, api):
+    return profile.setdefault(_PROMPTS, {}).setdefault(api.base, {}).setdefault(api.user, {})
+
+
+def _prompt_due(profile, api, summary):
+    record, day = summary.get("deck"), summary.get("day")
+    saved = _prompts(profile, api)
+    return bool(record and day and not saved.get("muted") and saved.get("shown", {}).get(record["id"]) != day)
+
 
 def _capture(col):
     """Keep the studied deck when review starts; changing the selection cannot replace it."""

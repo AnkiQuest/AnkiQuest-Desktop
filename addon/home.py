@@ -713,6 +713,8 @@ def finish_session():
     mw.pm.profile[SESSION_KEY] = dict(summary, account=[api.base, api.user])
     local["board"] = None
     refresh_board()
+    # Deck sharing has its own preference and daily prompt, even with recaps off.
+    addon()._moments._offer(api, [], summary)
     if not celebrate(summary):
         recap(summary)
 

@@ -1,8 +1,8 @@
-"""A completed-deck action inside the session recap, using the common recipient picker."""
+"""One completed-deck prompt per Anki day, after the session's moments close."""
 
 from enum import Enum, auto
 
-from aqt.qt import QLineEdit, QPushButton, QVBoxLayout, QWidget
+from aqt.qt import QCheckBox, QDialog, QLineEdit, QPushButton, QVBoxLayout, QWidget, Qt
 
 from . import deck_moments, deck_names, moment_share, share_ui
 from .language import tr
@@ -11,16 +11,25 @@ _NAME_LIMIT = 120
 
 
 class _Phase(Enum):
-    HIDDEN = auto()
     CHECKING = auto()
-    READY = auto()
+    WAITING = auto()
+    VISIBLE = auto()
     OPEN = auto()
+    CLOSED = auto()
 
 
-class _Action:
-    def __init__(self, card):
-        self._card, self._key, self._record = card, None, None
-        self._phase = _Phase.HIDDEN
+class _Prompt:
+    def __init__(self, presenter, api, summary):
+        self._presenter, self._addon, self._api = presenter, presenter._addon, api
+        self._profile, self._col = self._addon.mw.pm.profile, self._addon.mw.col
+        self._summary, self._record = summary, None
+        self._key = (summary["day"], summary["deck"]["id"])
+        self._phase = _Phase.CHECKING
+        self._dialog = QDialog(self._addon.mw)
+        self._dialog.setWindowTitle(tr("Deck complete"))
+        self._dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self._dialog.finished.connect(self._finished)
+        root = QVBoxLayout(self._dialog)
         self._widget = QWidget()
         layout = QVBoxLayout(self._widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -34,30 +43,25 @@ class _Action:
         self._share.clicked.connect(self._open)
         layout.addWidget(self._share)
         self._widget.hide()
+        root.addWidget(self._widget)
+        quiet = QCheckBox(tr("Don't ask again"))
+        quiet.toggled.connect(self._mute)
+        root.addWidget(quiet)
+        later = QPushButton(tr("Not now"))
+        later.clicked.connect(self._dialog.reject)
+        root.addWidget(later)
+        self._dialog.setMinimumWidth(min(380, self._dialog.screen().availableGeometry().width()))
 
-    def _owns(self, key, col):
-        return (self._phase is not _Phase.HIDDEN and self._card._owned() and self._key == key
-                and self._card._addon.mw.col is col and self._card._addon.config().get("session_summary", True))
+    def _owned(self):
+        return (self._phase is not _Phase.CLOSED and self._presenter._completion is self
+                and self._presenter._owns(self._api, self._profile) and self._addon.mw.col is self._col)
 
     def _run(self, work, done, **options):
-        key, col = self._key, self._card._addon.mw.col
-        share_ui.run_owned(self._card._addon.mw.taskman.run_in_background,
-                           lambda: self._owns(key, col), work, done, **options)
+        share_ui.run_owned(self._addon.mw.taskman.run_in_background, self._owned, work, done, **options)
 
-    def _update(self, summary):
-        record = (summary or {}).get("deck")
-        if not self._card._addon.config().get("session_summary", True):
-            record = None
-        key = (summary.get("finished_at"), record.get("id")) if record else None
-        if key == self._key:
-            return
-        self._key, self._record, self._phase = key, None, _Phase.HIDDEN
-        self._widget.hide()
-        if not record:
-            return
-        self._phase = _Phase.CHECKING
-        col = self._card._addon.mw.col
-        self._run(lambda: deck_moments._finished(col, record, summary["finished_at"]), self._verified, uses_collection=True)
+    def _start(self):
+        self._run(lambda: deck_moments._finished(self._col, self._summary["deck"], self._summary["finished_at"]),
+                  self._verified, uses_collection=True)
 
     def _verified(self, future):
         try:
@@ -65,49 +69,85 @@ class _Action:
         except Exception:
             self._record = None
         if self._record is None:
-            self._phase = _Phase.HIDDEN
+            self._close()
             return
-        api = self._card._api
+        api = self._api
         self._run(lambda: (api.capabilities(), api.deck_settings()), self._available)
 
     def _available(self, future):
         try:
             features, settings = future.result()
         except Exception:
-            self._phase = _Phase.HIDDEN
+            self._close()
             return
         reference = {"deck": {"id": self._record["id"], "name": "Deck"}}
         if (not moment_share._supported(reference, features) or deck_moments._automatic(settings, self._record)
                 or not settings.get("recipients")):
-            self._phase = _Phase.HIDDEN
+            self._close()
             return
-        self._phase = _Phase.READY
-        self._name.setText(deck_names._choice(self._card._profile, self._card._api, self._record))
+        self._phase = _Phase.WAITING
+        self._name.setText(deck_names._choice(self._profile, self._api, self._record))
         self._widget.show()
+        self._presenter._schedule()
+
+    def _show(self):
+        if self._phase is not _Phase.WAITING or not self._owned():
+            return
+        # Count only an actually displayed prompt, not a failed check or a closed profile.
+        saved = deck_moments._prompts(self._profile, self._api)
+        saved.setdefault("shown", {})[self._record["id"]] = self._summary["day"]
+        self._phase = _Phase.VISIBLE
         self._changed(self._name.text())
+        self._dialog.show()
+
+    def _mute(self, checked):
+        if self._owned():
+            deck_moments._prompts(self._profile, self._api)["muted"] = checked
+
+    def _showing(self):
+        return self._phase in (_Phase.VISIBLE, _Phase.OPEN)
+
+    def _finished(self, _result):
+        self._phase = _Phase.CLOSED
+        for child in self._dialog.findChildren(QDialog):
+            child.close()
+        self._presenter._schedule()
+
+    def _close(self):
+        if self._phase is _Phase.CLOSED:
+            return
+        self._phase = _Phase.CLOSED
+        self._dialog.close()
 
     def _changed(self, text):
+        # Qt's maxLength counts UTF-16 units; the shared name limit counts code points.
         if len(text) > _NAME_LIMIT:
             self._name.setText(text[:_NAME_LIMIT])
-        self._share.setEnabled(self._phase is _Phase.READY and bool(text.strip()))
+        self._share.setEnabled(self._phase is _Phase.VISIBLE and bool(text.strip()))
 
     def _open(self):
-        if self._phase is not _Phase.READY or not self._card._owned():
+        if self._phase is not _Phase.VISIBLE or not self._owned():
             return
         name = " ".join(self._name.text().split())[:_NAME_LIMIT]
         if not name:
             return
-        deck_names._choose(self._card._profile, self._card._api, self._record, name)
+        record = self._record
+
+        def sent():
+            # Cancel and failed requests leave the remembered name alone.
+            if self._owned():
+                deck_names._choose(self._profile, self._api, record, name)
+
         win = {"deck": {"id": self._record["id"], "name": name}, "kind": "deck",
                "title": tr("Deck complete"), "body": tr("I finished my %s studies for today.") % name}
         self._phase = _Phase.OPEN
         self._changed(name)
-        window = share_ui.win_dialog(self._card._dialog, self._card._api, win,
-                                     self._card._addon.current_companion(), self._card._addon.client, self._run)
+        window = share_ui.win_dialog(self._dialog, self._api, win,
+                                     self._addon.current_companion(), self._addon.client, self._run, on_sent=sent)
         window.finished.connect(self._closed)
         window.show()
 
     def _closed(self, _result):
-        if self._card._owned():
-            self._phase = _Phase.READY
+        if self._owned():
+            self._phase = _Phase.VISIBLE
             self._changed(self._name.text())

@@ -39,6 +39,7 @@ class _Presenter:
         self._profile = None
         self._card = None
         self._reveal = None
+        self._completion = None
         self._phase = _Phase.READY
         self._permission = _Permission.UNKNOWN
         self._origin = _Origin.AUTOMATIC
@@ -56,6 +57,7 @@ class _Presenter:
 
     def _clear(self):
         card, self._card = self._card, None
+        self._close_completion()
         self._close_reveal()
         self._owner = self._profile = self._request = self._summary = None
         self._phase, self._permission = _Phase.READY, _Permission.UNKNOWN
@@ -77,9 +79,25 @@ class _Presenter:
         moments._offer(profile, self._owner[:2], items)
         if summary is not None:
             self._summary = summary
+            self._offer_completion(api, summary)
         if any(not item.get("local") for item in items):
             self._refresh_permission()
         self._schedule()
+
+    def _offer_completion(self, api, summary):
+        if not deck_moments_ui.deck_moments._prompt_due(self._profile, api, summary):
+            return
+        key = (summary["day"], summary["deck"]["id"])
+        if self._completion is not None and self._completion._key == key:
+            return
+        self._close_completion()
+        self._completion = deck_moments_ui._Prompt(self, api, summary)
+        self._completion._start()
+
+    def _close_completion(self):
+        prompt, self._completion = self._completion, None
+        if prompt is not None:
+            prompt._close()
 
     def _refresh_permission(self):
         api = self._sync_owner()
@@ -121,6 +139,7 @@ class _Presenter:
         if new_state == "review":
             # Starting another review defers an open card; a pause never closes it.
             card, self._card = self._card, None
+            self._close_completion()
             self._close_reveal()
             self._phase, self._origin = _Phase.READY, _Origin.AUTOMATIC
             self._summary = None
@@ -152,11 +171,18 @@ class _Presenter:
     def _show(self):
         api = self._sync_owner()
         if (not api.configured or self._profile is None or self._addon.mw.state not in _RESTING
-                or self._phase in (_Phase.DISMISSED, _Phase.WAITING)):
+                or self._phase is _Phase.WAITING):
+            return
+        if self._completion is not None and self._completion._showing():
             return
         items = [item for item in moments._pending(self._profile, self._owner[:2]) if self._allowed(item)]
         # A greeting can open and close over a reveal, so the open window decides, not the phase.
-        if not items or self._reveal is not None:
+        if self._reveal is not None:
+            return
+        # The independent completion prompt follows the last session card.
+        if not items or self._phase is _Phase.DISMISSED:
+            if self._card is None and self._completion is not None:
+                self._completion._show()
             return
         if self._card is not None:
             self._card._append(items, self._summary)
@@ -178,6 +204,7 @@ class _Presenter:
                 moments._acknowledge(card._profile, (api.base, api.user), [item["key"] for item in card._items])
                 self._phase = _Phase.DISMISSED
                 self._addon.redraw()
+                self._schedule()
 
         card._dialog.finished.connect(finished)
         card._dialog.show()
@@ -288,8 +315,6 @@ class _Card:
         layout.addWidget(self._session)
         self._day = share_ui._plain("")
         layout.addWidget(self._day)
-        self._completion = deck_moments_ui._Action(self)
-        layout.addWidget(self._completion._widget)
         self._status = share_ui._plain("")
         layout.addWidget(self._status)
         self._actions = QVBoxLayout()
@@ -321,7 +346,6 @@ class _Card:
 
     def _recaps(self, checked):
         self._addon.save_config({"session_summary": not checked})
-        self._completion._update(None if checked else self._summary)
 
     def _owned(self):
         return not self._closed and self._profile is self._addon.mw.pm.profile and share_ui.same_account(self._api, self._addon.client())
@@ -360,7 +384,6 @@ class _Card:
 
     def _session_fields(self):
         key = self._choices.currentData()
-        self._completion._update(self._summary)
         self._session.setText(today.session_body(self._summary, tr) if self._summary else "")
         self._session.setVisible(self._summary is not None and not key.startswith("session:"))
         self._quiet.setVisible(self._summary is not None)
