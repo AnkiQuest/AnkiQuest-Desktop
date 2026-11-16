@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QImage, QLabel, QPushButton, QSize
+from aqt.qt import QApplication, QEvent, QImage, QLabel, QPushButton, QSize, Qt
 
 from addon_loader import load_in_package
 
@@ -205,6 +205,38 @@ class Picker(unittest.TestCase):
         done(future)
         self.api.unlock.assert_called_once_with("anki_tan_chibi")
         self.assertTrue(picker._status.isHidden())
+
+    def close(self, picker):
+        """Closes the picker as open_picker shows it, deleting the window."""
+        picker.dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        picker.dialog.close()
+        QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+    def test_closing_the_picker_cancels_a_queued_chibi_unlock(self):
+        picker, clock = self.egg(["anki_tan"])
+        picker.dialog.show()
+        self.queue()
+        self.tap(picker, 9, clock)
+        self.close(picker)
+        self.run_queued()
+        self.api.unlock.assert_not_called()
+
+    def test_a_reply_after_the_picker_closed_is_dropped(self):
+        # The unlock fails after the window was deleted: nothing touches its widgets.
+        picker, clock = self.egg(["anki_tan"])
+        picker.dialog.show()
+        self.api.unlock.side_effect = OSError("offline")
+        self.queue()
+        self.tap(picker, 9, clock)
+        ((work, done),) = self.queued
+        future = Future()
+        try:
+            future.set_result(work())
+        except OSError as error:
+            future.set_exception(error)
+        self.close(picker)
+        done(future)
+        self.api.unlock.assert_called_once_with("anki_tan_chibi")
 
     def test_the_chibi_pops_in_unless_motion_is_reduced(self):
         picker, clock = self.egg(["anki_tan"], companion_reveal.Motion.FULL)

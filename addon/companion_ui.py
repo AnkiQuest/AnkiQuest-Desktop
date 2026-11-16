@@ -9,6 +9,7 @@ Tapping the companion's picture counts toward its chibi, if it has one and the s
 as unlocked: a hint from the fourth tap, and on the last the picture turns chibi and the server
 is told. The art has no marked face area, so the whole picture counts."""
 
+import enum
 import time
 
 from aqt.qt import (
@@ -31,6 +32,15 @@ POP_ROOM = 1.15
 FACE_PX = 64
 POSE_PX = 44
 CARD = "ankiquest_companion_card"
+
+
+
+class _Window(enum.Enum):
+    """The picker window's lifetime: closing it, or deleting it, ends its server work."""
+
+    OPEN = "open"
+    CLOSED = "closed"
+
 
 # Every companion in the picker's order.
 ORDER = (moods.AKI, moods.ANKILOPE_ID, moods.COW, moods.NONE)
@@ -153,7 +163,7 @@ def _today(companion, mood, streak):
 class Picker:
     """The companion tab for `api`'s account, `today` being the streak mood and streak
     (moods.today_mood). `client()` answers the signed-in client; the tab's server work runs only
-    while that is still `api`'s account and the profile it opened for. `on_saved(companion)` runs
+    while its window is open and that is still `api`'s account and the profile it opened for. `on_saved(companion)` runs
     after a save. `motion` says whether a found chibi pops in; `clock` answers milliseconds for
     counting taps."""
 
@@ -172,6 +182,12 @@ class Picker:
         self._pop = None
 
         dialog = self.dialog = QDialog(parent)
+
+        # Closing or deleting the window cancels queued work and drops replies, which would
+        # otherwise reach deleted widgets.
+        self._window = _Window.OPEN
+        dialog.finished.connect(self._close)
+        dialog.destroyed.connect(self._close)
         dialog.setWindowTitle(tr("Study companion"))
         dialog.setWindowIcon(companion_art.icon(current or moods.AKI))
         layout = QVBoxLayout(dialog)
@@ -210,13 +226,19 @@ class Picker:
         self._show_cards(current)
         self._run(lambda: _load(api), self._arrived)
 
+    def _close(self, *_):
+        self._window = _Window.CLOSED
+
     def _owns(self):
-        """Whether `api`'s account is still signed in on the profile the tab opened for."""
+        """Whether the tab is open and `api`'s account is still signed in on the profile the tab
+        opened for."""
+        if self._window == _Window.CLOSED:
+            return False
         return self._profile is self._mw.pm.profile and share_ui.same_account(self._api, self._client())
 
     def _run(self, work, done):
-        """Runs `work` in the background for this tab's account and profile; a sign-out or
-        profile change cancels it, even once queued, and drops its reply."""
+        """Runs `work` in the background for this tab's window, account and profile; closing the
+        tab, a sign-out or a profile change cancels it, even once queued, and drops its reply."""
         share_ui.run_owned(self._mw.taskman.run_in_background, self._owns, work, done)
 
     def _show_cards(self, selected):
