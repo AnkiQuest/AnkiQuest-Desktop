@@ -1,7 +1,10 @@
 """Messages wait for a resting screen and survive quiet refreshes/restarts."""
+import json
 import time
 import unittest
 from copy import deepcopy
+from itertools import product
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import test_deck_completion as fixture
@@ -87,6 +90,18 @@ class Announcements(unittest.TestCase):
         self.assertTrue(quiet({"quiet_start": 8, "quiet_end": 16}, 12 * 3600, 0))
         self.assertFalse(quiet({"quiet_start": 8, "quiet_end": 16}, 16 * 3600, 0))
         self.assertFalse(quiet({"quiet_start": 8, "quiet_end": 8}, 8 * 3600, 0))
+
+    def test_shared_quiet_hour_cases(self):
+        path = Path(__file__).parent / "fixtures" / "quiet_hours.json"
+        cases = json.loads(path.read_text("utf-8"))["cases"]
+        self.assertTrue(cases)
+        for case in cases:
+            for offset, minute in product((-330, -120, 0, 180), (0, 59)):
+                with self.subTest(case=case["name"], offset=offset, minute=minute):
+                    settings = {"quiet_start": case["start"], "quiet_end": case["end"]}
+                    # Both ends of the local hour keep the same quiet-hour verdict.
+                    now = case["hour"] * 3600 + (offset + minute) * 60
+                    self.assertEqual(case["quiet"], self.addon.delivery._quiet(settings, now, offset))
 
     def test_queue_survives_a_restart_and_does_not_replay_after_delivery(self):
         self.addon.poll(quiet=True)
