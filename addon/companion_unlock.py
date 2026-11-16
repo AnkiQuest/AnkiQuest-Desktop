@@ -124,24 +124,24 @@ class Taps:
     again."""
 
     def __init__(self, target):
-        self.target = target
+        self._target = target
         # Taps on `target` so far in this run.
-        self.count = 0
+        self._run = 0
         self._last_ms = None
 
     def tap(self, choice, at_ms):
         """Records a tap on `choice`; True on the tap that completes the run."""
-        if choice != self.target:
-            self.count, self._last_ms = 0, None
+        if choice != self._target:
+            self._run, self._last_ms = 0, None
             return False
 
         # A late or earlier tap is the first of a new run.
         quick = self._last_ms is not None and 0 <= at_ms - self._last_ms <= MAX_GAP_MS
-        self.count = self.count + 1 if quick else 1
+        self._run = self._run + 1 if quick else 1
         self._last_ms = at_ms
-        if self.count < TAPS:
+        if self._run < TAPS:
             return False
-        self.count, self._last_ms = 0, None
+        self._run, self._last_ms = 0, None
         return True
 
 
@@ -186,8 +186,8 @@ class Egg:
         if chibi is None:
             self._taps = None
             return Tapped()
-        if self._taps is None or self._taps.target != companion:
+        if self._taps is None or self._taps._target != companion:
             self._taps = Taps(companion)
         if self._taps.tap(companion, at_ms):
             return Tapped(chibi=chibi)
-        return Tapped(hint=hint(self._taps.count, tr))
+        return Tapped(hint=hint(self._taps._run, tr))
