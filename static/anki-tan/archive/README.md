@@ -1,6 +1,6 @@
 # Preserved Anki-tan files
 
-Earlier approved generated poses and one generated desktop export.
+Earlier approved generated poses and superseded desktop exports.
 These files are retained byte for byte; active masters use the core pose names
 in the parent directory. The archived export is outside the add-on package.
 
@@ -14,6 +14,7 @@ Generated with OpenAI image_gen; its model identifier was not exposed.
 | sad-full.png | generated/sad-full.png | 35c1e4e32b31938b76d1c9b9f934c1bc3666f518eb5e9e34e9c1cfb3c77edd6e |
 | neglected-full.png | generated/neglected-full.png | 77d1ea121bd4eef6b9b1b5578d7c0651e781c77468587b4b0df10b00d1032e4a |
 | addon/anki_tan_sleeping.png | addon/art/anki_tan_sleeping.png | 384b17d8ba43944d734dda8071553669e6e1afaac43499bc9866eb60578c5769 |
+| addon/anki_tan_neglected-three-blue-stars.png | addon/art/anki_tan_neglected.png | d3a1ec4c5fa784358b04bd7b32a05a0e1040296dfec42a70df4c6eb83c5a4ab1 |
 
 The three master paths were relative to static/anki-tan/. The export path
 was relative to the repository. Published generated frozen files stay in place.

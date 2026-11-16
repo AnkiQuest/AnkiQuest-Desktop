@@ -52,8 +52,10 @@ changes here; the other two poses remain future work. The earlier neglected
 master stays byte for byte in `static/anki-tan/archive/neglected-full.png`.
 [The edit record](neglected-revision.json) contains the prompt, model
 disclosure, hashes and cleanup measurements. The new master was inspected
-at full size and 64 px on light and dark backgrounds. Its exports need a
-fresh canonical Linux run.
+at full size and 64 px on light and dark backgrounds. Canonical
+[Linux run 43904416492](https://github.com/AnkiQuest/AnkiQuest-Desktop/actions/runs/43904416492)
+generated its exports. The earlier desktop PNG is retained under the same
+licence in `static/anki-tan/archive/addon/` and registered as retired.
 
 The asleep export is now `anki_tan_asleep`. Its PNG is the byte-identical
 Linux export formerly named `anki_tan_sleeping`, which is preserved under
