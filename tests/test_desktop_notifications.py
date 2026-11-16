@@ -3,6 +3,7 @@ import json
 import time
 import unittest
 from copy import deepcopy
+from itertools import product
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -95,11 +96,11 @@ class Announcements(unittest.TestCase):
         cases = json.loads(path.read_text("utf-8"))["cases"]
         self.assertTrue(cases)
         for case in cases:
-            for offset in (-330, -120, 0, 180):
-                with self.subTest(case=case["name"], offset=offset):
+            for offset, minute in product((-330, -120, 0, 180), (0, 59)):
+                with self.subTest(case=case["name"], offset=offset, minute=minute):
                     settings = {"quiet_start": case["start"], "quiet_end": case["end"]}
-                    # Exercise local-hour conversion on both sides of UTC.
-                    now = case["hour"] * 3600 + offset * 60
+                    # Both ends of the local hour keep the same quiet-hour verdict.
+                    now = case["hour"] * 3600 + (offset + minute) * 60
                     self.assertEqual(case["quiet"], self.addon.delivery._quiet(settings, now, offset))
 
     def test_queue_survives_a_restart_and_does_not_replay_after_delivery(self):
