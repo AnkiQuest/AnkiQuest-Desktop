@@ -167,10 +167,7 @@ const ART: &[Art] = &[
     widget("anki_tan_asleep", "static/anki-tan/asleep.png"),
     widget("anki_tan_sad", "static/anki-tan/sad.png"),
     widget("anki_tan_neglected", "static/anki-tan/neglected.png"),
-    widget(
-        "anki_tan_chibi_frozen",
-        "static/anki-tan/chibi/frozen.png",
-    ),
+    widget("anki_tan_chibi_frozen", "static/anki-tan/chibi/frozen.png"),
     // Anki-tan's launcher icons (AnkiQuest-Android AnkiquestIcon), CC BY-SA 4.0.
     // The pack's icon is 256 px and is kept at that size.
     art("anki_tan_icon", "static/anki-tan/icon.png", 432),
