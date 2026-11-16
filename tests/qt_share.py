@@ -2,6 +2,7 @@
 
 from concurrent.futures import Future
 from copy import deepcopy
+import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -24,6 +25,7 @@ if os.environ.get("ANKIQUEST_QT_FONT"):
 ui = load_in_package("share_qt", "moment_share_ui")
 ui.tr = ui.share_ui.tr = lambda text: text
 picture = load_in_package("share_picture_qt", "share_picture")
+STREAKS = json.loads((Path(__file__).parent / "fixtures/streak_moods.json").read_text("utf-8"))
 
 
 class ShareWindow(unittest.TestCase):
@@ -289,6 +291,18 @@ class ShareWindow(unittest.TestCase):
             self.assertGreaterEqual(image.height(), 1080)
             self.assertFalse(any(body for _, body, _ in self.requests))
 
+    def test_streak_preview_and_export_keep_the_heat_design_online(self):
+        self.win = ui.share.win_from_entry({"id": 42, "win": 17, "kind": "celebration", "topic": "streak",
+                                           "moment": "streak:2026-01-01:30", "title": "A month of study", "body": ""})
+        with patch.object(ui.share, "card", return_value={"png": self.png}) as fetch:
+            window = self.open()
+            window._sharing.to_clipboard()
+            image = app.clipboard().image()
+            self.assertEqual(1080, image.width())
+            self.assertEqual(QColor("#DC2626"), image.pixelColor(0, 0))
+            fetch.assert_not_called()
+            self.assertFalse(any(body for _, body, _ in self.requests))
+
     def test_a_cached_picture_cannot_cross_an_account_or_profile_change(self):
         for change in ("account", "profile"):
             with self.subTest(change=change):
@@ -350,6 +364,87 @@ class LocalPicture(unittest.TestCase):
         self.assertTrue(image.loadFromData(found["png"], "PNG"))
         return image
 
+    def test_streak_unit_matches_phone(self):
+        units = {
+            "en": ("day streak", "day streak"),
+            "es": ("día de racha", "días de racha"),
+            "de": ("Tag Lernserie", "Tage Lernserie"),
+            "fr": ("jour de série", "jours de série"),
+            "pt": ("dia de sequência", "dias de sequência"),
+        }
+        for language, expected in units.items():
+            for days, unit in zip((1, 30), expected):
+                with self.subTest(language=language, days=days), patch("anki.lang.current_lang", language), \
+                        patch.object(picture, "_words", wraps=picture._words) as words:
+                    self.image({"title": "A good day", "picture_streak": days})
+                    self.assertIn(unit, [call.args[0] for call in words.call_args_list])
+
+    def test_repeated_streak_body_hidden(self):
+        for body in ("30 day streak", "One more day of practice"):
+            with self.subTest(body=body), patch("anki.lang.current_lang", "en"), \
+                    patch.object(picture, "_words", wraps=picture._words) as words:
+                self.image({"title": "A good day", "body": body, "picture_streak": 30})
+                text = [call.args[0] for call in words.call_args_list]
+                if body == "30 day streak":
+                    self.assertNotIn(body, text)
+                else:
+                    self.assertIn(body, text)
+
+    def test_streak_heat_and_next_milestones_match_shared_cases(self):
+        for case in STREAKS["pictures"]:
+            with self.subTest(streak=case["streak"]), patch.object(picture, "_words", wraps=picture._words) as words:
+                win = {"title": "My streak", "body": "A little progress", "picture_streak": case["streak"]}
+                image = self.image(win)
+                self.assertEqual(QColor(case["top"]), image.pixelColor(0, 0))
+                self.assertEqual(QColor(case["bottom"]), image.pixelColor(0, image.height() - 1))
+                ink = QColor(STREAKS["picture_style"]["ink"])
+                self.assertGreater(sum(image.pixelColor(x, y) == ink for y in range(0, image.height(), 8)
+                                       for x in range(0, image.width(), 8)), 50)
+                text = [str(call.args[0]) for call in words.call_args_list]
+                if case["next"] is not None:
+                    left = case["next"] - case["streak"]
+                    self.assertIn("%d %s to %d" % (left, "day" if left == 1 else "days", case["next"]), text)
+                else:
+                    self.assertFalse(any(" to " in value for value in text))
+                self.assertLessEqual(image.height(), 4096)
+                self.assertEqual(case["pose"], picture.moods.streak_pose(picture.moods.FIRE, case["streak"]))
+
+    def test_streak_number_is_gold_localized_and_fits_large_text(self):
+        with patch("anki.lang.current_lang", "de"), patch.object(picture, "_words", wraps=picture._words) as words:
+            image = self.image({"title": "Meine Lernserie", "picture_streak": 10000}, "aki", scale=2)
+            numbers = [call for call in words.call_args_list if call.args[0] == "10.000"]
+            self.assertEqual(1, len(numbers))
+            layout, _ = picture._words(*numbers[0].args)
+            self.assertEqual(1, layout.lineCount())
+            self.assertLessEqual(layout.lineAt(0).naturalTextWidth(), 936)
+            gold = QColor(STREAKS["picture_style"]["number"])
+            self.assertGreater(sum(image.pixelColor(x, y) == gold for y in range(0, image.height(), 4)
+                                   for x in range(0, image.width(), 4)), 300)
+            folder = os.environ.get("ANKIQUEST_QT_CAPTURE")
+            if folder:
+                self.assertTrue(image.save(str(Path(folder) / "streak-large-localized.png")))
+
+    def test_streak_art_uses_heat_and_falls_back_to_core_streak(self):
+        win = {"title": "My streak", "picture_streak": 30}
+        original = picture.companion_art.pixmap
+        paths = []
+
+        def missing_tier(path, companion, size):
+            paths.append((Path(path).stem, size))
+            return original(path, companion, size) if "blazing" not in path else original("missing.png", companion, size)
+
+        with patch.object(picture.companion_art, "pixmap", side_effect=missing_tier):
+            self.image(win, "aki")
+        hero = STREAKS["picture_style"]["hero"]
+        self.assertEqual([("aki_streak_blazing", hero), ("aki_streak", hero)], paths)
+
+    def test_streak_picture_capture(self):
+        folder = os.environ.get("ANKIQUEST_QT_CAPTURE")
+        for days in (1, 7, 30, 100):
+            image = self.image({"title": "I kept showing up", "body": "One day at a time.", "picture_streak": days}, "aki")
+            if folder:
+                self.assertTrue(image.save(str(Path(folder) / ("streak-%d.png" % days))))
+
     def test_unicode_and_long_words_wrap_without_clipping(self):
         words = "Espa\u00f1ol \u65e5\u672c\u8a9e \U0001f331 " * 35
         win = {"title": "A little progress", "body": words + "\n" + "x" * 120}
@@ -388,6 +483,9 @@ class LocalPicture(unittest.TestCase):
             self.image({"title": "Long", "body": "many words " * 10000})
         with self.assertRaises(ValueError):
             self.image({"title": "Invalid scale"}, scale=0)
+        for streak in (0, -1, True, "30", 2_147_483_648):
+            with self.subTest(streak=streak), self.assertRaises(ValueError):
+                self.image({"title": "Invalid streak", "picture_streak": streak})
 
     def test_captures_light_dark_and_large_text(self):
         folder = os.environ.get("ANKIQUEST_QT_CAPTURE")

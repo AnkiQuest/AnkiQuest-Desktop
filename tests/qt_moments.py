@@ -422,6 +422,14 @@ class Moments(unittest.TestCase):
         self.assertIs(card, self.presenter._card)
         self.assertIn("Tell friends", [button.text() for button in card._dialog.findChildren(QPushButton)])
 
+    def test_daily_moment_passes_its_confirmed_streak_to_the_picture(self):
+        item = dict(self.item("secured:2", "secured"), streak=29,
+                    share={"title": "My streak", "body": "Today counts", "win": 7})
+        with patch.object(ui.share_ui, "Sharing", wraps=ui.share_ui.Sharing) as sharing:
+            self.offer(item)
+            self.transition("overview", "review")
+            self.assertEqual(29, sharing.call_args.args[2]["picture_streak"])
+
     def test_switching_accounts_drops_an_old_action_reply_without_consuming_the_win(self):
         control = self.conquest()
         old_profile, old_api = self.mw.pm.profile, self.api

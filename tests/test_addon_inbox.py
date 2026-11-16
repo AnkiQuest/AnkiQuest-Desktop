@@ -189,6 +189,16 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"pixels"
 
 
 class ShareTests(unittest.TestCase):
+    def test_streak_picture_uses_event_metadata_not_translated_words(self):
+        row = {"id": 42, "kind": "celebration", "topic": "streak", "moment": "streak:2026-01-01:30",
+               "title": "Un mois", "body": "Study 60 cards", "win": 17}
+        self.assertEqual(30, share.win_from_entry(row).get("picture_streak"))
+        for key in (None, "", "streak:30", "streak:date:0", "streak:date:-1", "streak:date:2147483648",
+                    "streak:date:NaN", "level:date:30", "streak:date:30:extra"):
+            with self.subTest(key=key):
+                self.assertIsNone(share.win_from_entry(dict(row, moment=key)).get("picture_streak"))
+        self.assertIsNone(share.win_from_entry(dict(row, topic="level")).get("picture_streak"))
+
     def test_invitations_use_the_servers_first_person_words(self):
         for kind, title, body in (
             ("celebration", "I reached level 4", "I earned 900 XP."),

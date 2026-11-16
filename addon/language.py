@@ -2069,6 +2069,24 @@ GERMAN[_ANKI_TAN] = '<a href="%s">Anki-tan</a> von <a href="%s">Shigeyuki</a>, <
 FRENCH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> par <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 PORTUGUESE[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 
+# Streak pictures use the same milestone wording as Android, without a decorative symbol.
+SPANISH.update({
+    "streak day": "día de racha", "streak days": "días de racha",
+    "%s day to %s": "Falta %s día para %s", "%s days to %s": "Faltan %s días para %s",
+})
+GERMAN.update({
+    "streak day": "Tag Lernserie", "streak days": "Tage Lernserie",
+    "%s day to %s": "Noch %s Tag bis %s", "%s days to %s": "Noch %s Tage bis %s",
+})
+FRENCH.update({
+    "streak day": "jour de série", "streak days": "jours de série",
+    "%s day to %s": "Encore %s jour avant %s", "%s days to %s": "Encore %s jours avant %s",
+})
+PORTUGUESE.update({
+    "streak day": "dia de sequência", "streak days": "dias de sequência",
+    "%s day to %s": "Falta %s dia para %s", "%s days to %s": "Faltam %s dias para %s",
+})
+
 # Conquest exports use Android's first-person caption and public counts.
 SPANISH.update({
     "I finally learned a card I had forgotten %d time.": "Por fin aprendí una tarjeta que había olvidado %d vez.",
