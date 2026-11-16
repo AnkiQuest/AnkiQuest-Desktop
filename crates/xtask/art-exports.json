@@ -191,19 +191,19 @@
       "exporter": "addon",
       "file": "addon/art/anki_tan_sleeping.png",
       "master": "static/anki-tan/generated/asleep-full.png",
-      "sha256": ""
+      "sha256": "384b17d8ba43944d734dda8071553669e6e1afaac43499bc9866eb60578c5769"
     },
     {
       "exporter": "addon",
       "file": "addon/art/anki_tan_sad.png",
       "master": "static/anki-tan/generated/sad-full.png",
-      "sha256": ""
+      "sha256": "f5648427cf550a453118b1c02a15d17ebc7bb71a0fe26dc427a8d012d11e0e83"
     },
     {
       "exporter": "addon",
       "file": "addon/art/anki_tan_neglected.png",
       "master": "static/anki-tan/generated/neglected-full.png",
-      "sha256": ""
+      "sha256": "d3a1ec4c5fa784358b04bd7b32a05a0e1040296dfec42a70df4c6eb83c5a4ab1"
     }
   ],
   "retired": [

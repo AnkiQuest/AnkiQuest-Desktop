@@ -26,5 +26,14 @@ Anki-tan by Shigeyuki (https://www.patreon.com/Shigeyuki).
 These derivatives and their exports are licensed CC BY-SA 4.0 under
 [her LICENSE](../../../static/anki-tan/LICENSE).
 
-Exports must use `export-addon-art` and `export-android-art`. Linux
-exports are canonical. Their review and the linked Android PR are pending.
+Canonical exports use `export-addon-art` and `export-android-art` on
+Linux. [Run 43789530883](https://github.com/AnkiQuest/AnkiQuest-Desktop/actions/runs/43789530883)
+generated both clients' files from e8794893e539622078dbbdab4b4ffdd2a20c2e78.
+All 31 existing add-on poses remained byte-identical. The three new
+add-on files match the hashes in `crates/xtask/art-exports.json`.
+The Android companion work is tracked in
+[AnkiQuest-Android#337](https://github.com/AnkiQuest/AnkiQuest-Android/issues/337).
+
+The Companion art exports workflow retains both clients' output, the
+manifest and its diff for seven days. It never commits files; contributors
+inspect the artifact and commit the selected exports before final CI.
