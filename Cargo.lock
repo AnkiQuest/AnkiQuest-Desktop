@@ -12,6 +12,7 @@ checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 name = "ankiquest"
 version = "0.1.0"
 dependencies = [
+ "ankiquest-art",
  "ankiquest-i18n",
  "argon2",
  "axum",
@@ -28,6 +29,14 @@ dependencies = [
  "tokio",
  "tower",
  "ureq",
+]
+
+[[package]]
+name = "ankiquest-art"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "serde_json",
 ]
 
 [[package]]
@@ -48,6 +57,7 @@ dependencies = [
 name = "ankiquest-xtask"
 version = "0.1.0"
 dependencies = [
+ "ankiquest-art",
  "color_quant",
  "crc32fast",
  "flate2",
@@ -57,6 +67,7 @@ dependencies = [
  "resvg",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "webp",
 ]

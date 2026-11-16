@@ -176,8 +176,7 @@ class _Picker:
             for target in targets:
                 self._row(target, target._label)
         self._refresh()
-        if share.has_card(self._win):
-            self._sharing.with_card(self._picture)
+        self._sharing.with_card(self._picture)
 
     def _row(self, target, label):
         check = QCheckBox(label)

@@ -2,7 +2,7 @@
 //!
 //! - `android-contract --android-resources <dir> [--server-examples <dir>]`
 //! - `export-android-art [--check] <android-checkout>`
-//! - `export-addon-art [--check | --replace]`
+//! - `export-addon-art [--check]`
 //! - `art-coverage`
 //! - `banner [--social] [--out <file>]`
 //! - `package-addon --output <file> [--ankiweb] [--ref <ref>] [--metadata <file>]`
@@ -17,7 +17,7 @@ use std::process::ExitCode;
 
 const USAGE: &str = "usage: xtask android-contract --android-resources <dir> \
 [--server-examples <dir>]\n       xtask export-android-art [--check] <android-checkout>\n       \
-xtask export-addon-art [--check | --replace]\n       xtask art-coverage\n       \
+xtask export-addon-art [--check]\n       xtask art-coverage\n       \
 xtask banner [--social] [--out <file>]\n       \
 xtask package-addon --output <file> [--ankiweb] [--ref <ref>] [--metadata <file>]";
 
