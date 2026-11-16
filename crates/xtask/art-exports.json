@@ -203,7 +203,7 @@
       "exporter": "addon",
       "file": "addon/art/anki_tan_neglected.png",
       "master": "static/anki-tan/neglected.png",
-      "sha256": "d3a1ec4c5fa784358b04bd7b32a05a0e1040296dfec42a70df4c6eb83c5a4ab1"
+      "sha256": "fd7d8914876e30f13c90c9746fa964755fbad60561384458f95bd3f956ec1422"
     },
     {
       "exporter": "addon",
@@ -366,6 +366,10 @@
     {
       "file": "static/cow/archive/addon/bluma_celebrate.png",
       "why": "Earlier name for the canonical bluma_happy export. Preserved unchanged outside the app package. Unreferenced."
+    },
+    {
+      "file": "static/anki-tan/archive/addon/anki_tan_neglected-three-blue-stars.png",
+      "why": "Earlier addon/art/anki_tan_neglected.png, replaced when export-addon-art wrote a new export of static/anki-tan/neglected.png. Unreferenced."
     }
   ]
 }
