@@ -304,4 +304,21 @@ mod tests {
             assert!(COMPANIONS.iter().any(|(known, _)| *known == id), "{id}");
         }
     }
+
+    #[test]
+    fn counts_registered_anki_tan_art() {
+        let poses = fixture();
+        let full = root().join("static/anki-tan");
+        for pose in ["asleep", "sad", "neglected", "frozen"] {
+            assert_eq!(Status::Present, status(&full, &poses, pose), "{pose}");
+        }
+
+        // Chibi's generated master stays under the same character licence.
+        let chibi = root().join("static/anki-tan-chibi");
+        assert_eq!(Status::Present, status(&chibi, &poses, "frozen"));
+        assert_eq!(
+            Status::Fallback("frozen".into()),
+            status(&chibi, &poses, "frozen_3")
+        );
+    }
 }
