@@ -340,6 +340,26 @@ class DeckAlerts(unittest.TestCase):
         self.assertEqual(1, len([body for _, body in self.calls if body is not None]))
         self.assertNotIn("Undo", [b.text() for b in second.findChildren(QPushButton)])
 
+    def test_pending_write_disables_other_rows(self):
+        first, second = self.row(), self.row(id=10)
+        self.stop(first).click()
+        self.assertFalse(self.stop(second).isEnabled())
+        during = self.row(id=11)
+        self.assertFalse(self.stop(during).isEnabled())
+        self.finish(error=OSError("offline"))
+        self.assertTrue(self.stop(second).isEnabled())
+        self.assertTrue(self.stop(during).isEnabled())
+
+    def test_stale_result_explains_account_change(self):
+        row = self.row()
+        with patch.object(ui.preferences, "change_alert", return_value=ui.preferences.AlertResult.STALE):
+            self.stop(row).click()
+            self.finish()
+        self.assertIn(
+            "This inbox belongs to an AnkiQuest account that is no longer signed in.",
+            [label.text() for label in row.findChildren(QLabel)],
+        )
+
     def test_only_received_decks(self):
         for changes in ({"sender": "hill"}, {"sender": ""}, {"kind": "reply"}, {"kind": "share"}):
             with self.subTest(changes=changes):

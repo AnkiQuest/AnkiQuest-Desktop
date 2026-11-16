@@ -55,41 +55,41 @@ def subscription_body(fresh, enabled, before, after):
     return {"enabled": bool(enabled), "unsubscribed_senders": sorted(wanted)}
 
 
-class _AlertChange(Enum):
+class AlertChange(Enum):
     STOP = auto()
     RESTORE = auto()
 
 
-class _AlertResult(Enum):
+class AlertResult(Enum):
     CHANGED = auto()
     UNCHANGED = auto()
     UNAVAILABLE = auto()
     STALE = auto()
 
 
-def _change_alert(api, sender, change, owns):
+def change_alert(api, sender, change, owns):
     # Row -> fresh preferences -> one sender; Undo repeats the fresh read.
     if not owns() or not sender or sender == api.user:
-        return _AlertResult.STALE
+        return AlertResult.STALE
     path = subscriptions_path(api)
     fresh = api._request(path)
     if not owns():
-        return _AlertResult.STALE
+        return AlertResult.STALE
     if not isinstance(fresh, dict) or not isinstance(fresh.get("enabled"), bool):
         raise ValueError("missing deck alert preference")
     people, before = alert_senders(fresh)
-    if change is _AlertChange.STOP:
+    if change is AlertChange.STOP:
         if sender not in {user for user, _ in people}:
-            return _AlertResult.UNAVAILABLE
+            return AlertResult.UNAVAILABLE
         if sender in before:
-            return _AlertResult.UNCHANGED
+            return AlertResult.UNCHANGED
         after = before | {sender}
     else:
         if sender not in before:
-            return _AlertResult.UNCHANGED
+            return AlertResult.UNCHANGED
         after = before - {sender}
     api._request(path, subscription_body(fresh, fresh["enabled"], before, after))
-    return _AlertResult.CHANGED
+    return AlertResult.CHANGED
 
 
 def freeze_body(enabled):

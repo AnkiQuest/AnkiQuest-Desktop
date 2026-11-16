@@ -1,6 +1,7 @@
 """The inbox as a native window: recent messages with Reply, Share and Open on the website."""
 
 import time
+from weakref import WeakSet
 from copy import copy
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -95,6 +96,7 @@ class Context:
         self._pm = getattr(dialog.parentWidget(), "pm", None)
         self._profile = getattr(self._pm, "profile", None)
         self._root = self
+        self._alerts = WeakSet()
         self._after_change, self._reload_inbox = lambda: None, lambda: None
         dialog.finished.connect(self._closed)
 
@@ -112,6 +114,12 @@ class Context:
         child = copy(self)
         child._revision, child._pending = self._scope.revision, set()
         return child
+
+    def _alert_controls(self):
+        # Rows share one write queue; all affected controls must show that wait.
+        for action in self._root._alerts:
+            if action._context._alive():
+                action._controls()
 
     def _refresh_badge(self):
         self._root._after_change()
@@ -319,6 +327,8 @@ class _DeckAlerts:
         self._state = _AlertState.READY
         self._button = QPushButton(tr("Stop deck alerts from %s") % sender)
         self._button.clicked.connect(self._clicked)
+        context._root._alerts.add(self)
+        self._controls()
 
     def _owns(self):
         api = self._context.api
@@ -327,7 +337,8 @@ class _DeckAlerts:
     def _controls(self):
         label = tr("Undo") if self._state is _AlertState.STOPPED else tr("Stop deck alerts from %s") % self._sender
         self._button.setText(label)
-        self._button.setEnabled(self._state in (_AlertState.READY, _AlertState.STOPPED))
+        self._button.setEnabled(self._owns() and self._state in (_AlertState.READY, _AlertState.STOPPED)
+                                and _Action.DECK_ALERTS not in self._context._root._pending)
         self._button.setVisible(self._state not in (_AlertState.ALREADY_STOPPED, _AlertState.UNAVAILABLE))
 
     def _clicked(self):
@@ -338,39 +349,44 @@ class _DeckAlerts:
             return
         # Serialize subscription writes across rows; the server replaces the whole list.
         before = self._state
-        change = preferences._AlertChange.STOP if before is _AlertState.READY else preferences._AlertChange.RESTORE
+        change = preferences.AlertChange.STOP if before is _AlertState.READY else preferences.AlertChange.RESTORE
         self._state = _AlertState.STOPPING if before is _AlertState.READY else _AlertState.RESTORING
         pending.add(_Action.DECK_ALERTS)
-        self._controls()
+        self._context._alert_controls()
         self._status.setText(tr("Saving…"))
 
         def done(future):
             pending.discard(_Action.DECK_ALERTS)
-            if not self._owns():
-                return
             try:
-                result = future.result()
-            except Exception as error:
-                print("ankiquest deck alerts:", error)
-                self._state = before
-                self._status.setText(tr("Couldn't change deck alerts. Try again."))
-                self._controls()
-                return
-            self._show_result(result, before)
+                if not self._context._alive():
+                    return
+                if not self._owns():
+                    self._show_result(preferences.AlertResult.STALE, before)
+                    return
+                try:
+                    result = future.result()
+                except Exception as error:
+                    print("ankiquest deck alerts:", error)
+                    self._state = before
+                    self._status.setText(tr("Couldn't change deck alerts. Try again."))
+                    return
+                self._show_result(result, before)
+            finally:
+                self._context._alert_controls()
 
-        self._context.run(lambda: preferences._change_alert(self._context.api, self._sender, change, self._owns), done)
+        self._context.run(lambda: preferences.change_alert(self._context.api, self._sender, change, self._owns), done)
 
     def _show_result(self, result, before):
-        if result is preferences._AlertResult.STALE:
+        if result is preferences.AlertResult.STALE:
             self._state = before
-            self._status.clear()
-        elif result is preferences._AlertResult.UNAVAILABLE:
+            self._status.setText(tr("This inbox belongs to an AnkiQuest account that is no longer signed in."))
+        elif result is preferences.AlertResult.UNAVAILABLE:
             self._state = _AlertState.UNAVAILABLE
             self._status.setText(tr("%s no longer shares deck alerts.") % self._sender)
         elif before is _AlertState.STOPPED:
             self._state = _AlertState.READY
             self._status.setText(tr("You'll get deck alerts from %s again.") % self._sender)
-        elif result is preferences._AlertResult.CHANGED:
+        elif result is preferences.AlertResult.CHANGED:
             self._state = _AlertState.STOPPED
             self._status.setText(tr("You won't get deck alerts from %s.") % self._sender)
         else:
