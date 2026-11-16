@@ -16,7 +16,6 @@ SPANISH = {
     "Label saved.": "Etiqueta guardada.", "Label removed.": "Etiqueta eliminada.",
     "Share taken back where possible.": "Se ha retirado lo compartido donde ha sido posible.",
     "I conquered a card!": "¡He conquistado una tarjeta!",
-    "%d lapses · %d answers · %d days since the first answer": "%d olvidos · %d respuestas · %d días desde la primera respuesta",
     "Your study companion.": "Tu compañero de estudio.",
     "Study companion": "Compañero de estudio",
     "No companion": "Sin compañero",
@@ -164,7 +163,6 @@ GERMAN = {
     "Label saved.": "Bezeichnung gespeichert.", "Label removed.": "Bezeichnung entfernt.",
     "Share taken back where possible.": "Das Teilen wurde soweit möglich rückgängig gemacht.",
     "I conquered a card!": "Ich habe eine Karte gemeistert!",
-    "%d lapses · %d answers · %d days since the first answer": "%d Fehler · %d Antworten · %d Tage seit der ersten Antwort",
     "Your study companion.": "Dein Lernbegleiter.",
     "Study companion": "Lernbegleiter",
     "No companion": "Kein Begleiter",
@@ -279,7 +277,6 @@ FRENCH = {
     "Label saved.": "Nom enregistré.", "Label removed.": "Nom supprimé.",
     "Share taken back where possible.": "Le partage a été annulé dans la mesure du possible.",
     "I conquered a card!": "J’ai maîtrisé une carte !",
-    "%d lapses · %d answers · %d days since the first answer": "%d oublis · %d réponses · %d jours depuis la première réponse",
     "Your study companion.": "Ton compagnon d’étude.",
     "Study companion": "Compagnon d’étude",
     "No companion": "Aucun compagnon",
@@ -394,7 +391,6 @@ PORTUGUESE = {
     "Label saved.": "Nome guardado.", "Label removed.": "Nome removido.",
     "Share taken back where possible.": "A partilha foi anulada onde foi possível.",
     "I conquered a card!": "Conquistei um cartão!",
-    "%d lapses · %d answers · %d days since the first answer": "%d esquecimentos · %d respostas · %d dias desde a primeira resposta",
     "Your study companion.": "O teu companheiro de estudo.",
     "Study companion": "Companheiro de estudo",
     "No companion": "Sem companheiro",
@@ -2069,6 +2065,7 @@ SPANISH.update({
     "I finally learned “%s”, a card I had forgotten %d times.": "Por fin aprendí «%s», una tarjeta que había olvidado %d veces.",
     "From my deck “%s”.": "De mi mazo «%s».",
     "%d answer": "%d respuesta", "%d answers": "%d respuestas",
+    "%d lapse": "%d olvido", "%d lapses": "%d olvidos",
     "%d day to learn": "%d día para aprenderla", "%d days to learn": "%d días para aprenderla",
 })
 GERMAN.update({
@@ -2078,6 +2075,7 @@ GERMAN.update({
     "I finally learned “%s”, a card I had forgotten %d times.": "Ich habe endlich „%s“ gelernt, eine Karte, die ich %d-mal vergessen hatte.",
     "From my deck “%s”.": "Aus meinem Stapel „%s“.",
     "%d answer": "%d Antwort", "%d answers": "%d Antworten",
+    "%d lapse": "%d Fehler", "%d lapses": "%d Fehler",
     "%d day to learn": "%d Tag zum Lernen", "%d days to learn": "%d Tage zum Lernen",
 })
 FRENCH.update({
@@ -2087,6 +2085,7 @@ FRENCH.update({
     "I finally learned “%s”, a card I had forgotten %d times.": "J’ai enfin appris « %s », une carte que j’avais oubliée %d fois.",
     "From my deck “%s”.": "De mon paquet « %s ».",
     "%d answer": "%d réponse", "%d answers": "%d réponses",
+    "%d lapse": "%d oubli", "%d lapses": "%d oublis",
     "%d day to learn": "%d jour pour l’apprendre", "%d days to learn": "%d jours pour l’apprendre",
 })
 PORTUGUESE.update({
@@ -2096,6 +2095,7 @@ PORTUGUESE.update({
     "I finally learned “%s”, a card I had forgotten %d times.": "Finalmente aprendi «%s», um cartão que tinha esquecido %d vezes.",
     "From my deck “%s”.": "Do meu baralho «%s».",
     "%d answer": "%d resposta", "%d answers": "%d respostas",
+    "%d lapse": "%d esquecimento", "%d lapses": "%d esquecimentos",
     "%d day to learn": "%d dia para aprender", "%d days to learn": "%d dias para aprender",
 })
 

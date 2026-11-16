@@ -178,14 +178,80 @@
     {
       "exporter": "addon",
       "file": "addon/art/anki_tan_frozen.png",
-      "master": "static/anki-tan/generated/frozen-full.png",
+      "master": "static/anki-tan/frozen.png",
       "sha256": "07a2be6981a7c5a5f918d9c038d745620d71b7187025cf9b0e1e7d77d5da475d"
     },
     {
       "exporter": "addon",
       "file": "addon/art/anki_tan_chibi_frozen.png",
-      "master": "static/anki-tan/generated/frozen-chibi.png",
+      "master": "static/anki-tan/chibi/frozen.png",
       "sha256": "0f2834baa7e24ab06eb5301794cf0db8237d9a7f7e3495e6c5646f2f493643fb"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_asleep.png",
+      "master": "static/anki-tan/asleep.png",
+      "sha256": "384b17d8ba43944d734dda8071553669e6e1afaac43499bc9866eb60578c5769"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_sad.png",
+      "master": "static/anki-tan/sad.png",
+      "sha256": "f5648427cf550a453118b1c02a15d17ebc7bb71a0fe26dc427a8d012d11e0e83"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_neglected.png",
+      "master": "static/anki-tan/neglected.png",
+      "sha256": "fd7d8914876e30f13c90c9746fa964755fbad60561384458f95bd3f956ec1422"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_face.png",
+      "master": "static/cow/face.png",
+      "sha256": "e8de3cc26fb4b94adeffad6a2c2f928e5d50e59ef536021044ac7541de56efce"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_asleep.png",
+      "master": "static/cow/asleep.png",
+      "sha256": "f79255b238eece398ca5651fd8010500cff8850e4c6e9f3c2cdab9bcaae9de0f"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_happy.png",
+      "master": "static/cow/happy.png",
+      "sha256": "cead5bed8df7032de8ef1877b2ab248c9d6cdba3f48197ac6a97069c03ad8230"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_streak.png",
+      "master": "static/cow/streak.png",
+      "sha256": "86276a677ed815f2597b268d61b28415d165ef74ef2f3cdd35e352efefe282f2"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_sad.png",
+      "master": "static/cow/sad.png",
+      "sha256": "1838cc61662aa886e97cf0667cf7c146fc4e7cb5e92a744364caf84a2d2c3af4"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_hopeful.png",
+      "master": "static/cow/hopeful.png",
+      "sha256": "345f640aef4c698353e4b70f634dc5b157ae3e73b4085818255b4c6818d6a604"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_frozen.png",
+      "master": "static/cow/frozen.png",
+      "sha256": "bb9e520390772e9caeb7342f54a2e13a686daa531a32efb15798e888a7a1ea1d"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_neglected.png",
+      "master": "static/cow/neglected.png",
+      "sha256": "c3fa305a46ce0aca4a900fdaccba25a19aaf7cc46183bee3186299da59768b14"
     }
   ],
   "retired": [
@@ -288,6 +354,22 @@
     {
       "file": "assets/retired/addon/art/ankilope_welcome-2fe2d900.png",
       "why": "addon/art/ankilope_welcome.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/welcome.png. Unreferenced."
+    },
+    {
+      "file": "static/anki-tan/archive/addon/anki_tan_sleeping.png",
+      "why": "Earlier name for the canonical anki_tan_asleep export. Preserved unchanged outside the app package. Unreferenced."
+    },
+    {
+      "file": "static/cow/archive/addon/bluma_sleeping.png",
+      "why": "Earlier name for the canonical bluma_asleep export. Preserved unchanged outside the app package. Unreferenced."
+    },
+    {
+      "file": "static/cow/archive/addon/bluma_celebrate.png",
+      "why": "Earlier name for the canonical bluma_happy export. Preserved unchanged outside the app package. Unreferenced."
+    },
+    {
+      "file": "static/anki-tan/archive/addon/anki_tan_neglected-three-blue-stars.png",
+      "why": "Earlier addon/art/anki_tan_neglected.png, replaced when export-addon-art wrote a new export of static/anki-tan/neglected.png. Unreferenced."
     }
   ]
 }
