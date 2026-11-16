@@ -178,14 +178,32 @@
     {
       "exporter": "addon",
       "file": "addon/art/anki_tan_frozen.png",
-      "master": "static/anki-tan/generated/frozen-full.png",
+      "master": "static/anki-tan/frozen.png",
       "sha256": "07a2be6981a7c5a5f918d9c038d745620d71b7187025cf9b0e1e7d77d5da475d"
     },
     {
       "exporter": "addon",
       "file": "addon/art/anki_tan_chibi_frozen.png",
-      "master": "static/anki-tan/generated/frozen-chibi.png",
+      "master": "static/anki-tan/chibi/frozen.png",
       "sha256": "0f2834baa7e24ab06eb5301794cf0db8237d9a7f7e3495e6c5646f2f493643fb"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_asleep.png",
+      "master": "static/anki-tan/asleep.png",
+      "sha256": "384b17d8ba43944d734dda8071553669e6e1afaac43499bc9866eb60578c5769"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_sad.png",
+      "master": "static/anki-tan/sad.png",
+      "sha256": "f5648427cf550a453118b1c02a15d17ebc7bb71a0fe26dc427a8d012d11e0e83"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_neglected.png",
+      "master": "static/anki-tan/neglected.png",
+      "sha256": "fd7d8914876e30f13c90c9746fa964755fbad60561384458f95bd3f956ec1422"
     }
   ],
   "retired": [
@@ -288,6 +306,14 @@
     {
       "file": "assets/retired/addon/art/ankilope_welcome-2fe2d900.png",
       "why": "addon/art/ankilope_welcome.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/welcome.png. Unreferenced."
+    },
+    {
+      "file": "static/anki-tan/archive/addon/anki_tan_sleeping.png",
+      "why": "Earlier name for the canonical anki_tan_asleep export. Preserved unchanged outside the app package. Unreferenced."
+    },
+    {
+      "file": "static/anki-tan/archive/addon/anki_tan_neglected-three-blue-stars.png",
+      "why": "Earlier addon/art/anki_tan_neglected.png, replaced when export-addon-art wrote a new export of static/anki-tan/neglected.png. Unreferenced."
     }
   ]
 }

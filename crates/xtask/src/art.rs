@@ -163,14 +163,11 @@ const ART: &[Art] = &[
         336,
     ),
     art("duo_friends", "static/duo/friends.png", 336),
-    widget(
-        "anki_tan_frozen",
-        "static/anki-tan/generated/frozen-full.png",
-    ),
-    widget(
-        "anki_tan_chibi_frozen",
-        "static/anki-tan/generated/frozen-chibi.png",
-    ),
+    widget("anki_tan_frozen", "static/anki-tan/frozen.png"),
+    widget("anki_tan_asleep", "static/anki-tan/asleep.png"),
+    widget("anki_tan_sad", "static/anki-tan/sad.png"),
+    widget("anki_tan_neglected", "static/anki-tan/neglected.png"),
+    widget("anki_tan_chibi_frozen", "static/anki-tan/chibi/frozen.png"),
     // Anki-tan's launcher icons (AnkiQuest-Android AnkiquestIcon), CC BY-SA 4.0.
     // The pack's icon is 256 px and is kept at that size.
     art("anki_tan_icon", "static/anki-tan/icon.png", 432),
@@ -391,6 +388,9 @@ mod tests {
             "aki_sleeping",
             "aki_at_risk",
             "anki_tan_frozen",
+            "anki_tan_asleep",
+            "anki_tan_sad",
+            "anki_tan_neglected",
             "anki_tan_chibi_frozen",
         ];
         let large: Vec<_> = ART.iter().filter(|art| art.size == WIDGET).collect();
