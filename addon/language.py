@@ -85,7 +85,7 @@ SPANISH = {
     "The server could not sign you in (%s).": "El servidor no pudo iniciar tu sesión (%s).",
     "Could not reach the server (%s).": "No se pudo conectar con el servidor (%s).",
     "Signed in as %s.": "Sesión iniciada como %s.",
-    "Send a deck to friends": "Enviar un mazo a amigos", "Decks offered to me": "Mazos que me ofrecen",
+    "Decks offered to me": "Mazos que me ofrecen",
     "Send an independent copy with cards and media, without your study history. Friends choose whether to import it.": "Envía una copia independiente con tarjetas y archivos multimedia, sin tu historial de estudio. Tus amigos deciden si la importan.",
     "Choose a deck": "Elige un mazo", "Send to": "Enviar a", "Send": "Enviar",
     "Choose at least one friend.": "Elige al menos un amigo.",
@@ -232,7 +232,7 @@ GERMAN = {
     "The server could not sign you in (%s).": "Der Server konnte dich nicht anmelden (%s).",
     "Could not reach the server (%s).": "Server nicht erreichbar (%s).",
     "Signed in as %s.": "Angemeldet als %s.",
-    "Send a deck to friends": "Stapel an Freunde senden", "Decks offered to me": "Mir angebotene Stapel",
+    "Decks offered to me": "Mir angebotene Stapel",
     "Send an independent copy with cards and media, without your study history. Friends choose whether to import it.": "Sende eine eigenständige Kopie mit Karten und Medien, ohne deinen Lernverlauf. Freunde entscheiden selbst, ob sie sie importieren.",
     "Choose a deck": "Stapel auswählen", "Send to": "Senden an", "Send": "Senden",
     "Choose at least one friend.": "Wähle mindestens einen Freund aus.",
@@ -346,7 +346,7 @@ FRENCH = {
     "The server could not sign you in (%s).": "Le serveur n’a pas pu te connecter (%s).",
     "Could not reach the server (%s).": "Impossible de joindre le serveur (%s).",
     "Signed in as %s.": "Connecté en tant que %s.",
-    "Send a deck to friends": "Envoyer un paquet à des amis", "Decks offered to me": "Paquets qu’on m’offre",
+    "Decks offered to me": "Paquets qu’on m’offre",
     "Send an independent copy with cards and media, without your study history. Friends choose whether to import it.": "Envoie une copie indépendante avec les cartes et les médias, sans ton historique de révision. Tes amis choisissent de l’importer ou non.",
     "Choose a deck": "Choisis un paquet", "Send to": "Envoyer à", "Send": "Envoyer",
     "Choose at least one friend.": "Choisis au moins un ami.",
@@ -460,7 +460,7 @@ PORTUGUESE = {
     "The server could not sign you in (%s).": "O servidor não conseguiu iniciar a tua sessão (%s).",
     "Could not reach the server (%s).": "Não foi possível contactar o servidor (%s).",
     "Signed in as %s.": "Sessão iniciada como %s.",
-    "Send a deck to friends": "Enviar um baralho a amigos", "Decks offered to me": "Baralhos que me ofereceram",
+    "Decks offered to me": "Baralhos que me ofereceram",
     "Send an independent copy with cards and media, without your study history. Friends choose whether to import it.": "Envia uma cópia independente com cartões e multimédia, sem o teu histórico de estudo. Os amigos decidem se a importam.",
     "Choose a deck": "Escolhe um baralho", "Send to": "Enviar a", "Send": "Enviar",
     "Choose at least one friend.": "Escolhe pelo menos um amigo.",
@@ -2132,3 +2132,9 @@ PORTUGUESE.update({
     "%s no longer shares deck alerts.": "%s já não partilha avisos de baralhos.",
     "Couldn't change deck alerts. Try again.": "Não foi possível alterar os avisos de baralhos. Tenta novamente.",
 })
+
+# Match Android's deck-copy form title and action.
+SPANISH.update({"Share a deck": "Compartir un mazo"})
+GERMAN.update({"Share a deck": "Stapel teilen"})
+FRENCH.update({"Share a deck": "Partager un paquet"})
+PORTUGUESE.update({"Share a deck": "Partilhar um baralho"})

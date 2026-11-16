@@ -212,9 +212,6 @@ def open_send():
 
     def loaded(inbox):
         people = copies.friends(inbox)
-        if not people:
-            tooltip(tr("No friends are available on this server yet."))
-            return
         decks = sorted(
             ((deck.name, deck.id) for deck in mw.col.decks.all_names_and_ids(skip_empty_default=True, include_filtered=False)),
             key=lambda deck: deck[0].lower(),
@@ -257,7 +254,7 @@ def send_dialog(parent, decks, people, sender, focus=None):
     """A deck and the friends to send it to; stays open until the choice is acceptable."""
     dialog = QDialog(parent)
     owner = _dialog_owner(state["client"](), dialog)
-    dialog.setWindowTitle(tr("Send a deck to friends"))
+    dialog.setWindowTitle(tr("Share a deck"))
     dialog.resize(480, 520)
     layout = QVBoxLayout(dialog)
     _brand(dialog, layout, state["companion"]())
@@ -273,7 +270,7 @@ def send_dialog(parent, decks, people, sender, focus=None):
     deck.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
     deck.completer().setFilterMode(Qt.MatchFlag.MatchContains)
     deck.completer().setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-    deck.setPlaceholderText(tr("Choose a deck"))
+    deck.lineEdit().setPlaceholderText(tr("Choose a deck"))
     deck.setCurrentIndex(deck.findData(focus))
     layout.addWidget(QLabel(tr("Choose a deck")))
     layout.addWidget(deck)
@@ -294,15 +291,21 @@ def send_dialog(parent, decks, people, sender, focus=None):
     def chosen():
         return [user for user, box in boxes.items() if box.isChecked()]
 
+    def selected_deck():
+        # Resolve typed names with the same case rule as the completer.
+        return deck.findText(deck.currentText(), Qt.MatchFlag.MatchFixedString)
+
     def invalid():
+        if not people:
+            return tr("No friends are available on this server yet.")
         reason = copies.check_recipients(chosen(), sender, tr)
-        if deck.currentData() is None or deck.currentText() != deck.itemText(deck.currentIndex()):
+        if selected_deck() < 0:
             reason = tr("Choose a deck")
         return reason
 
     def update(*_args):
         reason = invalid()
-        send.setEnabled(reason is None)
+        share.setEnabled(reason is None)
         status.setText(reason or "")
 
     def check():
@@ -314,7 +317,7 @@ def send_dialog(parent, decks, people, sender, focus=None):
             return
         dialog.accept()
 
-    buttons, send = _row_buttons(dialog, tr("Send"), check)
+    buttons, share = _row_buttons(dialog, tr("Share a deck"), check)
     layout.addLayout(buttons)
     deck.currentTextChanged.connect(update)
     deck.currentIndexChanged.connect(update)
@@ -323,7 +326,8 @@ def send_dialog(parent, decks, people, sender, focus=None):
     update()
     if not dialog.exec():
         return None
-    return deck.currentData(), deck.currentText(), chosen()
+    selected = selected_deck()
+    return deck.itemData(selected), deck.itemText(selected), chosen()
 
 
 def _row_buttons(dialog, accept_text, on_accept):
