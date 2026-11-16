@@ -10,5 +10,6 @@
     "session_summary": true,
     "goal_celebrations": true,
     "review_heatmap": true,
+    "reduce_motion": false,
     "sync_settings": true
 }

@@ -43,6 +43,18 @@ _MOOD_POSES = {
     HOPEFUL: "aki_welcome",
 }
 
+# The companion tab's line for each mood, saying why; `%d` is the streak.
+MOOD_LINES = {
+    MOOD_UNKNOWN: "Waiting for today’s study to sync.",
+    ASLEEP: "Asleep: study a card to start a streak.",
+    SAD: "Sad: your %d-day streak is waiting for today’s study.",
+    FROZEN_1: "Frozen: a freeze kept your streak. Study today to thaw.",
+    FROZEN_2: "Frozen for 2 days: study today to thaw.",
+    FROZEN_3: "Frozen for 3 days or more: study today to thaw.",
+    HOPEFUL: "Hopeful: a little more study and today counts.",
+    FIRE: "On fire: today counts for your %d-day streak.",
+}
+
 # A counted day's pose by heat: the first streak length each pose starts at, hottest first.
 HEAT = ((100, "aki_streak_legend"), (30, "aki_streak_blazing"), (7, "aki_streak_hot"), (1, "aki_streak"))
 
@@ -181,21 +193,34 @@ def day_state(view):
     return state
 
 
+def _streak(view):
+    return int((view or {}).get("streak") or 0)
+
+
 def today_mood(view, goal):
-    """The streak mood for the displayed profile's day: the one streak rule every surface uses."""
+    """The displayed profile's streak mood: the one streak rule every surface uses."""
     view = view or {}
-    streak = int(view.get("streak") or 0)
-    return streak_mood(day_state(view), _reviews_today(view), streak, frozen_run(view.get("heatmap")), goal)
+    return streak_mood(day_state(view), _reviews_today(view), _streak(view), frozen_run(view.get("heatmap")), goal)
 
 
 def today_pose(view, goal):
     """Aki's pose for the displayed profile's day."""
-    return streak_pose(today_mood(view, goal), int((view or {}).get("streak") or 0))
+    return streak_pose(today_mood(view, goal), _streak(view))
 
 
 def today_flame(view, goal):
     """The flame beside the displayed profile's streak number."""
     return flame(today_mood(view, goal))
+
+
+def mood_line(chosen, streak):
+    """The companion tab's line for a mood, untranslated, and the values for its `%d`."""
+    text = MOOD_LINES[chosen]
+    if "%d" not in text:
+        return text, ()
+
+    # A reached goal burns before the server counts the day, so the streak is at least one.
+    return text, (max(streak, 1),)
 
 
 def art_owner(companion):

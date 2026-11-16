@@ -8,9 +8,9 @@ import time
 import tempfile
 from pathlib import Path
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QFont, QFontDatabase, QPushButton, QScrollArea, QWidget
+from aqt.qt import QApplication, QDialog, QFont, QFontDatabase, QPushButton, QScrollArea, QWidget
 from anki.collection import Collection
 
 from addon_loader import load_in_package
@@ -127,6 +127,18 @@ class Moments(unittest.TestCase):
         self.presenter._open()
         self.assertEqual("goal:2", self.presenter._card._items[0]["key"])
 
+    def test_moments_wait_while_aki_greets(self):
+        self.mw.state = "deckBrowser"
+        self.presenter._hold()
+        self.offer(self.item("goal:2", "goal"))
+        self.transition("deckBrowser", None)
+        self.assertIsNone(self.presenter._card)
+
+        # Closing the greeting shows what arrived meanwhile.
+        self.presenter._release()
+        self.flush()
+        self.assertEqual("goal:2", self.presenter._card._items[0]["key"])
+
     def test_a_late_permission_reply_cannot_cross_profiles_or_accounts(self):
         self.defer = True
         self.offer()
@@ -190,6 +202,126 @@ class Moments(unittest.TestCase):
         self.assertEqual("Streak secured! 🔥", self.presenter._card._title.text())
         self.addon.home._streak_title.assert_called_with(summary)
 
+    def joined(self, unread=True):
+        return {"key": "companion:cow", "topic": "companion", "at": 60, "title": "Bluma joined you!",
+                "body": "You have studied for 10 hours in total.", "notice": 5, "unread": unread}
+
+    def test_a_companion_that_joined_is_revealed_before_the_card(self):
+        self.addon.choose_companion = Mock()
+        self.offer(self.joined())
+        self.offer()
+        self.transition("overview", "review")
+        reveal = self.presenter._reveal
+        self.assertIsNotNone(reveal)
+        self.assertIsNone(self.presenter._card, "the card waits for the reveal")
+        self.assertIs(ui._Phase.REVEALING, self.presenter._phase)
+        reveal._skip()
+        reveal.choose.click()
+        self.flush()
+        api, companion, _run = self.addon.choose_companion.call_args.args
+        self.assertEqual((self.api, "cow"), (api, companion))
+        self.assertIn(("/api/activity/sam/read", {"ids": [5]}, None), self.requests)
+        self.assertEqual(["level:4"], [item["key"] for item in self.presenter._card._items])
+
+    def test_the_full_reveal_plays_unless_reduce_motion_is_on(self):
+        self.mw.pm.reduce_motion = lambda: True
+        self.offer(self.joined())
+        self.transition("overview", "review")
+        self.assertIs(ui.reveal_ui.Phase.FALLING, self.presenter._reveal.reveal.phase, "Anki's own setting does not count")
+        self.transition("review", "overview")
+        self.addon.config = lambda: {"reduce_motion": True}
+        self.transition("overview", "review")
+        self.assertIs(ui.reveal_ui.Phase.FADING, self.presenter._reveal.reveal.phase)
+
+    def test_a_moment_read_on_another_device_shows_the_card(self):
+        self.offer(self.joined(unread=False))
+        self.transition("overview", "review")
+        self.assertIsNone(self.presenter._reveal)
+        self.assertEqual(["companion:cow"], [item["key"] for item in self.presenter._card._items])
+
+    def test_studying_closes_the_reveal_and_it_plays_again_later(self):
+        self.offer(self.joined())
+        self.transition("overview", "review")
+        first = self.presenter._reveal
+        self.transition("review", "overview")
+        self.assertIsNone(self.presenter._reveal)
+        self.assertEqual([], self.requests)
+        self.assertEqual(1, self.presenter._count())
+        self.transition("overview", "review")
+        self.assertIsNotNone(self.presenter._reveal)
+        self.assertIsNot(first, self.presenter._reveal)
+        self.presenter._reveal.later.click()
+        self.flush()
+        self.assertEqual(0, self.presenter._count())
+        self.assertIsNone(self.presenter._card)
+
+    def revealed(self):
+        self.offer(self.joined())
+        self.transition("overview", "review")
+        reveal = self.presenter._reveal
+        reveal._skip()
+        return reveal
+
+    def switch_account(self):
+        self.api = SimpleNamespace(**dict(vars(self.api), token="new-token"))
+
+    def test_choose_after_an_account_change_saves_nothing(self):
+        self.addon.choose_companion = Mock()
+        reveal = self.revealed()
+        self.switch_account()
+        reveal.choose.click()
+        self.flush()
+        self.addon.choose_companion.assert_not_called()
+
+    def test_a_queued_choose_is_dropped_after_an_account_change(self):
+        self.addon.choose_companion = Mock()
+        reveal = self.revealed()
+        reveal.choose.click()
+        api, companion, run = self.addon.choose_companion.call_args.args
+        self.assertEqual(("token", "cow"), (api.token, companion))
+
+        # The save waits in the task queue while the account changes.
+        saved, done = [], Mock()
+        self.defer = True
+        run(lambda: saved.append(companion), done)
+        self.switch_account()
+        while self.tasks:
+            self.complete(self.tasks.pop(0))
+        self.assertEqual([], saved)
+        done.assert_not_called()
+
+    def test_a_queued_read_is_dropped_after_an_account_change(self):
+        reveal = self.revealed()
+        self.defer = True
+        reveal.later.click()
+        self.flush()
+        self.switch_account()
+        while self.tasks:
+            self.complete(self.tasks.pop(0))
+        self.assertNotIn("/api/activity/sam/read", [path for path, _body, _method in self.requests])
+
+    def test_a_greeting_that_opens_over_the_reveal_still_holds_the_card(self):
+        self.offer()
+        reveal = self.revealed()
+        self.presenter._hold()
+        reveal.later.click()
+        self.flush()
+        self.assertIsNone(self.presenter._card, "the card waits for the greeting")
+        self.presenter._release()
+        self.flush()
+        self.assertEqual(["level:4"], [item["key"] for item in self.presenter._card._items])
+
+    def test_a_greeting_that_closes_first_keeps_the_reveal_in_front(self):
+        self.offer()
+        reveal = self.revealed()
+        self.presenter._hold()
+        self.presenter._release()
+        self.flush()
+        self.assertIsNone(self.presenter._card, "the card waits for the reveal")
+        reveal.later.click()
+        self.flush()
+        self.assertEqual(["level:4"], [item["key"] for item in self.presenter._card._items])
+
     def test_conquest_load_is_read_only_and_a_new_win_keeps_the_draft_label(self):
         control = self.conquest()
         self.assertEqual("der Hund", control._label.text())
@@ -227,16 +359,48 @@ class Moments(unittest.TestCase):
         control._retract()
         self.assertEqual(1, len(self.requests))
 
-    def test_a_picture_can_be_requested_again_when_the_worker_has_not_created_it(self):
+    def test_a_local_picture_is_available_before_the_worker_keeps_a_win(self):
         self.found["win"] = None
         control = self.conquest()
-        self.assertFalse(control._image.isEnabled())
+        self.assertTrue(control._image.isEnabled())
+        self.assertTrue(control._file.isEnabled())
+        self.assertFalse(control._link.isEnabled())
         self.found["win"] = 9
         control._retry.click()
         self.assertTrue(control._image.isEnabled())
         control._copy.click()
-        self.assertIn("I learned a difficult card in German.", QApplication.clipboard().text())
+        self.assertIn("I finally learned a card I had forgotten 5 times.", QApplication.clipboard().text())
+        self.assertIn("From my deck “German”.", QApplication.clipboard().text())
         self.assertIn("/conquered/sam/50", QApplication.clipboard().text())
+
+    def test_removing_a_label_cancels_an_older_picture_request(self):
+        self.found["label"] = "shared words"
+        control = self.conquest()
+        self.defer = True
+        with patch.object(ui.share_ui.share, "card", side_effect=OSError("offline")):
+            control._image.click()
+            pending = self.tasks.pop()
+            self.defer = False
+            control._remove.click()
+            self.assertIsNone(control._found["label"])
+            QApplication.clipboard().clear()
+            self.complete(pending)
+        self.assertTrue(QApplication.clipboard().image().isNull(), "the old label must not be exported")
+
+    def test_removed_and_unsaved_labels_never_enter_a_new_local_picture(self):
+        self.found["label"] = "shared words"
+        control = self.conquest()
+        control._remove.click()
+        control._label.setText("private draft")
+        control._label.setModified(True)
+        renderer = load_in_package("moments_qt", "share_picture")
+        with patch.object(ui.share_ui.share, "card", side_effect=OSError("offline")), \
+                patch.object(renderer, "render", wraps=renderer.render) as draw:
+            control._image.click()
+        self.assertEqual(1, draw.call_count)
+        content = draw.call_args.args[0]
+        self.assertNotIn("shared words", content["body"])
+        self.assertNotIn("private draft", content["body"])
 
     def test_late_replies_cannot_write_a_closed_or_switched_card(self):
         control = self.conquest()
@@ -266,6 +430,7 @@ class Moments(unittest.TestCase):
         self.api = SimpleNamespace(**dict(vars(self.api), token="new-token"))
         self.complete(self.tasks.pop(0))
         self.assertEqual([], self.tasks)
+        self.assertFalse([path for path, _body, _method in self.requests if path.endswith("/label")], "the queued save never starts")
         self.presenter._sync_owner()
         self.assertIsNone(self.presenter._card)
         self.assertEqual(1, len(ui.moments._pending(old_profile, (old_api.base, old_api.user))))
@@ -296,6 +461,60 @@ class Moments(unittest.TestCase):
         self.assertEqual("Spanish::Animals", control._deck_record["path"].removeprefix("5 Archive::"))
         control._deck_name.lineEdit().textEdited.emit("")
         self.assertNotIn(" in ", control._win()["body"])
+
+    def test_unlock_and_conquest_shares_open_the_recipient_picker(self):
+        self.api.capabilities = lambda: {"share_moments", "share_undo_send"}
+        request = self.api._request
+        self.api._request = lambda path, body=None, method=None: (
+            {"friends": [{"user": "ana", "display": "Ana"}], "groups": []}
+            if path.startswith("/api/social/") else request(path, body, method))
+        with patch.object(ui.share_ui.share, "card", side_effect=OSError("offline")):
+            self.offer(dict(self.item("companion_unlocked:ankilope", "companion_unlocked"),
+                            share={"title": "Ankilope unlocked", "body": "Level 30", "win": 17}))
+            self.transition("overview", "review")
+            card = self.presenter._card
+            next(button for button in card._dialog.findChildren(QPushButton) if button.text() == "Tell friends").click()
+            self.flush()
+            opened = next(dialog for dialog in card._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+            self.assertEqual(17, opened._picker._win["win"])
+            self.assertTrue(opened._picker._form.isVisible())
+            opened.close()
+            self.presenter._clear()
+            self.mw.state = "review"
+            control = self.conquest()
+            self.assertTrue(control._deck_name.isVisible())
+            control._deck_name.lineEdit().textEdited.emit("My vocabulary")
+            control._tell.click()
+            self.flush()
+            opened = next(dialog for dialog in self.presenter._card._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+            self.assertEqual(50, opened._picker._win["conquest"])
+            self.assertIn("My vocabulary", opened._picker._win["body"])
+            self.assertTrue(opened._picker._form.isVisible())
+            self.assertFalse(any(path.endswith("/tell") for path, _, _ in self.requests))
+            opened.close()
+
+    def test_share_loading_survives_selecting_another_moment(self):
+        self.api.capabilities = lambda: {"share_moments", "share_undo_send"}
+        request = self.api._request
+        self.api._request = lambda path, body=None, method=None: (
+            {"friends": [{"user": "ana", "display": "Ana"}], "groups": []}
+            if path.startswith("/api/social/") else request(path, body, method))
+        with patch.object(ui.share_ui.share, "card", side_effect=OSError("offline")):
+            self.offer(dict(self.item(), share={"title": "Level 4", "body": "A win", "win": 17}))
+            self.offer(self.item("goal:2", "goal"))
+            self.transition("overview", "review")
+            card = self.presenter._card
+            card._choices.setCurrentIndex(card._choices.findData("level:4"))
+            self.defer = True
+            next(button for button in card._dialog.findChildren(QPushButton) if button.text() == "Tell friends").click()
+            self.complete(self.tasks.pop(0))
+            self.flush()
+            opened = next(dialog for dialog in card._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
+            card._choices.setCurrentIndex(card._choices.findData("goal:2"))
+            self.complete(self.tasks.pop(0))
+            self.assertTrue(opened._picker._form.isVisible())
+            self.assertEqual(17, opened._picker._win["win"])
+            opened.close()
 
     def test_a_stale_local_deck_reply_cannot_change_another_account(self):
         control = self.conquest()

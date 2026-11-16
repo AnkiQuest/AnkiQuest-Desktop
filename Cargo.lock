@@ -12,6 +12,7 @@ checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
 name = "ankiquest"
 version = "0.1.0"
 dependencies = [
+ "ankiquest-art",
  "ankiquest-i18n",
  "argon2",
  "axum",
@@ -28,6 +29,14 @@ dependencies = [
  "tokio",
  "tower",
  "ureq",
+]
+
+[[package]]
+name = "ankiquest-art"
+version = "0.1.0"
+dependencies = [
+ "image",
+ "serde_json",
 ]
 
 [[package]]
@@ -48,11 +57,17 @@ dependencies = [
 name = "ankiquest-xtask"
 version = "0.1.0"
 dependencies = [
+ "ankiquest-art",
  "color_quant",
+ "crc32fast",
+ "flate2",
  "image",
+ "libz-sys",
  "png",
  "resvg",
+ "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "webp",
 ]
@@ -706,6 +721,18 @@ checksum = "54cd30df7c7165ce74a456e4ca9732c603e8dc5e60784558c1c6dc047f876733"
 dependencies = [
  "cc",
  "glob",
+]
+
+[[package]]
+name = "libz-sys"
+version = "1.1.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fee3f59f4321dab0c78d828942e7aa09d0bd8ad6e78a501977e6bf3d02938045"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+ "vcpkg",
 ]
 
 [[package]]

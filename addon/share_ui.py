@@ -1,10 +1,9 @@
-"""Sharing a win from Anki: with friends through the server, or anywhere as the server's card picture."""
+"""Share a win with friends, or export its server picture with a private local fallback."""
 
 from pathlib import Path
 
 from aqt.qt import (
     QApplication,
-    QDialog,
     QFileDialog,
     QFont,
     QHBoxLayout,
@@ -12,6 +11,7 @@ from aqt.qt import (
     QLabel,
     QPushButton,
     QVBoxLayout,
+    QWidget,
     Qt,
 )
 
@@ -36,7 +36,7 @@ def picture(png):
 
 
 def copy_card(found):
-    """Puts the server's card on the clipboard. Nothing is published."""
+    """Puts the card on the clipboard. Nothing is published."""
     image = picture(found["png"])
     if image is None:
         return tr("Could not read the picture.")
@@ -45,7 +45,7 @@ def copy_card(found):
 
 
 def save_card(path, found):
-    """Writes the server's card to `path`. Nothing is published."""
+    """Writes the card to `path`. Nothing is published."""
     try:
         Path(path).write_bytes(found["png"])
     except OSError:
@@ -75,6 +75,28 @@ def same_account(api, current):
     return [api.base, api.user, api.token] == [current.base, current.user, current.token]
 
 
+class Superseded(Exception):
+    """Queued work did not start: the account or profile it was for is no longer open."""
+
+
+def run_owned(background, owns, work, done, **options):
+    """Runs `work` with `background` only while `owns()`: when queued, when it starts and when
+    its reply arrives. Signing out or switching profile cancels writes that have not started."""
+    if not owns():
+        return
+
+    def guarded():
+        if not owns():
+            raise Superseded()
+        return work()
+
+    def arrived(future):
+        if owns():
+            done(future)
+
+    background(guarded, arrived, **options)
+
+
 def _plain(text, bold=False):
     label = QLabel(text)
     label.setTextFormat(Qt.TextFormat.PlainText)
@@ -99,11 +121,12 @@ def _head(win, companion):
 
 
 class Sharing:
-    """What the share window's buttons do. The card is fetched once, in the background, and kept."""
+    """Fetch a server picture or draw it locally; reuse it only for its account and profile."""
 
-    def __init__(self, dialog, api, win, current_client, run, status):
+    def __init__(self, dialog, api, win, current_client, run, status, companion=None):
         self.dialog, self.api, self.win = dialog, api, win
         self.current_client, self.run, self.status = current_client, run, status
+        self._companion = companion
         self.found = None
         self.waiting = []
 
@@ -132,24 +155,38 @@ class Sharing:
 
     def with_card(self, then):
         """Runs `then(found)` once the card is here, fetching it first if needed."""
-        if self.found is not None:
-            then(self.found)
-            return
         if not self.owned():
             return
         self.waiting.append(then)
         if len(self.waiting) > 1:
             return
         self.status.setText(tr("Getting the picture…"))
-        self.run(lambda: share.card(self.api, self.win), self.fetched)
+
+        # Cached pictures still pass through the account/profile-bound runner.
+        def fetch():
+            if self.found is not None:
+                return self.found
+            return share.card(self.api, self.win) if share.has_card(self.win) else None
+
+        self.run(fetch, self.fetched)
 
     def fetched(self, future):
         waiting, self.waiting = self.waiting, []
+        if not self.owned():
+            return
         try:
             self.found = future.result()
-        except Exception as error:
-            self.status.setText(tr("Could not get the picture (%s).") % error_text(error))
-            return
+        except Exception:
+            self.found = None
+        if self.found is None or picture(self.found["png"]) is None:
+            # Qt's bundled art is read on this UI callback, after ownership is checked.
+            from . import share_picture
+            try:
+                palette = self.dialog.palette() if self.dialog is not None else QApplication.palette()
+                self.found = share_picture.render(self.win, self._companion, palette)
+            except Exception as error:
+                self.status.setText(tr("Could not get the picture (%s).") % error_text(error))
+                return
         for action in waiting:
             action(self.found)
 
@@ -185,43 +222,49 @@ class Sharing:
 
 def _buttons(sharing):
     friends = QPushButton(tr("Share with friends"))
-    friends.clicked.connect(lambda: sharing.to_friends(friends))
-    if not share.has_card(sharing.win):
-        text = QPushButton(tr("Copy text"))
-        text.clicked.connect(sharing.to_text)
-        return [friends, text]
+    friends.clicked.connect(lambda: _route(sharing, lambda: sharing.to_friends(friends)))
     copy = QPushButton(tr("Copy as image"))
     save = QPushButton(tr("Save image…"))
-    public = QPushButton(tr("Copy public link"))
-    public.setToolTip(tr("Makes a public page for this card. Anyone with the link can see it."))
+    text = QPushButton(tr("Copy text"))
+    text.clicked.connect(sharing.to_text)
     copy.clicked.connect(sharing.to_clipboard)
     save.clicked.connect(sharing.to_file)
+    if not share.has_card(sharing.win):
+        return [friends, copy, save, text]
+    public = QPushButton(tr("Copy public link"))
+    public.setToolTip(tr("Makes a public page for this card. Anyone with the link can see it."))
     public.clicked.connect(lambda: sharing.to_link(public))
-    return [friends, copy, save, public]
+    return [friends, copy, save, text, public]
+
+
+def _route(sharing, legacy):
+    """Existing entry points open the recipient picker only on supporting servers."""
+    from . import moment_share
+    if not sharing.owned():
+        return
+    if moment_share._moment(sharing.win) is None or not hasattr(sharing.api, "capabilities"):
+        legacy()
+        return
+
+    def checked(future):
+        if not sharing.owned():
+            return
+        try:
+            features = future.result()
+        except Exception as error:
+            sharing.status.setText(tr("Couldn't load friends (%s).") % error_text(error))
+            return
+        if not moment_share._supported(sharing.win, features):
+            legacy()
+            return
+        win_dialog(sharing.dialog, sharing.api, sharing.win, sharing._companion, sharing.current_client, sharing.run).show()
+
+    sharing.run(sharing.api.capabilities, checked)
 
 
 def win_dialog(parent, api, win, companion, current_client, run):
-    """A small non-modal window offering the win to friends or as a picture.
-    `current_client()` is the signed-in account now; `run` is mw.taskman.run_in_background."""
-    dialog = QDialog(parent)
-    dialog.setWindowTitle(tr("Share this win"))
-    dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-    layout = QVBoxLayout(dialog)
-    layout.addLayout(_head(win, companion))
-    status = _plain("")
-    layout.addWidget(status)
-    sharing = Sharing(dialog, api, win, current_client, run, status)
-    close = QPushButton(tr("Close"))
-    close.clicked.connect(dialog.close)
-    row = QHBoxLayout()
-    for button in _buttons(sharing):
-        row.addWidget(button)
-    row.addStretch(1)
-    row.addWidget(close)
-    layout.addLayout(row)
-    dialog.sharing = sharing
-    dialog.resize(520, dialog.sizeHint().height())
-    return dialog
+    from . import moment_share_ui
+    return moment_share_ui._dialog(parent, api, win, companion, current_client, run)
 
 
 def _corner(dialog, parent):
@@ -248,3 +291,18 @@ def offer(parent, api, win, companion, current_client, run):
     _corner(dialog, parent)
     dialog.show()
     return dialog
+
+
+def share_toggle(sharing, buttons):
+    """A checkable "Share" button and a hidden column of `buttons` that it shows and hides.
+    On servers with the recipient picker, the button opens the picker instead."""
+    column = QWidget()
+    layout = QVBoxLayout(column)
+    layout.setContentsMargins(0, 0, 0, 0)
+    for button in buttons:
+        layout.addWidget(button)
+    column.hide()
+    toggle = QPushButton(tr("Share"))
+    toggle.setCheckable(True)
+    toggle.toggled.connect(lambda checked: _route(sharing, lambda: column.setVisible(checked)))
+    return toggle, column
