@@ -1,6 +1,7 @@
 """Real inbox widgets receive replies after close, reload and account changes."""
 from concurrent.futures import Future
 from copy import deepcopy
+import gc
 from http import HTTPStatus
 from types import SimpleNamespace
 import unittest
@@ -173,6 +174,173 @@ class Activity(unittest.TestCase):
         button.click()
         self.assertEqual(1, len(self.tasks))
         row.close()
+
+
+class DeckAlerts(unittest.TestCase):
+    finish = Activity.finish
+
+    def setUp(self):
+        Activity.setUp(self)
+        self.rows = []
+        self.choices = {"enabled": True, "senders": [{"user": "ana"}], "sharing_senders": ["ana"],
+                        "unsubscribed_senders": ["other"]}
+        self.calls = []
+        self.api._request = self.request
+
+    def request(self, path, body=None):
+        self.calls.append((path, deepcopy(body)))
+        if body is not None:
+            self.choices.update(body)
+        return deepcopy(self.choices)
+
+    def tearDown(self):
+        for row in self.rows:
+            row.close()
+        Activity.tearDown(self)
+
+    def row(self, **changes):
+        entry = dict({"id": 9, "kind": "completion", "sender": "ana", "read_at": 1}, **changes)
+        row = ui._row(entry, self.dialog.context._row_context())
+        self.rows.append(row)
+        return row
+
+    def stop(self, row):
+        return next(button for button in row.findChildren(QPushButton) if button.text() == "Stop deck alerts")
+
+    def undo(self, row):
+        return next(button for button in row.findChildren(QPushButton) if button.text() == "Undo")
+
+    def test_stop_then_undo(self):
+        row = self.row(replied=True)
+        button = self.stop(row)
+        button.click()
+        button.click()
+        self.assertEqual(1, len(self.tasks))
+        self.assertFalse(button.isEnabled())
+        self.assertNotIn("Undo", [b.text() for b in row.findChildren(QPushButton)])
+        self.finish()
+        self.assertEqual(["ana", "other"], self.calls[-1][1]["unsubscribed_senders"])
+        self.choices.update(enabled=False)
+        self.choices["unsubscribed_senders"].append("remote")
+        self.undo(row).click()
+        self.finish()
+        self.assertEqual({"enabled": False, "unsubscribed_senders": ["other", "remote"]}, self.calls[-1][1])
+        self.assertTrue(self.stop(row).isEnabled())
+
+    def test_failed_stop_retries(self):
+        row = self.row()
+        self.stop(row).click()
+        self.finish(error=OSError("offline"))
+        self.assertNotIn("Undo", [b.text() for b in row.findChildren(QPushButton)])
+        self.stop(row).click()
+        self.finish()
+        self.assertTrue(self.undo(row).isEnabled())
+
+    def test_failed_undo_retries(self):
+        row = self.row()
+        self.stop(row).click()
+        self.finish()
+        self.undo(row).click()
+        self.finish(error=OSError("offline"))
+        self.undo(row).click()
+        self.finish()
+        self.assertTrue(self.stop(row).isEnabled())
+
+    def test_already_off_has_no_undo(self):
+        row = self.row()
+        self.choices["unsubscribed_senders"].append("ana")
+        self.stop(row).click()
+        self.finish()
+        self.assertEqual(1, len(self.calls))
+        self.assertNotIn("Undo", [b.text() for b in row.findChildren(QPushButton)])
+
+    def test_old_queue_cannot_write(self):
+        row = self.row()
+        self.stop(row).click()
+        old_api = self.api
+        self.api = client.Client("https://quest.test", "hill", "replacement")
+        self.finish()
+        self.assertEqual([], self.calls)
+        self.assertNotIn("Undo", [b.text() for b in row.findChildren(QPushButton)])
+        self.api = old_api
+
+    def test_same_object_new_token(self):
+        row = self.row()
+        self.stop(row).click()
+        self.api.token = "replacement"
+        self.finish()
+        self.assertEqual([], self.calls)
+
+    def test_new_profile_blocks_undo(self):
+        row = self.row()
+        self.stop(row).click()
+        self.finish()
+        self.calls.clear()
+        self.parent.pm.profile = {}
+        self.undo(row).click()
+        self.assertEqual([], self.tasks)
+        self.assertEqual([], self.calls)
+
+    def test_closed_window_no_write(self):
+        row = self.row()
+        self.stop(row).click()
+        self.dialog.close()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.finish()
+        self.assertEqual([], self.calls)
+
+    def test_new_rows_block_old_work(self):
+        row = self.row()
+        self.stop(row).click()
+        self.dialog._inbox._render()
+        self.finish()
+        self.assertEqual([], self.calls)
+        newer = self.row()
+        self.stop(newer).click()
+        self.finish()
+        self.assertTrue(self.undo(newer).isEnabled())
+
+    def test_late_reply_cannot_touch(self):
+        row = self.row()
+        self.stop(row).click()
+        work, done = self.tasks.pop()
+        result = Future()
+        result.set_result(work())
+        self.dialog._inbox._render()
+        row.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        done(result)
+        self.rows.remove(row)
+
+    def test_one_subscription_write(self):
+        first, second = self.row(), self.row(id=10)
+        self.stop(first).click()
+        self.stop(second).click()
+        self.assertEqual(1, len(self.tasks))
+        self.finish()
+        self.stop(second).click()
+        self.finish()
+        self.assertEqual(1, len([body for _, body in self.calls if body is not None]))
+        self.assertNotIn("Undo", [b.text() for b in second.findChildren(QPushButton)])
+
+    def test_only_received_decks(self):
+        for changes in ({"sender": "hill"}, {"sender": ""}, {"kind": "reply"}, {"kind": "share"}):
+            with self.subTest(changes=changes):
+                row = self.row(**changes)
+                self.assertNotIn("Stop deck alerts", [b.text() for b in row.findChildren(QPushButton)])
+
+    def test_live_inbox_keeps_action(self):
+        self.page["items"][0]["kind"] = "completion"
+        self.api._request = lambda path, body=None: deepcopy(self.page) if "/activity/" in path else self.request(path, body)
+        self.dialog.reload()
+        self.finish()
+        gc.collect()
+        button = next(b for b in self.dialog.findChildren(QPushButton) if b.text() == "Stop deck alerts")
+        button.click()
+        self.assertEqual(1, len(self.tasks))
+        self.finish()
+        self.assertEqual(["ana", "other"], self.calls[-1][1]["unsubscribed_senders"])
+        self.assertIn("Undo", [b.text() for b in self.dialog.findChildren(QPushButton)])
 
 
 if __name__ == "__main__":

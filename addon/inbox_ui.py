@@ -22,7 +22,7 @@ from aqt.qt import (
     Qt,
 )
 
-from . import activity, board, inbox, share, share_ui
+from . import activity, board, inbox, preferences, share, share_ui
 from .language import tr
 
 SHORTCUT = "Ctrl+Shift+M"
@@ -41,6 +41,7 @@ class _Action(Enum):
     READ = auto()
     REPLY = auto()
     CHEER = auto()
+    DECK_ALERTS = auto()
 
 
 @dataclass
@@ -256,7 +257,7 @@ def _row(entry, context):
         if read is not None:
             read.setVisible(inbox.unread(entry))
 
-    found = inbox.actions(entry)
+    found = inbox.actions(entry, context.api.user)
     if "reply" in found:
         reply = QPushButton(tr("Reply"))
 
@@ -274,6 +275,10 @@ def _row(entry, context):
         _add_button(buttons, share_button)
     if "cheer" in found:
         _add_button(buttons, _cheer_button(entry, context, status))
+    if "stop_alerts" in found:
+        # Qt retains the button; retain its Python controller for the row's lifetime.
+        frame._deck_alerts = _DeckAlerts(entry["sender"], context, status)
+        _add_button(buttons, frame._deck_alerts._button)
     goal_label = tr("View invitation") if entry.get("action_required") else tr("View friend goal")
     website = QPushButton(goal_label if inbox.challenge_target(entry) is not None else tr("Open on the website"))
 
@@ -296,6 +301,76 @@ def _row(entry, context):
         layout.addWidget(panel)
     layout.addWidget(status)
     return frame
+
+
+class _AlertState(Enum):
+    READY = auto()
+    STOPPING = auto()
+    STOPPED = auto()
+    RESTORING = auto()
+    ALREADY_STOPPED = auto()
+
+
+class _DeckAlerts:
+    def __init__(self, sender, context, status):
+        self._sender, self._context, self._status = sender, context, status
+        self._identity = (context.api.base, context.api.user, context.api.token)
+        self._state = _AlertState.READY
+        self._button = QPushButton(tr("Stop deck alerts"))
+        self._button.clicked.connect(self._clicked)
+
+    def _owns(self):
+        api = self._context.api
+        return self._context._owns() and self._identity == (api.base, api.user, api.token)
+
+    def _controls(self):
+        self._button.setText(tr("Undo") if self._state is _AlertState.STOPPED else tr("Stop deck alerts"))
+        self._button.setEnabled(self._state in (_AlertState.READY, _AlertState.STOPPED))
+
+    def _clicked(self):
+        if not self._owns() or self._state not in (_AlertState.READY, _AlertState.STOPPED):
+            return
+        pending = self._context._root._pending
+        if _Action.DECK_ALERTS in pending:
+            return
+        # Serialize subscription writes across rows; the server replaces the whole list.
+        before = self._state
+        change = preferences._AlertChange.STOP if before is _AlertState.READY else preferences._AlertChange.RESTORE
+        self._state = _AlertState.STOPPING if before is _AlertState.READY else _AlertState.RESTORING
+        pending.add(_Action.DECK_ALERTS)
+        self._controls()
+        self._status.setText(tr("Saving…"))
+
+        def done(future):
+            pending.discard(_Action.DECK_ALERTS)
+            if not self._owns():
+                return
+            try:
+                result = future.result()
+            except Exception as error:
+                print("ankiquest deck alerts:", error)
+                self._state = before
+                self._status.setText(tr("Couldn't change deck alerts. Try again."))
+                self._controls()
+                return
+            self._show_result(result, before)
+
+        self._context.run(lambda: preferences._change_alert(self._context.api, self._sender, change, self._owns), done)
+
+    def _show_result(self, result, before):
+        if result is preferences._AlertResult.STALE:
+            self._state = before
+            self._status.clear()
+        elif before is _AlertState.STOPPED:
+            self._state = _AlertState.READY
+            self._status.setText(tr("Deck alerts restored."))
+        elif result is preferences._AlertResult.CHANGED:
+            self._state = _AlertState.STOPPED
+            self._status.setText(tr("Deck alerts stopped."))
+        else:
+            self._state = _AlertState.ALREADY_STOPPED
+            self._status.setText(tr("Deck alerts are already stopped."))
+        self._controls()
 
 
 def _cheer_button(entry, context, status):

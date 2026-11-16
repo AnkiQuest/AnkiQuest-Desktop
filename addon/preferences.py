@@ -1,6 +1,7 @@
 """Account preferences the server keeps: streak protection and the deck alerts I receive."""
 
 import html
+from enum import Enum, auto
 from .language import _date_time, tr
 
 LAST_UPLOAD_KEY = "ankiquestLastUploadAt"
@@ -52,6 +53,40 @@ def subscription_body(fresh, enabled, before, after):
     before, after = set(before), set(after)
     wanted = (current | (after - before)) - (before - after)
     return {"enabled": bool(enabled), "unsubscribed_senders": sorted(wanted)}
+
+
+class _AlertChange(Enum):
+    STOP = auto()
+    RESTORE = auto()
+
+
+class _AlertResult(Enum):
+    CHANGED = auto()
+    UNCHANGED = auto()
+    STALE = auto()
+
+
+def _change_alert(api, sender, change, owns):
+    # Row -> fresh preferences -> one sender; Undo repeats the fresh read.
+    if not owns() or not sender or sender == api.user:
+        return _AlertResult.STALE
+    path = subscriptions_path(api)
+    fresh = api._request(path)
+    if not owns():
+        return _AlertResult.STALE
+    if not isinstance(fresh, dict) or not isinstance(fresh.get("enabled"), bool):
+        raise ValueError("missing deck alert preference")
+    people, before = alert_senders(fresh)
+    if change is _AlertChange.STOP:
+        if sender in before or sender not in {user for user, _ in people}:
+            return _AlertResult.UNCHANGED
+        after = before | {sender}
+    else:
+        if sender not in before:
+            return _AlertResult.UNCHANGED
+        after = before - {sender}
+    api._request(path, subscription_body(fresh, fresh["enabled"], before, after))
+    return _AlertResult.CHANGED
 
 
 def freeze_body(enabled):

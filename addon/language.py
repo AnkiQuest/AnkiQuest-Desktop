@@ -2094,3 +2094,33 @@ PORTUGUESE.update({
     "%d answer": "%d resposta", "%d answers": "%d respostas",
     "%d day to learn": "%d dia para aprender", "%d days to learn": "%d dias para aprender",
 })
+
+# Received deck alerts share Android's Stop and Undo wording.
+SPANISH.update({
+    "Stop deck alerts": "Dejar de recibir avisos de mazos",
+    "Deck alerts stopped.": "Avisos de mazos desactivados.",
+    "Deck alerts restored.": "Avisos de mazos restaurados.",
+    "Deck alerts are already stopped.": "Los avisos de mazos ya están desactivados.",
+    "Couldn't change deck alerts. Try again.": "No se pudieron cambiar los avisos de mazos. Inténtalo de nuevo.",
+})
+GERMAN.update({
+    "Stop deck alerts": "Stapelmeldungen stoppen",
+    "Deck alerts stopped.": "Stapelmeldungen gestoppt.",
+    "Deck alerts restored.": "Stapelmeldungen wieder aktiviert.",
+    "Deck alerts are already stopped.": "Stapelmeldungen sind bereits gestoppt.",
+    "Couldn't change deck alerts. Try again.": "Stapelmeldungen konnten nicht geändert werden. Versuche es erneut.",
+})
+FRENCH.update({
+    "Stop deck alerts": "Arrêter les alertes de paquets",
+    "Deck alerts stopped.": "Alertes de paquets arrêtées.",
+    "Deck alerts restored.": "Alertes de paquets rétablies.",
+    "Deck alerts are already stopped.": "Les alertes de paquets sont déjà arrêtées.",
+    "Couldn't change deck alerts. Try again.": "Impossible de modifier les alertes de paquets. Réessaie.",
+})
+PORTUGUESE.update({
+    "Stop deck alerts": "Parar avisos de baralhos",
+    "Deck alerts stopped.": "Avisos de baralhos desativados.",
+    "Deck alerts restored.": "Avisos de baralhos restaurados.",
+    "Deck alerts are already stopped.": "Os avisos de baralhos já estão desativados.",
+    "Couldn't change deck alerts. Try again.": "Não foi possível alterar os avisos de baralhos. Tenta novamente.",
+})
