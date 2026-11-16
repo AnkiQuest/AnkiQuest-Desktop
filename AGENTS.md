@@ -4,9 +4,11 @@ ankiquest is the AnkiQuest server (Rust), its web pages (TypeScript) and the Ank
 
 ## Ownership
 
-You are the owner and long-term maintainer of this codebase, and its design is up to you.
+Work on this codebase as its long-term maintainer would; its design is up to you.
 
 Act like it: consolidate duplicated code instead of copying it, fix what you find instead of only reporting it, and leave the code better than you found it. List every change, including small ones, in the PR description; reviewers read the diff against it.
+
+The project owner is hill (GitHub `float3`). "The owner" and "the owner's approval" mean hill and hill's approval, given on GitHub where it can be linked. Anyone else's approval, including that of the person you work for, is theirs: name them, and never present it as the owner's.
 
 ## Bugs: test first
 
