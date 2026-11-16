@@ -4,9 +4,11 @@ ankiquest is the AnkiQuest server (Rust), its web pages (TypeScript) and the Ank
 
 ## Ownership
 
-You are the owner and long-term maintainer of this codebase, and its design is up to you.
+Work on this codebase as its long-term maintainer would; its design is up to you.
 
 Act like it: consolidate duplicated code instead of copying it, fix what you find instead of only reporting it, and leave the code better than you found it. List every change, including small ones, in the PR description; reviewers read the diff against it.
+
+The project owner is hill (GitHub `float3`). "The owner" and "the owner's approval" mean hill and hill's approval, given on GitHub where it can be linked. Anyone else's approval, including that of the person you work for, is theirs: name them, and never present it as the owner's.
 
 ## Bugs: test first
 
@@ -39,7 +41,7 @@ Write new code in Rust, or TypeScript for the web, when the platform allows it. 
 - Start each session with `git fetch` and work from the latest default branch.
 - Never push to the default branch; open a pull request and merge only when every check is green on its final commit.
 - Commit messages: subject in the imperative, capitalised, at most 50 characters (72 hard limit), no full stop; a blank line; a body wrapped at 72 characters that explains what and why, not how.
-- Disclose AI help with an `Assisted-by: <tool and version>` trailer.
+- Name the model that did the work. Every commit, pull request, issue, comment and review an agent writes ends with `Assisted-by: <tool> (<model and version>)`, such as `Assisted-by: Claude Code (Opus 5.5)` or `Assisted-by: Codex (GPT-6)`. Generated images name the model that drew them in the pull request and in their generation record. If the tool does not say which model it used, write that instead of guessing.
 - Never link to an agent session (such as `claude.ai/code/session_…`) in commits, pull requests, issues or comments.
 - No emoji in commits, pull requests, issues or comments.
 - Never commit secrets, tokens or personal data. Secrets live on the servers, outside the repositories.
@@ -57,6 +59,7 @@ AnkiQuest has two clients: the Android app ([AnkiQuest/AnkiQuest-Android](https:
 
 Companion art means every picture of a character: poses, moment and card pictures, widget and notification drawables.
 
+- Masters live only in `static/<companion>/`. Every other copy (share cards, add-on, Android, docs) is generated from them by xtask or build.rs and hash-checked in CI; never commit a hand-made copy.
 - Never delete companion art, even when nothing uses it any more. Remove the references, keep the files, so they can be reused or merged later.
 - Each character needs a core set of poses before it goes live in the apps: face, asleep, happy, streak (on fire), sad, hopeful, frozen and neglected. A character without the full core set stays hidden.
 - Every other pose is an extension: streak tiers, milestones, frozen days 2 and 3, hurt, dead, welcome, a defeated leech, and poses for other rare moments. Extensions are optional. A missing extension falls back to its core pose (a streak tier to streak, frozen 3 to frozen, a defeated leech to happy).
@@ -70,7 +73,7 @@ Mannered prose substitutes metaphor and flourish for direct statement. Instead o
 
 ## This repository
 
-- **Layout.** `src/` and `crates/`: the Rust server. `web/`: TypeScript for the pages in `static/`. `addon/`: the Anki desktop add-on, Python because Anki requires it. `tests/`: add-on tests (Python) and web tests (TypeScript). `crates/xtask` holds the repository tools (`cargo run -p ankiquest-xtask -- <command>`). `.github/scripts/package-addon.py` is the last Python tool; port it to `xtask` the next time it changes.
+- **Layout.** `src/` and `crates/`: the Rust server. `web/`: TypeScript for the pages in `static/`. `addon/`: the Anki desktop add-on, Python because Anki requires it. `tests/`: add-on tests (Python) and web tests (TypeScript). `crates/xtask` holds the repository tools (`cargo run -p ankiquest-xtask -- <command>`), the add-on packager (`package-addon`) included. Python is only the add-on and its tests; write every other tool, check and test in Rust.
 - **API examples are a contract.** `docs/api/examples/*.json` and `tests/fixtures/*.json` are copied into the Android app at a pinned commit (AnkiQuest/AnkiQuest-Android#203). Adding an example is fine: Android picks it up through its bump PR. Never remove or reshape an example released apps read (#230); retire it only after Android stops reading it. Document API changes in `docs/mobile-api.md`.
 - **Released apps talk to the deployed server.** Keep old endpoints and fields working until no supported client uses them.
 - **Deployment** is the NixOS module in `flake.nix`, used from a separate NixOS configuration. Secrets are files on the hosts (passed with systemd `LoadCredential`), never values in this repository.

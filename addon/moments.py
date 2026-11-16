@@ -81,6 +81,8 @@ def _notice(entry):
         "title": entry.get("title") or "", "body": entry.get("body") or "",
         "at": int(entry.get("created_at") or 0) * 1000,
         "quiet": bool(entry.get("quiet")), "share": share.win_from_entry(entry),
+        # The row, and whether another device has read it yet (companion_reveal.due).
+        "notice": entry.get("id"), "unread": not entry.get("read_at"),
     }
 
 
@@ -92,10 +94,17 @@ def _rank(change, place, week, at):
     }
 
 
+def joined(item):
+    """The companion an unlock moment names; None for other moments and unknown companions."""
+    if item["topic"] != "companion" or ":" not in item["key"]:
+        return None
+    found = item["key"].split(":", 1)[1]
+    return found if found in moods.NAMES else None
+
+
 def shown_companion(item, companion):
     """The companion an item's art shows: the one that joined for an unlock, else `companion`."""
-    joined = item["key"].split(":", 1)[1] if item["topic"] == "companion" and ":" in item["key"] else None
-    return joined if joined in moods.NAMES else companion
+    return joined(item) or companion
 
 
 def _pose(item, companion):

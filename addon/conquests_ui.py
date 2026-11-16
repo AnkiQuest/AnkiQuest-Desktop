@@ -41,13 +41,13 @@ class _Conquest:
         row.addWidget(self._tell)
         row.addWidget(self._undo)
         layout.addLayout(row)
-        self._share = self._button(tr("Share"), lambda: self._options.setVisible(self._share.isChecked()))
+        self._share = self._button(tr("Share"), self._share_options)
         self._share.setCheckable(True)
-        layout.addWidget(self._share)
         self._options = QWidget()
         options = QVBoxLayout(self._options)
         options.setContentsMargins(0, 0, 0, 0)
-        options.addWidget(share_ui._plain(tr("Deck name")))
+        # Keep the local name editable before either the recipient picker or external sharing.
+        layout.addWidget(share_ui._plain(tr("Deck name")))
         self._deck_name = QComboBox()
         self._deck_name.setEditable(True)
         self._deck_name.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
@@ -57,7 +57,8 @@ class _Conquest:
         self._deck_name.setToolTip(tr("Choose a name or edit it. Leave it empty to share without a deck name."))
         self._deck_name.lineEdit().textEdited.connect(self._choose_deck)
         self._deck_name.textActivated.connect(self._choose_deck)
-        options.addWidget(self._deck_name)
+        layout.addWidget(self._deck_name)
+        layout.addWidget(self._share)
         self._copy = self._button(tr("Copy text"), self._copy_text)
         self._image = self._button(tr("Copy as image"), lambda: self._picture(False))
         self._file = self._button(tr("Save image…"), lambda: self._picture(True))
@@ -87,8 +88,9 @@ class _Conquest:
         self._undo.setVisible(bool(self._found and self._found.get("told")))
         self._undo.setEnabled(ready and conquests._can_undo(self._found, int(time.time() * 1000)))
         has_picture = bool(ready and share.win_id(self._found))
-        for button in (self._image, self._file, self._link):
-            button.setEnabled(has_picture)
+        for button in (self._image, self._file):
+            button.setEnabled(ready)
+        self._link.setEnabled(has_picture)
         self._retry.setVisible(not has_picture)
         self._retry.setEnabled(not self._busy)
 
@@ -169,14 +171,23 @@ class _Conquest:
                      lambda: self._label.setModified(False))
 
     def _send(self):
-        self._change(lambda: conquests._tell(self._api, self._at), lambda result: share.sent_text(result.get("told", 0), tr))
+        self._route(lambda: self._change(lambda: conquests._tell(self._api, self._at),
+                                        lambda result: share.sent_text(result.get("told", 0), tr)))
+
+    def _share_options(self):
+        self._route(lambda: self._options.setVisible(self._share.isChecked()))
+
+    def _route(self, legacy):
+        if not self._card._owned():
+            return
+        share_ui._route(self._sharing(), legacy)
 
     def _retract(self):
         if conquests._can_undo(self._found or {}, int(time.time() * 1000)):
             self._change(lambda: conquests._undo(self._api, self._at), lambda _result: tr("Share taken back where possible."))
 
     def _win(self):
-        return conquests._win(self._api, self._at, self._found, self._deck, tr)
+        return dict(conquests._win(self._api, self._at, self._found, self._deck, tr), conquest=self._at)
 
     def _choose_deck(self, text):
         if not self._card._owned():
@@ -188,9 +199,18 @@ class _Conquest:
         self._card._status.setText(share_ui.copy_text(self._win(), self._api.base))
 
     def _picture(self, save):
-        sharing = share_ui.Sharing(self._card._dialog, self._api, self._win(), self._card._addon.client,
-                                   self._card._run, self._card._status)
+        sharing = self._sharing()
         sharing.to_file() if save else sharing.to_clipboard()
+
+    def _sharing(self):
+        win = self._win()
+
+        # Removing a label or changing the chosen deck invalidates queued and cached pictures.
+        def run(work, done):
+            share_ui.run_owned(self._card._run, lambda: not self._busy and win == self._win(), work, done)
+
+        return share_ui.Sharing(self._card._dialog, self._api, win, self._card._addon.client,
+                                run, self._card._status, self._card._addon.current_companion())
 
     def _public_link(self):
         if self._busy or not self._card._owned():
