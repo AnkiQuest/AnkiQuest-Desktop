@@ -166,6 +166,9 @@ class Sharing:
         def fetch():
             if self.found is not None:
                 return self.found
+            # Streak exports use the same heat design online and offline.
+            if self.win.get("picture_streak") is not None:
+                return None
             return share.card(self.api, self.win) if share.has_card(self.win) else None
 
         self.run(fetch, self.fetched)
@@ -262,9 +265,9 @@ def _route(sharing, legacy):
     sharing.run(sharing.api.capabilities, checked)
 
 
-def win_dialog(parent, api, win, companion, current_client, run):
+def win_dialog(parent, api, win, companion, current_client, run, on_sent=None):
     from . import moment_share_ui
-    return moment_share_ui._dialog(parent, api, win, companion, current_client, run)
+    return moment_share_ui._dialog(parent, api, win, companion, current_client, run, on_sent)
 
 
 def _corner(dialog, parent):
