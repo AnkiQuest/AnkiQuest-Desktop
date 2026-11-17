@@ -336,23 +336,24 @@ class MoodTests(unittest.TestCase):
         return {"streak_state": state, "today": {"reviews": reviews}, "day_ends_at": ends}
 
     def test_moods_follow_the_phone(self):
-        self.assertEqual(moods.FREEZE, moods.mood([5], 5, self.profile("protected", 0), self.now))
-        self.assertEqual(moods.CELEBRATE, moods.mood([0, 0], 0, self.profile("studied", 4), self.now))
-        self.assertEqual(moods.REVIEW, moods.mood([3, 0], 3, self.profile("studied", 4), self.now))
-        self.assertEqual(moods.STREAK, moods.mood([], 0, self.profile("studied", 4), self.now))
-        self.assertEqual(moods.WELCOME, moods.mood([0], 0, None, self.now))
+        self.assertEqual(moods.FREEZE, moods.mood(moods.FROZEN_1, [5], 5, self.profile("protected", 0), self.now))
+        self.assertEqual(moods.WAITING, moods.mood(moods.SAD, [5], 5, self.profile("pending", 0), self.now))
+        self.assertEqual(moods.CELEBRATE, moods.mood(moods.FIRE, [0, 0], 0, self.profile("studied", 4), self.now))
+        self.assertEqual(moods.REVIEW, moods.mood(moods.FIRE, [3, 0], 3, self.profile("studied", 4), self.now))
+        self.assertEqual(moods.STREAK, moods.mood(moods.FIRE, [], 0, self.profile("studied", 4), self.now))
+        self.assertEqual(moods.WELCOME, moods.mood(moods.MOOD_UNKNOWN, [0], 0, None, self.now))
 
     def test_a_profile_from_an_ended_day_is_ignored(self):
-        stale = self.profile("protected", 0, ends=self.now)
-        self.assertEqual(moods.WELCOME, moods.mood([0], 0, stale, self.now))
+        stale = self.profile("studied", 4, ends=self.now)
+        self.assertEqual(moods.WELCOME, moods.mood(moods.MOOD_UNKNOWN, [0], 0, stale, self.now))
 
     def test_art_respects_the_companion(self):
         self.assertEqual("aki_freeze", moods.art("aki", moods.FREEZE))
         self.assertEqual("ankilope_study", moods.art("ankilope", moods.FREEZE))
         self.assertEqual("ankilope_celebrate", moods.art("ankilope", moods.WINNER))
         self.assertIsNone(moods.art("none", moods.REVIEW))
-        self.assertIn("Aki", moods.message("aki", moods.WELCOME))
-        self.assertNotIn("Aki", moods.message("ankilope", moods.WELCOME))
+        self.assertIn("Aki", moods.message("aki", moods.WELCOME, 0)[0])
+        self.assertNotIn("Aki", moods.message("ankilope", moods.WELCOME, 0)[0])
 
     def test_every_mood_has_bundled_and_exported_art(self):
         source = (ADDON / "__init__.py").read_text("utf-8")
@@ -597,6 +598,7 @@ class TranslationTests(unittest.TestCase):
             if name in ("board.py", "today_ui.py"):
                 found.update(re.findall(r'\(\s*[\w."]+,\s*"([^"]*[A-Za-z][^"]*)"\s*\)', text))
         found.update(moods.MESSAGES.values())
+        found.update(moods.WAITING_LINES)
         found.add(moods.COMPANION_WELCOME)
         return found
 
@@ -720,6 +722,31 @@ class HomeTests(unittest.TestCase):
         content = self.render()
         self.assertIn("/_addons/ankiquest/art/aki_at_risk.png", content.stats)
         self.assertNotIn("art/aki_review.png", content.stats)
+
+    def test_a_waiting_streak_says_so_before_the_decks(self):
+        # Regression (#301): cards due and no study today said "A small step starts with one card.";
+        # Android's Home card says the streak is waiting.
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"]["streak"] = 64
+        content = self.render()
+        self.assertIn("You haven’t studied today. Your 64-day streak is still waiting.", content.stats)
+        self.assertNotIn("A small step starts with one card.", content.stats)
+
+    def test_a_one_day_streak_waits_in_the_singular(self):
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.assertIn("You haven’t studied today. Your 1-day streak is still waiting.", self.render().stats)
+
+    def test_frozen_days_before_today_bring_the_freeze_message(self):
+        # Regression (#301): a freeze kept yesterday, today is pending, and cards are due. The
+        # freeze message only followed a protected day; Android's Home card follows the frozen mood.
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"].update(streak=5, heatmap=[{"frozen": True}, {"frozen": False}])
+        content = self.render()
+        self.assertIn("Your streak is protected by a freeze. A fresh start is waiting.", content.stats)
+        self.assertNotIn("A small step starts with one card.", content.stats)
 
     def test_studying_and_period_links_act_only_from_the_deck_list(self):
         handle = self.hooks.webview_did_receive_js_message[-1]
