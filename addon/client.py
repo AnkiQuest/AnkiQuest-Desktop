@@ -157,7 +157,7 @@ class Client:
         return bool(self.base and self.user and self.token)
 
     def _request(self, path, body=None, method=None, extra=None):
-        headers = dict(DRAWS, **(extra or {}), **{"Accept-Language": self.language})
+        headers = {**DRAWS, **(extra or {}), "Accept-Language": self.language}
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         return request_json(self.base + path, body, headers, method=method)
