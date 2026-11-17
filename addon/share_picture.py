@@ -8,7 +8,7 @@ from aqt.qt import (
 )
 
 from . import companion_art, moods, share
-from .language import _locale, _plural
+from .language import _locale, plural
 
 _WIDTH, _MAX_HEIGHT, _MARGIN = 1080, 4096, 72
 _HERO, _GAP = 288, 24
@@ -83,7 +83,7 @@ def _plain(win, companion, ink, scale):
 
 def _streak_unit(count):
     # English has one unit for both counts; the other languages keep their reviewed plurals.
-    unit = _plural("streak day", "streak days", count)
+    unit = plural("streak day", "streak days", count)
     return "day streak" if unit in ("streak day", "streak days") else unit
 
 
@@ -109,7 +109,7 @@ def _fiery(win, companion, streak, scale):
     milestone = next((day for day in _MILESTONES if day > streak), None)
     if milestone is not None:
         remaining = milestone - streak
-        line = _plural("%s day to %s", "%s days to %s", remaining) % (_locale().toString(remaining), _locale().toString(milestone))
+        line = plural("%s day to %s", "%s days to %s", remaining) % (_locale().toString(remaining), _locale().toString(milestone))
         pieces.append(_text(line, _BODY * scale, QFont.Weight.Bold, _WHITE))
     return pieces
 

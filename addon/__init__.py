@@ -18,7 +18,7 @@ from aqt.utils import openLink, tooltip
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
 from . import companion_ui, greeting, inbox_ui, moments, moments_ui, moods, reveal_ui, share, sharing
 from .inbox import CHALLENGE_ROUTE
-from .language import _plural, tr
+from .language import plural, tr
 from .client import (
     COUNT_SQL,
     DEFAULT_SERVER,
@@ -1009,7 +1009,7 @@ def save_deck_choice(api, shared, unshared, recipients, nudges, celebrations=Non
         except Exception as e:
             failed(tr("AnkiQuest: could not save your decks (%s)"), e)
             return
-        tooltip(_plural("%d deck shared.", "%d decks shared.", len(shared)) % len(shared))
+        tooltip(plural("%d deck shared.", "%d decks shared.", len(shared)) % len(shared))
 
     mw.taskman.run_in_background(work, done)
 

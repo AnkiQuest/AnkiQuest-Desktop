@@ -11,7 +11,7 @@ Callers hand in the collection and the client; language.py owns display formatti
 
 import math
 from collections import namedtuple
-from .language import _plural
+from .language import plural
 
 OFF, BACKLOG, CARDS, MINUTES = "off", "backlog", "cards", "minutes"
 MODES = (BACKLOG, CARDS, MINUTES, OFF)
@@ -378,7 +378,7 @@ def backlog_text(current, translate=lambda value: value):
     if current.mode != BACKLOG or fixed is None or not fixed.backlog:
         return None
     left = fixed.days_left or 1
-    template = _plural(
+    template = plural(
         "Today’s due cards plus %d of your %d overdue cards, so the backlog is gone in %d day.",
         "Today’s due cards plus %d of your %d overdue cards, so the backlog is gone in %d days.", left, translate,
     )
@@ -418,7 +418,7 @@ def time_text(seconds, translate=lambda value: value):
     minutes = int(round(seconds / 60))
     if minutes < 1:
         return translate("Time today: less than a minute")
-    return _plural("Time today: about %d minute", "Time today: about %d minutes", minutes, translate) % minutes
+    return plural("Time today: about %d minute", "Time today: about %d minutes", minutes, translate) % minutes
 
 
 def cleared_text(days, translate=lambda value: value):
@@ -426,7 +426,7 @@ def cleared_text(days, translate=lambda value: value):
         return translate("Nothing overdue")
     if days is None:
         return translate("At this pace your backlog is never cleared.")
-    return _plural("Backlog cleared in %d day", "Backlog cleared in %d days", days, translate) % days
+    return plural("Backlog cleared in %d day", "Backlog cleared in %d days", days, translate) % days
 
 
 def pace_text(forecast, translate=lambda value: value):
