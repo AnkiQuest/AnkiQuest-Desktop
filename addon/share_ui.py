@@ -252,10 +252,11 @@ def _route(sharing, legacy):
     def checked(future):
         if not sharing.owned():
             return
+        # Unknown features: send the old way, as to a server without the recipient picker.
         try:
             features = future.result()
-        except Exception as error:
-            sharing.status.setText(tr("Couldn't load friends (%s).") % error_text(error))
+        except Exception:
+            legacy()
             return
         if not moment_share._supported(sharing.win, features):
             legacy()
