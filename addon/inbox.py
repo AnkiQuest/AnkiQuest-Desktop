@@ -83,7 +83,7 @@ def unread(entry):
     return not entry.get("read_at")
 
 
-def actions(entry):
+def actions(entry, user=None):
     """The buttons a row gets, in order."""
     found = []
     if answerable(entry):
@@ -92,6 +92,10 @@ def actions(entry):
         found.append("share")
     if cheerable(entry):
         found.append("cheer")
+    sender, notification = entry.get("sender"), entry.get("id")
+    if (entry.get("kind") == "completion" and isinstance(sender, str) and sender.strip() and sender != user
+            and type(notification) is int and notification > 0):
+        found.append("stop_alerts")
     found.append("open")
     if unread(entry):
         found.append("read")

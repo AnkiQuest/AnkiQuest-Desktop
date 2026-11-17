@@ -767,6 +767,32 @@ class HomeTests(unittest.TestCase):
                            "streak_minutes": streak_minutes}, **today),
         }
 
+    def test_session_keeps_started_deck(self):
+        self.served_today()
+        self.mw.col.decks.current = Mock(return_value={"id": 5, "name": "Spanish", "dyn": 0})
+        self.mw.state = "review"
+        for hook in self.hooks.state_did_change:
+            hook("review", "overview")
+        self.home.local["session"]["started"] -= 60_000
+        self.review(self.home.local["session"]["started"] + 1, 30)
+        self.mw.col.decks.current.return_value = {"id": 6, "name": "French", "dyn": 0}
+        self.mw.state = "overview"
+        for hook in self.hooks.state_did_change:
+            hook("overview", "review")
+        expected = {"id": "5", "path": "Spanish"}
+        self.assertEqual(expected, self.mw.pm.profile[self.home.SESSION_KEY]["deck"])
+        self.assertEqual(expected, self.addon._moments._card._summary["deck"])
+        self.assertEqual(expected, self.addon._moments._completion._summary["deck"])
+
+    def test_deck_prompt_with_recaps_off(self):
+        self.settings.update(session_summary=False, goal_celebrations=False)
+        self.mw.col.decks.current = Mock(return_value={"id": 5, "name": "Spanish", "dyn": 0})
+        self.session(2)
+        self.assertIsNone(self.addon._moments._card)
+        prompt = self.addon._moments._completion
+        self.assertEqual({"id": "5", "path": "Spanish"}, prompt._summary["deck"])
+        prompt._start.assert_called_once_with()
+
     def test_the_first_session_of_the_day_celebrates_then_later_ones_recap(self):
         self.remember("cards", 100)
         self.served_today()

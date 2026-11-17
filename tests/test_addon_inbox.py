@@ -69,9 +69,17 @@ class ReplyTextTests(unittest.TestCase):
 class ActionTests(unittest.TestCase):
     def test_a_friends_message_can_be_answered_until_it_has_been(self):
         entry = {"id": 4, "sender": "cerro", "kind": "completion"}
-        self.assertEqual(["reply", "cheer", "open", "read"], inbox.actions(entry))
-        self.assertEqual(["cheer", "open", "read"], inbox.actions(dict(entry, replied=True)))
-        self.assertEqual(["reply", "cheer", "open"], inbox.actions(dict(entry, read_at=1790000000)))
+        self.assertEqual(["reply", "cheer", "stop_alerts", "open", "read"], inbox.actions(entry))
+        self.assertEqual(["cheer", "stop_alerts", "open", "read"], inbox.actions(dict(entry, replied=True)))
+        self.assertEqual(["reply", "cheer", "stop_alerts", "open"], inbox.actions(dict(entry, read_at=1790000000)))
+
+    def test_stop_only_received_deck(self):
+        entry = {"id": 4, "sender": "cerro", "kind": "completion"}
+        self.assertIn("stop_alerts", inbox.actions(entry, "hill"))
+        self.assertNotIn("stop_alerts", inbox.actions(entry, "cerro"))
+        for other in ({"sender": ""}, {"sender": " "}, {"id": 0}, {"id": True}, {"kind": "reply"}, {"kind": "share"}):
+            with self.subTest(other=other):
+                self.assertNotIn("stop_alerts", inbox.actions(dict(entry, **other), "hill"))
 
     def test_a_message_can_be_answered_until_it_has_been(self):
         self.assertTrue(inbox.answerable({"sender": "cerro"}))
@@ -181,6 +189,16 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"pixels"
 
 
 class ShareTests(unittest.TestCase):
+    def test_streak_picture_uses_event_metadata_not_translated_words(self):
+        row = {"id": 42, "kind": "celebration", "topic": "streak", "moment": "streak:2026-01-01:30",
+               "title": "Un mois", "body": "Study 60 cards", "win": 17}
+        self.assertEqual(30, share.win_from_entry(row).get("picture_streak"))
+        for key in (None, "", "streak:30", "streak:date:0", "streak:date:-1", "streak:date:2147483648",
+                    "streak:date:NaN", "level:date:30", "streak:date:30:extra"):
+            with self.subTest(key=key):
+                self.assertIsNone(share.win_from_entry(dict(row, moment=key)).get("picture_streak"))
+        self.assertIsNone(share.win_from_entry(dict(row, topic="level")).get("picture_streak"))
+
     def test_invitations_use_the_servers_first_person_words(self):
         for kind, title, body in (
             ("celebration", "I reached level 4", "I earned 900 XP."),

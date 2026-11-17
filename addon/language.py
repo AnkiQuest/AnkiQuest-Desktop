@@ -7,6 +7,9 @@ SPANISH = {
     "Loading card…": "Cargando tarjeta…", "Card label": "Etiqueta de la tarjeta", "Card unavailable": "Tarjeta no disponible",
     "Choose what to share about this card": "Elige qué compartir sobre esta tarjeta",
     "Deck name": "Nombre del mazo",
+    "Deck complete": "Mazo completado", "Share completed deck": "Compartir el mazo completado",
+    "Don't ask again": "No volver a preguntar",
+    "I finished my %s studies for today.": "He terminado de estudiar %s por hoy.",
     "Choose a name or edit it. Leave it empty to share without a deck name.": "Elige un nombre o edítalo. Déjalo vacío para compartir sin el nombre del mazo.",
     "Your suggestion stays on this computer until you save it.": "La sugerencia se queda en este ordenador hasta que la guardes.",
     "Save label": "Guardar etiqueta", "Remove label": "Quitar etiqueta", "Tell friends": "Avisar a mis amigos", "Undo": "Deshacer",
@@ -16,7 +19,6 @@ SPANISH = {
     "Label saved.": "Etiqueta guardada.", "Label removed.": "Etiqueta eliminada.",
     "Share taken back where possible.": "Se ha retirado lo compartido donde ha sido posible.",
     "I conquered a card!": "¡He conquistado una tarjeta!",
-    "%d lapses · %d answers · %d days since the first answer": "%d olvidos · %d respuestas · %d días desde la primera respuesta",
     "Your study companion.": "Tu compañero de estudio.",
     "Study companion": "Compañero de estudio",
     "No companion": "Sin compañero",
@@ -155,6 +157,9 @@ GERMAN = {
     "Loading card…": "Karte wird geladen…", "Card label": "Kartenbezeichnung", "Card unavailable": "Karte nicht verfügbar",
     "Choose what to share about this card": "Wähle, was du über diese Karte teilen möchtest",
     "Deck name": "Stapelname",
+    "Deck complete": "Stapel abgeschlossen", "Share completed deck": "Abgeschlossenen Stapel teilen",
+    "Don't ask again": "Nicht erneut fragen",
+    "I finished my %s studies for today.": "Ich habe heute mit %s fertig gelernt.",
     "Choose a name or edit it. Leave it empty to share without a deck name.": "Wähle einen Namen oder bearbeite ihn. Lass das Feld leer, um ohne Stapelnamen zu teilen.",
     "Your suggestion stays on this computer until you save it.": "Der Vorschlag bleibt auf diesem Computer, bis du ihn speicherst.",
     "Save label": "Bezeichnung speichern", "Remove label": "Bezeichnung entfernen", "Tell friends": "Freunden erzählen", "Undo": "Rückgängig",
@@ -164,7 +169,6 @@ GERMAN = {
     "Label saved.": "Bezeichnung gespeichert.", "Label removed.": "Bezeichnung entfernt.",
     "Share taken back where possible.": "Das Teilen wurde soweit möglich rückgängig gemacht.",
     "I conquered a card!": "Ich habe eine Karte gemeistert!",
-    "%d lapses · %d answers · %d days since the first answer": "%d Fehler · %d Antworten · %d Tage seit der ersten Antwort",
     "Your study companion.": "Dein Lernbegleiter.",
     "Study companion": "Lernbegleiter",
     "No companion": "Kein Begleiter",
@@ -270,6 +274,9 @@ FRENCH = {
     "Loading card…": "Chargement de la carte…", "Card label": "Nom de la carte", "Card unavailable": "Carte indisponible",
     "Choose what to share about this card": "Choisis ce que tu veux partager sur cette carte",
     "Deck name": "Nom du paquet",
+    "Deck complete": "Paquet terminé", "Share completed deck": "Partager le paquet terminé",
+    "Don't ask again": "Ne plus demander",
+    "I finished my %s studies for today.": "J’ai terminé mes révisions de %s pour aujourd’hui.",
     "Choose a name or edit it. Leave it empty to share without a deck name.": "Choisis un nom ou modifie-le. Laisse le champ vide pour partager sans nom de paquet.",
     "Your suggestion stays on this computer until you save it.": "La suggestion reste sur cet ordinateur jusqu’à son enregistrement.",
     "Save label": "Enregistrer le nom", "Remove label": "Supprimer le nom", "Tell friends": "Prévenir mes amis", "Undo": "Annuler",
@@ -279,7 +286,6 @@ FRENCH = {
     "Label saved.": "Nom enregistré.", "Label removed.": "Nom supprimé.",
     "Share taken back where possible.": "Le partage a été annulé dans la mesure du possible.",
     "I conquered a card!": "J’ai maîtrisé une carte !",
-    "%d lapses · %d answers · %d days since the first answer": "%d oublis · %d réponses · %d jours depuis la première réponse",
     "Your study companion.": "Ton compagnon d’étude.",
     "Study companion": "Compagnon d’étude",
     "No companion": "Aucun compagnon",
@@ -385,6 +391,9 @@ PORTUGUESE = {
     "Loading card…": "A carregar o cartão…", "Card label": "Nome do cartão", "Card unavailable": "Cartão indisponível",
     "Choose what to share about this card": "Escolhe o que partilhar sobre este cartão",
     "Deck name": "Nome do baralho",
+    "Deck complete": "Baralho concluído", "Share completed deck": "Partilhar o baralho concluído",
+    "Don't ask again": "Não voltar a perguntar",
+    "I finished my %s studies for today.": "Terminei de estudar %s por hoje.",
     "Choose a name or edit it. Leave it empty to share without a deck name.": "Escolhe um nome ou edita-o. Deixa o campo vazio para partilhar sem o nome do baralho.",
     "Your suggestion stays on this computer until you save it.": "A sugestão fica neste computador até a guardares.",
     "Save label": "Guardar nome", "Remove label": "Remover nome", "Tell friends": "Avisar amigos", "Undo": "Anular",
@@ -394,7 +403,6 @@ PORTUGUESE = {
     "Label saved.": "Nome guardado.", "Label removed.": "Nome removido.",
     "Share taken back where possible.": "A partilha foi anulada onde foi possível.",
     "I conquered a card!": "Conquistei um cartão!",
-    "%d lapses · %d answers · %d days since the first answer": "%d esquecimentos · %d respostas · %d dias desde a primeira resposta",
     "Your study companion.": "O teu companheiro de estudo.",
     "Study companion": "Companheiro de estudo",
     "No companion": "Sem companheiro",
@@ -2060,6 +2068,24 @@ GERMAN[_ANKI_TAN] = '<a href="%s">Anki-tan</a> von <a href="%s">Shigeyuki</a>, <
 FRENCH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> par <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 PORTUGUESE[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 
+# Streak pictures use the same milestone wording as Android, without a decorative symbol.
+SPANISH.update({
+    "streak day": "día de racha", "streak days": "días de racha",
+    "%s day to %s": "Falta %s día para %s", "%s days to %s": "Faltan %s días para %s",
+})
+GERMAN.update({
+    "streak day": "Tag Lernserie", "streak days": "Tage Lernserie",
+    "%s day to %s": "Noch %s Tag bis %s", "%s days to %s": "Noch %s Tage bis %s",
+})
+FRENCH.update({
+    "streak day": "jour de série", "streak days": "jours de série",
+    "%s day to %s": "Encore %s jour avant %s", "%s days to %s": "Encore %s jours avant %s",
+})
+PORTUGUESE.update({
+    "streak day": "dia de sequência", "streak days": "dias de sequência",
+    "%s day to %s": "Falta %s dia para %s", "%s days to %s": "Faltam %s dias para %s",
+})
+
 # Conquest exports use Android's first-person caption and public counts.
 SPANISH.update({
     "I finally learned a card I had forgotten %d time.": "Por fin aprendí una tarjeta que había olvidado %d vez.",
@@ -2068,6 +2094,7 @@ SPANISH.update({
     "I finally learned “%s”, a card I had forgotten %d times.": "Por fin aprendí «%s», una tarjeta que había olvidado %d veces.",
     "From my deck “%s”.": "De mi mazo «%s».",
     "%d answer": "%d respuesta", "%d answers": "%d respuestas",
+    "%d lapse": "%d olvido", "%d lapses": "%d olvidos",
     "%d day to learn": "%d día para aprenderla", "%d days to learn": "%d días para aprenderla",
 })
 GERMAN.update({
@@ -2077,6 +2104,7 @@ GERMAN.update({
     "I finally learned “%s”, a card I had forgotten %d times.": "Ich habe endlich „%s“ gelernt, eine Karte, die ich %d-mal vergessen hatte.",
     "From my deck “%s”.": "Aus meinem Stapel „%s“.",
     "%d answer": "%d Antwort", "%d answers": "%d Antworten",
+    "%d lapse": "%d Fehler", "%d lapses": "%d Fehler",
     "%d day to learn": "%d Tag zum Lernen", "%d days to learn": "%d Tage zum Lernen",
 })
 FRENCH.update({
@@ -2086,6 +2114,7 @@ FRENCH.update({
     "I finally learned “%s”, a card I had forgotten %d times.": "J’ai enfin appris « %s », une carte que j’avais oubliée %d fois.",
     "From my deck “%s”.": "De mon paquet « %s ».",
     "%d answer": "%d réponse", "%d answers": "%d réponses",
+    "%d lapse": "%d oubli", "%d lapses": "%d oublis",
     "%d day to learn": "%d jour pour l’apprendre", "%d days to learn": "%d jours pour l’apprendre",
 })
 PORTUGUESE.update({
@@ -2095,5 +2124,40 @@ PORTUGUESE.update({
     "I finally learned “%s”, a card I had forgotten %d times.": "Finalmente aprendi «%s», um cartão que tinha esquecido %d vezes.",
     "From my deck “%s”.": "Do meu baralho «%s».",
     "%d answer": "%d resposta", "%d answers": "%d respostas",
+    "%d lapse": "%d esquecimento", "%d lapses": "%d esquecimentos",
     "%d day to learn": "%d dia para aprender", "%d days to learn": "%d dias para aprender",
+})
+
+# Received deck alerts share Android's Stop and Undo wording.
+SPANISH.update({
+    "Stop deck alerts from %s": "Dejar de recibir avisos de mazos de %s",
+    "You won't get deck alerts from %s.": "No recibirás avisos de mazos de %s.",
+    "You'll get deck alerts from %s again.": "Volverás a recibir avisos de mazos de %s.",
+    "You aren't getting deck alerts from %s.": "Ya no recibes avisos de mazos de %s.",
+    "%s no longer shares deck alerts.": "%s ya no comparte avisos de mazos.",
+    "Couldn't change deck alerts. Try again.": "No se pudieron cambiar los avisos de mazos. Inténtalo de nuevo.",
+})
+GERMAN.update({
+    "Stop deck alerts from %s": "Stapelmeldungen von %s stoppen",
+    "You won't get deck alerts from %s.": "Du erhältst keine Stapelmeldungen mehr von %s.",
+    "You'll get deck alerts from %s again.": "Du erhältst wieder Stapelmeldungen von %s.",
+    "You aren't getting deck alerts from %s.": "Du erhältst bereits keine Stapelmeldungen von %s.",
+    "%s no longer shares deck alerts.": "%s teilt keine Stapelmeldungen mehr.",
+    "Couldn't change deck alerts. Try again.": "Stapelmeldungen konnten nicht geändert werden. Versuche es erneut.",
+})
+FRENCH.update({
+    "Stop deck alerts from %s": "Arrêter les alertes de paquets de %s",
+    "You won't get deck alerts from %s.": "Tu ne recevras plus d’alertes de paquets de %s.",
+    "You'll get deck alerts from %s again.": "Tu recevras à nouveau les alertes de paquets de %s.",
+    "You aren't getting deck alerts from %s.": "Tu ne reçois déjà plus d’alertes de paquets de %s.",
+    "%s no longer shares deck alerts.": "%s ne partage plus d’alertes de paquets.",
+    "Couldn't change deck alerts. Try again.": "Impossible de modifier les alertes de paquets. Réessaie.",
+})
+PORTUGUESE.update({
+    "Stop deck alerts from %s": "Parar avisos de baralhos de %s",
+    "You won't get deck alerts from %s.": "Não receberás avisos de baralhos de %s.",
+    "You'll get deck alerts from %s again.": "Voltarás a receber avisos de baralhos de %s.",
+    "You aren't getting deck alerts from %s.": "Já não recebes avisos de baralhos de %s.",
+    "%s no longer shares deck alerts.": "%s já não partilha avisos de baralhos.",
+    "Couldn't change deck alerts. Try again.": "Não foi possível alterar os avisos de baralhos. Tenta novamente.",
 })

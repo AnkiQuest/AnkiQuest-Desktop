@@ -10,7 +10,7 @@ from html import escape
 
 from aqt import gui_hooks, mw
 
-from . import address, day_verdict, goal_ui, goals, heatmap_ui, moods, today
+from . import address, day_verdict, deck_moments, goal_ui, goals, heatmap_ui, moods, today
 from .board import _day_label
 from .client import Client, offset_west_min
 from .deck_completion import deck_snapshots, study_day
@@ -690,7 +690,7 @@ def on_state_change(new_state, old_state):
     _refresh_toolbar()
     if new_state == "review" and old_state != "review":
         api = addon().client()
-        local["session"] = {"account": account(api), "started": now_ms()} if api.configured else None
+        local["session"] = {"account": account(api), "started": now_ms(), "deck": deck_moments._capture(mw.col)} if api.configured else None
         return
     if old_state == "review" and new_state in ("overview", "deckBrowser"):
         finish_session()
@@ -709,9 +709,13 @@ def finish_session():
     if summary is None:
         return
     summary["day"] = (date(1970, 1, 1) + timedelta(days=server_day())).isoformat()
+    if started.get("deck"):
+        summary["deck"] = started["deck"]
     mw.pm.profile[SESSION_KEY] = dict(summary, account=[api.base, api.user])
     local["board"] = None
     refresh_board()
+    # Deck sharing has its own preference and daily prompt, even with recaps off.
+    addon()._moments._offer(api, [], summary)
     if not celebrate(summary):
         recap(summary)
 
