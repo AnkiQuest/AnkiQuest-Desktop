@@ -168,6 +168,27 @@ class Client(unittest.TestCase):
             client.request_json = original
         self.assertEqual("aki, ankilope, cow", sent.get("X-AnkiQuest-Companion-Art"))
 
+    def test_the_header_names_the_companions_moments_draw(self):
+        # moments.joined filters by moods.NAMES; the header must name the same companions.
+        drawn = client.DRAWS["X-AnkiQuest-Companion-Art"].split(", ")
+        self.assertEqual(sorted(moods.NAMES), sorted(drawn))
+        self.assertEqual(set(moods.NAMES), set(client.COMPANIONS) - {"none"})
+
+    def test_an_extra_language_header_is_replaced(self):
+        sent = {}
+
+        def request_json(url, body, headers, method=None):
+            sent.update(headers)
+            return {}
+
+        api = client.Client("https://example.test", "hill", "secret", "de")
+        original, client.request_json = client.request_json, request_json
+        try:
+            api._request("/api/notifications/hill", extra={"Accept-Language": "fr"})
+        finally:
+            client.request_json = original
+        self.assertEqual("de", sent.get("Accept-Language"))
+
     def test_the_cow_can_be_saved_and_read(self):
         self.assertIn("cow", client.COMPANIONS)
         api = client.Client("https://example.test", "hill", "secret")
