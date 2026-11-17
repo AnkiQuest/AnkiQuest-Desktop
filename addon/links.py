@@ -5,7 +5,7 @@ from enum import Enum
 REPO = "AnkiQuest/AnkiQuest-Desktop"
 REPOSITORY = "https://github.com/" + REPO
 RELEASES = REPOSITORY + "/releases"
-BUG_FORM = REPOSITORY + "/issues/new"
+BUG_FORM = REPOSITORY + "/issues/new?template=bug_report_form.yml"
 ANKIWEB = "https://ankiweb.net/shared/info/414948448"
 
 

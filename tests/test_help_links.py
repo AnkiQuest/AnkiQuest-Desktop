@@ -11,7 +11,8 @@ from addon_loader import load_in_package, load_module
 links = load_in_package("help_links", "links")
 language = load_module("help_language", "language.py")
 
-# Android's strings for the same entries (AnkiQuest-Android#351, ankiquest_about.xml).
+# Android's strings for the same entries (AnkiQuest-Android#351, ankiquest_about.xml), except
+# where the add-on's pt-PT terms differ.
 ANDROID = {
     "ankiquest_rate": ("Rate AnkiQuest", {
         "de": "AnkiQuest bewerten", "es": "Valorar AnkiQuest", "fr": "Évaluer AnkiQuest", "pt": "Avaliar o AnkiQuest",
@@ -27,7 +28,8 @@ ANDROID = {
         "de": "Keine App kann den Link öffnen. Link kopiert.",
         "es": "Ninguna app puede abrir el enlace. Enlace copiado.",
         "fr": "Aucune app ne peut ouvrir le lien. Lien copié.",
-        "pt": "Nenhum app consegue abrir o link. Link copiado.",
+        # Android's pt says "app" and "link"; the add-on's pt-PT table says "aplicação" and "ligação".
+        "pt": "Nenhuma aplicação consegue abrir a ligação. Ligação copiada.",
     }),
 }
 
@@ -42,7 +44,11 @@ class Links(unittest.TestCase):
 
     def test_pages_are_in_the_desktop_repository(self):
         self.assertEqual("https://github.com/AnkiQuest/AnkiQuest-Desktop/releases", links.RELEASES)
-        self.assertEqual("https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/new", links.BUG_FORM)
+        self.assertEqual("https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/new?template=bug_report_form.yml", links.BUG_FORM)
+
+    def test_the_bug_form_link_names_a_form_in_this_repository(self):
+        template = links.BUG_FORM.split("template=")[1]
+        self.assertTrue((Path(__file__).parents[1] / ".github/ISSUE_TEMPLATE" / template).is_file())
 
     def test_wording_matches_android(self):
         for resource, (source, translations) in ANDROID.items():

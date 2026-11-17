@@ -1324,7 +1324,7 @@ PORTUGUESE.update({
     "Star on GitHub": "Dar uma estrela no GitHub",
     "AnkiQuest changelog": "Novidades do AnkiQuest",
     "Report a bug": "Comunicar um erro",
-    "No app can open the link. Link copied.": "Nenhum app consegue abrir o link. Link copiado.",
+    "No app can open the link. Link copied.": "Nenhuma aplicação consegue abrir a ligação. Ligação copiada.",
     "Send a deck": "Enviar um baralho",
     "Tools → AnkiQuest → Inbox to reply": "Ferramentas → AnkiQuest → Caixa de entrada para responder",
     "Tools → AnkiQuest → Decks offered to me": "Ferramentas → AnkiQuest → Baralhos que me ofereceram",

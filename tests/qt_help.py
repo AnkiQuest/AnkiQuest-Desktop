@@ -61,7 +61,7 @@ class HelpMenu(unittest.TestCase):
 
     def test_report_a_bug_opens_a_new_issue(self):
         self.assertEqual(
-            ["https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/new"], self.trigger(self.menu, "Report a bug")
+            ["https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/new?template=bug_report_form.yml"], self.trigger(self.menu, "Report a bug")
         )
         self.assertEqual("before", app.clipboard().text())
         self.tooltip.assert_not_called()
