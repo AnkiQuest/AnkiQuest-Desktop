@@ -73,6 +73,34 @@ class StreakMoods(unittest.TestCase):
                 self.assertTrue(re.fullmatch(pattern, name), name)
         self.assertIsNone(moods.companion_pose("none", "aki_at_risk"))
 
+    def test_ankilope_shows_her_pose_for_every_mood(self):
+        # hill's report: a freeze used yesterday showed Ankilope studying, although her frozen art exists.
+        # On fire she studies until her on-fire art exists.
+        expected = {
+            moods.MOOD_UNKNOWN: "ankilope_face",
+            moods.ASLEEP: "ankilope_sleeping",
+            moods.SAD: "ankilope_sad",
+            moods.FROZEN_1: "ankilope_frozen",
+            moods.FROZEN_2: "ankilope_frozen",
+            moods.FROZEN_3: "ankilope_frozen",
+            moods.HOPEFUL: "ankilope_hopeful",
+            moods.FIRE: "ankilope_study",
+        }
+        self.assertEqual(set(moods.STREAK_MOODS), set(expected))
+        for companion in (moods.ANKILOPE_ID, moods.COW):
+            for chosen, pose in expected.items():
+                for streak in (0, 1, 7, 30, 100, 365):
+                    with self.subTest(companion=companion, mood=chosen, streak=streak):
+                        self.assertEqual(pose, moods.mood_pose(companion, chosen, streak))
+
+    def test_ankilope_shows_her_pose_for_aki_pictures(self):
+        # Aki's welcome picture stays Ankilope's welcome; only the hopeful mood shows her hopeful.
+        self.assertEqual("ankilope_welcome", moods.companion_pose(moods.ANKILOPE_ID, "aki_welcome"))
+        self.assertEqual("ankilope_sleeping", moods.companion_pose(moods.ANKILOPE_ID, "aki_sleeping"))
+        self.assertEqual("ankilope_frozen", moods.companion_pose(moods.ANKILOPE_ID, "aki_freeze"))
+        self.assertEqual("ankilope_study", moods.companion_pose(moods.ANKILOPE_ID, "aki_streak_milestone"))
+        self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview(moods.ANKILOPE_ID))
+
     def test_the_displayed_day_sets_the_state(self):
         def view(status, reviews=0):
             return {"_day_status": status, "today": {"reviews": reviews}}

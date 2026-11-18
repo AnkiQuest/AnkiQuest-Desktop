@@ -183,7 +183,7 @@ class CowArt(unittest.TestCase):
     def test_the_cow_is_drawn_with_ankilope_turned_purple(self):
         self.assertEqual("ankilope", moods.art_owner("cow"))
         self.assertEqual("aki", moods.art_owner("aki"))
-        self.assertEqual("ankilope_study", moods.companion_pose("cow", "aki_at_risk"))
+        self.assertEqual("ankilope_sad", moods.companion_pose("cow", "aki_at_risk"))
         self.assertEqual("ankilope_face.png", Path(share.face_path("cow")).name)
         self.assertEqual("hue-rotate(250deg)", moods.css_filter("cow"))
         for companion in ("aki", "ankilope", "none"):
