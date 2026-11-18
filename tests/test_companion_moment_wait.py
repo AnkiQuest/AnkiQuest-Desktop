@@ -9,9 +9,13 @@ import test_desktop_today as fixture
 
 
 class CompanionMomentWait(unittest.TestCase):
-    setUp = fixture.HomeTests.setUp
     run_task = fixture.HomeTests.run_task
     write_config = fixture.HomeTests.write_config
+
+    def setUp(self):
+        fixture.HomeTests.setUp(self)
+        # During a review moments only queue, so the queue is what these cases read.
+        self.mw.state = "review"
 
     def row(self, id, moment=None, read=False):
         """A notification row from the poll: a plain message, or the unlock `moment`."""

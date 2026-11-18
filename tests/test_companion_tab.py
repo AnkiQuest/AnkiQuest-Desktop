@@ -127,7 +127,7 @@ class Due(unittest.TestCase):
         self.assertFalse(reveal.due(moments._notice(unlock_row(read_at=1793183500))))
 
     def test_other_moments_and_unknown_companions_do_not(self):
-        self.assertIsNone(moments._notice(unlock_row(moment="companion:horse")))
+        self.assertFalse(reveal.due(moments._notice(unlock_row(moment="companion:horse"))))
         self.assertIsNone(moments.joined(moments._notice(unlock_row(moment="level:3", topic="level"))))
         self.assertFalse(reveal.due(moments._notice(unlock_row(moment="level:3", topic="level"))))
 

@@ -207,11 +207,12 @@ class UnlockMoment(unittest.TestCase):
         level = moments._notice({**row, "moment": "level:3", "topic": "level"})
         self.assertEqual("aki", moments.shown_companion(level, "aki"))
 
-    def test_a_companion_the_add_on_cannot_draw_is_no_moment(self):
-        # Shown, it would announce the horse with the chosen companion's art.
+    def test_a_companion_the_add_on_cannot_draw_waits(self):
+        # Shown, it would announce the horse with the chosen companion's art; it waits instead.
         row = next(row for row in example("notifications_companion") if row.get("moment") == "companion:cow")
-        self.assertIsNone(moments._notice({**row, "moment": "companion:horse"}))
-        self.assertIsNone(moments._notice({**row, "moment": None}))
+        self.assertTrue(moments._drawable(moments._notice(row)))
+        self.assertFalse(moments._drawable(moments._notice({**row, "moment": "companion:horse"})))
+        self.assertFalse(moments._drawable(moments._notice({**row, "moment": None})))
 
     def test_the_sharing_settings_name_the_new_kind(self):
         sharing = load_in_package("aq_cow", "sharing")
