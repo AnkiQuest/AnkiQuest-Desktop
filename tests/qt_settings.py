@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QPushButton, QScrollArea, QTextDocument, QTimer
+from aqt.qt import QApplication, QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QLineEdit, QPushButton, QScrollArea, QTextDocument, QTimer
 
 from addon_loader import load_in_package
 
@@ -63,7 +63,7 @@ class Settings(unittest.TestCase):
     def checkbox(self, dialog, text):
         return next(widget for widget in dialog.findChildren(QCheckBox) if widget.text() == text)
 
-    def open(self, action, on_account=None, on_companion=None):
+    def open(self, action, on_account=None, on_companion=None, on_two_factor=None):
         errors = []
 
         def interact():
@@ -77,7 +77,7 @@ class Settings(unittest.TestCase):
 
         QTimer.singleShot(0, interact)
         values = ui.settings_dialog(
-            None, self.config, Mock(), Mock(), on_account=on_account,
+            None, self.config, Mock(), Mock(), on_account=on_account, on_two_factor=on_two_factor,
             extra=lambda dialog, groups: preferences.section(dialog, groups, self.mw, self.api, on_companion=on_companion),
         )
         if errors:
@@ -192,6 +192,57 @@ class Settings(unittest.TestCase):
         values = self.open(edit, on_account=lambda _url: account)
         self.assertEqual(account, {key: values[key] for key in account})
         self.assertEqual([], self.posts)
+
+    def test_two_factor_opens_the_website_and_hides_without_a_server_for_it(self):
+        opened = []
+
+        def press(dialog):
+            self.button(dialog, "Two-factor authentication…").click()
+            self.assertIn("Set it up or turn it off on the website.", [label.text() for label in dialog.findChildren(QLabel)])
+            dialog.reject()
+
+        self.open(press, on_two_factor=opened.append)
+        self.assertEqual(["https://example.test"], opened)
+
+        def absent(dialog):
+            self.assertNotIn("Two-factor authentication…", [button.text() for button in dialog.findChildren(QPushButton)])
+            dialog.reject()
+
+        self.open(absent)
+
+    def test_sign_in_asks_for_the_code_when_the_server_wants_one(self):
+        sent, errors = [], []
+
+        def submit(values, finish):
+            sent.append(dict(values))
+            if len(sent) == 1:
+                finish(None, "Enter the code from your authenticator app.", ui.Ask.CODE)
+            else:
+                finish({"url": values["url"], "user": values["user"], "token": "device-token"}, None)
+
+        def interact():
+            dialog = app.activeModalWidget()
+            try:
+                fields = dialog.findChildren(QLineEdit)
+                code = dialog.findChild(QLineEdit, "ankiquest_sign_in_code")
+                self.assertFalse(code.isVisibleTo(dialog), "hidden until asked")
+                fields[1].setText("ana")
+                fields[2].setText("right password")
+                self.button(dialog, "Sign in").click()
+                self.assertTrue(code.isVisibleTo(dialog))
+                self.assertIn("Enter the code from your authenticator app.", [label.text() for label in dialog.findChildren(QLabel)])
+                code.setText(" 123456 ")
+                self.button(dialog, "Sign in").click()
+            except Exception as error:
+                errors.append(error)
+                dialog.reject()
+
+        QTimer.singleShot(0, interact)
+        answer = ui.account_dialog(None, "https://example.test", submit)
+        if errors:
+            raise errors[0]
+        self.assertEqual("device-token", answer["token"])
+        self.assertEqual(["", "123456"], [values["code"] for values in sent])
 
     def test_sync_switch_is_on_by_default_and_saved_for_this_device(self):
         def turn_off(dialog):
