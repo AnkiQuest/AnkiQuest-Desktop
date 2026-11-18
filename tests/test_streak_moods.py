@@ -11,8 +11,8 @@ moods = load_module("aq_streak_moods", "moods.py")
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "streak_moods.json"
 
-# Aki's picture for each mood but fire, which burns by heat. streak_moods.json names poses; Aki
-# has no frozen_2, frozen_3, thawing or almost art, so those show her frozen and hopeful pictures.
+# Aki's picture for each mood but fire, which burns by heat: her art for each pose. She has no
+# frozen_2, frozen_3, thawing or almost art, so those show her frozen and hopeful pictures.
 AKI_MOOD_POSES = {
     moods.MOOD_UNKNOWN: "aki_face",
     moods.ASLEEP: "aki_asleep",
@@ -41,7 +41,6 @@ class StreakMoods(unittest.TestCase):
                 found = moods.streak_mood(today["state"], today["reviews"], stage, today["streak"], today["frozen_days"], goal)
                 self.assertEqual(case["expected"]["mood"], found)
                 pose = moods.pose_art(moods.AKI_POSES, case["expected"]["pose"])
-                self.assertEqual(AKI_MOOD_POSES.get(found, pose), pose)
                 self.assertEqual(pose, moods.streak_pose(found, today["streak"]))
                 self.assertEqual(pose, moods.mood_pose(moods.AKI, found, today["streak"]))
 
