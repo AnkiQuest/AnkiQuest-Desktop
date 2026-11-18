@@ -203,9 +203,9 @@ def today_mood(view, goal):
     return streak_mood(day_state(view), _reviews_today(view), _streak(view), frozen_run(view.get("heatmap")), goal)
 
 
-def today_pose(view, goal):
-    """Aki's pose for the displayed profile's day."""
-    return streak_pose(today_mood(view, goal), _streak(view))
+def today_pose(companion, view, goal):
+    """`companion`'s pose for the displayed profile's day; None for no companion."""
+    return mood_pose(companion, today_mood(view, goal), _streak(view))
 
 
 def today_flame(view, goal):
@@ -247,6 +247,11 @@ def companion_pose(companion, aki):
     if art_owner(companion) == ANKILOPE_ID:
         return ANKILOPE.get(aki, "ankilope_study")
     return aki
+
+
+def mood_pose(companion, chosen, streak):
+    """`companion`'s pose for a streak mood with a streak of that many days; None for no companion."""
+    return companion_pose(companion, streak_pose(chosen, streak))
 
 
 def preview(companion):
