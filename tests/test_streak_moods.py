@@ -16,7 +16,7 @@ FIXTURE = Path(__file__).resolve().parent / "fixtures" / "streak_moods.json"
 # cases are mirrored here until the copy is updated from AnkiQuest-Server.
 AKI_MOOD_POSES = {
     moods.MOOD_UNKNOWN: "aki_face",
-    moods.ASLEEP: "aki_sleeping",
+    moods.ASLEEP: "aki_asleep",
     moods.SAD: "aki_sad",
     moods.FROZEN_1: "aki_frozen",
     moods.FROZEN_2: "aki_frozen",
@@ -101,7 +101,7 @@ class StreakMoods(unittest.TestCase):
         # On fire she studies until her on-fire art exists.
         expected = {
             moods.MOOD_UNKNOWN: "ankilope_face",
-            moods.ASLEEP: "ankilope_sleeping",
+            moods.ASLEEP: "ankilope_asleep",
             moods.SAD: "ankilope_sad",
             moods.FROZEN_1: "ankilope_frozen",
             moods.FROZEN_2: "ankilope_frozen",
@@ -129,7 +129,7 @@ class StreakMoods(unittest.TestCase):
     def test_ankilope_shows_her_pose_for_aki_pictures(self):
         # Aki's welcome picture stays Ankilope's welcome; only the hopeful mood shows her hopeful.
         self.assertEqual("ankilope_welcome", moods.companion_pose(moods.ANKILOPE_ID, "aki_welcome"))
-        self.assertEqual("ankilope_sleeping", moods.companion_pose(moods.ANKILOPE_ID, "aki_sleeping"))
+        self.assertEqual("ankilope_asleep", moods.companion_pose(moods.ANKILOPE_ID, "aki_asleep"))
         self.assertEqual("ankilope_frozen", moods.companion_pose(moods.ANKILOPE_ID, "aki_freeze"))
         self.assertEqual("ankilope_study", moods.companion_pose(moods.ANKILOPE_ID, "aki_streak_milestone"))
         self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview(moods.ANKILOPE_ID))

@@ -110,7 +110,7 @@ POSE_FALLBACKS = {
 # The pose each of Aki's pictures shows, so that other companions show theirs.
 _AKI_PICTURES = {
     "aki_face": "face",
-    "aki_sleeping": "asleep",
+    "aki_asleep": "asleep",
     "aki_celebrate": "happy",
     "aki_streak": "streak",
     "aki_streak_hot": "streak_hot",
@@ -144,7 +144,7 @@ _MOOD_POSE_NAMES = {
 # or 3 art: those show her frozen pose.
 AKI_POSES = {
     "face": "aki_face",
-    "asleep": "aki_sleeping",
+    "asleep": "aki_asleep",
     "happy": "aki_celebrate",
     "streak": "aki_streak",
     "streak_hot": "aki_streak_hot",
@@ -161,7 +161,7 @@ AKI_POSES = {
 # studies until her on-fire art exists (hill, 2026-11-18).
 ANKILOPE = {
     "face": "ankilope_face",
-    "asleep": "ankilope_sleeping",
+    "asleep": "ankilope_asleep",
     "happy": "ankilope_celebrate",
     "streak": "ankilope_study",
     "sad": "ankilope_sad",
