@@ -28,8 +28,11 @@ STUDIED, PROTECTED, SHORT, PENDING, UNKNOWN = "studied", "protected", "short", "
 _DAY_STATES = {"met": STUDIED, "syncing": STUDIED, "protected": PROTECTED, "pending": PENDING}
 
 # Aki's streak moods, as the phone names them.
-STREAK_MOODS = ("unknown", "asleep", "sad", "frozen_1", "frozen_2", "frozen_3", "hopeful", "fire")
-(MOOD_UNKNOWN, ASLEEP, SAD, FROZEN_1, FROZEN_2, FROZEN_3, HOPEFUL, FIRE) = STREAK_MOODS
+STREAK_MOODS = ("unknown", "asleep", "sad", "frozen_1", "frozen_2", "frozen_3", "thawing", "hopeful", "almost", "fire")
+(MOOD_UNKNOWN, ASLEEP, SAD, FROZEN_1, FROZEN_2, FROZEN_3, THAWING, HOPEFUL, ALMOST, FIRE) = STREAK_MOODS
+
+MINUTE_MS = 60_000
+_PERCENT = 100
 
 # The companion tab's line for each mood, saying why; `%d` is the streak.
 MOOD_LINES = {
@@ -39,7 +42,9 @@ MOOD_LINES = {
     FROZEN_1: "Frozen: a freeze kept your streak. Study today to thaw.",
     FROZEN_2: "Frozen for 2 days: study today to thaw.",
     FROZEN_3: "Frozen for 3 days or more: study today to thaw.",
+    THAWING: "Thawing: keep studying and the freeze melts.",
     HOPEFUL: "Hopeful: a little more study and today counts.",
+    ALMOST: "Almost: a few more minutes and today counts.",
     FIRE: "On fire: today counts for your %d-day streak.",
 }
 
@@ -65,9 +70,11 @@ _FLAMES = {
     ASLEEP: Flame.NONE,
     SAD: Flame.UNLIT,
     HOPEFUL: Flame.UNLIT,
+    ALMOST: Flame.UNLIT,
     FROZEN_1: Flame.ICY,
     FROZEN_2: Flame.ICY,
     FROZEN_3: Flame.ICY,
+    THAWING: Flame.ICY,
     FIRE: Flame.LIT,
 }
 
@@ -76,6 +83,31 @@ class Goal(Enum):
     """Whether today's daily goal is reached."""
     OPEN = auto()
     REACHED = auto()
+
+
+class Stage(Enum):
+    """How far today's review time has come toward the streak minimum. Each stage starts at
+    `percent` of the minimum, as `stages` in streak_moods.json says; values as it names them."""
+    STARTED = ("started", 0)
+    QUARTER = ("quarter", 25)
+    HALF = ("half", 50)
+    THREE_QUARTERS = ("three_quarters", 75)
+
+    def __new__(cls, name, percent):
+        member = object.__new__(cls)
+        member._value_ = name
+        member.percent = percent
+        return member
+
+    @classmethod
+    def of(cls, time_ms, streak_minutes):
+        """The stage of `time_ms` toward `streak_minutes`, compared in whole numbers so no rounding
+        moves a boundary. Without a minimum the first review counts the day, so it is STARTED."""
+        if streak_minutes <= 0:
+            return cls.STARTED
+        time = max(0, time_ms) * _PERCENT
+        goal_ms = streak_minutes * MINUTE_MS
+        return [stage for stage in cls if time >= stage.percent * goal_ms][-1]
 
 
 # The companions in the picker's order, and the names it shows; "none" is named by the picker.
@@ -98,6 +130,8 @@ POSE_FALLBACKS = {
     "streak_milestone": "streak_legend",
     "frozen_2": "frozen",
     "frozen_3": "frozen_2",
+    "thawing": "frozen",
+    "almost": "hopeful",
     "welcome": "happy",
     "review": "happy",
     "hurt": "sad",
@@ -137,7 +171,9 @@ _MOOD_POSE_NAMES = {
     FROZEN_1: "frozen",
     FROZEN_2: "frozen_2",
     FROZEN_3: "frozen_3",
+    THAWING: "thawing",
     HOPEFUL: "hopeful",
+    ALMOST: "almost",
 }
 
 # Aki's art for each pose she has, as the phone's AnkiquestCompanion maps them. She has no frozen 2
@@ -207,26 +243,41 @@ def mood(decks_due, focus_due, profile, now_ms):
     return WELCOME
 
 
-def streak_mood(state, reviews, streak, frozen_days, goal):
-    """Today's streak mood for a day verdict `state` with `reviews` so far, a `streak` of that many
-    days and `frozen_days` frozen days in a row ending yesterday."""
+# The mood for each stage after a freeze, and with a streak and no freeze; STARTED after a
+# freeze shows the frozen level.
+_THAWING_MOODS = {Stage.QUARTER: THAWING, Stage.HALF: HOPEFUL, Stage.THREE_QUARTERS: ALMOST}
+_STREAK_MOODS = {Stage.STARTED: SAD, Stage.QUARTER: SAD, Stage.HALF: HOPEFUL, Stage.THREE_QUARTERS: ALMOST}
+
+
+def streak_mood(state, reviews, stage, streak, frozen_days, goal):
+    """Today's streak mood for a day verdict `state` with `reviews` so far at `stage` toward the
+    minimum, a `streak` of that many days and `frozen_days` frozen days in a row ending yesterday."""
     # Today counts, or the goal says the player did what they planned.
     if state == STUDIED or goal == Goal.REACHED:
         return FIRE
     if state == UNKNOWN:
         return MOOD_UNKNOWN
-    if reviews > 0:
-        return HOPEFUL
 
     # A protected day means a freeze kept at least yesterday, even without the heatmap.
     frozen = max(frozen_days, 1 if state == PROTECTED else 0)
-    if frozen >= 3:
+    if frozen > 0:
+        return _THAWING_MOODS.get(stage) or _frozen(frozen)
+
+    # Without a streak there is nothing to lose: any study is hopeful.
+    if streak == 0:
+        if reviews == 0:
+            return ASLEEP
+        return ALMOST if stage == Stage.THREE_QUARTERS else HOPEFUL
+    return _STREAK_MOODS[stage]
+
+
+def _frozen(days):
+    """The frozen mood for `days` frozen days in a row; 3 means 3 or more."""
+    if days >= 3:
         return FROZEN_3
-    if frozen == 2:
+    if days == 2:
         return FROZEN_2
-    if frozen == 1:
-        return FROZEN_1
-    return ASLEEP if streak == 0 else SAD
+    return FROZEN_1
 
 
 def _mood_pose_name(chosen, streak):
@@ -269,10 +320,20 @@ def _streak(view):
     return int((view or {}).get("streak") or 0)
 
 
+def _stage(view):
+    """The displayed day's stage toward its minimum; older servers send whole minutes only."""
+    today = (view or {}).get("today") or {}
+    time_ms = today.get("time_ms")
+    if time_ms is None:
+        time_ms = int(today.get("minutes") or 0) * MINUTE_MS
+    return Stage.of(int(time_ms or 0), int(today.get("streak_minutes") or 0))
+
+
 def today_mood(view, goal):
     """The displayed profile's streak mood: the one streak rule every surface uses."""
     view = view or {}
-    return streak_mood(day_state(view), _reviews_today(view), _streak(view), frozen_run(view.get("heatmap")), goal)
+    reviews, streak, frozen = _reviews_today(view), _streak(view), frozen_run(view.get("heatmap"))
+    return streak_mood(day_state(view), reviews, _stage(view), streak, frozen, goal)
 
 
 def today_pose(companion, view, goal):
