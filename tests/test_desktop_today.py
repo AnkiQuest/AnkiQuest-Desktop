@@ -719,7 +719,7 @@ class HomeTests(unittest.TestCase):
         self.addon.state["profile"]["streak"] = 64
         self.home.local["days"] = None
         content = self.render()
-        self.assertIn("/_addons/ankiquest/art/aki_at_risk.png", content.stats)
+        self.assertIn("/_addons/ankiquest/art/aki_sad.png", content.stats)
         self.assertNotIn("art/aki_review.png", content.stats)
 
     def test_studying_and_period_links_act_only_from_the_deck_list(self):

@@ -197,8 +197,8 @@ class CowArt(unittest.TestCase):
         self.assertIn('class=aq-companion src="/m.png"', board.html(None, mascot="/m.png"))
 
     def test_picker_cards_preview_face_fire_and_sad(self):
-        self.assertEqual(("aki_face", "aki_streak", "aki_at_risk"), moods.PREVIEW_POSES)
-        self.assertEqual(["aki_face", "aki_streak", "aki_at_risk"], moods.preview("aki"))
+        self.assertEqual(("aki_face", "aki_streak", "aki_sad"), moods.PREVIEW_POSES)
+        self.assertEqual(["aki_face", "aki_streak", "aki_sad"], moods.preview("aki"))
         self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview("ankilope"))
         self.assertEqual(moods.preview("ankilope"), moods.preview("cow"))
         self.assertEqual([], moods.preview("none"))
