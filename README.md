@@ -1,3 +1,11 @@
+> Anki is hard, free and effective.
+>
+> Duolingo is easy, commercial and ineffective.
+>
+> If you ask a random successful language learner what software to use they'll probably suggest Anki.
+>
+> —lsusr, [Invisible Choices, Made by Default](https://www.lesswrong.com/s/3xKXGh9RXaYTYZYgZ/p/k6nncsXAZD3bK6fe3)
+
 <p align="center">
 <img alt="" src="docs/graphics/banner_readme.png"/>
 </p>
@@ -13,12 +21,6 @@
 # AnkiQuest-Desktop
 
 The AnkiQuest add-on for Anki desktop.
-
-> Anki is hard, free and effective.
->
-> If you ask a random successful language learner what software to use they'll probably suggest Anki.
->
-> —lsusr, [Invisible Choices, Made by Default](https://www.lesswrong.com/s/3xKXGh9RXaYTYZYgZ/p/k6nncsXAZD3bK6fe3)
 
 AnkiQuest leaves Anki's scheduling unchanged and adds streaks, friends and leaderboards to keep you studying.
 
