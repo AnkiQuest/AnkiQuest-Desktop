@@ -18,7 +18,8 @@ share = load_in_package("aq_cow", "share")
 client = load_in_package("aq_cow", "client")
 moments = load_in_package("aq_cow", "moments")
 
-FIXTURE = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
+# The Server copy (tests/server-fixtures/README.md); tests/fixtures holds the server code's older one.
+FIXTURE = json.loads((ADDON.parent / "tests/server-fixtures/companion_unlock.json").read_text("utf-8"))
 EXAMPLES = ADDON.parent / "docs/api/examples"
 LIVE = [rule for rule in FIXTURE["companions"] if rule["status"] == "live"]
 Choice = unlock.Choice
@@ -70,6 +71,8 @@ class SharedConditions(unittest.TestCase):
         self.assertEqual("anki_tan_chibi", unlock.chibi_of("anki_tan", {"anki_tan"}))
         self.assertIsNone(unlock.chibi_of("anki_tan", {"cow"}), "her base is locked")
         self.assertIsNone(unlock.chibi_of("cow", {"cow"}), "the cow has no chibi")
+        self.assertEqual("quest_chan_chibi", unlock.chibi_of("quest_chan", {"quest_chan"}))
+        self.assertIsNone(unlock.chibi_of("quest_chan", {"anki_tan"}), "her base is locked")
 
     def test_the_hint_is_the_shared_one(self):
         self.assertEqual(FIXTURE["hint_from"], unlock.HINT_FROM)
