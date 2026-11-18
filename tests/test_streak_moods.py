@@ -101,6 +101,17 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual("ankilope_study", moods.companion_pose(moods.ANKILOPE_ID, "aki_streak_milestone"))
         self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview(moods.ANKILOPE_ID))
 
+    def test_the_poses_are_the_shared_ones(self):
+        fixture = json.loads((FIXTURE.parent / "companion_poses.json").read_text("utf-8"))
+        self.assertEqual(fixture["core"], list(moods.CORE_POSES))
+        self.assertEqual(fixture["extensions"], moods.POSE_FALLBACKS)
+
+        # Ankilope has every core pose, and every extension reaches one of them.
+        self.assertTrue(set(moods.CORE_POSES) <= set(moods.ANKILOPE))
+        for pose in moods.POSE_FALLBACKS:
+            self.assertTrue((ADDON / "art" / ("%s.png" % moods.pose_art(moods.ANKILOPE, pose))).is_file(), pose)
+        self.assertEqual("ankilope_frozen", moods.pose_art(moods.ANKILOPE, "frozen_3"))
+
     def test_the_displayed_day_sets_the_state(self):
         def view(status, reviews=0):
             return {"_day_status": status, "today": {"reviews": reviews}}

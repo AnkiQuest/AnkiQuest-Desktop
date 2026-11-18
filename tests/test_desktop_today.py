@@ -348,7 +348,7 @@ class MoodTests(unittest.TestCase):
 
     def test_art_respects_the_companion(self):
         self.assertEqual("aki_freeze", moods.art("aki", moods.FREEZE))
-        self.assertEqual("ankilope_study", moods.art("ankilope", moods.FREEZE))
+        self.assertEqual("ankilope_frozen", moods.art("ankilope", moods.FREEZE))
         self.assertEqual("ankilope_celebrate", moods.art("ankilope", moods.WINNER))
         self.assertIsNone(moods.art("none", moods.REVIEW))
         self.assertIn("Aki", moods.message("aki", moods.WELCOME))
@@ -700,7 +700,8 @@ class HomeTests(unittest.TestCase):
 
     def test_the_deck_list_gets_the_today_panel_and_deck_badges(self):
         content = self.render()
-        self.assertIn("/_addons/ankiquest/art/ankilope_study.png", content.stats)
+        # A one-day streak not studied yet: Ankilope is sad.
+        self.assertIn("/_addons/ankiquest/art/ankilope_sad.png", content.stats)
         self.assertIn("pycmd('ankiquest:study:5')", content.stats)
         self.assertIn("Today’s goal", content.stats)
         self.assertIn("Change goal", content.stats)

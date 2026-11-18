@@ -100,14 +100,75 @@ PREVIEW_POSES = ("aki_face", "aki_streak", "aki_at_risk")
 # How far the cow's art is hue-rotated, as CSS hue-rotate() turns it; see `art_owner`.
 COW_HUE_DEGREES = 250
 
-# Ankilope's version of each Aki pose, as the phone's AnkiquestCompanion maps them.
-ANKILOPE = {
-    "aki_face": "ankilope_face",
-    "aki_welcome": "ankilope_welcome",
-    "aki_sleeping": "ankilope_welcome",
-    "aki_celebrate": "ankilope_celebrate",
-    "aki_winner": "ankilope_celebrate",
+# The poses tests/fixtures/companion_poses.json names: the core poses every companion has, and
+# the pose each extension falls back to where a companion has no art for it.
+CORE_POSES = ("face", "asleep", "happy", "streak", "sad", "hopeful", "frozen", "neglected")
+POSE_FALLBACKS = {
+    "streak_hot": "streak",
+    "streak_blazing": "streak_hot",
+    "streak_legend": "streak_blazing",
+    "streak_milestone": "streak_legend",
+    "frozen_2": "frozen",
+    "frozen_3": "frozen_2",
+    "welcome": "happy",
+    "review": "happy",
+    "hurt": "sad",
+    "abandoned": "neglected",
+    "dead": "neglected",
+    "leech_defeated": "happy",
+    "winner": "happy",
 }
+
+# The pose each of Aki's pictures shows, so that other companions show theirs.
+_AKI_PICTURES = {
+    "aki_face": "face",
+    "aki_sleeping": "asleep",
+    "aki_celebrate": "happy",
+    "aki_streak": "streak",
+    "aki_streak_hot": "streak_hot",
+    "aki_streak_blazing": "streak_blazing",
+    "aki_streak_legend": "streak_legend",
+    "aki_streak_milestone": "streak_milestone",
+    "aki_at_risk": "sad",
+    "aki_sad": "sad",
+    "aki_hopeful": "hopeful",
+    "aki_freeze_used": "frozen",
+    "aki_frozen": "frozen",
+    "aki_freeze": "frozen_2",
+    "aki_neglected": "neglected",
+    "aki_welcome": "welcome",
+    "aki_review": "review",
+    "aki_winner": "winner",
+}
+
+# The pose each streak mood shows; fire burns by heat (`HEAT`).
+_MOOD_POSE_NAMES = {
+    MOOD_UNKNOWN: "face",
+    ASLEEP: "asleep",
+    SAD: "sad",
+    FROZEN_1: "frozen",
+    FROZEN_2: "frozen_2",
+    FROZEN_3: "frozen_3",
+    HOPEFUL: "hopeful",
+}
+
+# Ankilope's art for each pose she has, as the phone's AnkiquestCompanion maps them. On fire she
+# studies until her on-fire art exists (hill, 2026-11-18).
+ANKILOPE = {
+    "face": "ankilope_face",
+    "asleep": "ankilope_sleeping",
+    "happy": "ankilope_celebrate",
+    "streak": "ankilope_study",
+    "sad": "ankilope_sad",
+    "hopeful": "ankilope_hopeful",
+    "frozen": "ankilope_frozen",
+    "neglected": "ankilope_neglected",
+    "welcome": "ankilope_welcome",
+    "review": "ankilope_study",
+}
+
+# Ankilope's picture for Aki's scenes she has no art for.
+_ANKILOPE_SCENE = "ankilope_study"
 
 
 def current(profile, now_ms):
@@ -240,23 +301,41 @@ def css_filter(companion):
     return "hue-rotate(%ddeg)" % degrees if degrees else None
 
 
+def pose_art(art, pose):
+    """The picture in `art` (pose to picture) for `pose`, or for its nearest fallback."""
+    while pose not in art:
+        pose = POSE_FALLBACKS[pose]
+    return art[pose]
+
+
 def companion_pose(companion, aki):
-    """`companion`'s version of the Aki pose `aki`; None for no companion."""
+    """`companion`'s version of Aki's picture `aki`, by the pose it shows; None for no companion."""
     if companion == NONE:
         return None
-    if art_owner(companion) == ANKILOPE_ID:
-        return ANKILOPE.get(aki, "ankilope_study")
-    return aki
+    if art_owner(companion) != ANKILOPE_ID:
+        return aki
+    pose = _AKI_PICTURES.get(aki)
+    if pose is None:
+        return _ANKILOPE_SCENE
+    return pose_art(ANKILOPE, pose)
 
 
 def mood_pose(companion, chosen, streak):
-    """`companion`'s pose for a streak mood with a streak of that many days; None for no companion."""
-    return companion_pose(companion, streak_pose(chosen, streak))
+    """`companion`'s pose for a streak mood with a streak of that many days; None for no companion.
+
+    It is resolved from the mood's pose, not from Aki's picture, because one of Aki's pictures
+    stands for two poses (welcome for hopeful)."""
+    if companion == NONE:
+        return None
+    if art_owner(companion) != ANKILOPE_ID:
+        return streak_pose(chosen, streak)
+    pose = _MOOD_POSE_NAMES.get(chosen) or _AKI_PICTURES[streak_pose(FIRE, streak)]
+    return pose_art(ANKILOPE, pose)
 
 
 def preview(companion):
     """The poses `companion`'s picker card shows, by `PREVIEW_POSES`, each once; none for no
-    companion. Ankilope has fewer poses, so its card shows fewer."""
+    companion."""
     found = []
     for aki in PREVIEW_POSES:
         pose = companion_pose(companion, aki)

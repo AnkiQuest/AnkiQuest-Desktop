@@ -199,7 +199,7 @@ class CowArt(unittest.TestCase):
     def test_picker_cards_preview_face_fire_and_sad(self):
         self.assertEqual(("aki_face", "aki_streak", "aki_at_risk"), moods.PREVIEW_POSES)
         self.assertEqual(["aki_face", "aki_streak", "aki_at_risk"], moods.preview("aki"))
-        self.assertEqual(["ankilope_face", "ankilope_study"], moods.preview("ankilope"))
+        self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview("ankilope"))
         self.assertEqual(moods.preview("ankilope"), moods.preview("cow"))
         self.assertEqual([], moods.preview("none"))
         for companion in ("aki", "ankilope", "cow"):
