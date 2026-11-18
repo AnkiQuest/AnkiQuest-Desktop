@@ -379,6 +379,23 @@ def _weekly_card(today, translate):
     return card(translate("Weekly recap"), lines)
 
 
+PASSWORD_COMMAND = "ankiquest:password"
+PASSWORD_LATER_COMMAND = "ankiquest:password-later"
+
+
+def _password_card(today, translate):
+    """Asks a player who signs in only with a token to set a password (password_prompt)."""
+    if not today.get("password"):
+        return ""
+    body = "<div class=aq-note>%s</div>" % escape(translate(
+        "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working."))
+    body += "<button class=aq-button onclick=\"pycmd('%s');return false\">%s</button>" % (
+        PASSWORD_COMMAND, escape(translate("Set a password")))
+    body += "<button class=aq-goal-edit onclick=\"pycmd('%s');return false\">%s</button>" % (
+        PASSWORD_LATER_COMMAND, escape(translate("Not now")))
+    return card(translate("Set a password"), body)
+
+
 def counts(deck, translate):
     parts = (
         ("review", translate("%d reviews") % deck["review"]),
@@ -536,7 +553,7 @@ def session_line(today, translate):
 
 
 def panel(profile, place, unread, translate, today, actions=0, flame=moods.Flame.NONE):
-    cards = next_deck(today, translate) + goal_card(today, translate) + quests_card(profile, today, translate) + board_card(today, translate, profile)
+    cards = next_deck(today, translate) + _password_card(today, translate) + goal_card(today, translate) + quests_card(profile, today, translate) + board_card(today, translate, profile)
     cards += _weekly_card(today, translate)
     moments = ('<button type=button onclick="pycmd(\'ankiquest:moments\')">%s</button>'
                % escape(translate("Your moments (%d)") % today["moments"])) if today.get("moments") else ""

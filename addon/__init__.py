@@ -38,6 +38,7 @@ from .client import (
 )
 from .deck_completion import deck_snapshots, study_day
 from . import copies_ui, deck_names, preferences, preview, review_offsets, settings_sync
+from . import password_prompt, password_ui
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -167,6 +168,8 @@ state = {
     # None, or a _WelcomeWait for the open profile; a callback that holds another one is stale.
     "welcome": None,
     "settings_synced_at": 0.0,
+    # The [base, user, token] the password card is offered to, or None (password_prompt).
+    "password_prompt": None,
 }
 
 mw.addonManager.setWebExports(__name__, r"((aki|ankilope)_face|art/(aki|ankilope)_[a-z0-9_]+)\.png")
@@ -555,6 +558,8 @@ def poll(quiet=False):
 
     previous = prefs.get(ORDER_KEY) or []
     week = prefs.get(ORDER_WEEK_KEY)
+    # Within the days Not now hides the card, the server is not even asked.
+    ask_sign_in = not password_prompt._snoozed(prefs, account, int(time.time() * 1000))
     announcements = delivery._record(prefs, api)
     cursor = announcements["cursor"]
 
@@ -566,7 +571,7 @@ def poll(quiet=False):
             companion = api.companion()
         except Exception:
             companion = state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
-        return rank, profile, notifications, companion, arrivals, reminders
+        return rank, profile, notifications, companion, arrivals, reminders, _sign_in(api) if ask_sign_in else None
 
     def done(future):
         if state["polling"] is not request:
@@ -576,7 +581,7 @@ def poll(quiet=False):
         if mw.pm.profile is not prefs or [current.base, current.user, current.token] != account:
             return
         try:
-            rank, profile, inbox, companion, arrivals, reminders = future.result()
+            rank, profile, inbox, companion, arrivals, reminders, sign_in = future.result()
         except Exception as e:
             # Keep a direct sign-in link on the deck list for a revoked credential.
             if isinstance(e, ServerError) and e.status == HTTPStatus.UNAUTHORIZED:
@@ -593,12 +598,60 @@ def poll(quiet=False):
         state["place"] = order.index(api.name) + 1 if api.name in order else None
         state["profile"], state["activity"], state["inbox"] = profile, inbox, inbox.items
         state["companion"], state["companion_account"] = companion, account
+        state["password_prompt"] = account if sign_in is password_prompt._SignIn.TOKEN_ONLY else None
         if reminders is not None:
             announcements["reminders"] = reminders
         announce(rank, profile, arrivals, quiet)
         redraw()
 
     mw.taskman.run_in_background(work, done)
+
+
+def _sign_in(api):
+    """How the player signs in; None when the server does not say or cannot be asked, which
+    must never stop the rest of the poll."""
+    try:
+        return password_prompt._sign_in(api.sign_in_methods())
+    except Exception as e:
+        print("ankiquest sign-in methods:", e)
+        return None
+
+
+def set_password():
+    """The form for a token-only player's first password, saved with the token alone."""
+    api = client()
+    account = [api.base, api.user, api.token]
+
+    def submit(password, finish):
+        def done(future):
+            try:
+                future.result()
+            except ServerError as e:
+                finish(e.message or tr("Could not save your password (%s).") % e)
+                return
+            except Exception as e:
+                finish(tr("Could not save your password (%s).") % e)
+                return
+            finish(None)
+
+        mw.taskman.run_in_background(lambda: api.set_password(password), done)
+
+    if not password_ui.password_dialog(mw, submit):
+        return
+    if state["password_prompt"] == account:
+        state["password_prompt"] = None
+    tooltip(tr("Password saved."))
+    redraw()
+
+
+def password_later():
+    """Not now: the card stays hidden on this computer for password_prompt.SNOOZE_MS."""
+    api = client()
+    account = [api.base, api.user, api.token]
+    if mw.pm.profile is not None:
+        password_prompt._snooze(mw.pm.profile, account, int(time.time() * 1000))
+    state["password_prompt"] = None
+    redraw()
 
 
 def announce(rank, profile, inbox, quiet):
@@ -668,6 +721,12 @@ def on_js_message(handled, message, context):
         return (True, None)
     if message == "ankiquest:account":
         open_account()
+        return (True, None)
+    if message == board.PASSWORD_COMMAND:
+        set_password()
+        return (True, None)
+    if message == board.PASSWORD_LATER_COMMAND:
+        password_later()
         return (True, None)
     if message.startswith("ankiquest:web:"):
         page = message.split(":", 2)[2]

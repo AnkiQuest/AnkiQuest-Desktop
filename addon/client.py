@@ -193,6 +193,16 @@ class Client:
         """This player's signed-in devices; answers only with a working token, so it also checks one."""
         return self._request("/api/devices/" + self.user)
 
+    def sign_in_methods(self):
+        """How this player signs in: `sign_in` (absent from older servers), `password`, `providers`."""
+        return self._request("/api/sign-in/" + self.user)
+
+    def set_password(self, password):
+        """Sets a first password with this device's token alone, for a player whose `sign_in` is
+        `token_only`; answers as sign_in_methods."""
+        body = {"action": "password", "password": password, "sign_out_others": False}
+        return self._request("/api/sign-in/" + self.user, body)
+
     def leaderboard(self, period="week", scope="friends"):
         """The server's order and XP for this board and period."""
         return self._request("/api/leaderboard?" + urllib.parse.urlencode({"period": period, "scope": scope}))
