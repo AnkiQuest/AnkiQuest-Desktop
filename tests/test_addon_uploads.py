@@ -264,17 +264,39 @@ class UploadBatches(HeldTasks):
         self.assertEqual(2, self.api.upload.call_count)
         self.assertNotIn("will retry", self.addon._upload_status(self.api))
 
-    def test_a_certificate_for_another_name_is_not_called_offline(self):
-        # A server address whose host now serves another site's certificate looked offline.
-        mismatch = ssl.SSLCertVerificationError(1, "certificate verify failed: Hostname mismatch")
-        self.api.upload.side_effect = [urllib.error.URLError(mismatch), {}]
+    def certificate_status(self, code, text):
+        # urllib wraps the verification error in a URLError; `verify_code` is OpenSSL's reason.
+        error = ssl.SSLCertVerificationError(1, "certificate verify failed: " + text)
+        if code is not None:
+            error.verify_code = code
+        self.api.upload.side_effect = [urllib.error.URLError(error), {}]
         self.addon.refresh(False)
         self.finish()
+        return self.addon._upload_status(self.api)
 
-        status = self.addon._upload_status(self.api)
+    def test_a_certificate_for_another_name_is_not_called_offline(self):
+        # A server address whose host now serves another site's certificate looked offline.
+        status = self.certificate_status(62, "Hostname mismatch")
         self.assertNotIn("Offline", status)
-        self.assertIn("certificate", status)
+        self.assertIn("certificate is for another address", status)
         self.assertIn("will retry", status)
+
+    def test_a_certificate_problem_is_named(self):
+        # Expired and self-signed certificates are not "not valid for its address".
+        cases = [
+            (10, "certificate has expired", "certificate has expired"),
+            (18, "self-signed certificate", "certificate is self-signed"),
+            (19, "self-signed certificate in certificate chain", "certificate is self-signed"),
+            (20, "unable to get local issuer certificate", "certificate could not be verified"),
+            (None, "unknown", "certificate could not be verified"),
+        ]
+        for code, text, expected in cases:
+            with self.subTest(code=code):
+                self.addon.state["upload"] = None
+                status = self.certificate_status(code, text)
+                self.assertIn(expected, status)
+                self.assertNotIn("not valid", status)
+                self.assertIn("will retry", status)
 
     def test_unauthorized_upload_asks_for_sign_in_until_the_token_changes(self):
         self.api.upload.side_effect = [self.addon.ServerError(HTTPStatus.UNAUTHORIZED, "unauthorized"), {}]

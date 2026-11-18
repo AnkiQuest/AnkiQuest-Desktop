@@ -359,6 +359,10 @@ class MoodTests(unittest.TestCase):
         self.assertIsNone(moods.message("aki", moods.REVIEW))
         self.assertIsNone(moods.message("ankilope", moods.REVIEW))
 
+    def test_every_mood_but_review_has_a_line(self):
+        # MOODS and MESSAGES are separate lists; keep them from drifting apart.
+        self.assertEqual(set(moods.MOODS) - {moods.REVIEW}, set(moods.MESSAGES))
+
     def test_every_mood_has_bundled_and_exported_art(self):
         source = (ADDON / "__init__.py").read_text("utf-8")
         pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
