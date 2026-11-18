@@ -1,6 +1,7 @@
 """The dialogs behind the Tools menu: settings and deck sharing."""
 
 import html
+from enum import Enum
 from pathlib import Path
 
 from aqt.qt import (
@@ -80,9 +81,17 @@ def _brand(dialog, layout, companion="aki"):
     layout.addWidget(_row(image, QLabel(tr("Your study companion."))))
 
 
+class Ask(Enum):
+    """What the account dialog asks for next, after the server refused a sign-in."""
+
+    NOTHING = "nothing"
+    # The password was right; the account wants its two-factor code or a recovery code.
+    CODE = "code"
+
+
 def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
     """Signs in or creates an account. `on_submit(values, finish)` talks to the server and calls
-    `finish(account, error)`; the dialog stays open with the error until it succeeds."""
+    `finish(account, error, ask)`; the dialog stays open with the error until it succeeds."""
     dialog = QDialog(parent)
     dialog.setWindowTitle("AnkiQuest")
     layout = QVBoxLayout(dialog)
@@ -99,6 +108,14 @@ def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
         layout.addWidget(field)
     layout.addWidget(display_label)
     layout.addWidget(display)
+
+    # Shown once the server asks for a second factor; until then nothing sends a code.
+    code_label = QLabel(tr("Authenticator code or recovery code"))
+    code = QLineEdit()
+    code.setObjectName("ankiquest_sign_in_code")
+    for widget in (code_label, code):
+        layout.addWidget(widget)
+        widget.hide()
     new = QCheckBox(tr("Create a new account"))
     layout.addWidget(new)
     hint = QLabel(tr("Usernames use lowercase letters, numbers, - and _. Passwords need at least 10 characters."))
@@ -129,10 +146,16 @@ def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
     toggle()
     result = {}
 
-    def finish(account, error):
+    def finish(account, error, ask=Ask.NOTHING):
         submit.setEnabled(True)
         if error:
             status.setText(error)
+            asking = ask is Ask.CODE
+            code_label.setVisible(asking)
+            code.setVisible(asking)
+            if asking:
+                code.clear()
+                code.setFocus()
             return
         result.update(account)
         dialog.accept()
@@ -144,6 +167,7 @@ def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
             "password": password.text(),
             "display": display.text().strip(),
             "new": new.isChecked(),
+            "code": code.text().strip() if code.isVisibleTo(dialog) else "",
         }
         if not values["url"] or not values["user"] or not values["password"]:
             status.setText(tr("Fill in the server, username and password."))
@@ -185,7 +209,7 @@ def _folded(title, layout):
 
 def settings_dialog(
     parent, config, on_test, on_upload_all, companion="aki", on_account=None, *,
-    extra=None, on_manage=None, on_decks=None, on_privacy=None,
+    extra=None, on_manage=None, on_decks=None, on_privacy=None, on_two_factor=None,
 ):
     """One scrollable dialog. Server sections save only for the account they loaded."""
     dialog = QDialog(parent)
@@ -249,6 +273,15 @@ def settings_dialog(
         manage.clicked.connect(lambda: on_manage(signed_server))
         manage.setVisible(signed_in)
         account_layout.addWidget(manage)
+
+    # Two-factor is set up on the website; offered only for a server that has it.
+    if on_two_factor is not None and signed_in:
+        two_factor = QPushButton(tr("Two-factor authentication…"))
+        two_factor.clicked.connect(lambda: on_two_factor(signed_server))
+        two_factor_note = QLabel(tr("Set it up or turn it off on the website."))
+        two_factor_note.setWordWrap(True)
+        account_layout.addWidget(two_factor)
+        account_layout.addWidget(two_factor_note)
 
     def forget_account():
         for field in (url, user, token):
