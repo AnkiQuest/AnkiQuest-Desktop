@@ -7,6 +7,9 @@ SPANISH = {
     "Loading card…": "Cargando tarjeta…", "Card label": "Etiqueta de la tarjeta", "Card unavailable": "Tarjeta no disponible",
     "Choose what to share about this card": "Elige qué compartir sobre esta tarjeta",
     "Deck name": "Nombre del mazo",
+    "Deck complete": "Mazo completado", "Share completed deck": "Compartir el mazo completado",
+    "Don't ask again": "No volver a preguntar",
+    "I finished my %s studies for today.": "He terminado de estudiar %s por hoy.",
     "Choose a name or edit it. Leave it empty to share without a deck name.": "Elige un nombre o edítalo. Déjalo vacío para compartir sin el nombre del mazo.",
     "Your suggestion stays on this computer until you save it.": "La sugerencia se queda en este ordenador hasta que la guardes.",
     "Save label": "Guardar etiqueta", "Remove label": "Quitar etiqueta", "Tell friends": "Avisar a mis amigos", "Undo": "Deshacer",
@@ -154,6 +157,9 @@ GERMAN = {
     "Loading card…": "Karte wird geladen…", "Card label": "Kartenbezeichnung", "Card unavailable": "Karte nicht verfügbar",
     "Choose what to share about this card": "Wähle, was du über diese Karte teilen möchtest",
     "Deck name": "Stapelname",
+    "Deck complete": "Stapel abgeschlossen", "Share completed deck": "Abgeschlossenen Stapel teilen",
+    "Don't ask again": "Nicht erneut fragen",
+    "I finished my %s studies for today.": "Ich habe heute mit %s fertig gelernt.",
     "Choose a name or edit it. Leave it empty to share without a deck name.": "Wähle einen Namen oder bearbeite ihn. Lass das Feld leer, um ohne Stapelnamen zu teilen.",
     "Your suggestion stays on this computer until you save it.": "Der Vorschlag bleibt auf diesem Computer, bis du ihn speicherst.",
     "Save label": "Bezeichnung speichern", "Remove label": "Bezeichnung entfernen", "Tell friends": "Freunden erzählen", "Undo": "Rückgängig",
@@ -268,6 +274,9 @@ FRENCH = {
     "Loading card…": "Chargement de la carte…", "Card label": "Nom de la carte", "Card unavailable": "Carte indisponible",
     "Choose what to share about this card": "Choisis ce que tu veux partager sur cette carte",
     "Deck name": "Nom du paquet",
+    "Deck complete": "Paquet terminé", "Share completed deck": "Partager le paquet terminé",
+    "Don't ask again": "Ne plus demander",
+    "I finished my %s studies for today.": "J’ai terminé mes révisions de %s pour aujourd’hui.",
     "Choose a name or edit it. Leave it empty to share without a deck name.": "Choisis un nom ou modifie-le. Laisse le champ vide pour partager sans nom de paquet.",
     "Your suggestion stays on this computer until you save it.": "La suggestion reste sur cet ordinateur jusqu’à son enregistrement.",
     "Save label": "Enregistrer le nom", "Remove label": "Supprimer le nom", "Tell friends": "Prévenir mes amis", "Undo": "Annuler",
@@ -382,6 +391,9 @@ PORTUGUESE = {
     "Loading card…": "A carregar o cartão…", "Card label": "Nome do cartão", "Card unavailable": "Cartão indisponível",
     "Choose what to share about this card": "Escolhe o que partilhar sobre este cartão",
     "Deck name": "Nome do baralho",
+    "Deck complete": "Baralho concluído", "Share completed deck": "Partilhar o baralho concluído",
+    "Don't ask again": "Não voltar a perguntar",
+    "I finished my %s studies for today.": "Terminei de estudar %s por hoje.",
     "Choose a name or edit it. Leave it empty to share without a deck name.": "Escolhe um nome ou edita-o. Deixa o campo vazio para partilhar sem o nome do baralho.",
     "Your suggestion stays on this computer until you save it.": "A sugestão fica neste computador até a guardares.",
     "Save label": "Guardar nome", "Remove label": "Remover nome", "Tell friends": "Avisar amigos", "Undo": "Anular",
@@ -2056,6 +2068,24 @@ SPANISH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, 
 GERMAN[_ANKI_TAN] = '<a href="%s">Anki-tan</a> von <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 FRENCH[_ANKI_TAN] = '<a href="%s">Anki-tan</a> par <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
 PORTUGUESE[_ANKI_TAN] = '<a href="%s">Anki-tan</a> por <a href="%s">Shigeyuki</a>, <a href="%s">CC BY-SA 4.0</a>.'
+
+# Streak pictures use the same milestone wording as Android, without a decorative symbol.
+SPANISH.update({
+    "streak day": "día de racha", "streak days": "días de racha",
+    "%s day to %s": "Falta %s día para %s", "%s days to %s": "Faltan %s días para %s",
+})
+GERMAN.update({
+    "streak day": "Tag Lernserie", "streak days": "Tage Lernserie",
+    "%s day to %s": "Noch %s Tag bis %s", "%s days to %s": "Noch %s Tage bis %s",
+})
+FRENCH.update({
+    "streak day": "jour de série", "streak days": "jours de série",
+    "%s day to %s": "Encore %s jour avant %s", "%s days to %s": "Encore %s jours avant %s",
+})
+PORTUGUESE.update({
+    "streak day": "dia de sequência", "streak days": "dias de sequência",
+    "%s day to %s": "Falta %s dia para %s", "%s days to %s": "Faltam %s dias para %s",
+})
 
 # Conquest exports use Android's first-person caption and public counts.
 SPANISH.update({
