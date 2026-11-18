@@ -144,6 +144,16 @@ def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
 
     new.toggled.connect(toggle)
     toggle()
+
+    # A code answers the challenge for one server, username and mode; editing any of them drops it.
+    def drop_code():
+        code.clear()
+        code_label.hide()
+        code.hide()
+
+    server.textChanged.connect(drop_code)
+    user.textChanged.connect(drop_code)
+    new.toggled.connect(drop_code)
     result = {}
 
     def finish(account, error, ask=Ask.NOTHING):
