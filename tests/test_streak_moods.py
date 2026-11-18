@@ -89,6 +89,13 @@ class StreakMoods(unittest.TestCase):
                 self.assertTrue(re.fullmatch(pattern, name), name)
         self.assertIsNone(moods.companion_pose("none", "aki_at_risk"))
 
+    def test_asleep_art_uses_the_pose_name(self):
+        # AnkiQuest-Server#32: every companion's asleep picture is `<companion>_asleep`.
+        for poses in (moods.AKI_POSES, moods.ANKILOPE):
+            name = poses["asleep"]
+            self.assertTrue(name.endswith("_asleep"), name)
+            self.assertTrue((ADDON / "art" / ("%s.png" % name)).is_file(), name)
+
     def test_ankilope_shows_her_pose_for_every_mood(self):
         # hill's report: a freeze used yesterday showed Ankilope studying, although her frozen art exists.
         # On fire she studies until her on-fire art exists.
