@@ -170,6 +170,9 @@ state = {
     "settings_synced_at": 0.0,
     # The [base, user, token] the password card is offered to, or None (password_prompt).
     "password_prompt": None,
+    # How often the player answered the card (Not now or a saved password). A poll that started
+    # before the latest answer is stale for the card and leaves it as the answer set it.
+    "password_answers": 0,
 }
 
 mw.addonManager.setWebExports(__name__, r"((aki|ankilope)_face|art/(aki|ankilope)_[a-z0-9_]+)\.png")
@@ -560,6 +563,7 @@ def poll(quiet=False):
     week = prefs.get(ORDER_WEEK_KEY)
     # Within the days Not now hides the card, the server is not even asked.
     ask_sign_in = not password_prompt._snoozed(prefs, account, int(time.time() * 1000))
+    answers = state["password_answers"]
     announcements = delivery._record(prefs, api)
     cursor = announcements["cursor"]
 
@@ -598,7 +602,8 @@ def poll(quiet=False):
         state["place"] = order.index(api.name) + 1 if api.name in order else None
         state["profile"], state["activity"], state["inbox"] = profile, inbox, inbox.items
         state["companion"], state["companion_account"] = companion, account
-        state["password_prompt"] = account if sign_in is password_prompt._SignIn.TOKEN_ONLY else None
+        if state["password_answers"] == answers:
+            state["password_prompt"] = account if sign_in is password_prompt._SignIn.TOKEN_ONLY else None
         if reminders is not None:
             announcements["reminders"] = reminders
         announce(rank, profile, arrivals, quiet)
@@ -638,6 +643,7 @@ def set_password():
 
     if not password_ui.password_dialog(mw, submit):
         return
+    state["password_answers"] += 1
     if state["password_prompt"] == account:
         state["password_prompt"] = None
     tooltip(tr("Password saved."))
@@ -650,6 +656,7 @@ def password_later():
     account = [api.base, api.user, api.token]
     if mw.pm.profile is not None:
         password_prompt._snooze(mw.pm.profile, account, int(time.time() * 1000))
+    state["password_answers"] += 1
     state["password_prompt"] = None
     redraw()
 
