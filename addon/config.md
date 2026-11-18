@@ -30,7 +30,7 @@ The local options below match `config.json`. Account choices stay on the server;
 
 For a GitHub package, once a day and from **Tools → AnkiQuest → Check for updates**, the add-on looks for a newer build on that channel and offers to install it; restart Anki afterwards. AnkiWeb installations leave updates to **Tools → Add-ons → Check for Updates** and hide the GitHub channel picker. Local source copies never update themselves. The installed version appears under **App and privacy** and in Anki's add-on manager.
 
-At the end of **Tools → AnkiQuest**, **Rate AnkiQuest** opens the add-on's AnkiWeb page or its GitHub repository, **AnkiQuest changelog** opens the releases and **Report a bug** opens the bug report form on GitHub. When no browser opens the link, it is copied to the clipboard.
+At the end of **Tools → AnkiQuest**, **Rate AnkiQuest** opens the add-on's AnkiWeb page or its GitHub repository, **AnkiQuest changelog** shows the release notes of the installed version, with **All releases** and **Rate AnkiQuest**, and **Report a bug** opens the bug report form on GitHub. When no browser opens the link, it is copied to the clipboard.
 
 a line under the deck list shows your weekly place, level and streak. its links and **Tools → AnkiQuest → Website** open the website in a window inside Anki, already signed in with your token, where you can see the leaderboard, reply to messages and join challenges.
 

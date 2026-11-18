@@ -54,11 +54,6 @@ class HelpMenu(unittest.TestCase):
         self.assertEqual(["https://ankiweb.net/shared/info/414948448"], self.trigger(self.rate, "Rate on AnkiWeb"))
         self.assertEqual(["https://github.com/AnkiQuest/AnkiQuest-Desktop"], self.trigger(self.rate, "Star on GitHub"))
 
-    def test_changelog_opens_the_releases(self):
-        self.assertEqual(
-            ["https://github.com/AnkiQuest/AnkiQuest-Desktop/releases"], self.trigger(self.menu, "AnkiQuest changelog")
-        )
-
     def test_report_a_bug_opens_a_new_issue(self):
         self.assertEqual(
             ["https://github.com/AnkiQuest/AnkiQuest-Desktop/issues/new?template=bug_report_form.yml"], self.trigger(self.menu, "Report a bug")

@@ -21,6 +21,9 @@ ANDROID = {
         "de": "AnkiQuest-Änderungsprotokoll", "es": "Novedades de AnkiQuest",
         "fr": "Journal des modifications d’AnkiQuest", "pt": "Novidades do AnkiQuest",
     }),
+    "ankiquest_all_releases": ("All releases", {
+        "de": "Alle Versionen", "es": "Todas las versiones", "fr": "Toutes les versions", "pt": "Todas as versões",
+    }),
     "ankiquest_about_report_bug": ("Report a bug", {
         "de": "Fehler melden", "es": "Informar de un error", "fr": "Signaler un bug", "pt": "Comunicar um erro",
     }),
