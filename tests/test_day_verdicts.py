@@ -23,6 +23,10 @@ class DayVerdicts(unittest.TestCase):
                     self.assertIsNone(found)
                     continue
                 waiting = found.pop("waiting")
+                # Copies from before the server pinned the day's words have no label.
+                if "label" in expected:
+                    expected = dict(expected)
+                    self.assertEqual(expected.pop("label"), day_verdict.label(found))
                 self.assertEqual(expected, found)
                 self.assertEqual(expected["met"] and case["server"]["streak_state"] != "studied", waiting)
 
@@ -44,6 +48,7 @@ class DayVerdicts(unittest.TestCase):
         }
         shown = day_verdict._for_display(server, day_verdict.verdict(server, [], 1_000))
         self.assertEqual("pending", shown["_day_status"])
+        self.assertEqual("short", day_verdict.label(day_verdict.verdict(server, [], 1_000)))
         untouched = dict(server, today=dict(server["today"], reviews=0, time_ms=0, minutes=0))
         self.assertEqual("protected", day_verdict._for_display(untouched, day_verdict.verdict(untouched, [], 1_000))["_day_status"])
 
