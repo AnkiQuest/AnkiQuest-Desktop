@@ -36,6 +36,17 @@ class DayVerdicts(unittest.TestCase):
         reached = dict(server, today=dict(server["today"], minutes=5))
         self.assertTrue(day_verdict.verdict(reached, [], 1_000)["met"])
 
+    def test_a_review_on_a_protected_day_is_not_protected(self):
+        # The freeze kept yesterday; with a review today the day reads short, not unstudied.
+        server = {
+            "streak": 4, "streak_state": "protected", "day_ends_at": 2_000, "last_review_id": 10,
+            "today": {"starts_at": 100, "reviews": 1, "time_ms": 180_000, "minutes": 3, "streak_minutes": 10},
+        }
+        shown = day_verdict._for_display(server, day_verdict.verdict(server, [], 1_000))
+        self.assertEqual("pending", shown["_day_status"])
+        untouched = dict(server, today=dict(server["today"], reviews=0, time_ms=0, minutes=0))
+        self.assertEqual("protected", day_verdict._for_display(untouched, day_verdict.verdict(untouched, [], 1_000))["_day_status"])
+
     def test_no_profile_says_nothing(self):
         self.assertIsNone(day_verdict.verdict(None, [], 1_000))
 
