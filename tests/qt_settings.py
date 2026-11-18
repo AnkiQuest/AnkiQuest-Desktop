@@ -244,6 +244,45 @@ class Settings(unittest.TestCase):
         self.assertEqual("device-token", answer["token"])
         self.assertEqual(["", "123456"], [values["code"] for values in sent])
 
+    def test_editing_the_credentials_drops_the_asked_code(self):
+        sent, errors = [], []
+
+        def submit(values, finish):
+            sent.append(dict(values))
+            finish(None, "Enter the code from your authenticator app.", ui.Ask.CODE)
+
+        def interact():
+            dialog = app.activeModalWidget()
+            try:
+                fields = dialog.findChildren(QLineEdit)
+                code = dialog.findChild(QLineEdit, "ankiquest_sign_in_code")
+                fields[1].setText("ana")
+                fields[2].setText("right password")
+
+                # Each edit asks again with a fresh code field: server, username, create-account mode.
+                edits = (
+                    lambda: fields[0].setText("https://other.test"),
+                    lambda: fields[1].setText("bea"),
+                    lambda: self.checkbox(dialog, "Create a new account").setChecked(True),
+                )
+                for edit in edits:
+                    self.button(dialog, "Create account" if sent and sent[-1]["new"] else "Sign in").click()
+                    code.setText("123456")
+                    edit()
+                    self.assertFalse(code.isVisibleTo(dialog), "hidden after the edit")
+                    self.assertEqual("", code.text())
+                self.button(dialog, "Create account").click()
+                dialog.reject()
+            except Exception as error:
+                errors.append(error)
+                dialog.reject()
+
+        QTimer.singleShot(0, interact)
+        ui.account_dialog(None, "https://example.test", submit)
+        if errors:
+            raise errors[0]
+        self.assertEqual(["", "", "", ""], [values["code"] for values in sent])
+
     def test_sync_switch_is_on_by_default_and_saved_for_this_device(self):
         def turn_off(dialog):
             box = self.checkbox(dialog, "Sync settings")
