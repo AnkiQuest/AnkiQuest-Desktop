@@ -1,18 +1,19 @@
-//! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb.
+//! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb:
+//! `cargo run --manifest-path tools/package-addon/Cargo.toml --
+//! --output <file> [--ankiweb] [--ref <ref>] [--metadata <file>]`.
 //!
 //! The archive is reproducible: the same commit and channel always give
 //! the same bytes. The GitHub and AnkiWeb builds differ only in the
 //! manifest's package ID and conflicts.
 
 use std::collections::BTreeMap;
+use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
-
-use crate::root;
 
 mod json;
 mod zip;
@@ -81,8 +82,9 @@ struct Args {
 }
 
 /// Runs `--output <file> [--ankiweb] [--ref <ref>] [--metadata <file>]`.
-pub fn run(args: &[String]) -> ExitCode {
-    match package(args) {
+fn main() -> ExitCode {
+    let args: Vec<String> = env::args().skip(1).collect();
+    match package(&args) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("package-addon: {error}");
@@ -110,6 +112,11 @@ fn package(args: &[String]) -> Result<(), String> {
         version.release, version.nightly, version.commit
     );
     Ok(())
+}
+
+/// The repository root: this crate is `tools/package-addon`.
+fn root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
 /// Reads the flags; `--output` is required.

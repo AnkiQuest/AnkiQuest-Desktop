@@ -25,6 +25,7 @@ addon:
   - changed-files:
       - any-glob-to-any-file:
           - addon/**
+          - tools/package-addon/**
 
 tests:
   - changed-files:
