@@ -89,6 +89,19 @@ class TranslationTables(unittest.TestCase):
         self.assertEqual(language.tr("Save", "ja"), "Save")
         self.assertEqual(language.tr("Not a label", "de"), "Not a label")
 
+    def test_french_chibi_hint_says_tu_as_on_android(self):
+        # Android's ankiquest_companion_chibi_hint in values-fr; hill chose "tu" for French.
+        self.assertEqual("Tu es à 1 appui de chibi", language.tr("You are 1 tap away from chibi", "fr"))
+        self.assertEqual("Tu es à 5 appuis de chibi", language.tr("You are %d taps away from chibi", "fr") % 5)
+
+    def test_french_says_tu(self):
+        # hill chose informal "tu" for French on both clients.
+        # "vous", "votre", "vos" and the vous imperative ("Choisissez"); "chez" is not a verb.
+        formal = re.compile(r"\b(vous|votre|vos|(?!chez\b)\w+ez)\b", re.IGNORECASE)
+        for source, text in language.FRENCH.items():
+            with self.subTest(source=source):
+                self.assertIsNone(formal.search(text), text)
+
     def test_labels_are_translated_before_names_are_filled_in(self):
         board = load_in_package("aq_language_board", "board")
         spanish = lambda value: language.tr(value, "es-AR")
