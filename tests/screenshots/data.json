@@ -843,6 +843,11 @@
       }
     ],
     "/api/leaderboard/hidden/hill": [],
+    "/api/week": {
+      "ends_at": 1794830400000,
+      "starts_at": 1794225600000,
+      "timezone": "UTC"
+    },
     "/api/decks/hill": {
       "global_leaderboard": true,
       "nudges": true,
