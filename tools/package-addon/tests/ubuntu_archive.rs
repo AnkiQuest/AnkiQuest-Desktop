@@ -15,6 +15,7 @@ use std::time::Duration;
 const REDIRECT: &str = "HTTP/1.1 301 Moved Permanently\r\nLocation: /unavailable\r\n";
 const HEALTHY: &str = "HTTP/1.1 200 OK\r\n";
 const UNAVAILABLE: &str = "HTTP/1.1 503 Service Unavailable\r\n";
+const SOURCES: &str = "Types: deb\nURIs: http://security.ubuntu.com/ubuntu/\nSuites: noble-security\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n";
 
 struct Mirrors {
     base: String,
@@ -50,10 +51,14 @@ impl Mirrors {
                 let url = request.split_whitespace().nth(1).unwrap();
                 let status = if url.starts_with("/redirect/") {
                     REDIRECT
-                } else if url.starts_with("/healthy/") {
+                } else if url.starts_with("/healthy/")
+                    || (url.starts_with("/no-security/") && !url.ends_with("-security/InRelease"))
+                {
                     HEALTHY
                 } else {
-                    followed.store(url == "/unavailable", Ordering::Relaxed);
+                    if url == "/unavailable" {
+                        followed.store(true, Ordering::Relaxed);
+                    }
                     UNAVAILABLE
                 };
                 write!(
@@ -82,7 +87,20 @@ impl Drop for Mirrors {
 fn select(directory: &Path, mirrors: &[String]) -> Output {
     // Capture selection and apt verification without writing /etc or installing packages.
     let sudo = directory.join("sudo");
-    fs::write(&sudo, "#!/usr/bin/env bash\nset -euo pipefail\ncase \"$1\" in\n    tee) cat > \"$RUNNER_TEMP/selected\" ;;\n    apt-get) printf '%s\\n' \"$*\" >> \"$RUNNER_TEMP/apt\" ;;\n    *) exit 99 ;;\nesac\n").unwrap();
+    fs::write(directory.join("ubuntu.sources"), SOURCES).unwrap();
+    fs::write(
+        &sudo,
+        r#"#!/usr/bin/env bash
+set -euo pipefail
+case "$1" in
+    tee) cat > "$RUNNER_TEMP/selected" ;;
+    apt-get) printf '%s\n' "$*" >> "$RUNNER_TEMP/apt" ;;
+    sed) args=("${@:2}"); args[-1]="$RUNNER_TEMP/ubuntu.sources"; sed "${args[@]}" ;;
+    *) exit 99 ;;
+esac
+"#,
+    )
+    .unwrap();
     fs::set_permissions(sudo, fs::Permissions::from_mode(0o755)).unwrap();
     let paths = std::iter::once(directory.to_path_buf())
         .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap()))
@@ -103,8 +121,12 @@ fn follow_redirect_before_selecting() {
     let mirrors = Mirrors::start();
     let redirect = format!("{}/redirect", mirrors.base);
     let healthy = format!("{}/healthy", mirrors.base);
+    let no_security = format!("{}/no-security", mirrors.base);
     let fallback = tempfile::tempdir().unwrap();
-    let result = select(fallback.path(), &[redirect.clone(), healthy.clone()]);
+    let result = select(
+        fallback.path(),
+        &[redirect.clone(), no_security, healthy.clone()],
+    );
     assert!(
         result.status.success(),
         "{}",
@@ -115,6 +137,13 @@ fn follow_redirect_before_selecting() {
         format!("{healthy}/\n")
     );
     assert!(mirrors.redirected.load(Ordering::Relaxed));
+    assert_eq!(
+        fs::read_to_string(fallback.path().join("ubuntu.sources")).unwrap(),
+        SOURCES.replace(
+            "http://security.ubuntu.com/ubuntu/",
+            "mirror+file:/etc/apt/apt-mirrors.txt"
+        )
+    );
     assert!(
         fs::read_to_string(fallback.path().join("apt"))
             .unwrap()
