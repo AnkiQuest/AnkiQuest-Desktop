@@ -123,7 +123,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: AnkiQuest/AnkiQuest-Server
-          ref: 449701e24de27c96698e2dd75c7d072534a39fbc # Server PR 75
+          ref: fd935d1f7c3fc03e046f86a19b6823568ae86a9a # Server PR 75
           path: server-study-time
           sparse-checkout: /tests/fixtures/study_time.json
           sparse-checkout-cone-mode: false
