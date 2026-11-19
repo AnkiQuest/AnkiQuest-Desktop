@@ -3,7 +3,7 @@
 from concurrent.futures import Future
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from aqt.qt import QApplication, QEvent, QImage, QLabel, QPushButton, QSize, Qt
 
@@ -127,8 +127,12 @@ class Picker(unittest.TestCase):
             art.tap()
         return art
 
-    def egg(self, unlocks, motion=companion_reveal.Motion.REDUCED):
-        """The tab for a player whose companion is Anki-tan, with `unlocks`, on a fake clock."""
+    def egg(self, unlocks, motion=companion_reveal.Motion.REDUCED, chibis=None):
+        """The tab for a player whose companion is Anki-tan, with `unlocks`, on a fake clock. Her chibi
+        counts as live unless `chibis` (base to chibi) says which are."""
+        live = patch.dict(companion_unlock.LIVE_CHIBIS, companion_unlock.CHIBIS if chibis is None else chibis, clear=True)
+        live.start()
+        self.addCleanup(live.stop)
         self.answer = {"unlocks": unlocks, "progress": {}}
         self.api.companion.return_value = "anki_tan"
         clock = [0]
@@ -152,6 +156,13 @@ class Picker(unittest.TestCase):
         self.assertEqual("anki_tan_chibi", art.property("companion"))
         self.assertTrue(picker._hint.isHidden())
         self.api.unlock.assert_called_once_with("anki_tan_chibi")
+
+    def test_tapping_anki_tan_finds_nothing_while_her_chibi_is_planned(self):
+        picker, clock = self.egg(["anki_tan"], chibis={})
+        art = self.tap(picker, 2 * companion_unlock.TAPS, clock)
+        self.assertTrue(picker._hint.isHidden())
+        self.assertEqual("anki_tan", art.property("companion"))
+        self.api.unlock.assert_not_called()
 
     def queue(self):
         """Holds background work in `self.queued` instead of running it."""

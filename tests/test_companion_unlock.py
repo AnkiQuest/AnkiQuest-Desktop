@@ -18,7 +18,8 @@ share = load_in_package("aq_cow", "share")
 client = load_in_package("aq_cow", "client")
 moments = load_in_package("aq_cow", "moments")
 
-FIXTURE = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
+# The Server copy (tests/server-fixtures/README.md); tests/fixtures holds the server code's older one.
+FIXTURE = json.loads((ADDON.parent / "tests/server-fixtures/companion_unlock.json").read_text("utf-8"))
 EXAMPLES = ADDON.parent / "docs/api/examples"
 LIVE = [rule for rule in FIXTURE["companions"] if rule["status"] == "live"]
 Choice = unlock.Choice
@@ -42,12 +43,13 @@ class SharedConditions(unittest.TestCase):
         texts = {
             "ankilope": ("Reach level 30", "Level 3 of 30"),
             "cow": ("Study for 10 hours in total", "6 of 10 hours"),
+            "anki_tan": ("Keep a 66-day streak", "6 of 66 days"),
         }
         for rule in LIVE:
             progress = {"kind": rule["kind"], "value": 3 if rule["kind"] == unlock.LEVEL else 6, "goal": rule["goal"]}
             words = (unlock.condition(progress, str), unlock.reached(progress, str))
             self.assertEqual(texts[rule["companion"]], words)
-        unknown = {"kind": "streak", "value": 1, "goal": 66}
+        unknown = {"kind": "leeches_tamed", "value": 1, "goal": 3}
         self.assertIsNone(unlock.condition(unknown, str))
         self.assertIsNone(unlock.reached(unknown, str))
 
@@ -65,11 +67,19 @@ class SharedConditions(unittest.TestCase):
                 self.assertFalse(any(found[:-1]), "only the last tap may unlock")
 
     def test_each_chibi_is_found_on_its_base(self):
-        chibis = {rule["requires"]: rule["companion"] for rule in FIXTURE["companions"] if rule["kind"] == "taps"}
-        self.assertEqual(chibis, unlock.CHIBIS)
-        self.assertEqual("anki_tan_chibi", unlock.chibi_of("anki_tan", {"anki_tan"}))
-        self.assertIsNone(unlock.chibi_of("anki_tan", {"cow"}), "her base is locked")
-        self.assertIsNone(unlock.chibi_of("cow", {"cow"}), "the cow has no chibi")
+        tapped = [rule for rule in FIXTURE["companions"] if rule["kind"] == "taps"]
+        self.assertEqual({rule["requires"]: rule["companion"] for rule in tapped}, unlock.CHIBIS)
+        self.assertEqual({rule["companion"] for rule in tapped if rule["status"] == "planned"}, unlock.PLANNED_CHIBIS)
+        self.assertEqual("anki_tan_chibi", unlock.chibi_of("anki_tan", {"anki_tan"}, unlock.CHIBIS))
+        self.assertIsNone(unlock.chibi_of("anki_tan", {"cow"}, unlock.CHIBIS), "her base is locked")
+        self.assertIsNone(unlock.chibi_of("cow", {"cow"}, unlock.CHIBIS), "the cow has no chibi")
+
+    def test_a_planned_chibi_is_never_found(self):
+        # Anki-tan is live, her chibi planned: tapping her counts nothing and asks the server for nothing.
+        self.assertIsNone(unlock.chibi_of("anki_tan", {"anki_tan"}))
+        egg = unlock.Egg(["anki_tan"])
+        tapped = [egg.tap("anki_tan", 300 * i, str) for i in range(2 * unlock.TAPS)]
+        self.assertTrue(all(tap.hint is None and tap.chibi is None for tap in tapped))
 
     def test_the_hint_is_the_shared_one(self):
         self.assertEqual(FIXTURE["hint_from"], unlock.HINT_FROM)
@@ -85,7 +95,7 @@ class SharedConditions(unittest.TestCase):
         self.assertTrue(FIXTURE["chibi_taps"])
         for case in FIXTURE["chibi_taps"]:
             with self.subTest(case=case["name"]):
-                egg = unlock.Egg(case["unlocked"])
+                egg = unlock.Egg(case["unlocked"], unlock.CHIBIS)
                 tapped = [egg.tap(choice, at_ms, str) for choice, at_ms in case["sequence"]]
                 self.assertEqual(case["hints"], [tap.hint for tap in tapped])
                 found = [tap.chibi is not None for tap in tapped]
@@ -113,7 +123,11 @@ class Offered(unittest.TestCase):
         api.unlocks.assert_called_once()
 
     def test_each_companion_is_offered_by_its_state(self):
-        locked = unlock.Found([], {"ankilope": {"kind": "level", "value": 3, "goal": 30}, "cow": {"kind": "study_hours", "value": 6, "goal": 10}})
+        locked = unlock.Found([], {
+            "ankilope": {"kind": "level", "value": 3, "goal": 30},
+            "cow": {"kind": "study_hours", "value": 6, "goal": 10},
+            "anki_tan": {"kind": "streak", "value": 12, "goal": 66},
+        })
         earned = unlock.Found(["ankilope", "cow"])
         older = unlock.Found()
         cases = (
@@ -132,6 +146,10 @@ class Offered(unittest.TestCase):
             ("ankilope", older, "aki", Choice.FREE),
             ("cow", older, "aki", Choice.HIDDEN),
             ("cow", unlock.Found(["cow"]), "aki", Choice.UNLOCKED),
+            # Anki-tan, like the cow, was never offered before milestones.
+            ("anki_tan", locked, "aki", Choice.LOCKED),
+            ("anki_tan", unlock.Found(["anki_tan"]), "aki", Choice.UNLOCKED),
+            ("anki_tan", older, "aki", Choice.HIDDEN),
         )
         for companion, found, current, offered in cases:
             with self.subTest(companion=companion, current=current):
@@ -155,6 +173,7 @@ class Client(unittest.TestCase):
 
     def test_the_cow_can_be_saved_and_read(self):
         self.assertIn("cow", client.COMPANIONS)
+        self.assertIn("anki_tan", client.COMPANIONS)
         api = client.Client("https://example.test", "hill", "secret")
         api._request = Mock(return_value={"companion": "cow"})
         self.assertEqual("cow", api.companion())
@@ -201,8 +220,9 @@ class CowArt(unittest.TestCase):
         self.assertEqual(["aki_face", "aki_streak", "aki_sad"], moods.preview("aki"))
         self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview("ankilope"))
         self.assertEqual(moods.preview("ankilope"), moods.preview("cow"))
+        self.assertEqual(["anki_tan_face", "anki_tan_streak", "anki_tan_sad"], moods.preview("anki_tan"))
         self.assertEqual([], moods.preview("none"))
-        for companion in ("aki", "ankilope", "cow"):
+        for companion in ("aki", "ankilope", "cow", "anki_tan"):
             for pose in moods.preview(companion):
                 self.assertTrue((ADDON / "art" / (pose + ".png")).is_file(), pose)
 
