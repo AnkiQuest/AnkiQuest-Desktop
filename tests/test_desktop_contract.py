@@ -44,6 +44,13 @@ class Contracts(unittest.TestCase):
         response.headers = self.headers
         return response
 
+    def test_a_server_without_capabilities_is_outdated(self):
+        # Every supported server answers /api/capabilities; a 404 is an error, not "no features".
+        missing = client.ServerError(HTTPStatus.NOT_FOUND, None)
+        with patch.object(client, "open_url", side_effect=missing):
+            with self.assertRaises(client.ServerError):
+                self.api.server_info()
+
     def test_profile_and_upload_produce_the_same_confirmed_day(self):
         self.routes = {("GET", "/api/profile/hill"): "profile", ("POST", "/api/reviews/hill"): "upload"}
         profile = self.api.profile()

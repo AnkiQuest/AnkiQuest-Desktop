@@ -17,6 +17,7 @@ from addon_loader import load_in_package
 
 app = QApplication.instance() or QApplication([])
 ui = load_in_package("moments_qt", "moments_ui")
+OUTDATED = load_in_package("moments_qt", "client").OUTDATED
 ui.tr = ui.conquests_ui.tr = ui.share_ui.tr = lambda text: text
 
 
@@ -339,9 +340,28 @@ class Moments(unittest.TestCase):
         control._remove.click()
         self.assertIn(("/api/conquests/sam/50/label", None, "DELETE"), self.requests)
 
-    def test_tell_and_undo_use_the_conquest_endpoint_and_conflict_closes_the_window(self):
+    def test_an_older_server_asks_for_an_update_instead_of_a_direct_tell(self):
+        # The stand-in server lists no share_moments.
         control = self.conquest()
         control._tell.click()
+        self.flush()
+        self.assertEqual(OUTDATED, self.presenter._card._status.text())
+        self.assertFalse(any(path.endswith("/tell") for path, _body, _method in self.requests))
+        control._share.click()
+        self.flush()
+        self.assertEqual(OUTDATED, self.presenter._card._status.text())
+        self.assertFalse(control._options.isVisible())
+
+    def test_unreadable_capabilities_say_why_sharing_failed(self):
+        self.api.capabilities = Mock(side_effect=OSError("offline"))
+        control = self.conquest()
+        control._tell.click()
+        self.flush()
+        self.assertEqual("Couldn't share it (offline).", self.presenter._card._status.text())
+
+    def test_undo_uses_the_conquest_endpoint_and_conflict_closes_the_window(self):
+        self.found.update(told=True, undo_until=int(time.time() * 1000) + 60_000)
+        control = self.conquest()
         self.assertTrue(control._undo.isEnabled())
         self.assertFalse(control._tell.isEnabled())
         error = RuntimeError("a friend answered")
