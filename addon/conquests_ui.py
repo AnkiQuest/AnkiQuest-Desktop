@@ -180,7 +180,8 @@ class _Conquest:
     def _route(self, local):
         if not self._card._owned():
             return
-        share_ui._route(self._sharing(), local)
+        # The local actions are also what an offline player can still use.
+        share_ui._route(self._sharing(), local, local)
 
     def _retract(self):
         if conquests._can_undo(self._found or {}, int(time.time() * 1000)):

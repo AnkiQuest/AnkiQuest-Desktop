@@ -241,9 +241,11 @@ def _buttons(sharing):
     return [friends, copy, save, text, public]
 
 
-def _route(sharing, local):
+def _route(sharing, local, offline=None):
     """Opens the recipient picker. `local` runs instead for a win with no server reference (a
-    moment saved before references), which only the local actions can share."""
+    moment saved before references), which only the local actions can share. `offline` runs
+    after the error when the server's features can't be read: actions that need no server,
+    such as copying or saving the picture, stay usable."""
     from . import moment_share
     if not sharing.owned():
         return
@@ -259,6 +261,8 @@ def _route(sharing, local):
             features = future.result()
         except Exception as error:
             sharing.status.setText(failure("Couldn't share it (%s).", error))
+            if offline is not None:
+                offline()
             return
         if not moment_share._supported(sharing.win, features):
             sharing.status.setText(tr(OUTDATED))
@@ -310,5 +314,13 @@ def share_toggle(sharing, buttons):
     column.hide()
     toggle = QPushButton(tr("Share"))
     toggle.setCheckable(True)
-    toggle.toggled.connect(lambda checked: _route(sharing, lambda: column.setVisible(checked)))
+
+    # The column holds the local actions, so it also opens when the server can't be reached.
+    def toggled(checked):
+        def show():
+            column.setVisible(checked)
+
+        _route(sharing, show, show)
+
+    toggle.toggled.connect(toggled)
     return toggle, column
