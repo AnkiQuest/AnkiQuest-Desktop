@@ -229,7 +229,8 @@ class RefreshTests(unittest.TestCase):
         aqt.mw = self.mw
         aqt.gui_hooks = SimpleNamespace(**{name: [] for name in (
             "reviewer_did_answer_card", "operation_did_execute", "state_did_change", "sync_did_finish", "profile_did_open",
-            "deck_browser_will_render_content", "webview_did_receive_js_message",
+            "deck_browser_will_render_content", "webview_did_receive_js_message", "profile_will_close",
+            "top_toolbar_did_init_links", "top_toolbar_did_redraw", "browser_will_show",
         )})
         utils = ModuleType("aqt.utils")
         utils.tooltip = Mock()

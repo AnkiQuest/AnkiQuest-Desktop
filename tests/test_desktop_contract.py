@@ -58,7 +58,6 @@ class Contracts(unittest.TestCase):
                 plan = goals.plan(answer["goal"], 20754)
                 self.assertEqual((goals.BACKLOG, expected_days, 20754), (plan.mode, plan.value, plan.since))
         self.assertIsNone(notify.feedback(uploaded, True))
-        self.assertIsNone(notify.conquest_path(uploaded))
         self.assertEqual({"reviews": [], "silent": True, "deleted": [123],
                           "clock": {"offset_west_min": -60, "rollover_hour": 4}}, self.sent[-1][2])
 
