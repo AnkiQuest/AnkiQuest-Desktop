@@ -1,15 +1,13 @@
 """Read-only progress, with out-of-order replies and real Qt controls."""
-from concurrent.futures import Future
-from copy import deepcopy
 from http import HTTPStatus
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCoreApplication, QEvent, QGridLayout, QPushButton, QToolButton, QWidget
+from aqt.qt import QCoreApplication, QEvent, QGridLayout, QPushButton, QToolButton, QWidget
 from addon_loader import load_in_package
+from qt_support import app, finish, main_window, queue
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("progress_qt", "progress_ui")
 ui.tr = lambda text: text
 
@@ -17,9 +15,7 @@ ui.tr = lambda text: text
 class Progress(unittest.TestCase):
     def setUp(self):
         self.paths, self.tasks = [], []
-        self.mw = QWidget()
-        self.mw.pm = SimpleNamespace(profile={})
-        self.mw.taskman = SimpleNamespace(run_in_background=lambda work, done: self.tasks.append((work, done)))
+        self.mw = main_window(queue(self.tasks))
         self.api = SimpleNamespace(base="https://quest.test", user="sam", token="secret", _request=self.request)
         self.addon = SimpleNamespace(mw=self.mw, client=lambda: self.api, open_page=Mock())
         self.window = ui._Progress(self.addon)
@@ -41,14 +37,7 @@ class Progress(unittest.TestCase):
         ]}
 
     def finish(self, index=0, error=None):
-        work, done = self.tasks.pop(index)
-        future = Future()
-        if error:
-            future.set_exception(error)
-        else:
-            future.set_result(deepcopy(work()))
-        done(future)
-        app.processEvents()
+        finish(self.tasks, index, error)
 
     def test_reads_history_and_records_with_distinct_day_states(self):
         self.finish()

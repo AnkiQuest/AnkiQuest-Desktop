@@ -1,18 +1,17 @@
-"""Real Qt checks run in a separate process by test_addon_settings.py."""
+"""Real Qt checks of the settings dialog, run by test_qt_windows.py."""
 
-from concurrent.futures import Future
 from copy import deepcopy
 import re
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QLineEdit, QPushButton, QScrollArea, QTextDocument, QTimer
+from aqt.qt import QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QLineEdit, QPushButton, QScrollArea, QTextDocument, QTimer
 
 from addon_loader import load_in_package
+from qt_support import app, queue, run_now, stand_in
 
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("settings_qt", "ui")
 preferences = load_in_package("settings_qt", "preferences")
 ui.tr = preferences.tr = lambda text: text
@@ -30,7 +29,7 @@ class Settings(unittest.TestCase):
             deck_settings=lambda: deepcopy(self.decks), companion=lambda: "ankilope",
             set_companion=lambda value: self.posts.append(("companion", value)),
         )
-        self.mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=self.run_task))
+        self.mw = stand_in(run_now)
 
     def request(self, path, body=None):
         if body is not None:
@@ -45,14 +44,6 @@ class Settings(unittest.TestCase):
         if "/decks/" in path:
             return deepcopy(self.decks)
         raise AssertionError(path)
-
-    def run_task(self, work, done):
-        future = Future()
-        try:
-            future.set_result(work())
-        except Exception as error:
-            future.set_exception(error)
-        done(future)
 
     def button(self, dialog, text):
         return next(widget for widget in dialog.findChildren(QPushButton) if widget.text() == text)
@@ -369,12 +360,12 @@ class Settings(unittest.TestCase):
 
     def test_late_reminder_read_does_not_enable_the_staged_accounts_controls(self):
         pending = []
-        self.mw.taskman.run_in_background = lambda work, done: pending.append((work, done))
+        self.mw.taskman.run_in_background = queue(pending)
 
         def edit(dialog):
             self.button(dialog, "Switch account…").click()
             for work, done in pending:
-                self.run_task(work, done)
+                run_now(work, done)
             self.assertFalse(dialog.findChild(QComboBox, "ankiquest_reminder_hour").isEnabled())
             self.button(dialog, "Save").click()
 
@@ -391,11 +382,11 @@ class Settings(unittest.TestCase):
 
     def test_save_before_choices_arrive_keeps_the_server_values(self):
         pending = []
-        self.mw.taskman.run_in_background = lambda work, done: pending.append((work, done))
+        self.mw.taskman.run_in_background = queue(pending)
         self.open(lambda dialog: self.button(dialog, "Save").click())
         self.assertEqual(2, len(pending), "Only the two reads may be scheduled")
         for work, done in pending:
-            self.run_task(work, done)
+            run_now(work, done)
         self.assertEqual([], self.posts)
 
     def test_deck_picker_only_selects_decks_and_people(self):

@@ -1,9 +1,6 @@
 """Companions earned at milestones: the shared conditions, what the picker offers, and the art."""
 
 import json
-import os
-import subprocess
-import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -251,16 +248,6 @@ class CowArt(unittest.TestCase):
         self.assertEqual("Bluma", moods.NAMES["cow"])
         mentions = [path.name for path in ADDON.glob("*.py") if "Bluma" in path.read_text("utf-8")]
         self.assertEqual(["moods.py"], mentions)
-
-
-class PickerWindow(unittest.TestCase):
-    def test_the_picker_with_real_qt(self):
-        result = subprocess.run(
-            [sys.executable, str(Path(__file__).with_name("qt_companion.py"))],
-            env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-            capture_output=True, text=True, timeout=120,
-        )
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

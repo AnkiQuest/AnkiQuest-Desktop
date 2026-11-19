@@ -1,11 +1,7 @@
 """The companion tab's mood line and the unlock reveal's states, without Qt."""
 
 import json
-import os
-import subprocess
-import sys
 import unittest
-from pathlib import Path
 
 from addon_loader import ADDON, load_in_package
 
@@ -133,17 +129,6 @@ class Due(unittest.TestCase):
 
         # Moments saved before the reveal existed carry no notice and stay cards.
         self.assertFalse(reveal.due({"key": "companion:cow", "topic": "companion", "at": 1, "title": "", "body": ""}))
-
-
-class RevealWindow(unittest.TestCase):
-    def test_the_tab_and_the_reveal_with_real_qt(self):
-        for script in ("qt_reveal.py",):
-            result = subprocess.run(
-                [sys.executable, str(Path(__file__).with_name(script))],
-                env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-                capture_output=True, text=True, timeout=120,
-            )
-            self.assertEqual(0, result.returncode, script + "\n" + result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
