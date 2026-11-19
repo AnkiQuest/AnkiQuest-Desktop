@@ -8,7 +8,7 @@ The sign-in dialog starts with the main AnkiQuest server. If you self-host, ente
 
 Use **Switch account…** or **Sign out** in **Tools → AnkiQuest → Settings**. Signing out clears the saved connection and account data shown in the add-on. Your upload checkpoint stays with that server and account in this Anki profile, so signing back in continues with new reviews.
 
-Open **Tools → AnkiQuest → Settings** to change your preferences. **Manage account on the website…** opens the account settings for your server, including devices, sign-in methods and your data. **Manual connection** contains the server, player and token fields and the connection check.
+Open **Tools → AnkiQuest → Settings** to change your preferences. **Manage account on the website…** opens the account settings for your server, including devices, sign-in methods and your data. On a server that offers it, **Two-factor authentication…** opens the website's two-factor settings; once it is on, signing in here asks for the code from your authenticator app or a recovery code. **Manual connection** contains the server, player and token fields and the connection check.
 
 The settings dialog has four groups and scrolls within the window:
 

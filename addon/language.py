@@ -1201,6 +1201,43 @@ PORTUGUESE.update({
     "Manual connection": "Ligação manual",
 })
 
+# Two-factor authentication: the same words as the website and the Android app.
+SPANISH.update({
+    "Authenticator code or recovery code": "Código del autenticador o código de recuperación",
+    "Enter the code from your authenticator app.": "Introduce el código de tu aplicación de autenticación.",
+    "That code is not right.": "Ese código no es correcto.",
+    "Too many wrong codes. Try again in 15 minutes.": "Demasiados códigos incorrectos. Vuelve a intentarlo en 15 minutos.",
+    "Two-factor authentication…": "Verificación en dos pasos…",
+    "Set it up or turn it off on the website.": "Configúrala o desactívala en la web.",
+})
+
+GERMAN.update({
+    "Authenticator code or recovery code": "Code aus der Authenticator-App oder Wiederherstellungscode",
+    "Enter the code from your authenticator app.": "Gib den Code aus deiner Authenticator-App ein.",
+    "That code is not right.": "Dieser Code ist nicht richtig.",
+    "Too many wrong codes. Try again in 15 minutes.": "Zu viele falsche Codes. Versuche es in 15 Minuten erneut.",
+    "Two-factor authentication…": "Zwei-Faktor-Authentifizierung…",
+    "Set it up or turn it off on the website.": "Richte sie auf der Website ein oder schalte sie aus.",
+})
+
+FRENCH.update({
+    "Authenticator code or recovery code": "Code de l'application d'authentification ou code de secours",
+    "Enter the code from your authenticator app.": "Saisis le code de ton application d'authentification.",
+    "That code is not right.": "Ce code n'est pas correct.",
+    "Too many wrong codes. Try again in 15 minutes.": "Trop de codes incorrects. Réessaie dans 15 minutes.",
+    "Two-factor authentication…": "Authentification à deux facteurs…",
+    "Set it up or turn it off on the website.": "Configure-la ou désactive-la sur le site.",
+})
+
+PORTUGUESE.update({
+    "Authenticator code or recovery code": "Código da aplicação de autenticação ou código de recuperação",
+    "Enter the code from your authenticator app.": "Introduz o código da tua aplicação de autenticação.",
+    "That code is not right.": "Esse código não está certo.",
+    "Too many wrong codes. Try again in 15 minutes.": "Demasiados códigos errados. Tenta novamente daqui a 15 minutos.",
+    "Two-factor authentication…": "Autenticação de dois fatores…",
+    "Set it up or turn it off on the website.": "Configura-a ou desativa-a no site.",
+})
+
 SPANISH.update({"Sign out": "Cerrar sesión"})
 GERMAN.update({"Sign out": "Abmelden"})
 FRENCH.update({"Sign out": "Se déconnecter"})
