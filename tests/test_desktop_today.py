@@ -8,10 +8,10 @@ import time
 import unittest
 from concurrent.futures import Future
 from http import HTTPStatus
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from addon_loader import ADDON, load_in_package, load_module
+from addon_loader import ADDON, fake_anki, load_in_package, load_module
 
 goals = load_in_package("ankiquest_today_test", "goals")
 moods = load_module("ankiquest_moods", "moods.py")
@@ -364,17 +364,6 @@ class MoodTests(unittest.TestCase):
         # MOODS and MESSAGES are separate lists; keep them from drifting apart.
         self.assertEqual(set(moods.MOODS) - {moods.REVIEW}, set(moods.MESSAGES))
 
-    def test_every_mood_has_bundled_and_exported_art(self):
-        source = (ADDON / "__init__.py").read_text("utf-8")
-        pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
-        for companion in ("aki", "ankilope"):
-            for mood in moods.MOODS:
-                name = "art/%s.png" % moods.art(companion, mood)
-                self.assertTrue((ADDON / name).is_file(), name)
-                self.assertTrue(re.fullmatch(pattern, name), name)
-        self.assertTrue(re.fullmatch(pattern, "aki_face.png"))
-        self.assertFalse(re.fullmatch(pattern, "art/../config.json"))
-
 
 class DeckDayTests(unittest.TestCase):
     def test_status_order_matches_the_phone(self):
@@ -674,23 +663,7 @@ class HomeTests(unittest.TestCase):
             onOverview=Mock(), moveToState=Mock(),
             state="deckBrowser",
         )
-        aqt = ModuleType("aqt")
-        aqt.mw = self.mw
-        aqt.gui_hooks = SimpleNamespace(**{name: [] for name in (
-            "reviewer_did_answer_card", "operation_did_execute", "state_did_change", "sync_did_finish", "profile_did_open",
-            "deck_browser_will_render_content", "webview_did_receive_js_message", "profile_will_close",
-            "top_toolbar_did_init_links", "top_toolbar_did_redraw", "browser_will_show",
-        )})
-        utils = ModuleType("aqt.utils")
-        utils.tooltip, utils.openLink = Mock(), Mock()
-        qt = ModuleType("aqt.qt")
-        qt.__getattr__ = lambda name: Mock()
-        anki = ModuleType("anki")
-        anki.lang = ModuleType("anki.lang")
-        anki.lang.current_lang = "en"
-        modules = patch.dict(sys.modules, {"aqt": aqt, "aqt.utils": utils, "aqt.qt": qt, "anki": anki, "anki.lang": anki.lang})
-        modules.start()
-        self.addCleanup(modules.stop)
+        aqt = fake_anki(self, self.mw)
         self.addon = load_module("ankiquest_home_addon", "__init__.py", package=True)
         self.addon.client = lambda: self.api
         self.home = sys.modules["ankiquest_home_addon.home"]

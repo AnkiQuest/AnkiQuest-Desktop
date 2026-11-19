@@ -1,5 +1,4 @@
 """Native global boards use real controls and deliberately reordered asynchronous replies."""
-from concurrent.futures import Future
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -7,10 +6,9 @@ from urllib.parse import parse_qs, urlsplit
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QWidget
 from addon_loader import load_in_package
+from qt_support import app, finish, main_window, queue
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("boards_qt", "board_ui")
 client = load_in_package("boards_qt", "client")
 ui.tr = lambda text: text
@@ -20,9 +18,7 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
 class Boards(unittest.TestCase):
     def setUp(self):
         self.tasks, self.calls, self.hidden = [], [], []
-        self.mw = QWidget()
-        self.mw.pm = SimpleNamespace(profile={})
-        self.mw.taskman = SimpleNamespace(run_in_background=lambda work, done: self.tasks.append((work, done)))
+        self.mw = main_window(queue(self.tasks))
         self.api = client.Client("https://quest.test", "hill", "secret")
         self.api._request = self.request
         self.api.server_info = Mock(return_value=(frozenset({"global_leaderboard_hide"}), None))
@@ -62,14 +58,7 @@ class Boards(unittest.TestCase):
         raise AssertionError(path)
 
     def finish(self, index=0, error=None):
-        work, done = self.tasks.pop(index)
-        future = Future()
-        if error is not None:
-            future.set_exception(error)
-        else:
-            future.set_result(work())
-        done(future)
-        app.processEvents()
+        finish(self.tasks, index, error)
 
     def test_summary_rows_use_server_values_and_records_use_the_scope(self):
         self.finish()

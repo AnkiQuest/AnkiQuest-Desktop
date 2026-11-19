@@ -1,15 +1,15 @@
-"""Real Qt checks of the companion picker, run in a separate process by test_companion_unlock.py."""
+"""Real Qt checks of the companion picker, run by test_qt_windows.py."""
 
 from concurrent.futures import Future
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QEvent, QImage, QLabel, QPushButton, QSize, Qt
+from aqt.qt import QApplication, QEvent, QImage, QLabel, QPushButton, Qt
 
 from addon_loader import load_in_package
+from qt_support import queue, run_now, stand_in
 
-app = QApplication.instance() or QApplication([])
 companion_ui = load_in_package("companion_qt", "companion_ui")
 companion_art = load_in_package("companion_qt", "companion_art")
 companion_unlock = load_in_package("companion_qt", "companion_unlock")
@@ -33,19 +33,11 @@ class Picker(unittest.TestCase):
             unlocks=Mock(side_effect=lambda: self.answer), set_companion=Mock(),
             unlock=Mock(side_effect=lambda unlock: self.answer),
         )
-        self.mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=self.run_task))
+        self.mw = stand_in(run_now)
         self.saved = []
         # The client signed in now; a sign-out or account switch replaces it.
         self.current = self.api
         self.queued = []
-
-    def run_task(self, work, done):
-        future = Future()
-        try:
-            future.set_result(work())
-        except Exception as error:
-            future.set_exception(error)
-        done(future)
 
     def picker(self):
         return companion_ui.Picker(None, self.mw, self.api, lambda: self.current, "aki", self.saved.append)
@@ -155,11 +147,11 @@ class Picker(unittest.TestCase):
 
     def queue(self):
         """Holds background work in `self.queued` instead of running it."""
-        self.mw.taskman.run_in_background = lambda work, done: self.queued.append((work, done))
+        self.mw.taskman.run_in_background = queue(self.queued)
 
     def run_queued(self):
         for work, done in self.queued:
-            self.run_task(work, done)
+            run_now(work, done)
         self.queued = []
 
     def test_a_profile_change_cancels_a_queued_chibi_unlock(self):

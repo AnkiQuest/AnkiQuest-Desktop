@@ -1,24 +1,10 @@
 """Exercise the settings UI with real Qt, isolated from the other tests' Anki stand-ins."""
 
-import os
-from pathlib import Path
-import subprocess
-import sys
 import unittest
 from unittest.mock import Mock, patch
 
 from addon_loader import load_in_package, load_module
 import test_deck_completion as addon_fixture
-
-
-class SettingsDialog(unittest.TestCase):
-    def test_settings_reads_saves_and_account_boundaries(self):
-        result = subprocess.run(
-            [sys.executable, str(Path(__file__).with_name("qt_settings.py"))],
-            env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-            capture_output=True, text=True, timeout=60,
-        )
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 class SettingsMenu(unittest.TestCase):

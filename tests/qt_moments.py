@@ -1,6 +1,5 @@
 """Exercise the real Qt window, event loop and delayed account-scoped replies."""
 
-from concurrent.futures import Future
 from copy import deepcopy
 from os import environ
 from types import SimpleNamespace
@@ -14,8 +13,8 @@ from aqt.qt import QApplication, QCheckBox, QDialog, QFont, QFontDatabase, QPush
 from anki.collection import Collection
 
 from addon_loader import load_in_package
+from qt_support import app, complete
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("moments_qt", "moments_ui")
 ui.tr = ui.conquests_ui.tr = ui.share_ui.tr = lambda text: text
 
@@ -64,16 +63,7 @@ class Moments(unittest.TestCase):
         if self.defer:
             self.tasks.append((work, done))
         else:
-            self.complete((work, done))
-
-    def complete(self, task):
-        work, done = task
-        future = Future()
-        try:
-            future.set_result(work())
-        except Exception as error:
-            future.set_exception(error)
-        done(future)
+            complete((work, done))
 
     def flush(self):
         for _ in range(3):
@@ -145,7 +135,7 @@ class Moments(unittest.TestCase):
         old = self.mw.pm.profile
         self.mw.pm.profile = {}
         self.transition("overview", "review")
-        self.complete(self.tasks.pop(0))
+        complete(self.tasks.pop(0))
         self.flush()
         self.assertIsNone(self.presenter._card)
         self.assertEqual(1, len(ui.moments._pending(old, (self.api.base, self.api.user))))
@@ -163,7 +153,7 @@ class Moments(unittest.TestCase):
         self.offer(self.item("level:5"))
         self.transition("overview", "review")
         self.assertIsNone(self.presenter._card)
-        self.complete(self.tasks.pop(0))
+        complete(self.tasks.pop(0))
         self.flush()
         self.assertIsNone(self.presenter._card)
         self.assertEqual(1, self.presenter._count())
@@ -286,7 +276,7 @@ class Moments(unittest.TestCase):
         run(lambda: saved.append(companion), done)
         self.switch_account()
         while self.tasks:
-            self.complete(self.tasks.pop(0))
+            complete(self.tasks.pop(0))
         self.assertEqual([], saved)
         done.assert_not_called()
 
@@ -297,7 +287,7 @@ class Moments(unittest.TestCase):
         self.flush()
         self.switch_account()
         while self.tasks:
-            self.complete(self.tasks.pop(0))
+            complete(self.tasks.pop(0))
         self.assertNotIn("/api/activity/sam/read", [path for path, _body, _method in self.requests])
 
     def test_a_greeting_that_opens_over_the_reveal_still_holds_the_card(self):
@@ -384,7 +374,7 @@ class Moments(unittest.TestCase):
             control._remove.click()
             self.assertIsNone(control._found["label"])
             QApplication.clipboard().clear()
-            self.complete(pending)
+            complete(pending)
         self.assertTrue(QApplication.clipboard().image().isNull(), "the old label must not be exported")
 
     def test_removed_and_unsaved_labels_never_enter_a_new_local_picture(self):
@@ -407,7 +397,7 @@ class Moments(unittest.TestCase):
         self.defer = True
         control._save.click()
         self.presenter._card._dialog.close()
-        self.complete(self.tasks.pop(0))
+        complete(self.tasks.pop(0))
         self.assertEqual([], self.tasks, "no follow-up load from a closed card")
         self.assertIsNone(self.presenter._card)
 
@@ -436,7 +426,7 @@ class Moments(unittest.TestCase):
         self.defer = True
         control._save.click()
         self.api = SimpleNamespace(**dict(vars(self.api), token="new-token"))
-        self.complete(self.tasks.pop(0))
+        complete(self.tasks.pop(0))
         self.assertEqual([], self.tasks)
         self.assertFalse([path for path, _body, _method in self.requests if path.endswith("/label")], "the queued save never starts")
         self.presenter._sync_owner()
@@ -515,11 +505,11 @@ class Moments(unittest.TestCase):
             card._choices.setCurrentIndex(card._choices.findData("level:4"))
             self.defer = True
             next(button for button in card._dialog.findChildren(QPushButton) if button.text() == "Tell friends").click()
-            self.complete(self.tasks.pop(0))
+            complete(self.tasks.pop(0))
             self.flush()
             opened = next(dialog for dialog in card._dialog.findChildren(QDialog) if hasattr(dialog, "_picker"))
             card._choices.setCurrentIndex(card._choices.findData("goal:2"))
-            self.complete(self.tasks.pop(0))
+            complete(self.tasks.pop(0))
             self.assertTrue(opened._picker._form.isVisible())
             self.assertEqual(17, opened._picker._win["win"])
             opened.close()
@@ -655,7 +645,7 @@ class Moments(unittest.TestCase):
             self.completion()
             self.mw.col = None
             while self.tasks:
-                self.complete(self.tasks.pop(0))
+                complete(self.tasks.pop(0))
             checked.assert_not_called()
             self.api.capabilities.assert_not_called()
 
@@ -697,7 +687,7 @@ class Moments(unittest.TestCase):
             self.assertFalse(control._widget.isVisible())
             self.mw.pm.profile = {}
             while self.tasks:
-                self.complete(self.tasks.pop(0))
+                complete(self.tasks.pop(0))
             checked.assert_not_called()
             self.api.capabilities.assert_not_called()
         self.presenter._clear()
@@ -716,7 +706,7 @@ class Moments(unittest.TestCase):
             self.completion()
             self.transition("review", "overview")
             while self.tasks:
-                self.complete(self.tasks.pop(0))
+                complete(self.tasks.pop(0))
             checked.assert_not_called()
             self.api.capabilities.assert_not_called()
 
@@ -736,7 +726,7 @@ class Moments(unittest.TestCase):
                     self.api.deck_settings = lambda: {"celebrations": True, "recipients": [{"user": "ana"}],
                                                      "decks": [{"id": "5", "enabled": True, "recipients": ["ana"]}]}
                 while self.tasks:
-                    self.complete(self.tasks.pop(0))
+                    complete(self.tasks.pop(0))
                 if kind == "opted_out":
                     self.assertIsNone(control)
                 else:
@@ -750,7 +740,7 @@ class Moments(unittest.TestCase):
         control._load()
         self.mw.pm.profile = {}
         for task in list(self.tasks):
-            self.complete(task)
+            complete(task)
         self.assertNotIn("ankiquestConquestDecks", self.mw.pm.profile)
         self.assertFalse(previous.get("ankiquestConquestDecks", {}).get(self.api.base, {}).get(self.api.user, {}).get("conquests"))
 

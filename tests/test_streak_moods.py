@@ -136,12 +136,16 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual(set(moods.STREAK_MOODS), covered)
 
     def test_every_pose_ships_for_every_companion(self):
-        # Each pose is bundled and the web view may load it.
+        # Each pose and Today art is bundled and the web view may load it, but nothing outside the art.
         source = (ADDON / "__init__.py").read_text("utf-8")
         pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
+        self.assertTrue(re.fullmatch(pattern, "aki_face.png"))
+        self.assertFalse(re.fullmatch(pattern, "art/../config.json"))
         for companion in ("aki", "ankilope", "cow"):
             shown = {moods.mood_pose(companion, chosen, streak) for chosen in moods.STREAK_MOODS for streak in (0, 1, 7, 30, 100)}
             shown.add(moods.companion_pose(companion, "aki_streak_milestone"))
+            shown.update(moods.art(companion, mood) for mood in moods.MOODS)
+            shown.discard(None)
             for pose in shown:
                 name = "art/%s.png" % pose
                 self.assertTrue((ADDON / name).is_file(), name)
