@@ -66,22 +66,65 @@ class UpdateTests(unittest.TestCase):
             self.assertEqual(target.read_bytes()[:2], b"PK")
 
 
+class UpdateSourceTests(unittest.TestCase):
+    def test_build_json_names_the_update_source_and_anything_else_is_none(self):
+        with tempfile.TemporaryDirectory() as folder:
+            build = Path(folder) / "build.json"
+            self.assertIs(updates.UpdateSource.NONE, updates.source(folder))
+            for text, expected in (
+                ('{"updates": "github"}', updates.UpdateSource.GITHUB),
+                ('{"updates": "none"}', updates.UpdateSource.NONE),
+                ('{"updates": "nightly"}', updates.UpdateSource.NONE),
+                ('{"updates": []}', updates.UpdateSource.NONE),
+                ("[]", updates.UpdateSource.NONE),
+                ("{", updates.UpdateSource.NONE),
+            ):
+                build.write_text(text, "utf-8")
+                self.assertIs(expected, updates.source(folder), text)
+
+    def test_ankiweb_installs_never_update_from_github(self):
+        with tempfile.TemporaryDirectory() as folder:
+            installed = Path(folder) / "414948448"
+            installed.mkdir()
+            (installed / "build.json").write_text('{"updates": "github"}', "utf-8")
+            self.assertIs(updates.UpdateSource.NONE, updates.source(installed))
+
+    def test_a_source_checkout_does_not_update_itself(self):
+        self.assertIs(updates.UpdateSource.NONE, updates.SOURCE)
+
+
 class UpdateOwnership(unittest.TestCase):
     setUp = fixture.RefreshTests.setUp
     run_task = fixture.RefreshTests.run_task
     read_rows = fixture.RefreshTests.read_rows
     write_config = fixture.RefreshTests.write_config
 
-    def test_ankiweb_installs_do_not_request_a_github_update(self):
+    def installed(self, folder):
+        (Path(folder) / "version.json").write_text(json.dumps({"release": 11, "nightly": 0}), "utf-8")
+        self.addon.ADDON_DIR = Path(folder)
+        self.addon.updates.available = Mock(return_value={"release": 12, "nightly": 0, "commit": "", "url": "u"})
+        self.addon.updates.download = Mock()
+        self.addon.offer_update = Mock()
+
+    def test_builds_without_updates_never_check_download_or_install(self):
         with tempfile.TemporaryDirectory() as folder:
-            installed = Path(folder) / "123456"
-            installed.mkdir()
-            (installed / "version.json").write_text(json.dumps({"release": 11, "nightly": 0}), "utf-8")
-            self.addon.ADDON_DIR = installed
-            self.addon.updates.available = Mock(return_value=None)
+            self.installed(folder)
+            self.addon.updates.SOURCE = self.addon.updates.UpdateSource.NONE
             self.addon.check_updates(quiet=False)
+            self.addon.maybe_check_updates()
             self.addon.updates.available.assert_not_called()
-            self.assertIn("AnkiWeb", self.addon.tooltip.call_args.args[0])
+            self.addon.offer_update.assert_not_called()
+            self.addon.updates.download.assert_not_called()
+            self.addon.tooltip.assert_not_called()
+            self.assertNotIn(self.addon.UPDATE_CHECK_KEY, self.mw.pm.profile)
+
+    def test_github_builds_offer_a_newer_release(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.installed(folder)
+            self.addon.updates.SOURCE = self.addon.updates.UpdateSource.GITHUB
+            self.addon.maybe_check_updates()
+            self.addon.updates.available.assert_called_once_with("stable")
+            self.addon.offer_update.assert_called_once()
 
 
 if __name__ == "__main__":
