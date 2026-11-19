@@ -1,5 +1,6 @@
 import html
 import platform
+import ssl
 import sys
 import tempfile
 import time
@@ -302,6 +303,26 @@ def _retry_upload(waiting):
     _request_upload(waiting.request, attempts=waiting.attempts)
 
 
+# OpenSSL X509_V_ERR codes in SSLCertVerificationError.verify_code, to the upload status line.
+_CERT_EXPIRED, _CERT_SELF_SIGNED, _CERT_SELF_SIGNED_CHAIN, _CERT_WRONG_HOST = 10, 18, 19, 62
+_CERTIFICATE_LINES = {
+    _CERT_EXPIRED: "The server's certificate has expired, will retry",
+    _CERT_SELF_SIGNED: "The server's certificate is self-signed, will retry",
+    _CERT_SELF_SIGNED_CHAIN: "The server's certificate is self-signed, will retry",
+    _CERT_WRONG_HOST: "The server's certificate is for another address, will retry",
+}
+_CERTIFICATE_UNVERIFIED = "The server's certificate could not be verified, will retry"
+
+
+def _certificate_line(error):
+    """The status line for a certificate urllib could not verify (wrapped in a URLError), or
+    None for any other error. That is a server or address problem, not being offline."""
+    reason = getattr(error, "reason", error)
+    if not isinstance(reason, ssl.SSLCertVerificationError):
+        return None
+    return _CERTIFICATE_LINES.get(getattr(reason, "verify_code", None), _CERTIFICATE_UNVERIFIED)
+
+
 def _upload_failed(upload, error):
     # Recover from transient failures without re-sending on every answer.
     print("ankiquest:", error)
@@ -313,6 +334,8 @@ def _upload_failed(upload, error):
         return
     elif isinstance(error, ServerError) and (error.status == HTTPStatus.TOO_MANY_REQUESTS or error.status >= HTTPStatus.INTERNAL_SERVER_ERROR):
         message = tr("Last upload failed (%s), will retry") % error
+    elif (line := _certificate_line(error)) is not None:
+        message = tr(line)
     elif isinstance(error, OSError):
         message = tr("Offline, will retry")
     else:

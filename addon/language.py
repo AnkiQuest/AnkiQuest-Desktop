@@ -556,10 +556,11 @@ def _hour(hour):
 
 SPANISH.update({
     "Aki is here to help. One card, one small step.": "Aki está aquí para ayudarte. Una tarjeta, un pequeño paso.",
-    "A small step starts with one card.": "Un pequeño paso empieza con una tarjeta.",
     "Your cards are done for now. Nice work!": "Ya terminaste tus tarjetas por ahora. ¡Buen trabajo!",
     "You showed up today. That is progress worth keeping.": "Hoy estuviste presente. Ese progreso vale la pena.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Un protector mantiene tu racha. Te espera un nuevo comienzo.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Hoy no has estudiado. Tu racha de 1 día sigue esperando.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Hoy no has estudiado. Tu racha de %d días sigue esperando.",
     "Every quest is done today. Nice work!": "Completaste todas las misiones de hoy. ¡Buen trabajo!",
     "One card, one small step.": "Una tarjeta, un pequeño paso.",
     "this hour": "esta hora", "today": "hoy", "this week": "esta semana", "this month": "este mes",
@@ -603,10 +604,11 @@ SPANISH.update({
 
 GERMAN.update({
     "Aki is here to help. One card, one small step.": "Aki ist für dich da. Eine Karte, ein kleiner Schritt.",
-    "A small step starts with one card.": "Ein kleiner Schritt beginnt mit einer Karte.",
     "Your cards are done for now. Nice work!": "Deine Karten sind für jetzt erledigt. Gut gemacht!",
     "You showed up today. That is progress worth keeping.": "Du warst heute da. Dieser Fortschritt zählt.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Ein Schutz hält deine Serie. Ein Neustart wartet.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Du hast heute noch nicht gelernt. Deine Lernserie von 1 Tag wartet noch.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Du hast heute noch nicht gelernt. Deine Lernserie von %d Tagen wartet noch.",
     "Every quest is done today. Nice work!": "Alle Aufgaben für heute erledigt. Gut gemacht!",
     "One card, one small step.": "Eine Karte, ein kleiner Schritt.",
     "this hour": "diese Stunde", "today": "heute", "this week": "diese Woche", "this month": "diesen Monat",
@@ -648,10 +650,11 @@ GERMAN.update({
 
 FRENCH.update({
     "Aki is here to help. One card, one small step.": "Aki est là pour t’aider. Une carte, un petit pas.",
-    "A small step starts with one card.": "Un petit pas commence par une carte.",
     "Your cards are done for now. Nice work!": "Tes cartes sont terminées pour l’instant. Bravo !",
     "You showed up today. That is progress worth keeping.": "Tu étais là aujourd’hui. Ce progrès compte.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Une protection garde ta série. Un nouveau départ t’attend.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Tu n’as pas encore étudié aujourd’hui. Ta série de 1 jour t’attend toujours.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Tu n’as pas encore étudié aujourd’hui. Ta série de %d jours t’attend toujours.",
     "Every quest is done today. Nice work!": "Toutes les quêtes du jour sont faites. Bravo !",
     "One card, one small step.": "Une carte, un petit pas.",
     "this hour": "cette heure", "today": "aujourd’hui", "this week": "cette semaine", "this month": "ce mois-ci",
@@ -693,10 +696,11 @@ FRENCH.update({
 
 PORTUGUESE.update({
     "Aki is here to help. One card, one small step.": "O Aki está aqui para ajudar. Uma carta, um pequeno passo.",
-    "A small step starts with one card.": "Um pequeno passo começa com uma carta.",
     "Your cards are done for now. Nice work!": "As tuas cartas estão feitas por agora. Bom trabalho!",
     "You showed up today. That is progress worth keeping.": "Apareceste hoje. Esse progresso conta.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Uma proteção guarda a tua sequência. Um recomeço espera-te.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Ainda não estudaste hoje. A tua sequência de 1 dia continua à espera.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Ainda não estudaste hoje. A tua sequência de %d dias continua à espera.",
     "Every quest is done today. Nice work!": "Todas as missões de hoje estão feitas. Bom trabalho!",
     "One card, one small step.": "Uma carta, um pequeno passo.",
     "this hour": "esta hora", "today": "hoje", "this week": "esta semana", "this month": "este mês",
@@ -1131,6 +1135,10 @@ SPANISH.update({
     "Could not upload review history (%s).": "No se pudo subir el historial de repasos (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Vuelve a iniciar sesión en AnkiQuest para reanudar las subidas.",
     "Offline, will retry": "Sin conexión. Se volverá a intentar",
+    "The server's certificate has expired, will retry": "El certificado del servidor ha caducado. Se volverá a intentar",
+    "The server's certificate is self-signed, will retry": "El certificado del servidor está autofirmado. Se volverá a intentar",
+    "The server's certificate is for another address, will retry": "El certificado del servidor es de otra dirección. Se volverá a intentar",
+    "The server's certificate could not be verified, will retry": "No se pudo verificar el certificado del servidor. Se volverá a intentar",
     "Last upload failed (%s), will retry": "Falló la última subida (%s). Se volverá a intentar",
     "Last upload failed (%s)": "Falló la última subida (%s)",
 })
@@ -1141,6 +1149,10 @@ GERMAN.update({
     "Could not upload review history (%s).": "Der Wiederholungsverlauf konnte nicht hochgeladen werden (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Melde dich erneut bei AnkiQuest an, um Uploads fortzusetzen.",
     "Offline, will retry": "Offline. Erneuter Versuch folgt",
+    "The server's certificate has expired, will retry": "Das Zertifikat des Servers ist abgelaufen. Erneuter Versuch folgt",
+    "The server's certificate is self-signed, will retry": "Das Zertifikat des Servers ist selbst signiert. Erneuter Versuch folgt",
+    "The server's certificate is for another address, will retry": "Das Zertifikat des Servers gilt für eine andere Adresse. Erneuter Versuch folgt",
+    "The server's certificate could not be verified, will retry": "Das Zertifikat des Servers konnte nicht geprüft werden. Erneuter Versuch folgt",
     "Last upload failed (%s), will retry": "Letzter Upload fehlgeschlagen (%s). Erneuter Versuch folgt",
     "Last upload failed (%s)": "Letzter Upload fehlgeschlagen (%s)",
 })
@@ -1151,6 +1163,10 @@ FRENCH.update({
     "Could not upload review history (%s).": "Impossible d’envoyer l’historique des révisions (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Reconnecte-toi à AnkiQuest pour reprendre les envois.",
     "Offline, will retry": "Hors ligne. Nouvel essai prévu",
+    "The server's certificate has expired, will retry": "Le certificat du serveur a expiré. Nouvel essai prévu",
+    "The server's certificate is self-signed, will retry": "Le certificat du serveur est auto-signé. Nouvel essai prévu",
+    "The server's certificate is for another address, will retry": "Le certificat du serveur est celui d’une autre adresse. Nouvel essai prévu",
+    "The server's certificate could not be verified, will retry": "Impossible de vérifier le certificat du serveur. Nouvel essai prévu",
     "Last upload failed (%s), will retry": "Échec du dernier envoi (%s). Nouvel essai prévu",
     "Last upload failed (%s)": "Échec du dernier envoi (%s)",
 })
@@ -1161,6 +1177,10 @@ PORTUGUESE.update({
     "Could not upload review history (%s).": "Não foi possível enviar o histórico de revisões (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Volta a iniciar sessão no AnkiQuest para retomar os envios.",
     "Offline, will retry": "Sem ligação. Nova tentativa em breve",
+    "The server's certificate has expired, will retry": "O certificado do servidor expirou. Nova tentativa em breve",
+    "The server's certificate is self-signed, will retry": "O certificado do servidor é autoassinado. Nova tentativa em breve",
+    "The server's certificate is for another address, will retry": "O certificado do servidor é de outro endereço. Nova tentativa em breve",
+    "The server's certificate could not be verified, will retry": "Não foi possível verificar o certificado do servidor. Nova tentativa em breve",
     "Last upload failed (%s), will retry": "O último envio falhou (%s). Nova tentativa em breve",
     "Last upload failed (%s)": "O último envio falhou (%s)",
 })
@@ -2108,7 +2128,6 @@ FRENCH.update({
 PORTUGUESE.update({
     "Don’t show this again": "Não voltar a mostrar",
     "Aki is here to help. One card, one small step.": "Aki está aqui para te ajudar. Um cartão, um pequeno passo.",
-    "A small step starts with one card.": "Um pequeno passo começa com um cartão.",
     "Your cards are done for now. Nice work!": "Já terminaste os cartões por agora. Bom trabalho!",
     "You showed up today. That is progress worth keeping.": "Estudaste hoje. Vale a pena preservar esse progresso.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Uma proteção salvou a tua sequência. Um novo começo espera por ti.",

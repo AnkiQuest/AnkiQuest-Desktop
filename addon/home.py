@@ -505,15 +505,20 @@ def today_view(deck_browser, chosen_companion):
         return None
     api = addon().client()
     profile = day_verdict._for_display(addon().state["profile"], status.verdict)
-    mood = moods.mood([day.due for day in days], focus.due if focus else 0, profile, now_ms())
     goal = moods.Goal.REACHED if status.goal_done else moods.Goal.OPEN
-    pose = moods.today_pose(chosen_companion, profile, goal)
+    streak = int((profile or {}).get("streak") or 0)
+
+    # One streak mood picks the pose and, before the decks do, the line (as Android's Home card).
+    streak_mood = moods.today_mood(profile, goal)
+    pose = moods.mood_pose(chosen_companion, streak_mood, streak)
+    mood = moods.mood(streak_mood, [day.due for day in days], focus.due if focus else 0, profile, now_ms())
+    line, values = moods.message(chosen_companion, mood, streak)
     session = last_session(api)
     return {
         "profile": profile,
         "art": _pose_url(pose),
         "flame": moods.today_flame(profile, goal),
-        "mood": tr(moods.message(chosen_companion, mood)) if chosen_companion != "none" else None,
+        "mood": tr(line) % values if line and chosen_companion != "none" else None,
         "winner": art_url(chosen_companion, moods.WINNER),
         "focus": focus_view(focus),
         "goal": goal_view(status),
