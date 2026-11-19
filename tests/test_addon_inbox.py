@@ -279,13 +279,12 @@ class ShareTests(unittest.TestCase):
         spanish = lambda value: language.tr(value, "es")
         self.assertEqual("Compartido con 4 amigos", share.sent_text(4, spanish))
 
-    def test_only_a_climb_into_the_top_three_is_offered(self):
-        self.assertEqual(2, share.podium(["a", "b", "me"], ["a", "me", "b"], "me"))
-        self.assertIsNone(share.podium(["a", "b", "c", "d", "me"], ["a", "b", "c", "me", "d"], "me"))
-        self.assertIsNone(share.podium(["me", "a"], ["a", "me"], "me"))
-        self.assertIsNone(share.podium([], ["me"], "me"))
-        self.assertIsNone(share.podium(["a", "me"], ["a"], "me"))
+    def test_a_climb_names_the_new_place(self):
+        self.assertEqual(2, share.climbed_to(["a", "b", "me"], ["a", "me", "b"], "me"))
         self.assertEqual(4, share.climbed_to(["a", "b", "c", "d", "me"], ["a", "b", "c", "me", "d"], "me"))
+        self.assertIsNone(share.climbed_to(["me", "a"], ["a", "me"], "me"))
+        self.assertIsNone(share.climbed_to([], ["me"], "me"))
+        self.assertIsNone(share.climbed_to(["a", "me"], ["a"], "me"))
 
     def test_a_win_without_a_card_travels_as_text_naming_the_server(self):
         win = {"title": "Level 5!", "body": "Well done"}

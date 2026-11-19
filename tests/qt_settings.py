@@ -105,17 +105,37 @@ class Settings(unittest.TestCase):
                 self.open(inspect)
         self.assertEqual([], self.posts)
 
-    def test_installed_version_is_visible_and_ankiweb_hides_github_channels(self):
+    def test_builds_without_updates_show_no_update_settings(self):
+        self.config["update_channel"] = "nightly"
+
         def inspect(dialog):
             labels = [widget.text() for widget in dialog.findChildren(QLabel)]
             self.assertIn("Version: addon-11", labels)
-            self.assertIn("Updates are managed by AnkiWeb.", labels)
+            self.assertIn("Updates: none", labels)
             self.assertNotIn("Update channel", labels)
-            dialog.reject()
+            self.assertIsNone(dialog.findChild(QComboBox, "ankiquest_update_channel"))
+            dialog.accept()
 
         with patch.object(ui.updates, "installed", return_value={"release": 11, "nightly": 0, "commit": "abc"}), \
-                patch.object(ui.updates, "_source", return_value=ui.updates._Source.ANKIWEB):
-            self.open(inspect)
+                patch.object(ui.updates, "SOURCE", ui.updates.UpdateSource.NONE):
+            values = self.open(inspect)
+        self.assertEqual("nightly", values["update_channel"])
+
+    def test_github_builds_offer_the_update_channel(self):
+        self.config["update_channel"] = "nightly"
+
+        def inspect(dialog):
+            labels = [widget.text() for widget in dialog.findChildren(QLabel)]
+            self.assertIn("Updates: github", labels)
+            self.assertIn("Update channel", labels)
+            channel = dialog.findChild(QComboBox, "ankiquest_update_channel")
+            self.assertEqual("nightly", channel.currentData())
+            channel.setCurrentIndex(0)
+            dialog.accept()
+
+        with patch.object(ui.updates, "SOURCE", ui.updates.UpdateSource.GITHUB):
+            values = self.open(inspect)
+        self.assertEqual("stable", values["update_channel"])
 
     def test_credits_shigeyuki_for_anki_tan(self):
         def inspect(dialog):

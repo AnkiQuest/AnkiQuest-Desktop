@@ -95,8 +95,16 @@ class RevealStates(unittest.TestCase):
         self.assertEqual(Phase.CLOSED, closed.phase)
 
     def test_it_lasts_three_to_five_seconds_and_a_fade_less_than_one(self):
-        self.assertTrue(3000 <= reveal.length_ms(Motion.FULL) <= 5000)
-        self.assertLess(reveal.length_ms(Motion.REDUCED), 1000)
+        def length_ms(motion):
+            # The reveal as the window plays it: each phase's time, then the next phase.
+            shown, total = reveal.Reveal(motion), 0
+            while shown.duration_ms() is not None:
+                total += shown.duration_ms()
+                shown.advance()
+            return total
+
+        self.assertTrue(3000 <= length_ms(Motion.FULL) <= 5000)
+        self.assertLess(length_ms(Motion.REDUCED), 1000)
 
 
 class Beams(unittest.TestCase):

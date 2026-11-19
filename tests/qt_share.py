@@ -143,6 +143,41 @@ class ShareWindow(unittest.TestCase):
         self.assertTrue(window._undo.isVisible())
         self.assertIn("Shared with 1 friend", window._status.text())
 
+    def test_a_search_without_matches_says_so(self):
+        # Android's share sheet keeps "All friends" and names the empty search.
+        window = self.open()
+        self.assertFalse(window._no_match.isVisible())
+        window._search.setText("nobody here")
+        self.assertTrue(window._rows[0][1].isVisible())
+        self.assertFalse(any(check.isVisible() for _, check in window._rows[1:]))
+        self.assertTrue(window._no_match.isVisible())
+        self.assertEqual("No friend or group has that name.", window._no_match.text())
+        window._search.setText("ana")
+        self.assertFalse(window._no_match.isVisible())
+
+    def test_sending_says_sending(self):
+        window = self.open()
+        self.tap(window, "user:ana")
+        self.defer = True
+        window._send.click()
+        self.assertEqual("Sending…", window._status.text())
+        complete(self.tasks.pop())
+        self.assertIn("Shared with 1 friend", window._status.text())
+
+    def test_friends_that_fail_to_load_point_to_other_apps(self):
+        def offline(path, body=None, method=None):
+            raise OSError("offline")
+
+        # Same line as Android's share sheet: no Retry, "More apps…" stays.
+        self.api._request = offline
+        window = self.open()
+        self.assertIs(window._phase, ui._Phase.ERROR)
+        self.assertEqual("Couldn't load your friends. Check your connection, or share with another app.",
+                         window._status.text())
+        self.assertFalse(any(isinstance(button, ui.QPushButton) and button.isVisible() and button.text() == "Retry"
+                             for button in window._dialog.findChildren(ui.QPushButton)))
+        self.assertTrue(window._more.isVisible())
+
     def test_second_send_undo_preserves_the_first_recipient(self):
         self._two_sends()
 

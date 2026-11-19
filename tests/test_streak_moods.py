@@ -44,6 +44,33 @@ class StreakMoods(unittest.TestCase):
                 self.assertEqual(pose, moods.streak_pose(found, today["streak"]))
                 self.assertEqual(pose, moods.mood_pose(moods.AKI, found, today["streak"]))
 
+    def test_every_shared_mood_picks_the_today_message(self):
+        # As Android's Home card (AnkiquestAki.message): a waiting or frozen streak comes
+        # before the decks, which decide only after that (#301).
+        frozen = (moods.FROZEN_1, moods.FROZEN_2, moods.FROZEN_3)
+        for case in self.fixture["moods"]:
+            with self.subTest(case=case["name"]):
+                today = case["today"]
+                chosen = case["expected"]["mood"]
+                profile = {"today": {"reviews": today["reviews"]}}
+                due = moods.mood(chosen, [4, 0], 4, profile, 0)
+                done = moods.mood(chosen, [0, 0], 0, profile, 0)
+                if chosen == moods.SAD:
+                    self.assertEqual((moods.WAITING, moods.WAITING), (due, done))
+                elif chosen in frozen:
+                    self.assertEqual((moods.FREEZE, moods.FREEZE), (due, done))
+                else:
+                    self.assertEqual(moods.REVIEW, due)
+                    studied = moods.CELEBRATE if today["reviews"] > 0 else None
+                    fallback = moods.STREAK if chosen == moods.FIRE else moods.WELCOME
+                    self.assertEqual(studied or fallback, done)
+
+    def test_a_waiting_streak_names_its_days(self):
+        self.assertEqual(("You haven’t studied today. Your %d-day streak is still waiting.", (64,)),
+                         moods.message(moods.AKI, moods.WAITING, 64))
+        self.assertEqual(("You haven’t studied today. Your 1-day streak is still waiting.", ()),
+                         moods.message(moods.ANKILOPE_ID, moods.WAITING, 1))
+
     def test_every_shared_stage(self):
         # The stage starts are the shared ones, in order, and each boundary case lands in its stage.
         stages = self.fixture["stages"]
@@ -117,7 +144,7 @@ class StreakMoods(unittest.TestCase):
         for companion in ("aki", "ankilope", "cow"):
             shown = {moods.mood_pose(companion, chosen, streak) for chosen in moods.STREAK_MOODS for streak in (0, 1, 7, 30, 100)}
             shown.add(moods.companion_pose(companion, "aki_streak_milestone"))
-            shown.update(moods.art(companion, mood) for mood in moods.MESSAGES)
+            shown.update(moods.art(companion, mood) for mood in moods.MOODS)
             shown.discard(None)
             for pose in shown:
                 name = "art/%s.png" % pose
