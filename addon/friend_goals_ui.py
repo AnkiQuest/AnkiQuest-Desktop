@@ -3,7 +3,7 @@ from enum import Enum, auto
 
 from aqt.qt import QCheckBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QSpinBox, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, Qt
 
-from . import share_ui, social_data
+from . import board, share_ui, social_data
 from .language import tr
 from .social_data import _GoalAction, _GoalState, _Kind, _WeeklyAction
 from .social_ui import _Mode
@@ -32,6 +32,12 @@ class _Goals:
         self._window, self._wanted, self._data, self._creator = window, goal, {}, None
         self._page = QWidget()
         root = QVBoxLayout(self._page)
+
+        # Until the player's first upload the server reports other members' progress as 0.
+        self._locked = share_ui._plain(tr(board.UPLOAD_FIRST))
+        self._locked.hide()
+        root.addWidget(self._locked)
+
         self._status = share_ui._plain("")
         root.addWidget(self._status)
         self._weekly_text = share_ui._plain("")
@@ -77,6 +83,7 @@ class _Goals:
 
     def _render(self, data):
         self._data = data
+        self._locked.setVisible(bool(data.get("locked")))
         wanted = self._wanted
         self._table.blockSignals(True)
         self._table.clear()

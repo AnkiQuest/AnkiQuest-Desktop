@@ -87,7 +87,7 @@
     },
     {
       "exporter": "addon",
-      "file": "addon/art/aki_sleeping.png",
+      "file": "addon/art/aki_asleep.png",
       "master": "static/aki/sleeping.png",
       "sha256": "0e33f204926d992b79e85394c44f9ce6931b67685616716d1db83357348682da"
     },
@@ -123,7 +123,7 @@
     },
     {
       "exporter": "addon",
-      "file": "addon/art/ankilope_sleeping.png",
+      "file": "addon/art/ankilope_asleep.png",
       "master": "static/ankilope/sleeping.png",
       "sha256": "b22abcc439c7bd634400b5881ea862d18c07b325a29ccfab800441c3a281d250"
     },
@@ -338,6 +338,14 @@
     {
       "file": "assets/retired/addon/art/aki_welcome-6eedf264.png",
       "why": "addon/art/aki_welcome.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/welcome.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_sleeping-0e33f204.png",
+      "why": "Earlier name for the aki_asleep export (AnkiQuest-Server#32), byte-identical. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/ankilope_sleeping-b22abcc4.png",
+      "why": "Earlier name for the ankilope_asleep export (AnkiQuest-Server#32), byte-identical. Unreferenced."
     },
     {
       "file": "assets/retired/addon/art/aki_winner-354b5519.png",

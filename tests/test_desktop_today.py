@@ -462,7 +462,7 @@ class LeaderboardTests(unittest.TestCase):
         {"user": "d", "display": "Di", "xp_total": 40, "periods": {"day": 9, "week": 9, "all": 40}},
         {"user": "e", "display": "Ed", "xp_total": 30, "periods": {"day": 8, "week": 8, "all": 30}},
         {"user": "f", "display": "Fa", "xp_total": 20, "periods": {"day": 7, "week": 7, "all": 20}},
-        {"user": "hill", "display": "Hill", "xp_total": 10, "periods": {"day": 1, "week": 1, "all": 10}},
+        {"user": "hill", "display": "hill", "xp_total": 10, "periods": {"day": 1, "week": 1, "all": 10}},
     ]
 
     def test_periods_reorder_the_board(self):
@@ -633,7 +633,7 @@ class HomeTests(unittest.TestCase):
         self.settings = {"url": "https://example.test", "user": "hill", "token": "secret"}
         self.api = SimpleNamespace(
             configured=True, base="https://example.test", user="hill", name="hill", token="secret",
-            leaderboard=Mock(return_value=[{"user": "hill", "display": "Hill", "xp_total": 5, "periods": {"week": 5}}]),
+            leaderboard=Mock(return_value=[{"user": "hill", "display": "hill", "xp_total": 5, "periods": {"week": 5}}]),
             rank=Mock(return_value={"order": ["hill"]}), notifications=Mock(return_value=[]),
             profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0}}),
             companion=Mock(return_value="ankilope"),

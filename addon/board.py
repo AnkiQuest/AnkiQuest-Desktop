@@ -461,10 +461,14 @@ def period_picker(chosen, translate):
     )
 
 
+def initial(name):
+    """The avatar's letter: the name's first character in its own case, so hill shows "h"."""
+    return name[:1] or "?"
+
+
 def avatar(name):
     colour = AVATAR_COLOURS[sum(map(ord, name)) % len(AVATAR_COLOURS)]
-    initial = name[:1].upper() or "?"
-    return "<span class=aq-avatar style='background:%s'>%s</span>" % (colour, escape(initial))
+    return "<span class=aq-avatar style='background:%s'>%s</span>" % (colour, escape(initial(name)))
 
 
 def _scope_picker(standing, translate):
