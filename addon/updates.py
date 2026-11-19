@@ -1,11 +1,13 @@
-"""Finds newer add-on builds on GitHub: `addon-<n>` releases, or the rolling `addon-nightly` pre-release."""
+"""Finds newer add-on builds on GitHub: `addon-<n>` releases, or the rolling `addon-nightly` pre-release.
+Only builds packaged with `--updates github` use it; see `SOURCE`."""
 
 import json
 import re
-from enum import Enum, auto
+from enum import Enum
 from pathlib import Path
 
-REPO = "AnkiQuest/ankiquest"
+from .links import REPO
+
 RELEASES_URL = "https://api.github.com/repos/%s/releases?per_page=50" % REPO
 NIGHTLY_URL = "https://github.com/%s/releases/download/addon-nightly/" % REPO
 PACKAGE = "ankiquest.ankiaddon"
@@ -13,17 +15,29 @@ TAG = re.compile(r"addon-([1-9][0-9]*)")
 DAY_MS = 86_400_000
 
 
-class _Source(Enum):
-    ANKIWEB = auto()
-    GITHUB = auto()
-    LOCAL = auto()
+class UpdateSource(Enum):
+    """Where this build looks for newer builds, as the packager wrote it into build.json."""
+
+    GITHUB = "github"
+    # AnkiWeb, local copies and builds without --updates github: never check, download or install.
+    NONE = "none"
 
 
-def _source(addon_dir):
-    # Anki's AddonMeta.ankiweb_id() uses the numeric installation directory.
+def source(addon_dir):
+    """The build's update source; a missing or unknown build.json is NONE."""
+    # Anki's AddonMeta.ankiweb_id() uses the numeric installation directory: AnkiWeb updates it,
+    # even if a build meant for GitHub was uploaded there.
     if re.fullmatch(r"\d+", Path(addon_dir).name):
-        return _Source.ANKIWEB
-    return _Source.GITHUB if installed(addon_dir) is not None else _Source.LOCAL
+        return UpdateSource.NONE
+    try:
+        settings = json.loads((Path(addon_dir) / "build.json").read_text("utf-8"))
+        return UpdateSource(settings["updates"])
+    except (OSError, ValueError, TypeError, KeyError):
+        return UpdateSource.NONE
+
+
+# Read once: the build decides, nothing at run time changes it.
+SOURCE = source(Path(__file__).parent)
 
 
 def fetch(url, timeout=20):

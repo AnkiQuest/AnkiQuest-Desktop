@@ -1,0 +1,95 @@
+name: Bug
+description: File a bug in the AnkiQuest desktop add-on
+type: "Bug"
+labels: ["Needs Triage"]
+
+body:
+
+  - type: checkboxes
+    id: contact
+    attributes:
+      label: Checked for duplicates?
+      description: Search [AnkiQuest Desktop issues](https://github.com/AnkiQuest/AnkiQuest-Desktop/issues?q=is%3Aissue) for a similar issue.
+      options:
+        - label: This issue is not a duplicate
+          required: true
+
+  - type: dropdown
+    id: android-check
+    attributes:
+      label: Does it also happen in AnkiQuest for Android?
+      options:
+        - "Yes"
+        - "No"
+        - I haven't checked
+
+  - type: input
+    id: addon-version
+    attributes:
+      label: Add-on version
+      description: Tools → AnkiQuest → Settings → App and privacy, or Tools → Add-ons.
+      placeholder: addon-13
+    validations:
+      required: true
+
+  - type: input
+    id: anki-version
+    attributes:
+      label: Anki version
+      description: Help → About.
+      placeholder: "25.09.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: What are the steps to reproduce this bug?
+      description: Briefly explain what you did which caused this bug to occur
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behaviour
+    attributes:
+      label: Expected behaviour
+      description: Briefly describe what happened, and what should have happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: debug-info
+    attributes:
+      label: Debug info
+      description: In Anki, open Help → About, choose Copy Debug Info and paste it here. It lists Anki's version, your system and your add-ons.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra_info
+    attributes:
+      label: (Optional) Anything else you want to share?
+      placeholder: List any extra information
+
+  - type: checkboxes
+    id: research
+    attributes:
+      label: Research
+      description: Confirm the points below
+      options:
+        - label: I checked the [AnkiQuest Desktop README](https://github.com/AnkiQuest/AnkiQuest-Desktop#readme) and did not find a solution.
+          required: true
+        - label: (Optional) I confirmed the issue still happens on the [latest add-on nightly](https://github.com/AnkiQuest/AnkiQuest-Desktop/releases/tag/addon-nightly).
+          required: false

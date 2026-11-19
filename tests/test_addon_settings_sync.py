@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import test_deck_completion as addon_fixture
-from addon_loader import ADDON, load_in_package
+from addon_loader import ADDON, FakeApi, load_in_package
 
 settings_sync = load_in_package("aq_settings_sync", "settings_sync")
 FIXTURE = json.loads((ADDON.parent / "tests/fixtures/synced_settings.json").read_text("utf-8"))
@@ -14,20 +14,15 @@ DEFAULTS = json.loads((ADDON / "config.json").read_text("utf-8"))
 NOW_MS = 1793183400000
 
 
-class FakeApi:
+class SettingsServer(FakeApi):
     """A server that keeps settings as the real one does: the newer change wins, ties keep it."""
 
-    def __init__(self, features=("settings_sync",), stored=None):
-        self.user = "hill"
-        self.features = frozenset(features)
+    def __init__(self, features=(settings_sync.FEATURE,), stored=None):
+        super().__init__(features=features)
         self.stored = dict(stored or {})
-        self.calls = []
-
-    def capabilities(self):
-        return self.features
 
     def _request(self, path, body=None, method=None):
-        self.calls.append((method or ("POST" if body else "GET"), path, body))
+        self.sent.append((path, body, method))
         for key, entry in (body or {}).get("settings", {}).items():
             old = self.stored.get(key)
             if old is None or entry["updated_at"] > old["updated_at"]:
@@ -81,12 +76,12 @@ class LocalChanges(unittest.TestCase):
 
 class Runs(unittest.TestCase):
     def test_a_server_without_the_feature_is_left_alone(self):
-        api = FakeApi(features=())
+        api = SettingsServer(features=())
         self.assertIsNone(settings_sync.run(api, {"notify_rank": False}))
-        self.assertEqual([], api.calls)
+        self.assertEqual([], api.sent)
 
     def test_newer_remote_values_apply_and_newer_local_ones_are_sent(self):
-        api = FakeApi(stored={
+        api = SettingsServer(stored={
             "notify_rank": {"value": False, "updated_at": NOW_MS - 10},
             "deck_status": {"value": True, "updated_at": NOW_MS - 50},
             "mood_icon": {"value": False, "updated_at": NOW_MS - 10},
@@ -101,16 +96,16 @@ class Runs(unittest.TestCase):
         self.assertEqual(NOW_MS - 5, changed["deck_status"])
         self.assertEqual(0, changed["streak_warning_hours"])
         self.assertEqual(
-            [("GET", "/api/settings/hill", None),
-             ("PUT", "/api/settings/hill", {"settings": {
+            [("/api/settings/hill", None, None),
+             ("/api/settings/hill", {"settings": {
                  "deck_status": {"value": False, "updated_at": NOW_MS - 5},
                  "streak_warning_hours": {"value": 0, "updated_at": 0},
-             }})],
-            api.calls,
+             }}, "PUT")],
+            api.sent,
         )
 
     def test_the_server_time_replaces_a_time_ahead_of_it(self):
-        api = FakeApi()
+        api = SettingsServer()
         config = {"notify_rank": False, settings_sync.CHANGED_KEY: {"notify_rank": NOW_MS + 60_000}}
         _, changed = settings_sync.run(api, config)
         self.assertEqual(NOW_MS, changed["notify_rank"])
@@ -135,7 +130,7 @@ class AddonSync(unittest.TestCase):
     run_task = addon_fixture.RefreshTests.run_task
 
     def use_server(self, **stored):
-        server = FakeApi(stored=stored)
+        server = SettingsServer(stored=stored)
         server.user = self.api.user
         self.api.capabilities = server.capabilities
         self.api._request = server._request
@@ -152,14 +147,14 @@ class AddonSync(unittest.TestCase):
     def test_other_saves_do_not_sync(self):
         server = self.use_server()
         self.addon.save_config({"update_channel": "nightly"})
-        self.assertEqual([], server.calls)
+        self.assertEqual([], server.sent)
 
     def test_with_the_switch_off_nothing_is_sent_or_applied(self):
         server = self.use_server(notify_rank={"value": False, "updated_at": NOW_MS})
         self.settings[settings_sync.SWITCH] = False
         self.addon.save_config({"deck_status": False})
         self.addon.sync_settings()
-        self.assertEqual([], server.calls)
+        self.assertEqual([], server.sent)
         self.assertNotIn("notify_rank", self.settings)
         self.assertIn("deck_status", self.settings[settings_sync.CHANGED_KEY])
 
@@ -190,10 +185,10 @@ class AddonSync(unittest.TestCase):
             self.addon.poll()
             self.assertFalse(self.settings["review_heatmap"])
             self.addon.poll()
-        self.assertEqual(1, len(server.calls))
+        self.assertEqual(1, len(server.sent))
         with patch.object(self.addon.time, "time", return_value=1000.0 + self.addon.SETTINGS_POLL_GAP_S):
             self.addon.poll()
-        self.assertEqual(2, len(server.calls))
+        self.assertEqual(2, len(server.sent))
 
     def test_the_poll_leaves_a_sync_in_flight_alone(self):
         self.use_server()

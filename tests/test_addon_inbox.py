@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from addon_loader import ADDON, load_in_package
+from addon_loader import ADDON, FakeApi, load_in_package
 import test_deck_completion as base
 
 inbox = load_in_package("aq_inbox", "inbox")
@@ -18,24 +18,6 @@ class Refused(Exception):
     def __init__(self, status, message=""):
         super().__init__(message or "HTTP Error %d" % status)
         self.status, self.message = status, message
-
-
-class FakeApi:
-    """Answers like client.Client._request: a GET without a body, a POST with one."""
-
-    user = "hill"
-    base = "https://quest.example"
-    token = "token"
-
-    def __init__(self, answers):
-        self.answers, self.sent = answers, []
-
-    def _request(self, path, body=None):
-        self.sent.append((path, body))
-        answer = self.answers[path]
-        if isinstance(answer, Exception):
-            raise answer
-        return answer
 
 
 class ReplyTextTests(unittest.TestCase):
@@ -130,7 +112,7 @@ class ServerTests(unittest.TestCase):
         api = FakeApi({"/api/activity/hill/read": ValueError("Expecting value")})
         inbox.mark_read(api, [42])
         inbox.mark_all_read(api, 50)
-        self.assertEqual([("/api/activity/hill/read", {"ids": [42]}), ("/api/activity/hill/read", {"through": 50})], api.sent)
+        self.assertEqual([("/api/activity/hill/read", {"ids": [42]}, None), ("/api/activity/hill/read", {"through": 50}, None)], api.sent)
         refused = FakeApi({"/api/activity/hill/read": Refused(401)})
         with self.assertRaises(Refused):
             inbox.mark_read(refused, [42])
@@ -138,7 +120,7 @@ class ServerTests(unittest.TestCase):
     def test_a_reply_sends_the_cleaned_text_and_answers_who_got_it(self):
         api = FakeApi({"/api/reply/hill": {"sent_to": "Cerro"}})
         self.assertEqual("Cerro", inbox.reply(api, 42, " Nice\none "))
-        self.assertEqual([("/api/reply/hill", {"notification": 42, "message": "Nice one"})], api.sent)
+        self.assertEqual([("/api/reply/hill", {"notification": 42, "message": "Nice one"}, None)], api.sent)
         with self.assertRaises(ValueError):
             inbox.reply(api, 42, "\n\t")
 
@@ -160,7 +142,7 @@ class CheerTests(unittest.TestCase):
     def test_a_cheer_is_sent_once_and_says_whether_it_was_already(self):
         api = FakeApi({"/api/react/hill": {"already": False}})
         self.assertFalse(inbox.react(api, 42))
-        self.assertEqual([("/api/react/hill", {"notification": 42})], api.sent)
+        self.assertEqual([("/api/react/hill", {"notification": 42}, None)], api.sent)
         self.assertTrue(inbox.react(FakeApi({"/api/react/hill": {"already": True}}), 42))
 
     def test_a_cheer_back_reads_as_one_line_and_can_be_answered(self):
@@ -245,7 +227,7 @@ class ShareTests(unittest.TestCase):
     def test_sharing_answers_how_many_friends_got_it(self):
         api = FakeApi({"/api/share/hill": {"recipients": 3, "link": {"url": "/w/t", "image": "/w/t.png"}}})
         self.assertEqual(3, share.send(api, {"notification": 7, "place": None, "win": 17}))
-        self.assertEqual([("/api/share/hill", {"win": 17, "to": "friends"})], api.sent)
+        self.assertEqual([("/api/share/hill", {"win": 17, "to": "friends"}, None)], api.sent)
         self.assertEqual(0, share.send(FakeApi({"/api/share/hill": {}}), {"notification": None, "place": 1}))
 
     def test_a_link_comes_with_the_servers_picture_and_words(self):
@@ -254,7 +236,7 @@ class ShareTests(unittest.TestCase):
             {"url": "https://quest.example/w/tok", "image": "https://cdn.example/w/tok.png", "text": "Level 5! Join me"},
             share.link(api, {"win": 17}),
         )
-        self.assertEqual([("/api/share/hill", {"win": 17, "to": "link"})], api.sent)
+        self.assertEqual([("/api/share/hill", {"win": 17, "to": "link"}, None)], api.sent)
 
     def test_the_picture_is_fetched_without_the_token_and_within_limits(self):
         asked = []
@@ -297,13 +279,12 @@ class ShareTests(unittest.TestCase):
         spanish = lambda value: language.tr(value, "es")
         self.assertEqual("Compartido con 4 amigos", share.sent_text(4, spanish))
 
-    def test_only_a_climb_into_the_top_three_is_offered(self):
-        self.assertEqual(2, share.podium(["a", "b", "me"], ["a", "me", "b"], "me"))
-        self.assertIsNone(share.podium(["a", "b", "c", "d", "me"], ["a", "b", "c", "me", "d"], "me"))
-        self.assertIsNone(share.podium(["me", "a"], ["a", "me"], "me"))
-        self.assertIsNone(share.podium([], ["me"], "me"))
-        self.assertIsNone(share.podium(["a", "me"], ["a"], "me"))
+    def test_a_climb_names_the_new_place(self):
+        self.assertEqual(2, share.climbed_to(["a", "b", "me"], ["a", "me", "b"], "me"))
         self.assertEqual(4, share.climbed_to(["a", "b", "c", "d", "me"], ["a", "b", "c", "me", "d"], "me"))
+        self.assertIsNone(share.climbed_to(["me", "a"], ["a", "me"], "me"))
+        self.assertIsNone(share.climbed_to([], ["me"], "me"))
+        self.assertIsNone(share.climbed_to(["a", "me"], ["a"], "me"))
 
     def test_a_win_without_a_card_travels_as_text_naming_the_server(self):
         win = {"title": "Level 5!", "body": "Well done"}
@@ -366,10 +347,10 @@ class CelebrationHookTests(unittest.TestCase):
     def test_a_climb_onto_the_podium_is_offered_for_sharing(self):
         offer = self.offered()
         self.mw.pm.profile["ankiquestLastOrder"] = ["hill", "cerro"]
-        self.api.rank.return_value = {"order": ["cerro", "hill"], "change": {"title": "Crown", "body": "You passed Hill."}}
+        self.api.rank.return_value = {"order": ["cerro", "hill"], "change": {"title": "Crown", "body": "You passed hill."}}
         self.addon.poll()
         win = offer.call_args.args[3][0]["share"]
-        self.assertEqual({"title": "Crown", "body": "You passed Hill.", "notification": None, "place": 1, "win": None}, win)
+        self.assertEqual({"title": "Crown", "body": "You passed hill.", "notification": None, "place": 1, "win": None}, win)
 
     def test_the_poll_sends_back_the_week_its_order_was_seen_in(self):
         self.offered()
@@ -387,7 +368,7 @@ class CelebrationHookTests(unittest.TestCase):
         self.inbox[:] = [
             {"id": 6, "title": "Level 5!", "body": "a", "created_at": now, "kind": "celebration", "sender": ""},
             {"id": 7, "title": "Recap", "body": "b", "created_at": now, "kind": "reminder_weekly_recap", "sender": "", "win": 21},
-            {"id": 8, "title": "Hill shared a win", "body": "c", "created_at": now, "kind": "share", "sender": "hill"},
+            {"id": 8, "title": "hill shared a win", "body": "c", "created_at": now, "kind": "share", "sender": "hill"},
         ]
         self.addon.poll()
         offer.assert_called_once()

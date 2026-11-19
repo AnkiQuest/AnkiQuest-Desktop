@@ -3,6 +3,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from enum import Enum
 from http import HTTPStatus
 from ipaddress import ip_address, ip_network
 
@@ -19,7 +20,7 @@ DELETE_QUERY_SIZE = 500
 UNDO_WINDOW_MS = 2 * 86_400_000
 REVIEW_FILTER = "where id > ? and ease > 0 and type < 4"
 WINDOW_SQL = (
-    "select id, cid, lastIvl, ivl, time, type from revlog "
+    "select id, cid, lastIvl, ivl, time, type, ease from revlog "
     + REVIEW_FILTER + " order by id"
 )
 PENDING_SQL = WINDOW_SQL + " limit %d" % MAX_PENDING
@@ -36,29 +37,80 @@ def offset_west_min():
 
 def rows_to_reviews(rows):
     return [
-        {"id": r[0], "cid": r[1], "last_ivl": r[2], "ivl": r[3], "time_ms": r[4], "kind": r[5]}
+        {"id": r[0], "cid": r[1], "last_ivl": r[2], "ivl": r[3], "time_ms": r[4], "kind": r[5], "ease": r[6]}
         for r in rows
     ]
 
 
-class ServerError(Exception):
-    """The server answered with an error status. `status` is the HTTP code; `message` is the server's own words, if any."""
+# The capability of a server that offers two-factor authentication.
+TWO_FACTOR = "two_factor"
 
-    def __init__(self, status, message):
+
+class SecondFactor(Enum):
+    """Where a password sign-in stands with two-factor authentication, as its refusal says."""
+
+    # Not about a second factor: a wrong password, or a server without two-factor.
+    NONE = "none"
+    # The password is right and the account wants a code; none was sent.
+    ASKED = "asked"
+    # The code sent is wrong or was used before.
+    REFUSED = "refused"
+    # Too many wrong codes lately; the server says when to try again.
+    LOCKED = "locked"
+
+
+# The same words as the website and the Android app, in that order of the steps above.
+_SECOND_FACTOR_TEXT = {
+    SecondFactor.ASKED: "Enter the code from your authenticator app.",
+    SecondFactor.REFUSED: "That code is not right.",
+    SecondFactor.LOCKED: "Too many wrong codes. Try again in 15 minutes.",
+}
+
+
+class ServerError(Exception):
+    """The server answered with an error status. `status` is the HTTP code; `message` is the server's own words, if any.
+    `second_factor` is set by `sign_in` when the server asks for a two-factor code."""
+
+    def __init__(self, status, message, asks_code=False):
         super().__init__(message or "HTTP Error %d" % status)
         self.status = status
         self.message = message
+        self.asks_code = asks_code
+        self.second_factor = SecondFactor.NONE
+
+
+def second_factor_text(error):
+    """The untranslated words for a sign-in held back for its second factor; None for any other refusal."""
+    return _SECOND_FACTOR_TEXT.get(error.second_factor)
+
+
+# Android's aq_server_outdated (AnkiQuest-Android#408). The add-on needs the current
+# AnkiQuest-Server; an endpoint or feature it lacks gets this one message instead of a fallback.
+OUTDATED = "Update your AnkiQuest server"
+
+
+class Outdated(Exception):
+    """The server lacks an endpoint or feature this add-on needs."""
+
+    def __init__(self):
+        super().__init__(OUTDATED)
+
+
+def outdated(error):
+    """Whether `error` means the server is older than this add-on: Outdated, or a 404 from an endpoint."""
+    return isinstance(error, Outdated) or getattr(error, "status", None) == HTTPStatus.NOT_FOUND
 
 
 class InsecureServer(ValueError):
     """The server cannot receive an account password securely."""
 
 
-def _error_text(error):
+def _error_body(error):
     try:
-        return json.load(error).get("error") or ""
+        body = json.load(error)
     except (ValueError, AttributeError):
-        return ""
+        return {}
+    return body if isinstance(body, dict) else {}
 
 
 def open_url(url, data=None, headers=None, method=None, timeout=20):
@@ -67,7 +119,8 @@ def open_url(url, data=None, headers=None, method=None, timeout=20):
     try:
         return urllib.request.urlopen(request, timeout=timeout)
     except urllib.error.HTTPError as error:
-        raise ServerError(error.code, _error_text(error)) from None
+        body = _error_body(error)
+        raise ServerError(error.code, body.get("error") or "", body.get("second_factor") is True) from None
 
 
 class Rows(list):
@@ -116,9 +169,25 @@ def _account(base, path, body):
     return request_json(base + path, body)
 
 
-def sign_in(base, user, password, device):
-    """Trades an account's password for a token for this device. The password is not kept."""
-    return _account(base, "/api/accounts/tokens", {"user": user, "password": password, "device": device})
+def sign_in(base, user, password, device, code=None):
+    """Trades an account's password for a token for this device. The password is not kept.
+
+    `code` is the two-factor code or a recovery code. Send it only after the server asked for
+    one (`SecondFactor.ASKED`): servers without two-factor refuse fields they do not know."""
+    body = {"user": user, "password": password, "device": device}
+    code = (code or "").strip()
+    if code:
+        body["code"] = code
+    try:
+        return _account(base, "/api/accounts/tokens", body)
+    except ServerError as error:
+        if error.asks_code:
+            error.second_factor = (
+                SecondFactor.LOCKED if error.status == HTTPStatus.TOO_MANY_REQUESTS
+                else SecondFactor.REFUSED if code
+                else SecondFactor.ASKED
+            )
+        raise
 
 
 def sign_up(base, user, password, display, device):
@@ -133,6 +202,10 @@ COMPANIONS = ("aki", "ankilope", "cow", "none")
 
 # Tells the server this add-on shows locked companions, so it refuses one still locked.
 SHOWS_LOCKS = {"X-AnkiQuest-Companions": "milestones"}
+
+# Sent with every request: the companions this add-on draws, so the inbox leaves out moments
+# about any other.
+DRAWS = {"X-AnkiQuest-Companion-Art": ", ".join(companion for companion in COMPANIONS if companion != "none")}
 
 
 def _companion(answer):
@@ -153,24 +226,19 @@ class Client:
         return bool(self.base and self.user and self.token)
 
     def _request(self, path, body=None, method=None, extra=None):
-        headers = dict(extra or {}, **{"Accept-Language": self.language})
+        headers = {**DRAWS, **(extra or {}), "Accept-Language": self.language}
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         return request_json(self.base + path, body, headers, method=method)
 
     def capabilities(self):
-        """The features this server names at /api/capabilities; none for a server without it."""
+        """The features this server names at /api/capabilities."""
         return self.server_info()[0]
 
     def server_info(self):
         """The features this server names at /api/capabilities and its `public_url`, the main
         address, when it names one (else None)."""
-        try:
-            answer = request_json(self.base + "/api/capabilities")
-        except ServerError as error:
-            if error.status == 404:
-                return frozenset(), None
-            raise
+        answer = request_json(self.base + "/api/capabilities")
         features = answer.get("features") if isinstance(answer, dict) else None
         url = answer.get("public_url") if isinstance(answer, dict) else None
         return (
@@ -193,6 +261,16 @@ class Client:
         """This player's signed-in devices; answers only with a working token, so it also checks one."""
         return self._request("/api/devices/" + self.user)
 
+    def sign_in_methods(self):
+        """How this player signs in: `sign_in` (absent from older servers), `password`, `providers`."""
+        return self._request("/api/sign-in/" + self.user)
+
+    def set_password(self, password):
+        """Sets a first password with this device's token alone, for a player whose `sign_in` is
+        `token_only`; answers as sign_in_methods."""
+        body = {"action": "password", "password": password, "sign_out_others": False}
+        return self._request("/api/sign-in/" + self.user, body)
+
     def leaderboard(self, period="week", scope="friends"):
         """The server's order and XP for this board and period."""
         return self._request("/api/leaderboard?" + urllib.parse.urlencode({"period": period, "scope": scope}))
@@ -214,9 +292,6 @@ class Client:
         """Asks for a chibi the player found; the server grants it once its base is unlocked and
         answers as `unlocks`."""
         return self._request("/api/unlocks/" + self.user, {"unlock": unlock})
-
-    def notifications(self):
-        return self._request("/api/notifications/" + self.user)
 
     def deck_settings(self):
         return self._request("/api/decks/" + self.user)

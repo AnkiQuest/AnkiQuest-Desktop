@@ -8,6 +8,7 @@ from http import HTTPStatus
 from aqt.qt import QCheckBox, QDialog, QLabel, QLineEdit, QPushButton, QScrollArea, QTimer, QVBoxLayout, QWidget, Qt
 
 from . import moment_share as model, share, share_ui
+from .client import OUTDATED, outdated
 from .inbox import error_text
 from .language import tr
 
@@ -20,7 +21,8 @@ class _Phase(Enum):
     READY = "ready"
     SENDING = "sending"
     RETRACTING = "retracting"
-    LEGACY = "legacy"
+    # A win with no server reference (a moment saved before references): only the exports.
+    EXPORT_ONLY = "export_only"
     ERROR = "error"
     CLOSED = "closed"
 
@@ -71,6 +73,9 @@ class _Picker:
         self._list.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._area.setWidget(inner)
         form.addWidget(self._area)
+        self._no_match = share_ui._plain(tr("No friend or group has that name."))
+        self._no_match.hide()
+        form.addWidget(self._no_match)
         self._empty = share_ui._plain(tr("Add friends in AnkiQuest to send them your moments."))
         form.addWidget(self._empty)
         self._invite = QPushButton(tr("Invite a friend"))
@@ -92,17 +97,11 @@ class _Picker:
         self._undo.clicked.connect(self._retract)
         self._undo.hide()
         layout.addWidget(self._undo)
-        self._retry = QPushButton(tr("Retry"))
-        self._retry.clicked.connect(self._load)
-        self._retry.hide()
-        layout.addWidget(self._retry)
         self._sharing = share_ui.Sharing(self._dialog, api, win, current_client, self._run, self._status, companion)
         self._exports = QWidget()
         exports = QVBoxLayout(self._exports)
-        self._legacy, *options = share_ui._buttons(self._sharing)
-        self._legacy.hide()
-        layout.addWidget(self._legacy)
-        for button in options:
+        # The picker replaces the first button, "Share with friends".
+        for button in share_ui._buttons(self._sharing)[1:]:
             exports.addWidget(button)
         self._exports.hide()
         self._more = QPushButton(tr("More apps…"))
@@ -147,7 +146,6 @@ class _Picker:
         if not self._owns():
             return
         self._phase = _Phase.LOADING
-        self._retry.hide()
         self._status.setText(tr("Loading…"))
         recent = model._recent(self._recents, self._api)
         self._run(lambda: model._load(self._api, self._win, recent), self._loaded)
@@ -156,14 +154,17 @@ class _Picker:
         try:
             targets = future.result()
         except Exception as error:
+            # Same as Android's share sheet: no Retry; "More apps…" still works offline.
+            # A server older than the add-on gets the one line that asks to update it.
             self._phase = _Phase.ERROR
-            self._status.setText(tr("Couldn't load friends (%s).") % error_text(error))
-            self._retry.show()
+            if outdated(error):
+                self._status.setText(tr(OUTDATED))
+                return
+            self._status.setText(tr("Couldn't load your friends. Check your connection, or share with another app."))
             return
         self._status.clear()
         if targets is None:
-            self._phase = _Phase.LEGACY
-            self._legacy.show()
+            self._phase = _Phase.EXPORT_ONLY
             self._more.setChecked(True)
             return
         self._phase, self._targets = _Phase.READY, targets
@@ -199,9 +200,16 @@ class _Picker:
 
     def _filter(self, text):
         text = text.strip().lower()
+        matches = 0
         for target, check in self._rows:
-            key = "" if target is model._Choice.CIRCLE else str(target._id).lower()
-            check.setVisible(target is model._Choice.CIRCLE or text in check.text().lower() or text in key)
+            if target is model._Choice.CIRCLE:
+                continue
+            shown = text in check.text().lower() or text in str(target._id).lower()
+            check.setVisible(shown)
+            matches += shown
+
+        # "All friends" always stays; a search that leaves nothing else says so, as on Android.
+        self._no_match.setVisible(bool(self._rows) and not matches)
 
     def _note_changed(self, text):
         if len(text) > model._MAX_NOTE:
@@ -221,7 +229,7 @@ class _Picker:
             return
         self._phase = _Phase.SENDING
         self._form.setEnabled(False)
-        self._status.setText(tr("Sharing…"))
+        self._status.setText(tr("Sending…"))
         choice, note = self._choice, self._note.text()
 
         def sent(future):

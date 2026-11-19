@@ -23,7 +23,6 @@ REACHED_KEY = "ankiquestGoalReported"
 SETUP_SHOWN = "goal_setup_shown"
 STREAK_MINUTES_KEY = "ankiquestStreakMinutes"
 CELEBRATED_KEY = "ankiquestGoalCelebrated"
-PERIOD_KEY = "ankiquestBoardPeriod"
 SESSION_KEY = "ankiquestLastStudySession"
 BOARD_MS = 5 * 60 * 1000
 BOARD_RETRY_MS = 30_000
@@ -166,7 +165,7 @@ def today_mood():
 
 def pose_url(chosen_companion):
     """The companion's pose for today's streak."""
-    return _pose_url(moods.companion_pose(chosen_companion, moods.streak_pose(*today_mood())))
+    return _pose_url(moods.mood_pose(chosen_companion, *today_mood()))
 
 
 def streak_flame(view):
@@ -432,7 +431,9 @@ def board_view(api, profile=None):
     chosen = board.query.period
     rows = []
     pictures = _pictures()
+    moment = now_ms()
     for place, entry, mine in board_data._top(board, api.name):
+        entry = dict(entry, counting=board_data._counting(board, entry, moment))
         if mine:
             entry = dict(entry, day=profile or {"_day_status": "unknown"})
             if chosen == "day" and entry["day"].get("_day_status") == "unknown":
@@ -506,15 +507,20 @@ def today_view(deck_browser, chosen_companion):
         return None
     api = addon().client()
     profile = day_verdict._for_display(addon().state["profile"], status.verdict)
-    mood = moods.mood([day.due for day in days], focus.due if focus else 0, profile, now_ms())
     goal = moods.Goal.REACHED if status.goal_done else moods.Goal.OPEN
-    pose = moods.companion_pose(chosen_companion, moods.today_pose(profile, goal))
+    streak = int((profile or {}).get("streak") or 0)
+
+    # One streak mood picks the pose and, before the decks do, the line (as Android's Home card).
+    streak_mood = moods.today_mood(profile, goal)
+    pose = moods.mood_pose(chosen_companion, streak_mood, streak)
+    mood = moods.mood(streak_mood, [day.due for day in days], focus.due if focus else 0, profile, now_ms())
+    line, values = moods.message(chosen_companion, mood, streak)
     session = last_session(api)
     return {
         "profile": profile,
         "art": _pose_url(pose),
         "flame": moods.today_flame(profile, goal),
-        "mood": tr(moods.message(chosen_companion, mood)) if chosen_companion != "none" else None,
+        "mood": tr(line) % values if line and chosen_companion != "none" else None,
         "winner": art_url(chosen_companion, moods.WINNER),
         "focus": focus_view(focus),
         "goal": goal_view(status),
@@ -523,6 +529,7 @@ def today_view(deck_browser, chosen_companion):
         "session_day": _session_day(mw.pm.profile[SESSION_KEY]) if session else None,
         "moments": addon()._moments._count(),
         "weekly": _weekly_recap(),
+        "password": addon().state.get("password_prompt") == account(api),
     }
 
 
@@ -774,6 +781,13 @@ def move_to_main_address(api, main):
     mw.taskman.run_in_background(lambda: there.devices() if _owns_request(_Job.MOVE, request) else None, done)
 
 
+def server_has(api, feature):
+    """Whether the player's server is known to name `feature` at /api/capabilities. False until
+    the answer, loaded when the profile opens, is in."""
+    known = local["capabilities"]
+    return known is not None and known[0] == api.base and feature in known[1]
+
+
 def server_celebrates_goal(api):
     """Whether the server turns a reached daily goal into a win with its own celebration.
 
@@ -835,11 +849,9 @@ def continue_studying():
 
 
 def open_progress():
-    if not addon().client().configured:
-        addon().open_account()
-        return
+    # Study time needs no account; History and Records say they need one.
     opened = local["progress"]
-    if opened is not None and opened._owns():
+    if opened is not None and opened.current():
         opened._dialog.raise_()
         opened._dialog.activateWindow()
         return
@@ -948,10 +960,10 @@ def install(module):
     gui_hooks.state_did_change.append(on_state_change)
     gui_hooks.profile_did_open.append(on_profile_open)
     gui_hooks.sync_did_finish.append(refresh_board)
-    for name, callback in (("top_toolbar_did_init_links", _toolbar_links), ("top_toolbar_did_redraw", _refresh_toolbar),
-                           ("profile_will_close", _close_progress), ("profile_will_close", _clear_boards),
-                           ("profile_will_close", _close_friends), ("profile_will_close", _clear_requests),
-                           ("browser_will_show", _browser_entry)):
-        hook = getattr(gui_hooks, name, None)
-        if hook is not None:
-            hook.append(callback)
+    gui_hooks.top_toolbar_did_init_links.append(_toolbar_links)
+    gui_hooks.top_toolbar_did_redraw.append(_refresh_toolbar)
+    gui_hooks.profile_will_close.append(_close_progress)
+    gui_hooks.profile_will_close.append(_clear_boards)
+    gui_hooks.profile_will_close.append(_close_friends)
+    gui_hooks.profile_will_close.append(_clear_requests)
+    gui_hooks.browser_will_show.append(_browser_entry)

@@ -1,18 +1,29 @@
 name: CI
 
 on:
-  # Pushes to the default branch, and every pull request. Pushes to other
-  # branches are left to their pull request: checking both ran every job
-  # twice on the same commit.
+  # Pushes to the default branch, every pull request and every merge queue
+  # group. Pushes to other branches are left to their pull request: checking
+  # both ran every job twice on the same commit.
   push:
     branches:
       - main
       - master
   pull_request:
+  # The jobs here are required checks; the merge queue waits for them on
+  # its temporary merge commit.
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  # A newer push to a pull request cancels its older run. Every other run
+  # (default branch pushes, dispatches, merge queue) gets a group of its own
+  # and always finishes.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   android-contract:
@@ -108,8 +119,21 @@ jobs:
           persist-credentials: false
       - name: Check the shared quiet-hour cases
         run: cmp tests/fixtures/quiet_hours.json server-contract/tests/fixtures/quiet_hours.json
+      - name: Read the shared study time cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: fd935d1f7c3fc03e046f86a19b6823568ae86a9a # Server PR 75
+          path: server-study-time
+          sparse-checkout: /tests/fixtures/study_time.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared study time cases
+        run: cmp tests/server-fixtures/study_time.json server-study-time/tests/fixtures/study_time.json
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: tools/package-addon
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python }}
@@ -121,7 +145,7 @@ jobs:
           sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
           python -m pip install -r tests/requirements-anki-${{ matrix.anki }}.txt
       - name: Build the add-on packager
-        run: cargo build -p ankiquest-xtask
+        run: cargo build --locked --manifest-path tools/package-addon/Cargo.toml
       - name: Lint the add-on
         run: python -m pyflakes addon
       - name: Test the add-on and its real Anki APIs
@@ -130,16 +154,24 @@ jobs:
   addon-package:
     name: Add-on archive
     runs-on: ubuntu-24.04
+    env:
+      PACKAGER: tools/package-addon/Cargo.toml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-      - name: Test and build the archive
+        with:
+          workspaces: tools/package-addon
+      - name: Check the packager
         run: |
-          cargo test -p ankiquest-xtask package
-          cargo run -p ankiquest-xtask -- package-addon --output ankiquest.ankiaddon
-          cargo run -p ankiquest-xtask -- package-addon --ankiweb --output ankiquest-ankiweb.ankiaddon
+          cargo fmt --all --manifest-path "$PACKAGER" --check
+          cargo clippy --workspace --locked --manifest-path "$PACKAGER" --all-targets -- -D warnings
+          cargo test --locked --manifest-path "$PACKAGER"
+      - name: Build the archive
+        run: |
+          cargo run --locked --manifest-path "$PACKAGER" -- --updates github --output ankiquest.ankiaddon
+          cargo run --locked --manifest-path "$PACKAGER" -- --ankiweb --output ankiquest-ankiweb.ankiaddon
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ankiquest-addon

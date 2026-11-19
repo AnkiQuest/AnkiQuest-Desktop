@@ -1,18 +1,21 @@
-//! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb.
+//! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb:
+//! `cargo run --manifest-path tools/package-addon/Cargo.toml --
+//! --output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
+//! [--metadata <file>]`.
 //!
 //! The archive is reproducible: the same commit and channel always give
 //! the same bytes. The GitHub and AnkiWeb builds differ only in the
-//! manifest's package ID and conflicts.
+//! manifest's package ID and conflicts and in `build.json`, which names
+//! where the add-on looks for updates.
 
 use std::collections::BTreeMap;
+use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
-
-use crate::root;
 
 mod json;
 mod zip;
@@ -39,6 +42,7 @@ const EXCLUDED: &[&str] = &[
     "meta.json",
     "version.json",
     "manifest.json",
+    "build.json",
 ];
 
 /// File extensions that are packaged.
@@ -49,11 +53,25 @@ const FORMATS: &[&str] = &[
 /// The add-on's entry point, which Anki imports.
 const ENTRY: &str = "__init__.py";
 
+/// The build settings the add-on reads, written as `build.json`.
+const BUILD: &str = "build.json";
+
 /// Where the archive is published.
 #[derive(Clone, Copy)]
 enum Channel {
-    GitHub,
+    /// GitHub releases, PR artifacts and local builds.
+    GitHub(Updates),
+    /// The AnkiWeb listing, which updates add-ons itself.
     AnkiWeb,
+}
+
+/// Where the installed add-on looks for newer builds.
+#[derive(Clone, Copy)]
+enum Updates {
+    /// `addon-<n>` releases and `addon-nightly` on GitHub.
+    GitHub,
+    /// Nowhere: the add-on never checks, downloads or installs updates.
+    None,
 }
 
 /// Where the version comes from.
@@ -80,9 +98,11 @@ struct Args {
     metadata: Option<PathBuf>,
 }
 
-/// Runs `--output <file> [--ankiweb] [--ref <ref>] [--metadata <file>]`.
-pub fn run(args: &[String]) -> ExitCode {
-    match package(args) {
+/// Runs `--output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
+/// [--metadata <file>]`.
+fn main() -> ExitCode {
+    let args: Vec<String> = env::args().skip(1).collect();
+    match package(&args) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("package-addon: {error}");
@@ -112,33 +132,79 @@ fn package(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-/// Reads the flags; `--output` is required.
+/// The repository root: this crate is `tools/package-addon`.
+fn root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
+/// Reads the flags; `--output` is required. Updates are off unless
+/// `--updates github` asks for them, and never on with `--ankiweb`.
 fn parse(args: &[String]) -> Result<Args, String> {
     let mut output = None;
-    let mut channel = Channel::GitHub;
+    let mut ankiweb = false;
+    let mut updates = None;
     let mut source = Source::Describe;
     let mut metadata = None;
     let mut iter = args.iter();
     while let Some(flag) = iter.next() {
         if flag == "--ankiweb" {
-            channel = Channel::AnkiWeb;
+            ankiweb = true;
             continue;
         }
         let value = iter.next().ok_or(format!("{flag} needs a value"))?;
         match flag.as_str() {
             "--output" => output = Some(PathBuf::from(value)),
+            "--updates" => updates = Some(Updates::of(value)?),
             "--ref" => source = Source::of(value),
             "--metadata" => metadata = Some(PathBuf::from(value)),
             _ => return Err(format!("unknown argument {flag}")),
         }
     }
     let output = output.ok_or("--output is required")?;
+
+    // AnkiWeb replaces the add-on itself; a second updater would fight it.
+    let channel = match (ankiweb, updates) {
+        (true, Some(Updates::GitHub)) => {
+            return Err("--ankiweb builds leave updates to AnkiWeb".to_owned());
+        }
+        (true, _) => Channel::AnkiWeb,
+        (false, updates) => Channel::GitHub(updates.unwrap_or(Updates::None)),
+    };
     Ok(Args {
         output,
         channel,
         source,
         metadata,
     })
+}
+
+impl Channel {
+    /// Where this build looks for updates.
+    fn updates(self) -> Updates {
+        match self {
+            Self::GitHub(updates) => updates,
+            Self::AnkiWeb => Updates::None,
+        }
+    }
+}
+
+impl Updates {
+    /// The `--updates` value.
+    fn of(value: &str) -> Result<Self, String> {
+        match value {
+            "github" => Ok(Self::GitHub),
+            "none" => Ok(Self::None),
+            _ => Err(format!("--updates is github or none, not {value}")),
+        }
+    }
+
+    /// The name in `build.json`, as the add-on's `UpdateSource` reads it.
+    fn name(self) -> &'static str {
+        match self {
+            Self::GitHub => "github",
+            Self::None => "none",
+        }
+    }
 }
 
 impl Source {
@@ -246,6 +312,11 @@ fn build(source: &Path, output: &Path, version: &Version, channel: Channel) -> R
         "version.json".to_owned(),
         version.object().pretty().into_bytes(),
     );
+
+    // The add-on reads this once to decide whether it may update itself.
+    let mut settings = Object::default();
+    settings.set("updates", json!(channel.updates().name()));
+    files.insert(BUILD.to_owned(), settings.pretty().into_bytes());
     write(output, &zip::archive(&files)?)
 }
 
@@ -264,7 +335,7 @@ fn manifest(source: &Path, version: &Version, channel: Channel) -> Result<Vec<u8
         .cloned()
         .ok_or("manifest.json has no package")?;
     let (package, conflict) = match channel {
-        Channel::GitHub => (github, json!(ANKIWEB_ID)),
+        Channel::GitHub(_) => (github, json!(ANKIWEB_ID)),
         Channel::AnkiWeb => (json!(ANKIWEB_ID), github),
     };
     manifest.set("package", package);

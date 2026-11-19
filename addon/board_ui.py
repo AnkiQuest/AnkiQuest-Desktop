@@ -1,10 +1,11 @@
 """Scope selection -> owned reads -> native tables; hiding changes only the viewer's Global board."""
 import base64
+import time
 from enum import Enum, auto
 
 from aqt.qt import QColor, QComboBox, QDialog, QGridLayout, QHBoxLayout, QIcon, QLabel, QPainter, QPixmap, QPushButton, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, Qt
 
-from . import board, board_data, progress_ui, share_ui
+from . import board, board_data, inbox, progress_ui, share_ui
 from .language import tr
 
 
@@ -22,7 +23,7 @@ def _initial(name):
     painter.setBrush(QColor(board.AVATAR_COLOURS[sum(map(ord, name)) % len(board.AVATAR_COLOURS)]))
     painter.drawEllipse(0, 0, 32, 32)
     painter.setPen(Qt.GlobalColor.white)
-    painter.drawText(picture.rect(), Qt.AlignmentFlag.AlignCenter, name[:1].upper() or "?")
+    painter.drawText(picture.rect(), Qt.AlignmentFlag.AlignCenter, board.initial(name))
     painter.end()
     return QIcon(picture)
 
@@ -136,7 +137,7 @@ class _Window:
             try:
                 self._board = future.result()
             except Exception as error:
-                self._status.setText(tr("Could not load the leaderboard (%s).") % str(error))
+                self._status.setText(inbox.failure("Could not load the leaderboard (%s).", error))
                 return
             self._query = self._board.query
             board_data._remember(self._profile, self._api, self._query)
@@ -149,9 +150,13 @@ class _Window:
             self._scopes.blockSignals(False)
             self._tabs.setTabVisible(2, self._board.can_hide)
             table = self._tables["board"]
+            now_ms = int(time.time() * 1000)
             for place, entry, mine in board_data._rows(self._board, self._api.name):
                 name = entry.get("display") or entry["user"]
                 title = name + (" · " + tr("you, not shown to others") if mine and entry.get("shown") is False else "")
+                # XP that counts toward another week, as the website shows beside a weekly row.
+                for kind, xp in board_data._counting(self._board, entry, now_ms):
+                    title += " · " + board.counting(kind, xp, tr)
                 item = QTreeWidgetItem([str(place), title, str(entry["xp"]), str(entry.get("level", "")), str(entry.get("streak", ""))])
                 item.setData(1, Qt.ItemDataRole.UserRole, entry)
                 table.addTopLevelItem(item)
@@ -218,7 +223,7 @@ class _Window:
             try:
                 data = future.result()
             except Exception as error:
-                self._note(key, tr("Could not load the leaderboard (%s).") % str(error))
+                self._note(key, inbox.failure("Could not load the leaderboard (%s).", error))
                 return
             self._note(key, "")
             if key == "records":

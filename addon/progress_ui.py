@@ -1,10 +1,12 @@
 """Year/tab -> scoped background read -> table; stale and closed replies do nothing."""
 from enum import Enum, auto
-from http import HTTPStatus
 
-from aqt.qt import QBrush, QColor, QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, Qt
+import time
 
-from . import heatmap_ui, progress_data, share_ui, today
+from aqt.qt import QBrush, QColor, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QPushButton, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, Qt
+
+from . import heatmap_ui, inbox, progress_data, share_ui, study_time, today
+from .client import offset_west_min
 from .language import tr
 from .progress_data import _Section
 
@@ -14,10 +16,23 @@ class _Phase(Enum):
     CLOSED = auto()
 
 
+class _Access(Enum):
+    """What the window may show: everything for a signed-in account, else only the local tab."""
+    ACCOUNT = auto()
+    LOCAL = auto()
+
+
 _COLOURS = {"met": ("#dff1c9", "#254a12"), "short": ("#e9d8a6", "#534619"),
             "frozen": ("#def0ff", "#16527b"), "skipped": ("#def0ff", "#16527b")}
 _RECORD_NAMES = {"hour": "Best hour", "day": "Best day", "week": "Best week", "month": "Best month",
                  "year": "Best year", "streak": "Longest streak", "days": "Days studied"}
+
+
+# The study time tab: its request key, its intro and its rows, in Android's order.
+_STUDY = "study_time"
+_STUDY_INTRO = ("Time spent answering cards in this collection, uploaded or not. "
+                "Days start at Anki’s “Next day starts at” hour, weeks on Monday.")
+_STUDY_ROWS = ("Today", "This week", "This month", "Total", "Per study day")
 
 
 class _Progress:
@@ -25,15 +40,16 @@ class _Progress:
         self._addon, self._api = addon, addon.client()
         self._profile = addon.mw.pm.profile
         self._phase = _Phase.OPEN
+        self._access = _Access.ACCOUNT if self._api.configured else _Access.LOCAL
         self._requests, self._tables, self._statuses, self._retry = {}, {}, {}, {}
         self._dialog = QDialog(addon.mw)
         self._dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self._dialog.setWindowTitle(tr("Progress"))
         self._dialog.finished.connect(self._finished)
         root = QVBoxLayout(self._dialog)
-        root.addWidget(share_ui._plain(tr("Only uploaded study appears here.")))
-        tabs = QTabWidget()
+        tabs = self._tabs = QTabWidget()
         root.addWidget(tabs, 1)
+        self._tab_index = {}
         self._years = QComboBox()
         self._years.currentIndexChanged.connect(self._year_changed)
         for section, title, headers in (
@@ -42,6 +58,7 @@ class _Progress:
         ):
             page = QWidget()
             layout = QVBoxLayout(page)
+            layout.addWidget(share_ui._plain(tr("Only uploaded study appears here.")))
             controls = QHBoxLayout()
             if section is _Section.HISTORY:
                 controls.addWidget(QLabel(tr("Year")))
@@ -59,10 +76,12 @@ class _Progress:
             table.setAlternatingRowColors(True)
             table.setUniformRowHeights(True)
             layout.addWidget(table, 1)
-            tabs.addTab(page, title)
+            self._tab_index[section] = tabs.addTab(page, title)
+        study = tabs.addTab(self._study_page(), tr("Study time"))
         actions = QHBoxLayout()
         website = QPushButton(tr("Open website"))
         website.clicked.connect(lambda: addon.open_page("/history") if self._owns() else self._close())
+        website.setVisible(self._access is _Access.ACCOUNT)
         actions.addWidget(website)
         actions.addStretch(1)
         done = QPushButton(tr("Done"))
@@ -71,8 +90,75 @@ class _Progress:
         root.addLayout(actions)
         screen = self._dialog.screen().availableGeometry()
         self._dialog.resize(min(760, screen.width()), min(640, screen.height()))
+        self._load_study()
+
+        # Without an account only Study time, which reads this computer's collection, is open.
+        if self._access is _Access.LOCAL:
+            for index in self._tab_index.values():
+                tabs.setTabEnabled(index, False)
+            tabs.setCurrentIndex(study)
+            return
         self._load(_Section.HISTORY)
         self._load(_Section.RECORDS)
+
+    def _study_page(self):
+        """Study time from this computer's collection; it needs no account or upload."""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.addWidget(share_ui._plain(tr(_STUDY_INTRO)))
+        controls = QHBoxLayout()
+        controls.addStretch(1)
+        self._study_retry = QPushButton(tr("Refresh"))
+        self._study_retry.clicked.connect(lambda _checked=False: self._load_study())
+        controls.addWidget(self._study_retry)
+        layout.addLayout(controls)
+        self._study_status = share_ui._plain("")
+        layout.addWidget(self._study_status)
+        form = QFormLayout()
+        self._study_values = {}
+        for label in _STUDY_ROWS:
+            value = self._study_values[label] = QLabel()
+            form.addRow(tr(label), value)
+        layout.addLayout(form)
+        layout.addStretch(1)
+        return page
+
+    def _load_study(self):
+        # A read belongs to this window's profile and the collection open when it started.
+        if not self._owns_profile():
+            self._close()
+            return
+        col = getattr(self._addon.mw, "col", None)
+        if col is None:
+            return
+        request = self._requests[_STUDY] = object()
+        self._study_status.setText(tr("Loading study time…"))
+        self._study_retry.setEnabled(False)
+        now_ms = int(time.time() * 1000)
+        rollover = int(col.get_config("rollover", 4))
+
+        def done(future):
+            if not self._owns_profile() or self._requests.get(_STUDY) is not request:
+                return
+            if getattr(self._addon.mw, "col", None) is not col:
+                self._requests.pop(_STUDY)
+                self._study_retry.setEnabled(True)
+                self._study_status.clear()
+                return
+            self._requests.pop(_STUDY)
+            self._study_retry.setEnabled(True)
+            try:
+                totals = future.result()
+            except Exception as error:
+                self._study_status.setText(tr("Could not read study time (%s).") % str(error))
+                return
+            self._study_status.setText("" if totals.study_days else tr("No reviews in this collection yet."))
+            shown = (totals.today_ms, totals.week_ms, totals.month_ms, totals.total_ms, totals.average_ms)
+            for label, ms in zip(_STUDY_ROWS, shown):
+                self._study_values[label].setText(study_time.duration(ms, tr))
+
+        self._addon.mw.taskman.run_in_background(
+            lambda: study_time.load(col.db, now_ms, offset_west_min(), rollover), done)
 
     def _finished(self, _result):
         self._phase = _Phase.CLOSED
@@ -82,14 +168,26 @@ class _Progress:
         if self._phase is _Phase.OPEN:
             self._dialog.close()
 
+    def _owns_profile(self):
+        return self._phase is _Phase.OPEN and self._profile is self._addon.mw.pm.profile
+
     def _owns(self):
-        return self._phase is _Phase.OPEN and self._profile is self._addon.mw.pm.profile and share_ui.same_account(self._api, self._addon.client())
+        return self._owns_profile() and share_ui.same_account(self._api, self._addon.client())
+
+    def current(self):
+        """Whether this window still shows what it opened for: its account, or, without one, its
+        profile while still signed out."""
+        if self._access is _Access.LOCAL:
+            return self._owns_profile() and not self._addon.client().configured
+        return self._owns()
 
     def _year_changed(self, _index):
         if self._years.currentData() is not None:
             self._load(_Section.HISTORY)
 
     def _load(self, section):
+        if self._access is _Access.LOCAL:
+            return
         if not self._owns():
             self._close()
             return
@@ -108,8 +206,7 @@ class _Progress:
             try:
                 data = future.result()
             except Exception as error:
-                message = tr("This server does not support this view yet. Open the website or try again later.") if getattr(error, "status", None) == HTTPStatus.NOT_FOUND else tr("Could not load progress (%s).") % str(error)
-                self._statuses[section].setText(message)
+                self._statuses[section].setText(inbox.failure("Could not load progress (%s).", error))
                 return
             self._statuses[section].clear()
             if section is _Section.HISTORY:

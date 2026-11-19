@@ -11,6 +11,20 @@ moods = load_module("aq_streak_moods", "moods.py")
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "streak_moods.json"
 
+# Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows
+# frozen and almost shows hopeful; she has no frozen_2 or frozen_3 art, so those show her frozen.
+AKI_MOOD_POSES = {
+    moods.MOOD_UNKNOWN: "aki_face",
+    moods.ASLEEP: "aki_asleep",
+    moods.SAD: "aki_sad",
+    moods.FROZEN_1: "aki_frozen",
+    moods.FROZEN_2: "aki_frozen",
+    moods.FROZEN_3: "aki_frozen",
+    moods.THAWING: "aki_frozen",
+    moods.HOPEFUL: "aki_hopeful",
+    moods.ALMOST: "aki_hopeful",
+}
+
 
 class StreakMoods(unittest.TestCase):
     def setUp(self):
@@ -23,9 +37,69 @@ class StreakMoods(unittest.TestCase):
             with self.subTest(case=case["name"]):
                 today = case["today"]
                 goal = moods.Goal.REACHED if today["goal_reached"] else moods.Goal.OPEN
-                found = moods.streak_mood(today["state"], today["reviews"], today["streak"], today["frozen_days"], goal)
+                stage = moods.Stage.of(today["time_ms"], today["streak_minutes"])
+                found = moods.streak_mood(today["state"], today["reviews"], stage, today["streak"], today["frozen_days"], goal)
                 self.assertEqual(case["expected"]["mood"], found)
-                self.assertEqual(case["expected"]["pose"], moods.streak_pose(found, today["streak"]))
+                pose = moods.pose_art(moods.AKI_POSES, case["expected"]["pose"])
+                self.assertEqual(pose, moods.streak_pose(found, today["streak"]))
+                self.assertEqual(pose, moods.mood_pose(moods.AKI, found, today["streak"]))
+
+    def test_every_shared_mood_picks_the_today_message(self):
+        # As Android's Home card (AnkiquestAki.message): a waiting or frozen streak comes
+        # before the decks, which decide only after that (#301).
+        frozen = (moods.FROZEN_1, moods.FROZEN_2, moods.FROZEN_3)
+        for case in self.fixture["moods"]:
+            with self.subTest(case=case["name"]):
+                today = case["today"]
+                chosen = case["expected"]["mood"]
+                profile = {"today": {"reviews": today["reviews"]}}
+                due = moods.mood(chosen, [4, 0], 4, profile, 0)
+                done = moods.mood(chosen, [0, 0], 0, profile, 0)
+                if chosen == moods.SAD:
+                    self.assertEqual((moods.WAITING, moods.WAITING), (due, done))
+                elif chosen in frozen:
+                    self.assertEqual((moods.FREEZE, moods.FREEZE), (due, done))
+                else:
+                    self.assertEqual(moods.REVIEW, due)
+                    studied = moods.CELEBRATE if today["reviews"] > 0 else None
+                    fallback = moods.STREAK if chosen == moods.FIRE else moods.WELCOME
+                    self.assertEqual(studied or fallback, done)
+
+    def test_a_waiting_streak_names_its_days(self):
+        self.assertEqual(("You haven’t studied today. Your %d-day streak is still waiting.", (64,)),
+                         moods.message(moods.AKI, moods.WAITING, 64))
+        self.assertEqual(("You haven’t studied today. Your 1-day streak is still waiting.", ()),
+                         moods.message(moods.ANKILOPE_ID, moods.WAITING, 1))
+
+    def test_every_shared_stage(self):
+        # The stage starts are the shared ones, in order, and each boundary case lands in its stage.
+        stages = self.fixture["stages"]
+        starts = [(start["stage"], start["from_percent"]) for start in stages["starts"]]
+        self.assertEqual([(stage.value, stage.percent) for stage in moods.Stage], starts)
+        for case in stages["cases"]:
+            with self.subTest(case=case):
+                self.assertEqual(case["expected"], moods.Stage.of(case["time_ms"], case["streak_minutes"]).value)
+
+    def test_a_review_after_a_freeze_keeps_aki_frozen(self):
+        # hill's report: one review after a freeze made Aki hopeful at once.
+        stage = moods.Stage.of(30_000, 20)
+        self.assertEqual(moods.FROZEN_1, moods.streak_mood(moods.PROTECTED, 1, stage, 10, 1, moods.Goal.OPEN))
+
+    def test_the_displayed_day_sets_the_stage(self):
+        # The Today panel and the companion tab measure the day the way its verdict does.
+        def view(time_ms):
+            return {"_day_status": "protected", "streak": 10, "heatmap": [],
+                    "today": {"reviews": 4, "time_ms": time_ms, "streak_minutes": 20}}
+
+        self.assertEqual(moods.FROZEN_1, moods.today_mood(view(299_999), moods.Goal.OPEN))
+        self.assertEqual(moods.THAWING, moods.today_mood(view(300_000), moods.Goal.OPEN))
+        self.assertEqual(moods.HOPEFUL, moods.today_mood(view(600_000), moods.Goal.OPEN))
+        self.assertEqual(moods.ALMOST, moods.today_mood(view(900_000), moods.Goal.OPEN))
+
+        # Older servers send whole minutes only.
+        older = view(0)
+        older["today"] = {"reviews": 4, "minutes": 10, "streak_minutes": 20}
+        self.assertEqual(moods.HOPEFUL, moods.today_mood(older, moods.Goal.OPEN))
 
     def test_every_shared_frozen_run(self):
         for case in self.fixture["frozen_run"]:
@@ -62,16 +136,80 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual(set(moods.STREAK_MOODS), covered)
 
     def test_every_pose_ships_for_every_companion(self):
-        # Each pose is bundled and the web view may load it.
+        # Each pose and Today art is bundled and the web view may load it, but nothing outside the art.
         source = (ADDON / "__init__.py").read_text("utf-8")
         pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
-        poses = {case["expected"]["pose"] for case in self.fixture["moods"]} | {"aki_streak_milestone"}
+        self.assertTrue(re.fullmatch(pattern, "aki_face.png"))
+        self.assertFalse(re.fullmatch(pattern, "art/../config.json"))
         for companion in ("aki", "ankilope", "cow"):
-            for pose in poses:
-                name = "art/%s.png" % moods.companion_pose(companion, pose)
+            shown = {moods.mood_pose(companion, chosen, streak) for chosen in moods.STREAK_MOODS for streak in (0, 1, 7, 30, 100)}
+            shown.add(moods.companion_pose(companion, "aki_streak_milestone"))
+            shown.update(moods.art(companion, mood) for mood in moods.MOODS)
+            shown.discard(None)
+            for pose in shown:
+                name = "art/%s.png" % pose
                 self.assertTrue((ADDON / name).is_file(), name)
                 self.assertTrue(re.fullmatch(pattern, name), name)
         self.assertIsNone(moods.companion_pose("none", "aki_at_risk"))
+
+    def test_asleep_art_uses_the_pose_name(self):
+        # AnkiQuest-Server#32: every companion's asleep picture is `<companion>_asleep`.
+        for poses in (moods.AKI_POSES, moods.ANKILOPE):
+            name = poses["asleep"]
+            self.assertTrue(name.endswith("_asleep"), name)
+            self.assertTrue((ADDON / "art" / ("%s.png" % name)).is_file(), name)
+
+    def test_ankilope_shows_her_pose_for_every_mood(self):
+        # hill's report: a freeze used yesterday showed Ankilope studying, although her frozen art exists.
+        # On fire she studies until her on-fire art exists.
+        expected = {
+            moods.MOOD_UNKNOWN: "ankilope_face",
+            moods.ASLEEP: "ankilope_asleep",
+            moods.SAD: "ankilope_sad",
+            moods.FROZEN_1: "ankilope_frozen",
+            moods.FROZEN_2: "ankilope_frozen",
+            moods.FROZEN_3: "ankilope_frozen",
+            moods.THAWING: "ankilope_frozen",
+            moods.HOPEFUL: "ankilope_hopeful",
+            moods.ALMOST: "ankilope_hopeful",
+            moods.FIRE: "ankilope_study",
+        }
+        self.assertEqual(set(moods.STREAK_MOODS), set(expected))
+        for companion in (moods.ANKILOPE_ID, moods.COW):
+            for chosen, pose in expected.items():
+                for streak in (0, 1, 7, 30, 100, 365):
+                    with self.subTest(companion=companion, mood=chosen, streak=streak):
+                        self.assertEqual(pose, moods.mood_pose(companion, chosen, streak))
+
+    def test_aki_shows_her_core_pose_for_every_mood(self):
+        # Her sad, hopeful and frozen art shipped, but the moods showed older pictures. Frozen 2 and 3
+        # have no art of their own and fall back to frozen.
+        for chosen, pose in AKI_MOOD_POSES.items():
+            for streak in (0, 1, 7, 30, 100, 365):
+                with self.subTest(mood=chosen, streak=streak):
+                    self.assertEqual(pose, moods.mood_pose(moods.AKI, chosen, streak))
+        self.assertEqual("aki_streak_hot", moods.mood_pose(moods.AKI, moods.FIRE, 7))
+        self.assertEqual("aki_frozen", moods.pose_art(moods.AKI_POSES, "frozen_3"))
+
+    def test_ankilope_shows_her_pose_for_aki_pictures(self):
+        # Aki's welcome picture stays Ankilope's welcome; only the hopeful mood shows her hopeful.
+        self.assertEqual("ankilope_welcome", moods.companion_pose(moods.ANKILOPE_ID, "aki_welcome"))
+        self.assertEqual("ankilope_asleep", moods.companion_pose(moods.ANKILOPE_ID, "aki_asleep"))
+        self.assertEqual("ankilope_frozen", moods.companion_pose(moods.ANKILOPE_ID, "aki_freeze"))
+        self.assertEqual("ankilope_study", moods.companion_pose(moods.ANKILOPE_ID, "aki_streak_milestone"))
+        self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview(moods.ANKILOPE_ID))
+
+    def test_the_poses_are_the_shared_ones(self):
+        fixture = json.loads((FIXTURE.parent / "companion_poses.json").read_text("utf-8"))
+        self.assertEqual(fixture["core"], list(moods.CORE_POSES))
+        self.assertEqual(fixture["extensions"], moods.POSE_FALLBACKS)
+
+        # Aki and Ankilope have every core pose, and every extension reaches one of them.
+        for art in (moods.AKI_POSES, moods.ANKILOPE):
+            self.assertTrue(set(moods.CORE_POSES) <= set(art))
+            for pose in moods.POSE_FALLBACKS:
+                self.assertTrue((ADDON / "art" / ("%s.png" % moods.pose_art(art, pose))).is_file(), pose)
+        self.assertEqual("ankilope_frozen", moods.pose_art(moods.ANKILOPE, "frozen_3"))
 
     def test_the_displayed_day_sets_the_state(self):
         def view(status, reviews=0):

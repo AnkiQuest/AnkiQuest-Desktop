@@ -17,7 +17,7 @@ from html import escape
 
 from . import heatmap
 from .board import COMPANION_CLASS
-from .language import _plural as _plural_text
+from .language import plural
 
 CONFIG_KEY = "review_heatmap"
 EXPANDED_KEY = "ankiquestHeatmapExpanded"
@@ -49,6 +49,7 @@ font:600 13px/1.35 "Nunito","Varela Round","Segoe UI Variable Display","Segoe UI
 #aq-heatmap .hm-stats b{display:block;font-size:15px}
 #aq-heatmap .hm-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0}
 #aq-heatmap .hm-nav button{background:none;border:0;font-size:18px;padding:0 8px}
+#aq-heatmap .hm-nav .hm-today{font-size:12px;font-weight:800}
 #aq-heatmap .hm-cal{display:flex;gap:4px}
 #aq-heatmap .hm-wd{display:grid;grid-template-rows:repeat(7,11px);row-gap:3px;margin-top:17px;font-size:9px;line-height:11px}
 #aq-heatmap .hm-scroll{overflow-x:auto;padding-bottom:4px}
@@ -95,6 +96,7 @@ function show(){
   q("date").textContent=full.format(parse(selected));
   q("count").textContent=cell[1];
   view.disabled=!cell[2];
+  q("today").disabled=selected===D.today;
   view.textContent=selected>D.today?L.viewDue:L.viewReviewed;
   grid.querySelectorAll(".sel").forEach(function(b){b.classList.remove("sel");});
   var button=grid.querySelector("[data-day='"+selected+"']");
@@ -142,6 +144,7 @@ grid.onclick=function(event){
 };
 q("prev").onclick=function(){step(-1);};
 q("next").onclick=function(){step(1);};
+q("today").onclick=function(){year=+D.today.slice(0,4);selected=D.today;draw();};
 view.onclick=function(){pycmd("%s"+selected);};
 q("toggle").onclick=function(){
   var open=body.hidden;
@@ -155,7 +158,7 @@ draw();
 
 
 def _plural(tr, count, one, other):
-    return _plural_text(one, other, count, tr) % count
+    return plural(one, other, count, tr) % count
 
 
 def _reviews(tr, count):
@@ -255,13 +258,15 @@ def html(data, tr, language="en", expanded=True, art=None):
     picture = "<img class=%s src='%s' alt=''>" % (COMPANION_CLASS, escape(art, quote=True)) if art else ""
     toggle = tr("Collapse review heatmap") if expanded else tr("Expand review heatmap")
     empty = "" if data.reviews else "<p class=hm-note>%s</p>" % escape(tr("Your reviews will appear here after you study."))
+    share = "<div class=hm-note>%s</div>" % escape(
+        tr("You studied on %s%% of the days since your first review") % data.days_studied_percent) if data.reviews else ""
     return (
         STYLE
         + "<div id=aq-heatmap>"
         + "<div class=hm-head>%s<div class=hm-title>%s<div class=hm-sub>%s</div></div>" % (
             picture, escape(tr("Review heatmap")), escape(tr("Your collection, one day at a time")))
         + "<button class=hm-toggle aria-label='%s'>%s</button></div>" % (escape(toggle, quote=True), "▴" if expanded else "▾")
-        + "<div class=hm-body%s>" % ("" if expanded else " hidden")
+        # The numbers stay when the calendar is collapsed, as on Android.
         + empty
         + "<div class=hm-stats>%s%s%s%s</div>" % (
             _stat(_days(tr, data.current_streak), tr("Current streak")),
@@ -269,9 +274,11 @@ def html(data, tr, language="en", expanded=True, art=None):
             _stat(str(data.days_studied), tr("Days studied")),
             _stat("%.1f" % data.daily_average, tr("Reviews / study day")))
         + "<div class=hm-note>%s</div>" % escape(tr("Reviews in available history: %s") % data.total_reviews)
+        + share
+        + "<div class=hm-body%s>" % ("" if expanded else " hidden")
         + "<div class=hm-nav><button class=hm-prev aria-label='%s'>‹</button><b class=hm-year></b>"
-        "<button class=hm-next aria-label='%s'>›</button></div>" % (
-            escape(tr("Previous year"), quote=True), escape(tr("Next year"), quote=True))
+        "<button class=hm-next aria-label='%s'>›</button><button class=hm-today>%s</button></div>" % (
+            escape(tr("Previous year"), quote=True), escape(tr("Next year"), quote=True), escape(tr("Today")))
         + "<div class=hm-cal><div class=hm-wd></div><div class=hm-scroll><div class=hm-months></div><div class=hm-grid></div></div></div>"
         + "<div class=hm-day><b class=hm-date></b><span class=hm-count></span><button class=hm-view></button></div>"
         + "<div class=hm-note>%s</div>" % escape(tr("Click a day for details. Gray squares show estimated review cards due over the next 90 days."))

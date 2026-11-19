@@ -16,7 +16,8 @@ from aqt.qt import (
 )
 
 from . import companion_art, share
-from .inbox import error_text
+from .client import OUTDATED
+from .inbox import error_text, failure
 from .language import tr
 
 state = {"popup": None}
@@ -240,25 +241,31 @@ def _buttons(sharing):
     return [friends, copy, save, text, public]
 
 
-def _route(sharing, legacy):
-    """Existing entry points open the recipient picker only on supporting servers."""
+def _route(sharing, local, offline=None):
+    """Opens the recipient picker. `local` runs instead for a win with no server reference (a
+    moment saved before references), which only the local actions can share. `offline` runs
+    after the error when the server's features can't be read: actions that need no server,
+    such as copying or saving the picture, stay usable."""
     from . import moment_share
     if not sharing.owned():
         return
-    if moment_share._moment(sharing.win) is None or not hasattr(sharing.api, "capabilities"):
-        legacy()
+    if moment_share._moment(sharing.win) is None:
+        local()
         return
 
+    # A server without the picker's features is older than this add-on.
     def checked(future):
         if not sharing.owned():
             return
         try:
             features = future.result()
         except Exception as error:
-            sharing.status.setText(tr("Couldn't load friends (%s).") % error_text(error))
+            sharing.status.setText(failure("Couldn't share it (%s).", error))
+            if offline is not None:
+                offline()
             return
         if not moment_share._supported(sharing.win, features):
-            legacy()
+            sharing.status.setText(tr(OUTDATED))
             return
         win_dialog(sharing.dialog, sharing.api, sharing.win, sharing._companion, sharing.current_client, sharing.run).show()
 
@@ -307,5 +314,13 @@ def share_toggle(sharing, buttons):
     column.hide()
     toggle = QPushButton(tr("Share"))
     toggle.setCheckable(True)
-    toggle.toggled.connect(lambda checked: _route(sharing, lambda: column.setVisible(checked)))
+
+    # The column holds the local actions, so it also opens when the server can't be reached.
+    def toggled(checked):
+        def show():
+            column.setVisible(checked)
+
+        _route(sharing, show, show)
+
+    toggle.toggled.connect(toggled)
     return toggle, column

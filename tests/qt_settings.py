@@ -1,18 +1,17 @@
-"""Real Qt checks run in a separate process by test_addon_settings.py."""
+"""Real Qt checks of the settings dialog, run by test_qt_windows.py."""
 
-from concurrent.futures import Future
 from copy import deepcopy
 import re
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QPushButton, QScrollArea, QTextDocument, QTimer
+from aqt.qt import QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QLineEdit, QPushButton, QScrollArea, QTextDocument, QTimer
 
 from addon_loader import load_in_package
+from qt_support import app, queue, run_now, stand_in
 
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("settings_qt", "ui")
 preferences = load_in_package("settings_qt", "preferences")
 ui.tr = preferences.tr = lambda text: text
@@ -30,7 +29,7 @@ class Settings(unittest.TestCase):
             deck_settings=lambda: deepcopy(self.decks), companion=lambda: "ankilope",
             set_companion=lambda value: self.posts.append(("companion", value)),
         )
-        self.mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=self.run_task))
+        self.mw = stand_in(run_now)
 
     def request(self, path, body=None):
         if body is not None:
@@ -46,14 +45,6 @@ class Settings(unittest.TestCase):
             return deepcopy(self.decks)
         raise AssertionError(path)
 
-    def run_task(self, work, done):
-        future = Future()
-        try:
-            future.set_result(work())
-        except Exception as error:
-            future.set_exception(error)
-        done(future)
-
     def button(self, dialog, text):
         return next(widget for widget in dialog.findChildren(QPushButton) if widget.text() == text)
 
@@ -63,7 +54,7 @@ class Settings(unittest.TestCase):
     def checkbox(self, dialog, text):
         return next(widget for widget in dialog.findChildren(QCheckBox) if widget.text() == text)
 
-    def open(self, action, on_account=None, on_companion=None):
+    def open(self, action, on_account=None, on_companion=None, on_two_factor=None):
         errors = []
 
         def interact():
@@ -77,7 +68,7 @@ class Settings(unittest.TestCase):
 
         QTimer.singleShot(0, interact)
         values = ui.settings_dialog(
-            None, self.config, Mock(), Mock(), on_account=on_account,
+            None, self.config, Mock(), Mock(), on_account=on_account, on_two_factor=on_two_factor,
             extra=lambda dialog, groups: preferences.section(dialog, groups, self.mw, self.api, on_companion=on_companion),
         )
         if errors:
@@ -114,17 +105,37 @@ class Settings(unittest.TestCase):
                 self.open(inspect)
         self.assertEqual([], self.posts)
 
-    def test_installed_version_is_visible_and_ankiweb_hides_github_channels(self):
+    def test_builds_without_updates_show_no_update_settings(self):
+        self.config["update_channel"] = "nightly"
+
         def inspect(dialog):
             labels = [widget.text() for widget in dialog.findChildren(QLabel)]
             self.assertIn("Version: addon-11", labels)
-            self.assertIn("Updates are managed by AnkiWeb.", labels)
+            self.assertIn("Updates: none", labels)
             self.assertNotIn("Update channel", labels)
-            dialog.reject()
+            self.assertIsNone(dialog.findChild(QComboBox, "ankiquest_update_channel"))
+            dialog.accept()
 
         with patch.object(ui.updates, "installed", return_value={"release": 11, "nightly": 0, "commit": "abc"}), \
-                patch.object(ui.updates, "_source", return_value=ui.updates._Source.ANKIWEB):
-            self.open(inspect)
+                patch.object(ui.updates, "SOURCE", ui.updates.UpdateSource.NONE):
+            values = self.open(inspect)
+        self.assertEqual("nightly", values["update_channel"])
+
+    def test_github_builds_offer_the_update_channel(self):
+        self.config["update_channel"] = "nightly"
+
+        def inspect(dialog):
+            labels = [widget.text() for widget in dialog.findChildren(QLabel)]
+            self.assertIn("Updates: github", labels)
+            self.assertIn("Update channel", labels)
+            channel = dialog.findChild(QComboBox, "ankiquest_update_channel")
+            self.assertEqual("nightly", channel.currentData())
+            channel.setCurrentIndex(0)
+            dialog.accept()
+
+        with patch.object(ui.updates, "SOURCE", ui.updates.UpdateSource.GITHUB):
+            values = self.open(inspect)
+        self.assertEqual("stable", values["update_channel"])
 
     def test_credits_shigeyuki_for_anki_tan(self):
         def inspect(dialog):
@@ -192,6 +203,96 @@ class Settings(unittest.TestCase):
         values = self.open(edit, on_account=lambda _url: account)
         self.assertEqual(account, {key: values[key] for key in account})
         self.assertEqual([], self.posts)
+
+    def test_two_factor_opens_the_website_and_hides_without_a_server_for_it(self):
+        opened = []
+
+        def press(dialog):
+            self.button(dialog, "Two-factor authentication…").click()
+            self.assertIn("Set it up or turn it off on the website.", [label.text() for label in dialog.findChildren(QLabel)])
+            dialog.reject()
+
+        self.open(press, on_two_factor=opened.append)
+        self.assertEqual(["https://example.test"], opened)
+
+        def absent(dialog):
+            self.assertNotIn("Two-factor authentication…", [button.text() for button in dialog.findChildren(QPushButton)])
+            dialog.reject()
+
+        self.open(absent)
+
+    def test_sign_in_asks_for_the_code_when_the_server_wants_one(self):
+        sent, errors = [], []
+
+        def submit(values, finish):
+            sent.append(dict(values))
+            if len(sent) == 1:
+                finish(None, "Enter the code from your authenticator app.", ui.Ask.CODE)
+            else:
+                finish({"url": values["url"], "user": values["user"], "token": "device-token"}, None)
+
+        def interact():
+            dialog = app.activeModalWidget()
+            try:
+                fields = dialog.findChildren(QLineEdit)
+                code = dialog.findChild(QLineEdit, "ankiquest_sign_in_code")
+                self.assertFalse(code.isVisibleTo(dialog), "hidden until asked")
+                fields[1].setText("ana")
+                fields[2].setText("right password")
+                self.button(dialog, "Sign in").click()
+                self.assertTrue(code.isVisibleTo(dialog))
+                self.assertIn("Enter the code from your authenticator app.", [label.text() for label in dialog.findChildren(QLabel)])
+                code.setText(" 123456 ")
+                self.button(dialog, "Sign in").click()
+            except Exception as error:
+                errors.append(error)
+                dialog.reject()
+
+        QTimer.singleShot(0, interact)
+        answer = ui.account_dialog(None, "https://example.test", submit)
+        if errors:
+            raise errors[0]
+        self.assertEqual("device-token", answer["token"])
+        self.assertEqual(["", "123456"], [values["code"] for values in sent])
+
+    def test_editing_the_credentials_drops_the_asked_code(self):
+        sent, errors = [], []
+
+        def submit(values, finish):
+            sent.append(dict(values))
+            finish(None, "Enter the code from your authenticator app.", ui.Ask.CODE)
+
+        def interact():
+            dialog = app.activeModalWidget()
+            try:
+                fields = dialog.findChildren(QLineEdit)
+                code = dialog.findChild(QLineEdit, "ankiquest_sign_in_code")
+                fields[1].setText("ana")
+                fields[2].setText("right password")
+
+                # Each edit asks again with a fresh code field: server, username, create-account mode.
+                edits = (
+                    lambda: fields[0].setText("https://other.test"),
+                    lambda: fields[1].setText("bea"),
+                    lambda: self.checkbox(dialog, "Create a new account").setChecked(True),
+                )
+                for edit in edits:
+                    self.button(dialog, "Create account" if sent and sent[-1]["new"] else "Sign in").click()
+                    code.setText("123456")
+                    edit()
+                    self.assertFalse(code.isVisibleTo(dialog), "hidden after the edit")
+                    self.assertEqual("", code.text())
+                self.button(dialog, "Create account").click()
+                dialog.reject()
+            except Exception as error:
+                errors.append(error)
+                dialog.reject()
+
+        QTimer.singleShot(0, interact)
+        ui.account_dialog(None, "https://example.test", submit)
+        if errors:
+            raise errors[0]
+        self.assertEqual(["", "", "", ""], [values["code"] for values in sent])
 
     def test_sync_switch_is_on_by_default_and_saved_for_this_device(self):
         def turn_off(dialog):
@@ -279,12 +380,12 @@ class Settings(unittest.TestCase):
 
     def test_late_reminder_read_does_not_enable_the_staged_accounts_controls(self):
         pending = []
-        self.mw.taskman.run_in_background = lambda work, done: pending.append((work, done))
+        self.mw.taskman.run_in_background = queue(pending)
 
         def edit(dialog):
             self.button(dialog, "Switch account…").click()
             for work, done in pending:
-                self.run_task(work, done)
+                run_now(work, done)
             self.assertFalse(dialog.findChild(QComboBox, "ankiquest_reminder_hour").isEnabled())
             self.button(dialog, "Save").click()
 
@@ -301,11 +402,11 @@ class Settings(unittest.TestCase):
 
     def test_save_before_choices_arrive_keeps_the_server_values(self):
         pending = []
-        self.mw.taskman.run_in_background = lambda work, done: pending.append((work, done))
+        self.mw.taskman.run_in_background = queue(pending)
         self.open(lambda dialog: self.button(dialog, "Save").click())
         self.assertEqual(2, len(pending), "Only the two reads may be scheduled")
         for work, done in pending:
-            self.run_task(work, done)
+            run_now(work, done)
         self.assertEqual([], self.posts)
 
     def test_deck_picker_only_selects_decks_and_people(self):

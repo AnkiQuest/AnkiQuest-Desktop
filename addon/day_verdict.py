@@ -28,15 +28,13 @@ def _int(value, default=None):
 
 def verdict(server, pending, now_ms):
     """Today's verdict from `server` (the last profile) and `pending`, reviews the collection
-    holds as dicts with `id` and `time_ms`; None when there is no profile or its day has ended.
+    holds as dicts with `id` and `time_ms`; None when there is no profile, its day has ended or it
+    lacks today's `starts_at` and `time_ms` (a server older than this add-on).
 
     The answer has `met`, `streak_state`, `streak`, `reviews`, `time_ms`, `minutes`,
     `streak_minutes` and `unsent` (the reviews counted that the server does not have yet), as in
     the fixture, plus `waiting`: met, but only once the unsent reviews arrive. `streak` and,
     while not met, `streak_state` are None when an unsent review belongs to an earlier day.
-
-    Older servers leave out `today.starts_at` (no unsent review is counted then) and
-    `today.time_ms` (the minutes stand in for it).
     """
     if not isinstance(server, dict):
         return None
@@ -44,10 +42,14 @@ def verdict(server, pending, now_ms):
     if ends is not None and ends and now_ms >= ends:
         return None
     today = server.get("today") if isinstance(server.get("today"), dict) else {}
-    starts = _int(today.get("starts_at"))
+    starts, time_ms = _int(today.get("starts_at")), _int(today.get("time_ms"))
+    if starts is None or time_ms is None:
+        return None
+
+    # Reviews after the last uploaded one count toward today once they fall inside it.
     last = _int(server.get("last_review_id"))
     unsent = []
-    if starts is not None and last is not None:
+    if last is not None:
         unsent = [r for r in pending or () if (_int(r.get("id"), 0) or 0) > last]
     counted = [
         r for r in unsent
@@ -55,9 +57,6 @@ def verdict(server, pending, now_ms):
     ]
     earlier = any(r["id"] < starts for r in unsent)
     reviews = max(0, _int(today.get("reviews"), 0)) + len(counted)
-    time_ms = _int(today.get("time_ms"))
-    if time_ms is None:
-        time_ms = max(0, _int(today.get("minutes"), 0)) * MINUTE_MS
     time_ms += sum(_int(r.get("time_ms"), 0) or 0 for r in counted)
     needed = max(0, _int(today.get("streak_minutes"), 0))
     was = server.get("streak_state")

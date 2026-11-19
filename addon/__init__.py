@@ -1,5 +1,6 @@
 import html
 import platform
+import ssl
 import sys
 import tempfile
 import time
@@ -17,8 +18,9 @@ from aqt.utils import openLink, tooltip
 
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
 from . import companion_ui, greeting, inbox_ui, moments, moments_ui, moods, reveal_ui, share, sharing
+from . import password_prompt, password_ui
 from .inbox import CHALLENGE_ROUTE
-from .language import _plural, tr
+from .language import plural, tr
 from .client import (
     COUNT_SQL,
     DEFAULT_SERVER,
@@ -27,17 +29,20 @@ from .client import (
     UNDO_WINDOW_MS,
     WINDOW_SQL,
     InsecureServer,
+    TWO_FACTOR,
+    SecondFactor,
     ServerError,
     Client,
     check_deletes,
     offset_west_min,
     reconcile,
     rows_to_reviews,
+    second_factor_text,
     sign_in,
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, deck_names, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, deck_names, ease_resend, help_ui, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -167,6 +172,11 @@ state = {
     # None, or a _WelcomeWait for the open profile; a callback that holds another one is stale.
     "welcome": None,
     "settings_synced_at": 0.0,
+    # The [base, user, token] the password card is offered to, or None (password_prompt).
+    "password_prompt": None,
+    # How often the player answered the card (Not now or a saved password). A poll that started
+    # before the latest answer is stale for the card and leaves it as the answer set it.
+    "password_answers": 0,
 }
 
 mw.addonManager.setWebExports(__name__, r"((aki|ankilope)_face|art/(aki|ankilope)_[a-z0-9_]+)\.png")
@@ -299,6 +309,26 @@ def _retry_upload(waiting):
     _request_upload(waiting.request, attempts=waiting.attempts)
 
 
+# OpenSSL X509_V_ERR codes in SSLCertVerificationError.verify_code, to the upload status line.
+_CERT_EXPIRED, _CERT_SELF_SIGNED, _CERT_SELF_SIGNED_CHAIN, _CERT_WRONG_HOST = 10, 18, 19, 62
+_CERTIFICATE_LINES = {
+    _CERT_EXPIRED: "The server's certificate has expired, will retry",
+    _CERT_SELF_SIGNED: "The server's certificate is self-signed, will retry",
+    _CERT_SELF_SIGNED_CHAIN: "The server's certificate is self-signed, will retry",
+    _CERT_WRONG_HOST: "The server's certificate is for another address, will retry",
+}
+_CERTIFICATE_UNVERIFIED = "The server's certificate could not be verified, will retry"
+
+
+def _certificate_line(error):
+    """The status line for a certificate urllib could not verify (wrapped in a URLError), or
+    None for any other error. That is a server or address problem, not being offline."""
+    reason = getattr(error, "reason", error)
+    if not isinstance(reason, ssl.SSLCertVerificationError):
+        return None
+    return _CERTIFICATE_LINES.get(getattr(reason, "verify_code", None), _CERTIFICATE_UNVERIFIED)
+
+
 def _upload_failed(upload, error):
     # Recover from transient failures without re-sending on every answer.
     print("ankiquest:", error)
@@ -310,6 +340,8 @@ def _upload_failed(upload, error):
         return
     elif isinstance(error, ServerError) and (error.status == HTTPStatus.TOO_MANY_REQUESTS or error.status >= HTTPStatus.INTERNAL_SERVER_ERROR):
         message = tr("Last upload failed (%s), will retry") % error
+    elif (line := _certificate_line(error)) is not None:
+        message = tr(line)
     elif isinstance(error, OSError):
         message = tr("Offline, will retry")
     else:
@@ -378,6 +410,15 @@ def _request_upload(request, *, attempts=0):
     saved = _upload_prefs(api)
     mark = int(saved.get("through", 0))
     initial_sync = "through" not in saved
+
+    # The one resend of the history with the button (ease_resend) is checked on the uploads that
+    # already reach back (profile open, resync, history, first sync), not after each answer.
+    resend = ease_resend.load(saved)
+    resend_due = resend is ease_resend.Resend.PENDING and (
+        initial_sync or request.mode >= UploadMode.PROFILE_OPEN
+    )
+    if resend_due:
+        ease_resend.save(saved, ease_resend.start(resend))
     rollover = int(col.get_config("rollover", 4))
     now_ms = int(time.time() * 1000)
     day = study_day(now_ms, offset_west_min(), rollover)
@@ -451,7 +492,33 @@ def _request_upload(request, *, attempts=0):
             if history and sent:
                 mw.taskman.run_on_main(lambda count=sent_count: progress(count, max(count, total)))
             if not full:
-                return max(known, mark), sorted(present), profile, sent_count, conquest_decks
+                check = resend_history(start) if resend_due else None
+                return max(known, mark), sorted(present), profile, sent_count, conquest_decks, check
+
+    def resend_history(start):
+        # A failed resend must not undo the upload before it; it is tried on a later upload.
+        try:
+            return resend_rows(start)
+        except Exception as error:
+            print("ankiquest ease resend:", error)
+            return ease_resend.Check.FAILED
+
+    def resend_rows(start):
+        # An older server drops the button, so the resend waits until it names the feature.
+        check_target()
+        if ease_resend.FEATURE not in api.server_info()[0]:
+            return ease_resend.Check.UNSUPPORTED
+
+        # An upload from the first review already sent everything with the button.
+        if start == 0:
+            return ease_resend.Check.COVERED
+
+        def send(rows):
+            check_target()
+            api.upload(review_offsets.stamp(rows_to_reviews(rows), stamps), rollover, True)
+
+        ease_resend.send_history(lambda after: col.db.all(PENDING_SQL, after), send)
+        return ease_resend.Check.RESENT
 
     def done(future):
         if state["upload"] is not upload:
@@ -462,6 +529,8 @@ def _request_upload(request, *, attempts=0):
         try:
             result = future.result()
         except Exception as error:
+            if resend_due:
+                ease_resend.save(saved, ease_resend.fail(ease_resend.Resend.SENDING))
             _upload_failed(upload, error)
             return
         try:
@@ -472,7 +541,9 @@ def _request_upload(request, *, attempts=0):
 
     def uploaded(result):
         # Advance the mark only after the whole upload was accepted.
-        through, present, profile, sent, conquest_decks = result
+        through, present, profile, sent, conquest_decks, check = result
+        if resend_due:
+            ease_resend.save(saved, ease_resend.finish(ease_resend.Resend.SENDING, check))
         uploaded_at = int(time.time() * 1000)
         saved["through"], saved["recent"] = through, present
         saved["last_upload"] = uploaded_at
@@ -555,6 +626,9 @@ def poll(quiet=False):
 
     previous = prefs.get(ORDER_KEY) or []
     week = prefs.get(ORDER_WEEK_KEY)
+    # Within the days Not now hides the card, the server is not even asked.
+    ask_sign_in = not password_prompt._snoozed(prefs, account, int(time.time() * 1000))
+    answers = state["password_answers"]
     announcements = delivery._record(prefs, api)
     cursor = announcements["cursor"]
 
@@ -566,7 +640,7 @@ def poll(quiet=False):
             companion = api.companion()
         except Exception:
             companion = state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
-        return rank, profile, notifications, companion, arrivals, reminders
+        return rank, profile, notifications, companion, arrivals, reminders, _sign_in(api) if ask_sign_in else None
 
     def done(future):
         if state["polling"] is not request:
@@ -576,7 +650,7 @@ def poll(quiet=False):
         if mw.pm.profile is not prefs or [current.base, current.user, current.token] != account:
             return
         try:
-            rank, profile, inbox, companion, arrivals, reminders = future.result()
+            rank, profile, inbox, companion, arrivals, reminders, sign_in = future.result()
         except Exception as e:
             # Keep a direct sign-in link on the deck list for a revoked credential.
             if isinstance(e, ServerError) and e.status == HTTPStatus.UNAUTHORIZED:
@@ -593,12 +667,63 @@ def poll(quiet=False):
         state["place"] = order.index(api.name) + 1 if api.name in order else None
         state["profile"], state["activity"], state["inbox"] = profile, inbox, inbox.items
         state["companion"], state["companion_account"] = companion, account
+        if state["password_answers"] == answers:
+            state["password_prompt"] = account if sign_in is password_prompt._SignIn.TOKEN_ONLY else None
         if reminders is not None:
             announcements["reminders"] = reminders
         announce(rank, profile, arrivals, quiet)
         redraw()
 
     mw.taskman.run_in_background(work, done)
+
+
+def _sign_in(api):
+    """How the player signs in; None when the server does not say or cannot be asked, which
+    must never stop the rest of the poll."""
+    try:
+        return password_prompt._sign_in(api.sign_in_methods())
+    except Exception as e:
+        print("ankiquest sign-in methods:", e)
+        return None
+
+
+def set_password():
+    """The form for a token-only player's first password, saved with the token alone."""
+    api = client()
+    account = [api.base, api.user, api.token]
+
+    def submit(password, finish):
+        def done(future):
+            try:
+                future.result()
+            except ServerError as e:
+                finish(e.message or tr("Could not save your password (%s).") % e)
+                return
+            except Exception as e:
+                finish(tr("Could not save your password (%s).") % e)
+                return
+            finish(None)
+
+        mw.taskman.run_in_background(lambda: api.set_password(password), done)
+
+    if not password_ui.password_dialog(mw, submit):
+        return
+    state["password_answers"] += 1
+    if state["password_prompt"] == account:
+        state["password_prompt"] = None
+    tooltip(tr("Password saved."))
+    redraw()
+
+
+def password_later():
+    """Not now: the card stays hidden on this computer for password_prompt.SNOOZE_MS."""
+    api = client()
+    account = [api.base, api.user, api.token]
+    if mw.pm.profile is not None:
+        password_prompt._snooze(mw.pm.profile, account, int(time.time() * 1000))
+    state["password_answers"] += 1
+    state["password_prompt"] = None
+    redraw()
 
 
 def announce(rank, profile, inbox, quiet):
@@ -609,9 +734,9 @@ def announce(rank, profile, inbox, quiet):
     mw.pm.profile[ORDER_WEEK_KEY] = rank.get("week")
     previous_cursor = mw.pm.profile.get(INBOX_KEY, 0)
     _, cursor = notify.fresh_messages(inbox, previous_cursor, now_ms // 1000)
-    wins = [item for entry in inbox if entry["id"] > previous_cursor
-            and entry.get("created_at", 0) >= now_ms // 1000 - notify.FRESH_SECONDS
-            if (item := moments._notice(entry)) is not None]
+    wins = [item for entry in inbox if (item := moments._notice(entry)) is not None
+            and (moments._held(item) or entry["id"] > previous_cursor
+                 and entry.get("created_at", 0) >= now_ms // 1000 - notify.FRESH_SECONDS)]
     _delivery._receive(inbox, delivery._Mode.QUIET if quiet else delivery._Mode.ANNOUNCE)
     mw.pm.profile[INBOX_KEY] = cursor
     if quiet:
@@ -669,6 +794,12 @@ def on_js_message(handled, message, context):
     if message == "ankiquest:account":
         open_account()
         return (True, None)
+    if message == board.PASSWORD_COMMAND:
+        set_password()
+        return (True, None)
+    if message == board.PASSWORD_LATER_COMMAND:
+        password_later()
+        return (True, None)
     if message.startswith("ankiquest:web:"):
         page = message.split(":", 2)[2]
         if page == "history":
@@ -716,6 +847,8 @@ def account_error(error):
     if isinstance(error, InsecureServer):
         return tr("Use HTTPS to send a password outside your local network.")
     if isinstance(error, ServerError):
+        if second_factor_text(error):
+            return tr(second_factor_text(error))
         if error.status == 401:
             return tr("Username or password not recognized.")
         if error.status == 403:
@@ -736,13 +869,15 @@ def submit_account(values, finish):
     def work():
         if values["new"]:
             return sign_up(values["url"], values["user"], values["password"], values["display"], device)
-        return sign_in(values["url"], values["user"], values["password"], device)
+        return sign_in(values["url"], values["user"], values["password"], device, values.get("code"))
 
     def done(future):
         try:
             answer = future.result()
         except Exception as e:
-            finish(None, account_error(e))
+            # A right password for an account with two-factor: ask for the code next.
+            asks = isinstance(e, ServerError) and e.second_factor is not SecondFactor.NONE
+            finish(None, account_error(e), ui.Ask.CODE if asks else ui.Ask.NOTHING)
             return
         finish({"url": values["url"], "user": answer["user"], "token": answer["token"]}, None)
 
@@ -873,6 +1008,7 @@ def open_settings():
         mw, config(), test_connection, upload_everything, state["companion"], ask_account,
         extra=settings_sections, on_manage=_manage_account,
         on_decks=open_deck_notifications, on_privacy=_open_privacy,
+        on_two_factor=_open_two_factor if home.server_has(client(), TWO_FACTOR) else None,
     )
     if values is None:
         return
@@ -896,6 +1032,11 @@ def _manage_account(base=None):
             return
         base = api.base
     _open_site_page(base, "/settings")
+
+
+def _open_two_factor(base):
+    """Two-factor authentication is set up on the website, in its own Settings card."""
+    _open_site_page(base, "/settings#two-factor")
 
 
 def _open_privacy():
@@ -1009,7 +1150,7 @@ def save_deck_choice(api, shared, unshared, recipients, nudges, celebrations=Non
         except Exception as e:
             failed(tr("AnkiQuest: could not save your decks (%s)"), e)
             return
-        tooltip(_plural("%d deck shared.", "%d decks shared.", len(shared)) % len(shared))
+        tooltip(plural("%d deck shared.", "%d decks shared.", len(shared)) % len(shared))
 
     mw.taskman.run_in_background(work, done)
 
@@ -1039,14 +1180,12 @@ def on_profile_open():
 
 
 def check_updates(quiet=True):
-    if updates._source(ADDON_DIR) is updates._Source.ANKIWEB:
-        if not quiet:
-            tooltip(tr("This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates."))
+    # Builds without --updates github (AnkiWeb, local copies) never look for updates.
+    if updates.SOURCE is not updates.UpdateSource.GITHUB:
         return
+    # The packager writes version.json next to build.json, so a GitHub build always has one.
     current = updates.installed(ADDON_DIR)
     if current is None:
-        if not quiet:
-            tooltip(tr("This AnkiQuest is a local copy; it does not update itself."))
         return
     channel = config().get("update_channel", "stable")
 
@@ -1066,7 +1205,7 @@ def check_updates(quiet=True):
 
 
 def maybe_check_updates():
-    if updates._source(ADDON_DIR) is updates._Source.ANKIWEB:
+    if updates.SOURCE is not updates.UpdateSource.GITHUB:
         return
     now_ms = int(time.time() * 1000)
     if not updates.due(mw.pm.profile.get(UPDATE_CHECK_KEY, 0), now_ms):
@@ -1139,7 +1278,9 @@ add_action(tr("Study companion"), lambda: open_companion())
 copies_ui.setup(mw, lambda: client(), lambda: state["companion"], _tools)
 add_action(tr("Website"), open_website, WEBSITE_SHORTCUT)
 add_action(tr("Settings"), open_settings)
-add_action(tr("Check for updates"), lambda: check_updates(quiet=False))
+if updates.SOURCE is updates.UpdateSource.GITHUB:
+    add_action(tr("Check for updates"), lambda: check_updates(quiet=False))
+help_ui.setup(mw, _tools)
 
 
 gui_hooks.reviewer_did_answer_card.append(on_answer)
@@ -1149,12 +1290,11 @@ gui_hooks.sync_did_finish.append(on_sync)
 gui_hooks.profile_did_open.append(on_profile_open)
 gui_hooks.deck_browser_will_render_content.append(on_deck_browser)
 gui_hooks.webview_did_receive_js_message.append(on_js_message)
-if hasattr(gui_hooks, "profile_will_close"):
-    gui_hooks.profile_will_close.append(inbox_ui.clear_account)
-    gui_hooks.profile_will_close.append(copies_ui.clear_account)
-    gui_hooks.profile_will_close.append(preview.clear_account)
-    gui_hooks.profile_will_close.append(lambda: _delivery._clear())
-    gui_hooks.profile_will_close.append(_end_welcome)
+gui_hooks.profile_will_close.append(inbox_ui.clear_account)
+gui_hooks.profile_will_close.append(copies_ui.clear_account)
+gui_hooks.profile_will_close.append(preview.clear_account)
+gui_hooks.profile_will_close.append(lambda: _delivery._clear())
+gui_hooks.profile_will_close.append(_end_welcome)
 
 
 def current_companion():

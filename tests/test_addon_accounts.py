@@ -22,7 +22,9 @@ class Server(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         Server.received.append((self.path, body))
         Server.headers.append(dict(self.headers))
-        if self.path == "/api/accounts/tokens" and body["password"] == "right password":
+        if self.path == "/api/accounts/tokens" and body["user"] == "two" and body["password"] == "right password":
+            self.second_factor(body.get("code"))
+        elif self.path == "/api/accounts/tokens" and body["password"] == "right password":
             self.answer(200, {"user": body["user"], "display": "Ana", "token": "device-token"})
         elif self.path == "/api/accounts/tokens":
             self.answer(401, {"error": "Username or password not recognized."})
@@ -32,6 +34,17 @@ class Server(BaseHTTPRequestHandler):
             self.answer(201, {"user": body["user"], "display": body.get("display", body["user"]), "token": "first-token"})
         else:
             self.answer(404, None)
+
+    def second_factor(self, code):
+        """An account with two-factor authentication on, as docs/mobile-api.md describes it."""
+        if code == "123456":
+            self.answer(200, {"user": "two", "display": "Two", "token": "device-token"})
+        elif code == "locked":
+            self.answer(429, {"error": "Too many wrong codes. Try again in 15 minutes.", "second_factor": True})
+        elif code is None:
+            self.answer(401, {"error": "Enter the code from your authenticator app.", "second_factor": True})
+        else:
+            self.answer(401, {"error": "That code is not right.", "second_factor": True})
 
     old_server = False
 
@@ -73,6 +86,33 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(answer["token"], "device-token")
         self.assertEqual(Server.received, [("/api/accounts/tokens", {"user": "ana", "password": "right password", "device": "Anki desktop (Linux)"})])
 
+    def test_a_second_factor_is_asked_for_and_sent_only_then(self):
+        with self.assertRaises(self.client.ServerError) as asked:
+            self.client.sign_in(self.base, "two", "right password", "Anki desktop")
+        self.assertEqual(asked.exception.second_factor, self.client.SecondFactor.ASKED)
+        self.assertNotIn("code", Server.received[-1][1], "older servers refuse unknown fields")
+        with self.assertRaises(self.client.ServerError) as wrong:
+            self.client.sign_in(self.base, "two", "right password", "Anki desktop", code="000000")
+        self.assertEqual(wrong.exception.second_factor, self.client.SecondFactor.REFUSED)
+        with self.assertRaises(self.client.ServerError) as locked:
+            self.client.sign_in(self.base, "two", "right password", "Anki desktop", code="locked")
+        self.assertEqual(locked.exception.second_factor, self.client.SecondFactor.LOCKED)
+        answer = self.client.sign_in(self.base, "two", "right password", "Anki desktop", code=" 123456 ")
+        self.assertEqual(answer["token"], "device-token")
+        self.assertEqual(Server.received[-1][1]["code"], "123456")
+
+        # Each refusal has the same words as the website and the app.
+        self.assertEqual(
+            [self.client.second_factor_text(error.exception) for error in (asked, wrong, locked)],
+            ["Enter the code from your authenticator app.", "That code is not right.", "Too many wrong codes. Try again in 15 minutes."],
+        )
+
+    def test_other_refusals_say_nothing_about_a_second_factor(self):
+        with self.assertRaises(self.client.ServerError) as refused:
+            self.client.sign_in(self.base, "two", "wrong", "Anki desktop")
+        self.assertEqual(refused.exception.second_factor, self.client.SecondFactor.NONE)
+        self.assertIsNone(self.client.second_factor_text(refused.exception))
+
     def test_refusals_carry_the_status_and_the_servers_message(self):
         with self.assertRaises(self.client.ServerError) as refused:
             self.client.sign_in(self.base, "ana", "wrong", "Anki desktop")
@@ -89,14 +129,14 @@ class AccountTests(unittest.TestCase):
         headers = Server.headers[-1]
         self.assertEqual((headers["Authorization"], headers["Accept-Language"]), ("Bearer device-token", "es"))
 
-    def test_capabilities_are_read_and_an_older_server_has_none(self):
+    def test_capabilities_are_read_and_an_older_server_refuses(self):
         api = self.client.Client(self.base, "ana", "device-token")
         self.assertEqual(frozenset({"share_cards", "wins"}), api.capabilities())
         self.assertEqual((frozenset({"share_cards", "wins"}), "https://anki.example.test"), api.server_info())
         Server.old_server = True
         try:
-            self.assertEqual(frozenset(), api.capabilities())
-            self.assertEqual((frozenset(), None), api.server_info())
+            with self.assertRaises(self.client.ServerError):
+                api.capabilities()
         finally:
             Server.old_server = False
 

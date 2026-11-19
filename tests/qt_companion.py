@@ -1,27 +1,31 @@
-"""Real Qt checks of the companion picker, run in a separate process by test_companion_unlock.py."""
+"""Real Qt checks of the companion picker, run by test_qt_windows.py."""
 
 from concurrent.futures import Future
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QEvent, QImage, QLabel, QPushButton, QSize, Qt
+from aqt.qt import QApplication, QEvent, QImage, QLabel, QPushButton, Qt
 
 from addon_loader import load_in_package
+from qt_support import queue, run_now, stand_in
 
-app = QApplication.instance() or QApplication([])
 companion_ui = load_in_package("companion_qt", "companion_ui")
 companion_art = load_in_package("companion_qt", "companion_art")
 companion_unlock = load_in_package("companion_qt", "companion_unlock")
 companion_reveal = load_in_package("companion_qt", "companion_reveal")
 share = load_in_package("companion_qt", "share")
+client = load_in_package("companion_qt", "client")
 companion_ui.tr = lambda text: text
 
-UNLOCKS = frozenset([companion_unlock.FEATURE])
 LOCKED = {"unlocks": [], "progress": {
     "ankilope": {"kind": "level", "value": 3, "goal": 30},
     "cow": {"kind": "study_hours", "value": 6, "goal": 10},
 }}
+
+
+class NotFound(Exception):
+    status = 404
 
 
 class Picker(unittest.TestCase):
@@ -29,23 +33,15 @@ class Picker(unittest.TestCase):
         self.answer = LOCKED
         self.api = SimpleNamespace(
             base="https://example.test", user="hill", token="secret", name="hill",
-            capabilities=Mock(return_value=UNLOCKS), companion=Mock(return_value="aki"),
+            companion=Mock(return_value="aki"),
             unlocks=Mock(side_effect=lambda: self.answer), set_companion=Mock(),
             unlock=Mock(side_effect=lambda unlock: self.answer),
         )
-        self.mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=self.run_task))
+        self.mw = stand_in(run_now)
         self.saved = []
         # The client signed in now; a sign-out or account switch replaces it.
         self.current = self.api
         self.queued = []
-
-    def run_task(self, work, done):
-        future = Future()
-        try:
-            future.set_result(work())
-        except Exception as error:
-            future.set_exception(error)
-        done(future)
 
     def picker(self):
         return companion_ui.Picker(None, self.mw, self.api, lambda: self.current, "aki", self.saved.append)
@@ -84,15 +80,14 @@ class Picker(unittest.TestCase):
         self.api.set_companion.assert_called_once_with("cow")
         self.assertEqual(["cow"], self.saved)
 
-    def test_a_server_before_milestones_offers_ankilope_and_hides_the_cow(self):
-        self.api.capabilities.return_value = frozenset()
+    def test_an_older_server_asks_for_an_update(self):
+        self.api.unlocks.side_effect = NotFound()
         picker = self.picker()
-        self.assertEqual(["aki", "ankilope", "none"], self.cards(picker))
-        self.assertTrue(self.card(picker, "ankilope").isEnabled())
-        self.api.unlocks.assert_not_called()
+        self.assertEqual(["aki", "none"], self.cards(picker))
+        self.assertEqual(client.OUTDATED, picker._status.text())
 
     def test_the_current_companion_shows_before_the_server_answers(self):
-        self.api.capabilities.side_effect = OSError("offline")
+        self.api.unlocks.side_effect = OSError("offline")
         self.api.companion.return_value = "cow"
         picker = companion_ui.Picker(None, self.mw, self.api, lambda: self.current, "cow", self.saved.append)
         self.assertEqual(["aki", "cow", "none"], self.cards(picker))
@@ -101,7 +96,7 @@ class Picker(unittest.TestCase):
     def test_each_card_previews_its_poses(self):
         self.answer = {"unlocks": ["ankilope"], "progress": {}}
         picker = self.picker()
-        for companion, count in (("aki", 3), ("ankilope", 2), ("none", 1)):
+        for companion, count in (("aki", 3), ("ankilope", 3), ("none", 1)):
             labels = [label for label in self.card(picker, companion).findChildren(QLabel) if label.pixmap() is not None and not label.pixmap().isNull()]
             self.assertEqual(count if companion != "none" else 0, len(labels), companion)
 
@@ -155,11 +150,11 @@ class Picker(unittest.TestCase):
 
     def queue(self):
         """Holds background work in `self.queued` instead of running it."""
-        self.mw.taskman.run_in_background = lambda work, done: self.queued.append((work, done))
+        self.mw.taskman.run_in_background = queue(self.queued)
 
     def run_queued(self):
         for work, done in self.queued:
-            self.run_task(work, done)
+            run_now(work, done)
         self.queued = []
 
     def test_a_profile_change_cancels_a_queued_chibi_unlock(self):
