@@ -8,7 +8,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 from . import moods
-from .language import _plural
+from .language import plural
 
 MAX_IMAGE = 4 * 1024 * 1024
 IMAGE_TIMEOUT = 15
@@ -142,7 +142,7 @@ def podium(previous, order, me):
 def sent_text(recipients, translate=lambda value: value):
     if recipients <= 0:
         return translate("Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.")
-    return _plural("Shared with %d friend", "Shared with %d friends", recipients, translate) % recipients
+    return plural("Shared with %d friend", "Shared with %d friends", recipients, translate) % recipients
 
 
 def invitation(win, server, translate=lambda value: value):

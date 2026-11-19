@@ -520,7 +520,7 @@ def _current():
     return current_lang or "en"
 
 
-def _plural(one, other, count, translate=tr):
+def plural(one, other, count, translate=tr):
     # Nonnegative integer counts: French uses "one" for 0 and 1. The pt table is pt-PT.
     singular = count in (0, 1) if language_code(_current()) == "fr" else count == 1
     return translate(one if singular else other)
@@ -1235,6 +1235,13 @@ SPANISH.update({
     "Website": "Sitio web",
     "Settings": "Ajustes",
     "Check for updates": "Buscar actualizaciones",
+    "Rate AnkiQuest": "Valorar AnkiQuest",
+    "Rate on AnkiWeb": "Valorar en AnkiWeb",
+    "Star on GitHub": "Dar una estrella en GitHub",
+    "AnkiQuest changelog": "Novedades de AnkiQuest",
+    "All releases": "Todas las versiones",
+    "Report a bug": "Informar de un error",
+    "No app can open the link. Link copied.": "Ninguna app puede abrir el enlace. Enlace copiado.",
     "Send a deck": "Enviar un mazo",
     "Tools → AnkiQuest → Inbox to reply": "Herramientas → AnkiQuest → Bandeja de entrada para responder",
     "Tools → AnkiQuest → Decks offered to me": "Herramientas → AnkiQuest → Mazos que me han ofrecido",
@@ -1257,6 +1264,13 @@ GERMAN.update({
     "Website": "Website",
     "Settings": "Einstellungen",
     "Check for updates": "Nach Updates suchen",
+    "Rate AnkiQuest": "AnkiQuest bewerten",
+    "Rate on AnkiWeb": "Auf AnkiWeb bewerten",
+    "Star on GitHub": "Auf GitHub einen Stern geben",
+    "AnkiQuest changelog": "AnkiQuest-Änderungsprotokoll",
+    "All releases": "Alle Versionen",
+    "Report a bug": "Fehler melden",
+    "No app can open the link. Link copied.": "Keine App kann den Link öffnen. Link kopiert.",
     "Send a deck": "Einen Stapel senden",
     "Tools → AnkiQuest → Inbox to reply": "Zum Antworten: Werkzeuge → AnkiQuest → Posteingang",
     "Tools → AnkiQuest → Decks offered to me": "Werkzeuge → AnkiQuest → Mir angebotene Stapel",
@@ -1279,6 +1293,13 @@ FRENCH.update({
     "Website": "Site web",
     "Settings": "Paramètres",
     "Check for updates": "Rechercher des mises à jour",
+    "Rate AnkiQuest": "Évaluer AnkiQuest",
+    "Rate on AnkiWeb": "Évaluer sur AnkiWeb",
+    "Star on GitHub": "Ajouter une étoile sur GitHub",
+    "AnkiQuest changelog": "Journal des modifications d’AnkiQuest",
+    "All releases": "Toutes les versions",
+    "Report a bug": "Signaler un bug",
+    "No app can open the link. Link copied.": "Aucune app ne peut ouvrir le lien. Lien copié.",
     "Send a deck": "Envoyer un paquet",
     "Tools → AnkiQuest → Inbox to reply": "Outils → AnkiQuest → Boîte de réception pour répondre",
     "Tools → AnkiQuest → Decks offered to me": "Outils → AnkiQuest → Paquets qui me sont proposés",
@@ -1301,6 +1322,13 @@ PORTUGUESE.update({
     "Website": "Site",
     "Settings": "Definições",
     "Check for updates": "Procurar atualizações",
+    "Rate AnkiQuest": "Avaliar o AnkiQuest",
+    "Rate on AnkiWeb": "Avaliar no AnkiWeb",
+    "Star on GitHub": "Dar uma estrela no GitHub",
+    "AnkiQuest changelog": "Novidades do AnkiQuest",
+    "All releases": "Todas as versões",
+    "Report a bug": "Comunicar um erro",
+    "No app can open the link. Link copied.": "Nenhuma aplicação consegue abrir a ligação. Ligação copiada.",
     "Send a deck": "Enviar um baralho",
     "Tools → AnkiQuest → Inbox to reply": "Ferramentas → AnkiQuest → Caixa de entrada para responder",
     "Tools → AnkiQuest → Decks offered to me": "Ferramentas → AnkiQuest → Baralhos que me ofereceram",

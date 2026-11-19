@@ -169,7 +169,8 @@ class RealAnki(unittest.TestCase):
                         self.assertTrue(hasattr(value, part), ".".join(path))
                         value = getattr(value, part)
                 self.assertEqual("AnkiQuest", module._tools.title())
-                self.assertEqual(9, len(module._tools.actions()))
+                # Nine destinations, a separator, then Rate AnkiQuest, AnkiQuest changelog and Report a bug.
+                self.assertEqual(13, len(module._tools.actions()))
                 content = DeckBrowserContent(tree="", stats="")
                 module.on_deck_browser(mw.deckBrowser, content)
                 self.assertIn("AnkiQuest", content.stats)

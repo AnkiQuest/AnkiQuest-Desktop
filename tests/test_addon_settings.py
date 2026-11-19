@@ -26,10 +26,14 @@ class SettingsMenu(unittest.TestCase):
     write_config = addon_fixture.RefreshTests.write_config
     run_task = addon_fixture.RefreshTests.run_task
 
-    def test_one_tools_submenu_holds_all_nine_destinations(self):
+    def test_one_tools_submenu_holds_every_destination(self):
         menu = self.addon._tools
         self.mw.form.menuTools.addAction.assert_called_once_with(menu.menuAction())
-        self.assertEqual(9, menu.addAction.call_count)
+
+        # Nine destinations, then the help entries: Rate AnkiQuest's submenu, the changelog and
+        # Report a bug (help_ui, tested in qt_help.py).
+        self.assertEqual(12, menu.addAction.call_count)
+        menu.addSeparator.assert_called_once_with()
         self.assertEqual(
             ["Today", "Inbox", "Friends", "Study companion", "Website", "Settings", "Check for updates"],
             [call.args[0] for call in self.addon.QAction.call_args_list],

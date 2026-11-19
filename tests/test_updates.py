@@ -6,10 +6,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from addon_loader import load_module
+from addon_loader import load_in_package
 import test_deck_completion as fixture
 
-updates = load_module("ankiquest_updates", "updates.py")
+updates = load_in_package("ankiquest_updates", "updates")
 
 
 def release(tag, prerelease=False, draft=False, package=True):

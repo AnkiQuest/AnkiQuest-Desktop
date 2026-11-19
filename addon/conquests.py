@@ -166,11 +166,11 @@ def _win(api, at, found, deck, translate):
     if "lapses" not in card:
         words = label or title
     elif label:
-        words = language._plural("I finally learned “%s”, a card I had forgotten %d time.",
+        words = language.plural("I finally learned “%s”, a card I had forgotten %d time.",
                                  "I finally learned “%s”, a card I had forgotten %d times.",
                                  card["lapses"], translate) % (label, card["lapses"])
     else:
-        words = language._plural("I finally learned a card I had forgotten %d time.",
+        words = language.plural("I finally learned a card I had forgotten %d time.",
                                  "I finally learned a card I had forgotten %d times.",
                                  card["lapses"], translate) % card["lapses"]
     if deck:
@@ -179,10 +179,10 @@ def _win(api, at, found, deck, translate):
     # The local picture includes the same public counts as Android, without a page link.
     details = [words]
     if "answers" in card:
-        details.append(language._plural("%d answer", "%d answers", card["answers"], translate) % card["answers"])
+        details.append(language.plural("%d answer", "%d answers", card["answers"], translate) % card["answers"])
     if "at" in card and "since" in card:
         days = _days(card)
-        details.append(language._plural("%d day to learn", "%d days to learn", days, translate) % days)
+        details.append(language.plural("%d day to learn", "%d days to learn", days, translate) % days)
     page = "%s/conquered/%s/%d" % (api.base, api.user, at)
     return {"title": title, "body": words + "\n" + page, "win": share.win_id(found),
             "picture_body": "\n".join(details),
@@ -193,7 +193,7 @@ def _stats(found, translate):
     card = found["conquest"]
     days = _days(card)
     return " · ".join((
-        language._plural("%d lapse", "%d lapses", card["lapses"], translate) % card["lapses"],
-        language._plural("%d answer", "%d answers", card["answers"], translate) % card["answers"],
-        language._plural("%d day to learn", "%d days to learn", days, translate) % days,
+        language.plural("%d lapse", "%d lapses", card["lapses"], translate) % card["lapses"],
+        language.plural("%d answer", "%d answers", card["answers"], translate) % card["answers"],
+        language.plural("%d day to learn", "%d days to learn", days, translate) % days,
     ))
