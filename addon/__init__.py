@@ -38,7 +38,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, deck_names, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, deck_names, help_ui, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -632,9 +632,9 @@ def announce(rank, profile, inbox, quiet):
     mw.pm.profile[ORDER_WEEK_KEY] = rank.get("week")
     previous_cursor = mw.pm.profile.get(INBOX_KEY, 0)
     _, cursor = notify.fresh_messages(inbox, previous_cursor, now_ms // 1000)
-    wins = [item for entry in inbox if entry["id"] > previous_cursor
-            and entry.get("created_at", 0) >= now_ms // 1000 - notify.FRESH_SECONDS
-            if (item := moments._notice(entry)) is not None]
+    wins = [item for entry in inbox if (item := moments._notice(entry)) is not None
+            and (moments._held(item) or entry["id"] > previous_cursor
+                 and entry.get("created_at", 0) >= now_ms // 1000 - notify.FRESH_SECONDS)]
     _delivery._receive(inbox, delivery._Mode.QUIET if quiet else delivery._Mode.ANNOUNCE)
     mw.pm.profile[INBOX_KEY] = cursor
     if quiet:
@@ -1163,6 +1163,7 @@ copies_ui.setup(mw, lambda: client(), lambda: state["companion"], _tools)
 add_action(tr("Website"), open_website, WEBSITE_SHORTCUT)
 add_action(tr("Settings"), open_settings)
 add_action(tr("Check for updates"), lambda: check_updates(quiet=False))
+help_ui.setup(mw, _tools)
 
 
 gui_hooks.reviewer_did_answer_card.append(on_answer)
