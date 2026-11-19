@@ -71,6 +71,9 @@ class _Picker:
         self._list.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._area.setWidget(inner)
         form.addWidget(self._area)
+        self._no_match = share_ui._plain(tr("No friend or group has that name."))
+        self._no_match.hide()
+        form.addWidget(self._no_match)
         self._empty = share_ui._plain(tr("Add friends in AnkiQuest to send them your moments."))
         form.addWidget(self._empty)
         self._invite = QPushButton(tr("Invite a friend"))
@@ -92,10 +95,6 @@ class _Picker:
         self._undo.clicked.connect(self._retract)
         self._undo.hide()
         layout.addWidget(self._undo)
-        self._retry = QPushButton(tr("Retry"))
-        self._retry.clicked.connect(self._load)
-        self._retry.hide()
-        layout.addWidget(self._retry)
         self._sharing = share_ui.Sharing(self._dialog, api, win, current_client, self._run, self._status, companion)
         self._exports = QWidget()
         exports = QVBoxLayout(self._exports)
@@ -147,7 +146,6 @@ class _Picker:
         if not self._owns():
             return
         self._phase = _Phase.LOADING
-        self._retry.hide()
         self._status.setText(tr("Loading…"))
         recent = model._recent(self._recents, self._api)
         self._run(lambda: model._load(self._api, self._win, recent), self._loaded)
@@ -155,10 +153,10 @@ class _Picker:
     def _loaded(self, future):
         try:
             targets = future.result()
-        except Exception as error:
+        except Exception:
+            # Same as Android's share sheet: no Retry; "More apps…" still works offline.
             self._phase = _Phase.ERROR
-            self._status.setText(tr("Couldn't load friends (%s).") % error_text(error))
-            self._retry.show()
+            self._status.setText(tr("Couldn't load your friends. Check your connection, or share with another app."))
             return
         self._status.clear()
         if targets is None:
@@ -199,9 +197,16 @@ class _Picker:
 
     def _filter(self, text):
         text = text.strip().lower()
+        matches = 0
         for target, check in self._rows:
-            key = "" if target is model._Choice.CIRCLE else str(target._id).lower()
-            check.setVisible(target is model._Choice.CIRCLE or text in check.text().lower() or text in key)
+            if target is model._Choice.CIRCLE:
+                continue
+            shown = text in check.text().lower() or text in str(target._id).lower()
+            check.setVisible(shown)
+            matches += shown
+
+        # "All friends" always stays; a search that leaves nothing else says so, as on Android.
+        self._no_match.setVisible(bool(self._rows) and not matches)
 
     def _note_changed(self, text):
         if len(text) > model._MAX_NOTE:
@@ -221,7 +226,7 @@ class _Picker:
             return
         self._phase = _Phase.SENDING
         self._form.setEnabled(False)
-        self._status.setText(tr("Sharing…"))
+        self._status.setText(tr("Sending…"))
         choice, note = self._choice, self._note.text()
 
         def sent(future):
