@@ -17,7 +17,7 @@ from html import escape
 
 from . import heatmap
 from .board import COMPANION_CLASS
-from .language import _plural as _plural_text
+from .language import plural
 
 CONFIG_KEY = "review_heatmap"
 EXPANDED_KEY = "ankiquestHeatmapExpanded"
@@ -155,7 +155,7 @@ draw();
 
 
 def _plural(tr, count, one, other):
-    return _plural_text(one, other, count, tr) % count
+    return plural(one, other, count, tr) % count
 
 
 def _reviews(tr, count):

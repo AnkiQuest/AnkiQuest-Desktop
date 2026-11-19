@@ -775,6 +775,13 @@ def move_to_main_address(api, main):
     mw.taskman.run_in_background(lambda: there.devices() if _owns_request(_Job.MOVE, request) else None, done)
 
 
+def server_has(api, feature):
+    """Whether the player's server is known to name `feature` at /api/capabilities. False until
+    the answer, loaded when the profile opens, is in."""
+    known = local["capabilities"]
+    return known is not None and known[0] == api.base and feature in known[1]
+
+
 def server_celebrates_goal(api):
     """Whether the server turns a reached daily goal into a win with its own celebration.
 

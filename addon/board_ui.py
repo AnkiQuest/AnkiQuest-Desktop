@@ -22,7 +22,7 @@ def _initial(name):
     painter.setBrush(QColor(board.AVATAR_COLOURS[sum(map(ord, name)) % len(board.AVATAR_COLOURS)]))
     painter.drawEllipse(0, 0, 32, 32)
     painter.setPen(Qt.GlobalColor.white)
-    painter.drawText(picture.rect(), Qt.AlignmentFlag.AlignCenter, name[:1].upper() or "?")
+    painter.drawText(picture.rect(), Qt.AlignmentFlag.AlignCenter, board.initial(name))
     painter.end()
     return QIcon(picture)
 

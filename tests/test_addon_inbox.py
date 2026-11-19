@@ -366,10 +366,10 @@ class CelebrationHookTests(unittest.TestCase):
     def test_a_climb_onto_the_podium_is_offered_for_sharing(self):
         offer = self.offered()
         self.mw.pm.profile["ankiquestLastOrder"] = ["hill", "cerro"]
-        self.api.rank.return_value = {"order": ["cerro", "hill"], "change": {"title": "Crown", "body": "You passed Hill."}}
+        self.api.rank.return_value = {"order": ["cerro", "hill"], "change": {"title": "Crown", "body": "You passed hill."}}
         self.addon.poll()
         win = offer.call_args.args[3][0]["share"]
-        self.assertEqual({"title": "Crown", "body": "You passed Hill.", "notification": None, "place": 1, "win": None}, win)
+        self.assertEqual({"title": "Crown", "body": "You passed hill.", "notification": None, "place": 1, "win": None}, win)
 
     def test_the_poll_sends_back_the_week_its_order_was_seen_in(self):
         self.offered()
@@ -387,7 +387,7 @@ class CelebrationHookTests(unittest.TestCase):
         self.inbox[:] = [
             {"id": 6, "title": "Level 5!", "body": "a", "created_at": now, "kind": "celebration", "sender": ""},
             {"id": 7, "title": "Recap", "body": "b", "created_at": now, "kind": "reminder_weekly_recap", "sender": "", "win": 21},
-            {"id": 8, "title": "Hill shared a win", "body": "c", "created_at": now, "kind": "share", "sender": "hill"},
+            {"id": 8, "title": "hill shared a win", "body": "c", "created_at": now, "kind": "share", "sender": "hill"},
         ]
         self.addon.poll()
         offer.assert_called_once()
