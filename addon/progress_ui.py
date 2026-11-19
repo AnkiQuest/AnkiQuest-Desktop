@@ -2,9 +2,12 @@
 from enum import Enum, auto
 from http import HTTPStatus
 
-from aqt.qt import QBrush, QColor, QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, Qt
+import time
 
-from . import heatmap_ui, progress_data, share_ui, today
+from aqt.qt import QBrush, QColor, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QPushButton, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, Qt
+
+from . import heatmap_ui, progress_data, share_ui, study_time, today
+from .client import offset_west_min
 from .language import tr
 from .progress_data import _Section
 
@@ -20,6 +23,13 @@ _RECORD_NAMES = {"hour": "Best hour", "day": "Best day", "week": "Best week", "m
                  "year": "Best year", "streak": "Longest streak", "days": "Days studied"}
 
 
+# The study time tab: its request key, its intro and its rows, in Android's order.
+_STUDY = "study_time"
+_STUDY_INTRO = ("Time spent answering cards in this collection, uploaded or not. "
+                "Days start at Anki’s “Next day starts at” hour, weeks on Monday.")
+_STUDY_ROWS = ("Today", "This week", "This month", "Total", "Per study day")
+
+
 class _Progress:
     def __init__(self, addon):
         self._addon, self._api = addon, addon.client()
@@ -31,7 +41,6 @@ class _Progress:
         self._dialog.setWindowTitle(tr("Progress"))
         self._dialog.finished.connect(self._finished)
         root = QVBoxLayout(self._dialog)
-        root.addWidget(share_ui._plain(tr("Only uploaded study appears here.")))
         tabs = QTabWidget()
         root.addWidget(tabs, 1)
         self._years = QComboBox()
@@ -42,6 +51,7 @@ class _Progress:
         ):
             page = QWidget()
             layout = QVBoxLayout(page)
+            layout.addWidget(share_ui._plain(tr("Only uploaded study appears here.")))
             controls = QHBoxLayout()
             if section is _Section.HISTORY:
                 controls.addWidget(QLabel(tr("Year")))
@@ -60,6 +70,7 @@ class _Progress:
             table.setUniformRowHeights(True)
             layout.addWidget(table, 1)
             tabs.addTab(page, title)
+        tabs.addTab(self._study_page(), tr("Study time"))
         actions = QHBoxLayout()
         website = QPushButton(tr("Open website"))
         website.clicked.connect(lambda: addon.open_page("/history") if self._owns() else self._close())
@@ -73,6 +84,57 @@ class _Progress:
         self._dialog.resize(min(760, screen.width()), min(640, screen.height()))
         self._load(_Section.HISTORY)
         self._load(_Section.RECORDS)
+        self._load_study()
+
+    def _study_page(self):
+        """Study time from this computer's collection; it needs no account or upload."""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.addWidget(share_ui._plain(tr(_STUDY_INTRO)))
+        controls = QHBoxLayout()
+        controls.addStretch(1)
+        self._study_retry = QPushButton(tr("Refresh"))
+        self._study_retry.clicked.connect(lambda _checked=False: self._load_study())
+        controls.addWidget(self._study_retry)
+        layout.addLayout(controls)
+        self._study_status = share_ui._plain("")
+        layout.addWidget(self._study_status)
+        form = QFormLayout()
+        self._study_values = {}
+        for label in _STUDY_ROWS:
+            value = self._study_values[label] = QLabel()
+            form.addRow(tr(label), value)
+        layout.addLayout(form)
+        layout.addStretch(1)
+        return page
+
+    def _load_study(self):
+        col = getattr(self._addon.mw, "col", None)
+        if col is None:
+            return
+        request = self._requests[_STUDY] = object()
+        self._study_status.setText(tr("Loading study time…"))
+        self._study_retry.setEnabled(False)
+        now_ms = int(time.time() * 1000)
+        rollover = int(col.get_config("rollover", 4))
+
+        def done(future):
+            if self._phase is not _Phase.OPEN or self._requests.get(_STUDY) is not request:
+                return
+            self._requests.pop(_STUDY)
+            self._study_retry.setEnabled(True)
+            try:
+                totals = future.result()
+            except Exception as error:
+                self._study_status.setText(tr("Could not read study time (%s).") % str(error))
+                return
+            self._study_status.setText("" if totals.study_days else tr("No reviews in this collection yet."))
+            shown = (totals.today_ms, totals.week_ms, totals.month_ms, totals.total_ms, totals.average_ms)
+            for label, ms in zip(_STUDY_ROWS, shown):
+                self._study_values[label].setText(study_time.duration(ms, tr))
+
+        self._addon.mw.taskman.run_in_background(
+            lambda: study_time.load(col.db, now_ms, offset_west_min(), rollover), done)
 
     def _finished(self, _result):
         self._phase = _Phase.CLOSED

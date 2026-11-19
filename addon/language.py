@@ -2241,3 +2241,43 @@ SPANISH.update({"Share a deck": "Compartir un mazo"})
 GERMAN.update({"Share a deck": "Stapel teilen"})
 FRENCH.update({"Share a deck": "Partager un paquet"})
 PORTUGUESE.update({"Share a deck": "Partilhar um baralho"})
+
+# Progress: study time from the local review log, in Android's wording.
+_STUDY_INTRO = ("Time spent answering cards in this collection, uploaded or not. "
+                "Days start at Anki’s “Next day starts at” hour, weeks on Monday.")
+SPANISH.update({
+    _STUDY_INTRO: "Tiempo dedicado a responder tarjetas en esta colección, se haya subido o no. "
+                  "Los días empiezan a la hora de «El día siguiente comienza a las» de Anki y las semanas, el lunes.",
+    "This week": "Esta semana", "This month": "Este mes", "Total": "Total", "Per study day": "Por día de estudio",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "Cargando el tiempo de estudio…",
+    "Could not read study time (%s).": "No se pudo leer el tiempo de estudio (%s).",
+    "No reviews in this collection yet.": "Aún no hay repasos en esta colección.",
+})
+GERMAN.update({
+    _STUDY_INTRO: "Zeit, die du in dieser Sammlung mit dem Beantworten von Karten verbracht hast, hochgeladen oder nicht. "
+                  "Tage beginnen zur Stunde von Ankis „Nächster Tag beginnt um“, Wochen am Montag.",
+    "This week": "Diese Woche", "This month": "Diesen Monat", "Total": "Gesamt", "Per study day": "Pro Lerntag",
+    "%d min": "%d Min.", "%d h %d min": "%d Std. %d Min.",
+    "Loading study time…": "Lernzeit wird geladen…",
+    "Could not read study time (%s).": "Lernzeit konnte nicht gelesen werden (%s).",
+    "No reviews in this collection yet.": "Noch keine Wiederholungen in dieser Sammlung.",
+})
+FRENCH.update({
+    _STUDY_INTRO: "Temps passé à répondre aux cartes de cette collection, envoyé ou non. "
+                  "Les jours commencent à l’heure « Le jour suivant commence à » d’Anki, les semaines le lundi.",
+    "This week": "Cette semaine", "This month": "Ce mois-ci", "Total": "Total", "Per study day": "Par jour d’étude",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "Chargement du temps d’étude…",
+    "Could not read study time (%s).": "Impossible de lire le temps d’étude (%s).",
+    "No reviews in this collection yet.": "Aucune révision dans cette collection pour le moment.",
+})
+PORTUGUESE.update({
+    _STUDY_INTRO: "Tempo passado a responder a cartões nesta coleção, enviado ou não. "
+                  "Os dias começam à hora de «O dia seguinte começa às» do Anki e as semanas à segunda-feira.",
+    "This week": "Esta semana", "This month": "Este mês", "Total": "Total", "Per study day": "Por dia de estudo",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "A carregar o tempo de estudo…",
+    "Could not read study time (%s).": "Não foi possível ler o tempo de estudo (%s).",
+    "No reviews in this collection yet.": "Ainda não há revisões nesta coleção.",
+})

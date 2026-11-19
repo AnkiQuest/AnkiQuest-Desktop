@@ -96,6 +96,29 @@ class Progress(unittest.TestCase):
         self.assertEqual(2, self.window._tables[ui._Section.HISTORY].topLevelItemCount())
         self.assertEqual(1, self.window._tables[ui._Section.RECORDS].topLevelItemCount())
 
+    def test_study_time_reads_the_collection_without_the_server(self):
+        self.finish()
+        self.finish()
+        reads = []
+        rows = [(20_000, 90_000), (20_005, 3_000_000)]
+        db = SimpleNamespace(all=lambda sql, *args: reads.append(args) or rows)
+        self.mw.col = SimpleNamespace(db=db, get_config=lambda key, default: 4)
+        with patch.object(ui.time, "time", return_value=20_005 * 86_400 + 43_200), patch.object(ui, "offset_west_min", return_value=0):
+            self.window._load_study()
+            self.finish()
+        values = [self.window._study_values[label].text() for label in ui._STUDY_ROWS]
+        self.assertEqual(["50 min", "50 min", "51 min", "51 min", "25 min"], values)
+        self.assertEqual("", self.window._study_status.text())
+        self.assertEqual([(14_400_000, 20_006 * 86_400_000 + 14_400_000)], reads)
+        self.assertEqual(["/api/study/sam", "/api/records"], self.paths)
+
+    def test_study_time_says_when_the_collection_has_no_reviews(self):
+        self.mw.col = SimpleNamespace(db=SimpleNamespace(all=lambda sql, *args: []), get_config=lambda key, default: 4)
+        self.window._load_study()
+        self.finish(len(self.tasks) - 1)
+        self.assertEqual("No reviews in this collection yet.", self.window._study_status.text())
+        self.assertEqual("0 min", self.window._study_values["Total"].text())
+
     def test_browse_has_a_live_entry_and_removes_it_when_closed(self):
         home = load_in_package("progress_qt", "home")
         browser = QWidget()
