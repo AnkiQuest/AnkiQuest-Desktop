@@ -2,7 +2,7 @@
 
 The server judges every day. The one thing the add-on works out itself is today, right after
 answering cards it has not uploaded: it adds their review time to what the last profile said,
-by the rule in docs/mobile-api.md ("day verdicts"), pinned by tests/fixtures/day_verdicts.json.
+by the rule in AnkiQuest-Server's docs/mobile-api.md ("day verdicts"), pinned by tests/fixtures/day_verdicts.json.
 
 Plain Python, so the tests load it without Anki.
 """

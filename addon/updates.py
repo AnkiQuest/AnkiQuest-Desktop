@@ -5,7 +5,7 @@ import re
 from enum import Enum, auto
 from pathlib import Path
 
-REPO = "AnkiQuest/ankiquest"
+REPO = "AnkiQuest/AnkiQuest-Desktop"
 RELEASES_URL = "https://api.github.com/repos/%s/releases?per_page=50" % REPO
 NIGHTLY_URL = "https://github.com/%s/releases/download/addon-nightly/" % REPO
 PACKAGE = "ankiquest.ankiaddon"

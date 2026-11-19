@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 import test_desktop_today as fixture
 
-EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
+EXAMPLES = Path(__file__).resolve().parents[1] / "tests/api-examples"
 
 
 def example(name):

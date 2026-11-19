@@ -15,7 +15,7 @@ from addon_loader import load_in_package
 app = QApplication.instance() or QApplication([])
 ui = load_in_package("social_qt", "social_ui")
 client = load_in_package("social_qt", "client")
-EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
+EXAMPLES = Path(__file__).resolve().parents[1] / "tests/api-examples"
 
 
 class Social(unittest.TestCase):

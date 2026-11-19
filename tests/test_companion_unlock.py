@@ -19,7 +19,7 @@ client = load_in_package("aq_cow", "client")
 moments = load_in_package("aq_cow", "moments")
 
 FIXTURE = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
-EXAMPLES = ADDON.parent / "docs/api/examples"
+EXAMPLES = ADDON.parent / "tests/api-examples"
 LIVE = [rule for rule in FIXTURE["companions"] if rule["status"] == "live"]
 Choice = unlock.Choice
 

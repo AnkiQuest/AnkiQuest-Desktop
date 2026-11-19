@@ -15,7 +15,7 @@ board = load_in_package("aq_tab", "board")
 reveal = load_in_package("aq_tab", "companion_reveal")
 
 UNLOCKS = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
-EXAMPLES = ADDON.parent / "docs/api/examples"
+EXAMPLES = ADDON.parent / "tests/api-examples"
 Phase, Motion, Beam = reveal.Phase, reveal.Motion, reveal.Beam
 
 

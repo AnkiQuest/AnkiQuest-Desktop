@@ -19,7 +19,7 @@ share_ui = load_in_package("reveal_qt", "share_ui")
 reveal_ui.tr = companion_ui.tr = share_ui.tr = lambda text: text
 Phase, Motion = reveal_ui.Phase, reveal_ui.Motion
 
-ROWS = json.loads((ADDON.parent / "docs/api/examples/notifications_companion.json").read_text("utf-8"))
+ROWS = json.loads((ADDON.parent / "tests/api-examples/notifications_companion.json").read_text("utf-8"))
 COW = moments._notice(next(row for row in ROWS if row.get("moment") == "companion:cow"))
 
 

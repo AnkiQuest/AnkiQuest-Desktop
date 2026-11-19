@@ -1,0 +1,307 @@
+{
+  "_about": "Companion art outside static/<companion>/. `exports`: committed copies of a master, written by the named xtask exporter, with the SHA-256 of the file it wrote; the tests regenerate each copy and compare. `retired`: copies nothing reads any more, kept because companion art is never deleted. See docs/branding/mascot-source.md.",
+  "exports": [
+    {
+      "exporter": "addon",
+      "file": "addon/aki_face.png",
+      "master": "static/aki/face.png",
+      "sha256": "e96a0044362231f79c1dbdfa27a657b130542625826f8d2f366c0ffe6d0803d9"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_face.png",
+      "master": "static/aki/face.png",
+      "sha256": "e96a0044362231f79c1dbdfa27a657b130542625826f8d2f366c0ffe6d0803d9"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_welcome.png",
+      "master": "static/aki/welcome.png",
+      "sha256": "88fb49e089e887678281f236e022b863f98cd3172501c522c1be323abd0f3973"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_review.png",
+      "master": "static/aki/review.png",
+      "sha256": "6a601e8233664270d7e093343d01694b866634bf269ed7a1734e947c6934454c"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_celebrate.png",
+      "master": "static/aki/celebrate.png",
+      "sha256": "65b9645023bf71123d9b7e9b5634fda655ea4b7ca3dac1026f990c4da4d01569"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_winner.png",
+      "master": "static/aki/winner.png",
+      "sha256": "94bea3c98eb4956107c097bd00488ba593bb09212eff1977f26ee241b5a43cb3"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak.png",
+      "master": "static/aki/streak.png",
+      "sha256": "0e755065e88e2f43f172f6fad395741fc53da0f689680879d9470c7c00a16563"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak_hot.png",
+      "master": "static/aki/streak_hot.png",
+      "sha256": "e28c31e67d1bfdf7f9806780dc63fdc2cab4c33f99471fae4ea47bc9c0de724b"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak_blazing.png",
+      "master": "static/aki/streak_blazing.png",
+      "sha256": "ec51b9935b38b577b3bcc58c68045592e6e44526e08b39c5e655ef79663891b7"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak_legend.png",
+      "master": "static/aki/streak_legend.png",
+      "sha256": "8438de4bfe05a2e39acf446e7ec0fdc36b0c3f7d766fc4d7e268f3c46a4bddfd"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_streak_milestone.png",
+      "master": "static/aki/streak_milestone.png",
+      "sha256": "87b964240a3d2864e75f88f7ac43af7626eeeb63487d6a8cd102fe2896d5cdf0"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_freeze.png",
+      "master": "static/aki/freeze.png",
+      "sha256": "d7a79b412ecb306c91d3735b3af35b2faffd588bb1fa73d6b7de31ff98ab9aa9"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_freeze_used.png",
+      "master": "static/aki/freeze_used.png",
+      "sha256": "54cfd0010b455b3167304b63804a789a4f281e98f7a3feda323922e7924b1deb"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_sleeping.png",
+      "master": "static/aki/asleep.png",
+      "sha256": "0e33f204926d992b79e85394c44f9ce6931b67685616716d1db83357348682da"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_at_risk.png",
+      "master": "static/aki/at_risk.png",
+      "sha256": "3f5b44c151755ff716b3864b28ca6c7f5e5fb6a868b1d84a8bb0944bcdce9d07"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_sad.png",
+      "master": "static/aki/sad.png",
+      "sha256": "b1b11cc0c049b2e745f270c6d38e22c2bb772d2df82b2f957a2fcd293b934700"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_hopeful.png",
+      "master": "static/aki/hopeful.png",
+      "sha256": "cbffb2764a5b9f2316114062881eeca9f6a11c5b82d8e4371d28b4ebc011a3db"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_frozen.png",
+      "master": "static/aki/frozen.png",
+      "sha256": "010666ac339b485b0eef0aeb7ef807a95059c4511d4e8fa534b1420e1e7125d0"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/aki_neglected.png",
+      "master": "static/aki/neglected.png",
+      "sha256": "ec2daaaa043605ccd2ca79e734a408074456e529a9fd1db4963e8776de41ab03"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/ankilope_face.png",
+      "master": "static/ankilope/face.png",
+      "sha256": "0a0a603a6610b954be820403d1d380b472c9c16f9ab9f866697cc2d21e3c07ec"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_face.png",
+      "master": "static/ankilope/face.png",
+      "sha256": "0a0a603a6610b954be820403d1d380b472c9c16f9ab9f866697cc2d21e3c07ec"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_sad.png",
+      "master": "static/ankilope/sad.png",
+      "sha256": "b39b2ebaded5e5ab8326d38564e7797e7df4a4c7154c856e09dff1d9cc4de713"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_hopeful.png",
+      "master": "static/ankilope/hopeful.png",
+      "sha256": "8bc4f948b6ab82d32e47ffbf5100f25fb73fd95e03e498bd2223f39836d04585"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_frozen.png",
+      "master": "static/ankilope/frozen.png",
+      "sha256": "8edfb1c177bce4006cc62f7bbf69971e3a02848bb6e4af05bdde758a85f92233"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_sleeping.png",
+      "master": "static/ankilope/asleep.png",
+      "sha256": "b22abcc439c7bd634400b5881ea862d18c07b325a29ccfab800441c3a281d250"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_neglected.png",
+      "master": "static/ankilope/neglected.png",
+      "sha256": "c3f8a49fe2f7979bc349f65d15571efda4f5bdb38a3deedc5dbbf0661f815aba"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_welcome.png",
+      "master": "static/ankilope/welcome.png",
+      "sha256": "46dfa9615d04387f0c8db07688be1c948083565a17518dd1c32aa4d417db310c"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_study.png",
+      "master": "static/ankilope/study.png",
+      "sha256": "6dc87506428629b225a6a7d0727ceb03b1d548cae17390e6d123df5181e17223"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/ankilope_celebrate.png",
+      "master": "static/ankilope/celebrate.png",
+      "sha256": "3907226ec780c3d06dab59cc13f2d64920fd85624a2226969391f80e21ba4aa5"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_frozen.png",
+      "master": "static/anki-tan/frozen.png",
+      "sha256": "07a2be6981a7c5a5f918d9c038d745620d71b7187025cf9b0e1e7d77d5da475d"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_chibi_frozen.png",
+      "master": "static/anki-tan/chibi/frozen.png",
+      "sha256": "0f2834baa7e24ab06eb5301794cf0db8237d9a7f7e3495e6c5646f2f493643fb"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_asleep.png",
+      "master": "static/anki-tan/asleep.png",
+      "sha256": "384b17d8ba43944d734dda8071553669e6e1afaac43499bc9866eb60578c5769"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_sad.png",
+      "master": "static/anki-tan/sad.png",
+      "sha256": "f5648427cf550a453118b1c02a15d17ebc7bb71a0fe26dc427a8d012d11e0e83"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_neglected.png",
+      "master": "static/anki-tan/neglected.png",
+      "sha256": "fd7d8914876e30f13c90c9746fa964755fbad60561384458f95bd3f956ec1422"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_face.png",
+      "master": "static/cow/face.png",
+      "sha256": "e8de3cc26fb4b94adeffad6a2c2f928e5d50e59ef536021044ac7541de56efce"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_asleep.png",
+      "master": "static/cow/asleep.png",
+      "sha256": "f79255b238eece398ca5651fd8010500cff8850e4c6e9f3c2cdab9bcaae9de0f"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_happy.png",
+      "master": "static/cow/happy.png",
+      "sha256": "cead5bed8df7032de8ef1877b2ab248c9d6cdba3f48197ac6a97069c03ad8230"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_streak.png",
+      "master": "static/cow/streak.png",
+      "sha256": "86276a677ed815f2597b268d61b28415d165ef74ef2f3cdd35e352efefe282f2"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_sad.png",
+      "master": "static/cow/sad.png",
+      "sha256": "1838cc61662aa886e97cf0667cf7c146fc4e7cb5e92a744364caf84a2d2c3af4"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_hopeful.png",
+      "master": "static/cow/hopeful.png",
+      "sha256": "345f640aef4c698353e4b70f634dc5b157ae3e73b4085818255b4c6818d6a604"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_frozen.png",
+      "master": "static/cow/frozen.png",
+      "sha256": "bb9e520390772e9caeb7342f54a2e13a686daa531a32efb15798e888a7a1ea1d"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/bluma_neglected.png",
+      "master": "static/cow/neglected.png",
+      "sha256": "c3fa305a46ce0aca4a900fdaccba25a19aaf7cc46183bee3186299da59768b14"
+    }
+  ],
+  "retired": [
+    {
+      "file": "assets/retired/addon/aki_face-e7ab7876.png",
+      "why": "addon/aki_face.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/face.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/ankilope_face-9d4dbb66.png",
+      "why": "addon/ankilope_face.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/face.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_celebrate-5017d3a0.png",
+      "why": "addon/art/aki_celebrate.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/celebrate.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_freeze-c3640637.png",
+      "why": "addon/art/aki_freeze.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/freeze.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_hopeful-600724bf.png",
+      "why": "addon/art/aki_hopeful.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/hopeful.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_review-763f5fa4.png",
+      "why": "addon/art/aki_review.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/review.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_streak-bfb9293c.png",
+      "why": "addon/art/aki_streak.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/streak.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_welcome-6eedf264.png",
+      "why": "addon/art/aki_welcome.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/welcome.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/aki_winner-354b5519.png",
+      "why": "addon/art/aki_winner.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/aki/winner.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/ankilope_celebrate-fc3ddf49.png",
+      "why": "addon/art/ankilope_celebrate.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/celebrate.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/ankilope_study-277abb2e.png",
+      "why": "addon/art/ankilope_study.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/study.png. Unreferenced."
+    },
+    {
+      "file": "assets/retired/addon/art/ankilope_welcome-2fe2d900.png",
+      "why": "addon/art/ankilope_welcome.png before #297, hand-made or an earlier export; export-addon-art now writes that file from static/ankilope/welcome.png. Unreferenced."
+    }
+  ]
+}
