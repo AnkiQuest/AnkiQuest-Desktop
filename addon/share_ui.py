@@ -245,17 +245,18 @@ def _route(sharing, legacy):
     from . import moment_share
     if not sharing.owned():
         return
-    if moment_share._moment(sharing.win) is None or not hasattr(sharing.api, "capabilities"):
+    if moment_share._moment(sharing.win) is None:
         legacy()
         return
 
     def checked(future):
         if not sharing.owned():
             return
+        # Unknown features: send the old way, as to a server without the recipient picker.
         try:
             features = future.result()
-        except Exception as error:
-            sharing.status.setText(tr("Couldn't load friends (%s).") % error_text(error))
+        except Exception:
+            legacy()
             return
         if not moment_share._supported(sharing.win, features):
             legacy()

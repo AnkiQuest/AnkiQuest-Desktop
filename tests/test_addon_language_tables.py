@@ -25,7 +25,9 @@ def labels():
         for node in ast.walk(ast.parse(path.read_text("utf-8"))):
             if isinstance(node, ast.Call):
                 name = getattr(node.func, "id", None)
-                count = 2 if name == "_plural" else 1 if name in ("tr", "translate") else 0
+                # language.plural(...) is an attribute call, as in conquests.py.
+                helper = name or getattr(node.func, "attr", None)
+                count = 2 if helper == "plural" else 1 if name in ("tr", "translate") else 0
                 for argument in node.args[:count]:
                     found.update(literals(argument))
     return found
@@ -43,13 +45,32 @@ def code_strings():
     return found
 
 
+def table_entries():
+    """Every (table, label) pair as written in language.py, so a label written twice shows
+    up even though the later entry silently replaces the earlier one at import."""
+    found = []
+    for node in ast.parse((ADDON / "language.py").read_text("utf-8")).body:
+        # TABLE = {...} and TABLE.update({...}).
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict):
+            name, table = node.targets[0].id, node.value
+        elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and getattr(node.value.func, "attr", None) == "update":
+            name, table = node.value.func.value.id, node.value.args[0]
+        else:
+            continue
+        found += [(name, key.value) for key in table.keys]
+    return found
+
+
+def shared_wording():
+    return json.loads((ADDON.parent / "tests/fixtures/desktop-wording.json").read_text("utf-8"))["strings"]
+
+
 language = load_module("aq_language_tables", "language.py")
 
 
 class TranslationTables(unittest.TestCase):
     def test_shared_screens_match_the_reviewed_android_wording(self):
-        fixture = json.loads((ADDON.parent / "tests/fixtures/desktop-wording.json").read_text("utf-8"))
-        for row in fixture["strings"]:
+        for row in shared_wording():
             for code, expected in row["translations"].items():
                 with self.subTest(resource=row["android_resource"], language=code):
                     self.assertEqual(expected, language.tr(row["source"], code))
@@ -64,13 +85,20 @@ class TranslationTables(unittest.TestCase):
                 self.assertEqual(sorted(keys - set(table)), [])
                 self.assertEqual(sorted(set(table) - keys), [])
 
+    def test_no_label_is_translated_twice(self):
+        entries = table_entries()
+        self.assertEqual(sorted({entry for entry in entries if entries.count(entry) > 1}), [])
+
     def test_every_label_in_the_code_is_translated(self):
         for code, table in language.TABLES.items():
             with self.subTest(code=code):
                 self.assertEqual(sorted(labels() - set(table)), [])
 
     def test_every_translated_label_is_still_in_the_code(self):
-        self.assertEqual(sorted(set(language.SPANISH) - code_strings()), [])
+        # The shared wording fixture comes from AnkiQuest-Server; its rows stay translated
+        # until the fixture drops them, even when no desktop screen shows one any more.
+        shared = {row["source"] for row in shared_wording()}
+        self.assertEqual(sorted(set(language.SPANISH) - code_strings() - shared), [])
 
     def test_placeholders_survive_translation(self):
         for code, table in language.TABLES.items():
@@ -86,6 +114,19 @@ class TranslationTables(unittest.TestCase):
         self.assertEqual(language.tr("Save", "es-AR"), "Guardar")
         self.assertEqual(language.tr("Save", "ja"), "Save")
         self.assertEqual(language.tr("Not a label", "de"), "Not a label")
+
+    def test_french_chibi_hint_says_tu_as_on_android(self):
+        # Android's ankiquest_companion_chibi_hint in values-fr; hill chose "tu" for French.
+        self.assertEqual("Tu es à 1 appui de chibi", language.tr("You are 1 tap away from chibi", "fr"))
+        self.assertEqual("Tu es à 5 appuis de chibi", language.tr("You are %d taps away from chibi", "fr") % 5)
+
+    def test_french_says_tu(self):
+        # hill chose informal "tu" for French on both clients.
+        # "vous", "votre", "vos" and the vous imperative ("Choisissez"); "chez" is not a verb.
+        formal = re.compile(r"\b(vous|votre|vos|(?!chez\b)\w+ez)\b", re.IGNORECASE)
+        for source, text in language.FRENCH.items():
+            with self.subTest(source=source):
+                self.assertIsNone(formal.search(text), text)
 
     def test_labels_are_translated_before_names_are_filled_in(self):
         board = load_in_package("aq_language_board", "board")

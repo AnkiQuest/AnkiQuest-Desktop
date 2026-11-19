@@ -8,13 +8,13 @@ The sign-in dialog starts with the main AnkiQuest server. If you self-host, ente
 
 Use **Switch account…** or **Sign out** in **Tools → AnkiQuest → Settings**. Signing out clears the saved connection and account data shown in the add-on. Your upload checkpoint stays with that server and account in this Anki profile, so signing back in continues with new reviews.
 
-Open **Tools → AnkiQuest → Settings** to change your preferences. **Manage account on the website…** opens the account settings for your server, including devices, sign-in methods and your data. **Manual connection** contains the server, player and token fields and the connection check.
+Open **Tools → AnkiQuest → Settings** to change your preferences. **Manage account on the website…** opens the account settings for your server, including devices, sign-in methods and your data. On a server that offers it, **Two-factor authentication…** opens the website's two-factor settings; once it is on, signing in here asks for the code from your authenticator app or a recovery code. **Manual connection** contains the server, player and token fields and the connection check.
 
 The settings dialog has four groups and scrolls within the window:
 
 - **Account:** sign in, switch accounts, sign out, choose your study companion and manage your account on the website. **Data** holds the last upload status and **Upload everything again**. This recovery action quietly replays your history; ordinary uploads resume from their saved checkpoint.
 - **Notify me about:** rank changes, streak warnings, local goal celebrations, server nudges and celebrations, deck completion alerts and unsubscriptions.
-- **Sharing:** choose decks and people for completion notifications, set who hears about each kind of win, and choose whether you appear on the global leaderboard. This switch reads the server's current choice; it is hidden on older servers without the field.
+- **Sharing:** choose decks and people for completion notifications, set who hears about each kind of win, and choose whether you appear on the global leaderboard. This switch reads the server's current choice.
 - **App and privacy:** update channel, deck markers, session recap, review heatmap, **Reduce motion**, **Sync settings**, daily goal, streak protection and the server's privacy notice.
 
 Server choices follow your account across devices. Only changed choices are sent when you save. After switching or editing the connection, save and reopen settings to load that account's choices.
@@ -26,9 +26,11 @@ The local options below match `config.json`. Account choices stay on the server;
 - `notify_rank`: say something when your place on the leaderboard changes
 - `streak_hours`: warn you this many hours before your streak ends (0 turns it off)
 - `reduce_motion`: off by default; on, a companion that joins you fades in instead of playing the full reveal. Anki's own Reduce motion does not change it
-- `update_channel`: `stable` for `addon-<n>` releases, `nightly` for the build of every change (untested)
+- `update_channel`: `stable` for `addon-<n>` releases, `nightly` for the build of every change (untested); used only by the GitHub package
 
-For a GitHub package, once a day and from **Tools → AnkiQuest → Check for updates**, the add-on looks for a newer build on that channel and offers to install it; restart Anki afterwards. AnkiWeb installations leave updates to **Tools → Add-ons → Check for Updates** and hide the GitHub channel picker. Local source copies never update themselves. The installed version appears under **App and privacy** and in Anki's add-on manager.
+For the GitHub package, once a day and from **Tools → AnkiQuest → Check for updates**, the add-on looks for a newer build on that channel and offers to install it; restart Anki afterwards. Other builds (AnkiWeb, local copies) never update themselves: they have no update check and no channel picker, and Settings shows **Updates: none**. AnkiWeb installations update through **Tools → Add-ons → Check for Updates**. The installed version appears under **App and privacy** and in Anki's add-on manager.
+
+At the end of **Tools → AnkiQuest**, **Rate AnkiQuest** opens the add-on's AnkiWeb page or its GitHub repository, **AnkiQuest changelog** shows the release notes of the installed version, with **All releases** and **Rate AnkiQuest**, and **Report a bug** opens the bug report form on GitHub. When no browser opens the link, it is copied to the clipboard.
 
 a line under the deck list shows your weekly place, level and streak. its links and **Tools → AnkiQuest → Website** open the website in a window inside Anki, already signed in with your token, where you can see the leaderboard, reply to messages and join challenges.
 
@@ -48,7 +50,7 @@ with a server set, the block under the deck list is a Today panel: your companio
 
 Today also shows saved freezes, a freeze earned today and your latest weekly recap for seven days, with one sentence per line. An AnkiQuest entry in the top toolbar and beside Browse's search shows the current streak and day state; click it to return to Today. If the server is unreachable, Today keeps the cached profile, explains what is waiting, and offers **Retry connection**.
 
-**History** and **View progress** open a native Progress window: choose a year of uploaded study days or inspect records in the other tab. Each day keeps the server's met, short, frozen, skipped or no-study label. Refresh retries a failed read; **Open website** remains available for older servers. Changing accounts or closing the Anki profile closes the window and discards late replies.
+**History** and **View progress** open a native Progress window: choose a year of uploaded study days or inspect records in the other tab. Each day keeps the server's met, short, frozen, skipped or no-study label. Refresh retries a failed read. Changing accounts or closing the Anki profile closes the window and discards late replies.
 
 the daily goal lives on the server, so every device agrees. pick it with **Change goal** on Today: clear your overdue backlog in a number of days (on top of what is due), a number of cards or minutes a day, or no goal. the dialog estimates each choice from your own collection: cards and time today, and when the backlog would be gone. it opens once by itself while you have not picked a goal. a goal from an older version of the add-on moves to the server the first time.
 

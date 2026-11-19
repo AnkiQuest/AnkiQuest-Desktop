@@ -6,26 +6,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from addon_loader import load_in_package
+from addon_loader import FakeApi, load_in_package
 import test_deck_completion as base
 
 sharing = load_in_package("aq_sharing_package", "sharing")
 language = sys.modules["aq_sharing_package.language"]
 
 
-class FakeApi:
-    user = "hill"
-
-    def __init__(self, answer):
-        self.answer, self.sent = answer, []
-
-    def _request(self, path, body=None, method=None):
-        self.sent.append((path, body, method))
-        if isinstance(self.answer, Exception):
-            raise self.answer
-        return self.answer
-
-
+PATH = "/api/sharing/hill"
 SETTINGS = {
     "policies": {"daily_goal": "ask", "streak_secured": "private", "level": "ask", "quest": "private"},
     "daily_cap": 3,
@@ -53,12 +41,12 @@ class SharingSettingsTests(unittest.TestCase):
         self.assertEqual(1, sharing.cap({"daily_cap": 0}))
 
     def test_settings_are_read_and_saved_on_the_server(self):
-        api = FakeApi(SETTINGS)
+        api = FakeApi({PATH: SETTINGS})
         self.assertEqual(SETTINGS, sharing.load(api))
         sharing.save(api, {"daily_cap": 4})
         self.assertEqual([("/api/sharing/hill", None, None), ("/api/sharing/hill", {"daily_cap": 4}, "PUT")], api.sent)
-        self.assertIsNone(sharing.load(FakeApi(OSError("offline"))))
-        self.assertIsNone(sharing.load(FakeApi({"error": "nope"})))
+        self.assertIsNone(sharing.load(FakeApi({PATH: OSError("offline")})))
+        self.assertIsNone(sharing.load(FakeApi({PATH: {"error": "nope"}})))
 
     def test_every_label_is_translated(self):
         for code, table in language.TABLES.items():

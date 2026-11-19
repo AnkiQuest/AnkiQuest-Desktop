@@ -9,13 +9,14 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QPushButton, QWidget, Qt
+from aqt.qt import QLabel, QPushButton, Qt
 from addon_loader import load_in_package
+from qt_support import app, finish, main_window, queue
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("social_qt", "social_ui")
 client = load_in_package("social_qt", "client")
 EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
+UPLOAD_FIRST = "Study and sync once to see how others are doing."
 
 
 class Social(unittest.TestCase):
@@ -27,9 +28,7 @@ class Social(unittest.TestCase):
         for goal in self.goals["challenges"]:
             goal["end_at"] = future
         self.goals["weekly_suggestion"]["expires_at"] = future
-        self.mw = QWidget()
-        self.mw.pm = SimpleNamespace(profile={})
-        self.mw.taskman = SimpleNamespace(run_in_background=lambda work, done: self.tasks.append((work, done)))
+        self.mw = main_window(queue(self.tasks))
         self.api = client.Client("https://quest.test", "hill", "secret")
         self.api._request = self.request
         self.changed = Mock()
@@ -56,14 +55,7 @@ class Social(unittest.TestCase):
         return deepcopy(self.goals)
 
     def finish(self, index=0, error=None):
-        work, done = self.tasks.pop(index)
-        future = Future()
-        if error is None:
-            future.set_result(work())
-        else:
-            future.set_exception(error)
-        done(future)
-        app.processEvents()
+        finish(self.tasks, index, error)
 
     def loaded(self):
         self.finish()
@@ -125,6 +117,23 @@ class Social(unittest.TestCase):
         self.window._close()
         self.finish()
         self.assertEqual(0, self.window._goals._table.topLevelItemCount())
+
+    def test_locked_goals_say_to_study_and_sync_first(self):
+        self.goals["locked"] = "upload_first"
+        self.loaded()
+        self.assertEqual([UPLOAD_FIRST], self.goal_notes())
+
+        # The first answer after an upload leaves `locked` out and hides the line.
+        del self.goals["locked"]
+        self.window._goals._load()
+        self.finish()
+        self.assertEqual([], self.goal_notes())
+
+    def goal_notes(self):
+        # The friend goals view's shown lines that say why progress shows 0.
+        page = self.window._goals._page
+        return [label.text() for label in page.findChildren(QLabel)
+                if not label.isHidden() and label.text() == UPLOAD_FIRST]
 
     def test_goal_invitation_actions_and_weekly_dismiss_use_server_routes(self):
         self.loaded()

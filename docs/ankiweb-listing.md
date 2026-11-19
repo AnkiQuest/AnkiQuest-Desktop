@@ -79,7 +79,7 @@ your account.
 
 1. Review and merge the intended change after both desktop CI jobs pass.
 2. Download `ankiquest-ankiweb.ankiaddon` from that version's GitHub
-   release (`addon-<n>`), or from `addon-nightly`. For a local build, run `cargo run -p ankiquest-xtask -- package-addon --ankiweb --output ankiquest-ankiweb.ankiaddon` from the reviewed checkout.
+   release (`addon-<n>`), or from `addon-nightly`. For a local build, run `cargo run --manifest-path tools/package-addon/Cargo.toml -- --ankiweb --output ankiquest-ankiweb.ankiaddon` from the reviewed checkout.
 3. Sign in to the owner account, open the listing, choose **Update**, attach
    the package to the appropriate version branch and save. Keep the actual
    oldest/current tested Anki versions in the branch fields.

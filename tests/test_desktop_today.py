@@ -8,10 +8,10 @@ import time
 import unittest
 from concurrent.futures import Future
 from http import HTTPStatus
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from addon_loader import ADDON, load_in_package, load_module
+from addon_loader import ADDON, fake_anki, load_in_package, load_module
 
 goals = load_in_package("ankiquest_today_test", "goals")
 moods = load_module("ankiquest_moods", "moods.py")
@@ -336,34 +336,33 @@ class MoodTests(unittest.TestCase):
         return {"streak_state": state, "today": {"reviews": reviews}, "day_ends_at": ends}
 
     def test_moods_follow_the_phone(self):
-        self.assertEqual(moods.FREEZE, moods.mood([5], 5, self.profile("protected", 0), self.now))
-        self.assertEqual(moods.CELEBRATE, moods.mood([0, 0], 0, self.profile("studied", 4), self.now))
-        self.assertEqual(moods.REVIEW, moods.mood([3, 0], 3, self.profile("studied", 4), self.now))
-        self.assertEqual(moods.STREAK, moods.mood([], 0, self.profile("studied", 4), self.now))
-        self.assertEqual(moods.WELCOME, moods.mood([0], 0, None, self.now))
+        self.assertEqual(moods.FREEZE, moods.mood(moods.FROZEN_1, [5], 5, self.profile("protected", 0), self.now))
+        self.assertEqual(moods.WAITING, moods.mood(moods.SAD, [5], 5, self.profile("pending", 0), self.now))
+        self.assertEqual(moods.CELEBRATE, moods.mood(moods.FIRE, [0, 0], 0, self.profile("studied", 4), self.now))
+        self.assertEqual(moods.REVIEW, moods.mood(moods.FIRE, [3, 0], 3, self.profile("studied", 4), self.now))
+        self.assertEqual(moods.STREAK, moods.mood(moods.FIRE, [], 0, self.profile("studied", 4), self.now))
+        self.assertEqual(moods.WELCOME, moods.mood(moods.MOOD_UNKNOWN, [0], 0, None, self.now))
 
     def test_a_profile_from_an_ended_day_is_ignored(self):
-        stale = self.profile("protected", 0, ends=self.now)
-        self.assertEqual(moods.WELCOME, moods.mood([0], 0, stale, self.now))
+        stale = self.profile("studied", 4, ends=self.now)
+        self.assertEqual(moods.WELCOME, moods.mood(moods.MOOD_UNKNOWN, [0], 0, stale, self.now))
 
     def test_art_respects_the_companion(self):
         self.assertEqual("aki_freeze", moods.art("aki", moods.FREEZE))
         self.assertEqual("ankilope_frozen", moods.art("ankilope", moods.FREEZE))
         self.assertEqual("ankilope_celebrate", moods.art("ankilope", moods.WINNER))
         self.assertIsNone(moods.art("none", moods.REVIEW))
-        self.assertIn("Aki", moods.message("aki", moods.WELCOME))
-        self.assertNotIn("Aki", moods.message("ankilope", moods.WELCOME))
+        self.assertIn("Aki", moods.message("aki", moods.WELCOME, 0)[0])
+        self.assertNotIn("Aki", moods.message("ankilope", moods.WELCOME, 0)[0])
 
-    def test_every_mood_has_bundled_and_exported_art(self):
-        source = (ADDON / "__init__.py").read_text("utf-8")
-        pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
-        for companion in ("aki", "ankilope"):
-            for mood in moods.MESSAGES:
-                name = "art/%s.png" % moods.art(companion, mood)
-                self.assertTrue((ADDON / name).is_file(), name)
-                self.assertTrue(re.fullmatch(pattern, name), name)
-        self.assertTrue(re.fullmatch(pattern, "aki_face.png"))
-        self.assertFalse(re.fullmatch(pattern, "art/../config.json"))
+    def test_the_review_mood_keeps_its_pose_but_has_no_line(self):
+        self.assertEqual("aki_review", moods.art("aki", moods.REVIEW))
+        self.assertEqual((None, ()), moods.message("aki", moods.REVIEW, 0))
+        self.assertEqual((None, ()), moods.message("ankilope", moods.REVIEW, 0))
+
+    def test_every_mood_but_review_has_a_line(self):
+        # MOODS and MESSAGES are separate lists; keep them from drifting apart.
+        self.assertEqual(set(moods.MOODS) - {moods.REVIEW}, set(moods.MESSAGES))
 
 
 class DeckDayTests(unittest.TestCase):
@@ -444,28 +443,8 @@ class DeckDayTests(unittest.TestCase):
         self.assertIn("pycmd(\"collapse:1\")'>-</a><a", decorated)
 
 
-class LeaderboardTests(unittest.TestCase):
-    board = [
-        {"user": "a", "display": "Ana", "xp_total": 900, "periods": {"day": 5, "week": 50, "all": 900}},
-        {"user": "b", "display": "Bo", "xp_total": 100, "periods": {"day": 30, "week": 70, "all": 100}},
-        {"user": "c", "display": "Cy", "xp_total": 50, "periods": {"day": 10, "week": 10, "all": 50}},
-        {"user": "d", "display": "Di", "xp_total": 40, "periods": {"day": 9, "week": 9, "all": 40}},
-        {"user": "e", "display": "Ed", "xp_total": 30, "periods": {"day": 8, "week": 8, "all": 30}},
-        {"user": "f", "display": "Fa", "xp_total": 20, "periods": {"day": 7, "week": 7, "all": 20}},
-        {"user": "hill", "display": "Hill", "xp_total": 10, "periods": {"day": 1, "week": 1, "all": 10}},
-    ]
-
-    def test_periods_reorder_the_board(self):
-        self.assertEqual(["b", "a", "c"], [entry["user"] for entry in today.ranked(self.board, "week")][:3])
-        self.assertEqual(["a", "b"], [entry["user"] for entry in today.ranked(self.board, "all")][:2])
-        self.assertEqual([30, 10, 9], [entry["xp"] for entry in today.ranked(self.board, "day")][:3])
-
-    def test_own_row_joins_the_top_five(self):
-        rows = today.standings(self.board, "week", "hill")
-        self.assertEqual([1, 2, 3, 4, 5, 7], [place for place, _, _ in rows])
-        self.assertTrue(rows[-1][2])
-        self.assertEqual(5, len(today.standings(self.board, "week", "b")))
-        self.assertEqual([], today.standings(None, "week", "hill"))
+class PeriodTests(unittest.TestCase):
+    def test_an_unknown_period_falls_back_to_the_week(self):
         self.assertEqual("week", today.period("decade"))
 
 
@@ -490,7 +469,7 @@ class PanelTests(unittest.TestCase):
     def view(self, **changes):
         view = {
             "art": "/_addons/1/art/aki_review.png",
-            "mood": "A small step starts with one card.",
+            "mood": "You showed up today. That is progress worth keeping.",
             "winner": "/_addons/1/art/aki_winner.png",
             "focus": {"id": 7, "name": "Spa<b>nish", "review": 3, "learning": 1, "new": 2,
                       "status": "review_now", "label": "6 cards ready", "ready": 6},
@@ -510,7 +489,7 @@ class PanelTests(unittest.TestCase):
     def test_the_panel_shows_every_part(self):
         html = board.html(self.profile, 2, 0, today=self.view())
         self.assertIn("aki_review.png", html)
-        self.assertIn("A small step starts with one card.", html)
+        self.assertIn("You showed up today. That is progress worth keeping.", html)
         self.assertIn("4 day streak", html)
         self.assertIn("pycmd('ankiquest:study:7')", html)
         self.assertIn("Study 6 due", html)
@@ -554,21 +533,53 @@ class PanelTests(unittest.TestCase):
         at = lambda ms: "04:00" if ms == 10_000 else "?"
         self.assertEqual(
             "Last week still counting: 1,234 XP · closes at 04:00",
-            board.closing_week(closing, lambda value: value, 9_999, at),
+            board.own_week(closing, lambda value: value, 9_999, at),
         )
-        self.assertIsNone(board.closing_week(closing, lambda value: value, 10_000, at))
-        self.assertIsNone(board.closing_week({}, lambda value: value, 0, at))
-        self.assertIsNone(board.closing_week({"closing_week": {"xp": 5, "ends_at": "soon"}}, lambda value: value, 0, at))
-        self.assertIsNone(board.closing_week(None, lambda value: value, 0, at))
-        spanish = board.closing_week(closing, lambda value: language.tr(value, "es"), 9_999, at)
+        self.assertIsNone(board.own_week(closing, lambda value: value, 10_000, at))
+        self.assertIsNone(board.own_week({}, lambda value: value, 0, at))
+        self.assertIsNone(board.own_week({"closing_week": {"xp": 5, "ends_at": "soon"}}, lambda value: value, 0, at))
+        self.assertIsNone(board.own_week(None, lambda value: value, 0, at))
+        spanish = board.own_week(closing, lambda value: language.tr(value, "es"), 9_999, at)
         self.assertEqual("La semana pasada aún cuenta: 1,234 XP · cierra a las 04:00", spanish)
 
         live = dict(self.profile, closing_week={"xp": 50, "ends_at": int(time.time() * 1000) + 3_600_000})
-        self.assertIn("aq-closing-week'>Last week still counting: 50 XP", board.html(live, 2, 0, today=self.view()))
+        self.assertIn("aq-own-week'>Last week still counting: 50 XP", board.html(live, 2, 0, today=self.view()))
         self.assertIn("Last week still counting: 50 XP", board.html(live, 2, 0))
         ended = dict(self.profile, closing_week={"xp": 50, "ends_at": 1})
         self.assertNotIn("Last week still counting", board.html(ended, 2, 0, today=self.view()))
         self.assertNotIn("Last week still counting", board.html(self.profile, 2, 0, today=self.view()))
+
+    def test_next_week_already_counting_shows_until_the_board_switches(self):
+        # Berlin, Monday 09:00 (weekly_board.json in AnkiQuest-Server): the day counts for next
+        # week while the board shows this one until Monday 12:00 UTC.
+        now, switch = 1795420800000, 1795435200000
+        ahead = {"next_week": {"xp": 321, "starts_at": switch}}
+        at = lambda ms: "13:00" if ms == switch else "?"
+        same = lambda value: value
+        self.assertEqual(
+            "Next week already counting: 321 XP · the board switches at 13:00",
+            board.own_week(ahead, same, now, at),
+        )
+        self.assertIsNone(board.own_week(ahead, same, switch, at))
+        self.assertIsNone(board.own_week({"next_week": {"xp": 5, "starts_at": "soon"}}, same, now, at))
+        for code, expected in (
+            ("es", "La próxima semana ya cuenta: 321 XP · la clasificación cambia a las 13:00"),
+            ("de", "Nächste Woche zählt schon: 321 XP · die Rangliste wechselt um 13:00"),
+            ("fr", "La semaine prochaine compte déjà : 321 XP · le classement change à 13:00"),
+            ("pt", "A próxima semana já conta: 321 XP · a classificação muda às 13:00"),
+        ):
+            with self.subTest(language=code):
+                self.assertEqual(expected, board.own_week(ahead, lambda value: language.tr(value, code), now, at))
+
+        # The server sends at most one; a closing week still running comes first, as on the website.
+        both = dict(ahead, closing_week={"xp": 7, "ends_at": switch})
+        self.assertIn("Last week still counting: 7 XP", board.own_week(both, same, now, at))
+
+        live = dict(self.profile, next_week={"xp": 50, "starts_at": int(time.time() * 1000) + 3_600_000})
+        self.assertIn("aq-own-week'>Next week already counting: 50 XP", board.html(live, 2, 0, today=self.view()))
+        self.assertIn("Next week already counting: 50 XP", board.html(live, 2, 0))
+        switched = dict(self.profile, next_week={"xp": 50, "starts_at": 1})
+        self.assertNotIn("Next week already counting", board.html(switched, 2, 0, today=self.view()))
 
     def test_all_quests_done_shows_the_winner(self):
         profile = {"quests": [{"title": "Combo", "progress": 5, "target": 5, "done": True, "reward": 15}]}
@@ -597,6 +608,7 @@ class TranslationTests(unittest.TestCase):
             if name in ("board.py", "today_ui.py"):
                 found.update(re.findall(r'\(\s*[\w."]+,\s*"([^"]*[A-Za-z][^"]*)"\s*\)', text))
         found.update(moods.MESSAGES.values())
+        found.update(moods.WAITING_LINES)
         found.add(moods.COMPANION_WELCOME)
         return found
 
@@ -622,9 +634,9 @@ class HomeTests(unittest.TestCase):
         self.settings = {"url": "https://example.test", "user": "hill", "token": "secret"}
         self.api = SimpleNamespace(
             configured=True, base="https://example.test", user="hill", name="hill", token="secret",
-            leaderboard=Mock(return_value=[{"user": "hill", "display": "Hill", "xp_total": 5, "periods": {"week": 5}}]),
+            leaderboard=Mock(return_value=[{"user": "hill", "display": "hill", "xp_total": 5, "periods": {"week": 5}}]),
             rank=Mock(return_value={"order": ["hill"]}), notifications=Mock(return_value=[]),
-            profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0}}),
+            profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0, "starts_at": 0, "time_ms": 0}}),
             companion=Mock(return_value="ankilope"),
             deck_settings=Mock(return_value={}), server_info=Mock(return_value=(frozenset(), None)),
             _request=Mock(return_value={"items": [], "unread_count": 0, "action_count": 0}),
@@ -651,29 +663,13 @@ class HomeTests(unittest.TestCase):
             onOverview=Mock(), moveToState=Mock(),
             state="deckBrowser",
         )
-        aqt = ModuleType("aqt")
-        aqt.mw = self.mw
-        aqt.gui_hooks = SimpleNamespace(**{name: [] for name in (
-            "reviewer_did_answer_card", "operation_did_execute", "state_did_change", "sync_did_finish", "profile_did_open",
-            "deck_browser_will_render_content", "webview_did_receive_js_message",
-        )})
-        utils = ModuleType("aqt.utils")
-        utils.tooltip, utils.openLink = Mock(), Mock()
-        qt = ModuleType("aqt.qt")
-        qt.__getattr__ = lambda name: Mock()
-        anki = ModuleType("anki")
-        anki.lang = ModuleType("anki.lang")
-        anki.lang.current_lang = "en"
-        modules = patch.dict(sys.modules, {"aqt": aqt, "aqt.utils": utils, "aqt.qt": qt, "anki": anki, "anki.lang": anki.lang})
-        modules.start()
-        self.addCleanup(modules.stop)
+        aqt = fake_anki(self, self.mw)
         self.addon = load_module("ankiquest_home_addon", "__init__.py", package=True)
         self.addon.client = lambda: self.api
         self.home = sys.modules["ankiquest_home_addon.home"]
         pictures = patch.object(self.home.board_pictures.share, "download_image", return_value=None)
         pictures.start()
         self.addCleanup(pictures.stop)
-        self.home.today_ui = SimpleNamespace(session_dialog=Mock())
         from moment_fixture import cards
         self.cards = cards(self)
         self.hooks = aqt.gui_hooks
@@ -722,15 +718,52 @@ class HomeTests(unittest.TestCase):
         self.assertIn("/_addons/ankiquest/art/aki_sad.png", content.stats)
         self.assertNotIn("art/aki_review.png", content.stats)
 
+    def test_a_waiting_streak_says_so_before_the_decks(self):
+        # Regression (#301): cards due and no study today said "A small step starts with one card.";
+        # Android's Home card says the streak is waiting.
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"]["streak"] = 64
+        content = self.render()
+        self.assertIn("You haven’t studied today. Your 64-day streak is still waiting.", content.stats)
+        self.assertNotIn("A small step starts with one card.", content.stats)
+
+    def test_a_one_day_streak_waits_in_the_singular(self):
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.assertIn("You haven’t studied today. Your 1-day streak is still waiting.", self.render().stats)
+
+    def test_frozen_days_before_today_bring_the_freeze_message(self):
+        # Regression (#301): a freeze kept yesterday, today is pending, and cards are due. The
+        # freeze message only followed a protected day; Android's Home card follows the frozen mood.
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"].update(streak=5, heatmap=[{"frozen": True}, {"frozen": False}])
+        content = self.render()
+        self.assertIn("Your streak is protected by a freeze. A fresh start is waiting.", content.stats)
+        self.assertNotIn("A small step starts with one card.", content.stats)
+
+    def test_cards_due_bring_no_greeting(self):
+        # Regression: "A small step starts with one card." said nothing useful above the deck.
+        self.api.companion.return_value = "aki"
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"]["streak"] = 0
+        content = self.render()
+        self.assertIn("pycmd('ankiquest:study:5')", content.stats)
+        self.assertIn("/_addons/ankiquest/art/aki_", content.stats)
+        self.assertNotIn("small step", content.stats)
+        self.assertNotIn("class=aq-bubble", content.stats)
+
     def test_studying_and_period_links_act_only_from_the_deck_list(self):
         handle = self.hooks.webview_did_receive_js_message[-1]
         self.assertEqual((True, None), handle(False, "ankiquest:study:5", self.mw.deckBrowser))
         self.mw.col.decks.select.assert_called_once_with(5)
         self.mw.onOverview.assert_called_once_with()
         handle(False, "ankiquest:period:month", self.mw.deckBrowser)
-        self.assertEqual("month", self.mw.pm.profile[self.home.PERIOD_KEY])
+        self.assertEqual("month", self.mw.pm.profile[self.home.board_data._OLD_PERIOD])
         self.assertFalse(handle(False, "ankiquest:period:day", object()))
-        self.assertEqual("month", self.mw.pm.profile[self.home.PERIOD_KEY])
+        self.assertEqual("month", self.mw.pm.profile[self.home.board_data._OLD_PERIOD])
 
     def session(self, reviews):
         self.mw.state = "review"
@@ -1046,10 +1079,6 @@ class HomeTests(unittest.TestCase):
         self.render()
         self.assertEqual([("/api/goal/hill", {"mode": "backlog", "value": 7, "restart": True}, "PUT")], [call for call in calls if call[2] == "PUT"])
         self.assertEqual(20000, self.mw.pm.profile[self.home.PLAN_KEY]["since"])
-
-    def test_a_session_without_reviews_says_nothing(self):
-        self.session(0)
-        self.home.today_ui.session_dialog.assert_not_called()
 
 
 if __name__ == "__main__":

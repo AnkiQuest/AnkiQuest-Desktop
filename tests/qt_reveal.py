@@ -1,16 +1,15 @@
-"""Real Qt checks of the companion tab and the unlock reveal, run by test_companion_tab.py."""
+"""Real Qt checks of the companion tab and the unlock reveal, run by test_qt_windows.py."""
 
-from concurrent.futures import Future
 import json
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QImage, QLabel, QPushButton
+from aqt.qt import QImage, QLabel, QPushButton
 
 from addon_loader import ADDON, load_in_package
+from qt_support import run_now, stand_in
 
-app = QApplication.instance() or QApplication([])
 reveal_ui = load_in_package("reveal_qt", "reveal_ui")
 companion_ui = load_in_package("reveal_qt", "companion_ui")
 moments = load_in_package("reveal_qt", "moments")
@@ -23,12 +22,6 @@ ROWS = json.loads((ADDON.parent / "docs/api/examples/notifications_companion.jso
 COW = moments._notice(next(row for row in ROWS if row.get("moment") == "companion:cow"))
 
 
-def run_now(work, done):
-    future = Future()
-    future.set_result(work())
-    done(future)
-
-
 def texts(widget, kind):
     return [found.text() for found in widget.findChildren(kind) if found.text() and found.isVisibleTo(widget)]
 
@@ -36,7 +29,7 @@ def texts(widget, kind):
 class CompanionTab(unittest.TestCase):
     def tab(self, current, today):
         api = SimpleNamespace(base="https://quest.test", user="sam", token="t", capabilities=Mock(return_value=frozenset()), companion=Mock(return_value=current), unlocks=Mock())
-        mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=run_now))
+        mw = stand_in(run_now)
         return companion_ui.Picker(None, mw, api, lambda: api, current, Mock(), today)
 
     def test_the_chosen_companion_shows_in_todays_mood(self):
@@ -68,7 +61,7 @@ class Reveal(unittest.TestCase):
             if not shared:
                 return None
             # The signed-in account still owns the win, so Share opens its choices.
-            api = SimpleNamespace(base="https://quest.test", user="sam", token="t")
+            api = SimpleNamespace(base="https://quest.test", user="sam", token="t", capabilities=frozenset)
             return share_ui.Sharing(dialog, api, item["share"], lambda: api, run, status)
 
         window = reveal_ui.RevealWindow(None, item, how, chosen, self.chosen.append, sharing, run_now)

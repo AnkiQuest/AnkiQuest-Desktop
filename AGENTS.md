@@ -2,7 +2,7 @@
 
 AnkiQuest adds XP, streaks, friends, leaderboards and moments to Anki. It has three repositories:
 
-- [AnkiQuest/AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server): the server (Rust), its web pages (TypeScript), the API examples, the shared fixtures and the companion art masters.
+- [AnkiQuest/AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server): the server (Rust), its web pages (TypeScript), the API examples, the shared fixtures and the pose masters.
 - [AnkiQuest/AnkiQuest-Desktop](https://github.com/AnkiQuest/AnkiQuest-Desktop): the Anki desktop add-on (Python).
 - [AnkiQuest/AnkiQuest-Android](https://github.com/AnkiQuest/AnkiQuest-Android): the Android app (Kotlin), a fork of AnkiDroid.
 
@@ -18,13 +18,24 @@ These rules apply to every agent (Claude, Codex, others) and to people too. Ever
 
 Never call a person "the owner"; name them. "Code owner" describes how you treat the code, not who decides. "The owners" means hill and Aldana together. Name the person who approved something: "hill approved…", "Aldana approved…". An agent passing on an approval links the person's own words.
 
+When a decision or action is left for hill, ask hill a question with the options, the recommended one first, instead of listing it as an open item. In chat, use the tool for questions with options, if there is one.
+
+## Glossary
+
+- Companion: a character (Aki, Ankilope, Bluma, Anki-tan).
+- Pose: one picture of a companion. Its master is `static/<companion>/<pose>.png` in AnkiQuest-Server; every other copy (Android drawable, add-on art, share card) is an exported copy of that pose, generated and hash-checked. A pose exists only when it is drawn for every live companion.
+- Mood: today's streak state, computed by the shared rule in `tests/fixtures/streak_moods.json`. Each mood names the pose it shows; several moods may show the same pose (`frozen_1` and `thawing` both show `frozen`). That is a mapping, not a fallback.
+- Moment: something that happened worth telling (milestone, level up, place, deck conquered), shown as a card.
+- Share: send a moment, board place or deck to friends in AnkiQuest or to another app. Don't say "shareable".
+- "Drawable" and "art" are only platform file names in code. In docs and discussion, say "the pose's exported copy".
+
 ## Code ownership
 
 You are the code owner and long-term maintainer of this codebase. The design is yours to decide, unless hill or Aldana overrules it.
 
 Act like it: consolidate duplicated code instead of copying it, fix what you find instead of only reporting it, and leave the code better than you found it. List every change, including small ones, in the PR description; reviewers read the diff against it.
 
-Don't hold on to the past. Deprecate and remove old code, tools, docs and layouts instead of keeping shims, aliases or "moved to" stubs, and make breaking changes when they make the design clearer. Pull requests that remove code are especially welcome. Say in the PR what breaks and who has to act. Two limits still apply: released apps keep working, so old endpoints, fields and API examples stay until no supported client uses them; and companion art is never deleted (see below).
+Don't hold on to the past. Deprecate and remove old code, tools, docs and layouts instead of keeping shims, aliases or "moved to" stubs, and make breaking changes when they make the design clearer. Pull requests that remove code are especially welcome. Say in the PR what breaks and who has to act. Two limits still apply: released apps keep working, so old endpoints, fields and API examples stay until no supported client uses them; and pose masters and their exported copies are never deleted (see below).
 
 ## Bugs: test first
 
@@ -58,7 +69,7 @@ Write new code in Rust, or TypeScript for the web, when the platform allows it. 
 - Never push to the default branch; open a pull request.
 - Pull requests by hill or Claude need an approving review from Aldana or Astra (the AldanaBRZ account). Pull requests by Aldana or Astra need an approving review from hill or Claude (the float3 account). One approval from the other side is enough; merge only once it is given and every check is green on the final commit. hill may merge trivially correct changes (documentation, AGENTS.md, README, labels, search and replace) without that review.
 - Commit messages: subject in the imperative, capitalised, at most 50 characters (72 hard limit), no full stop; a blank line; a body wrapped at 72 characters that explains what and why, not how.
-- Name the model that did the work. Every commit, pull request, issue, comment and review an agent writes ends with `Assisted-by: <tool> (<model and version>)`, such as `Assisted-by: Claude Code (Opus 5.5)` or `Assisted-by: Codex (GPT-6)`. Generated images name the model that drew them in the pull request and in their generation record. If the tool does not say which model it used, write that instead of guessing.
+- Name the model that did the work. Every commit, pull request, issue, comment and review an agent writes ends with `Assisted-by: <tool> (<model and version>)`, such as `Assisted-by: Claude Code (Opus 5.5)` or `Assisted-by: Codex (GPT-6)`. In a GitHub post with a generated footer (`---`, then `_Generated by [Claude Code](https://claude.ai/code)_`), the footer comes first and the `Assisted-by` line last (hill, 2026-11-19). Generated images name the model that drew them in the pull request and in their generation record. If the tool does not say which model it used, write that instead of guessing.
 - Never link to an agent session (such as `claude.ai/code/session_…`) in commits, pull requests, issues or comments.
 - No emoji in commits, pull requests, issues or comments.
 - Never commit secrets, tokens or personal data. Secrets live on the servers, outside the repositories.
@@ -74,13 +85,16 @@ AnkiQuest has two clients: the Android app ([AnkiQuest/AnkiQuest-Android](https:
 
 ## Companion art
 
-Companion art means every picture of a character: poses, moment and card pictures, widget and notification drawables.
+Every picture of a companion is a pose, including those on moments, share cards, widgets and notifications. The section and tool names keep "art"; the rules speak of poses, masters and exported copies.
 
-- Masters live only in `static/<companion>/` in AnkiQuest-Server. Every other copy (share cards, add-on, Android, docs) is generated from them by the exporters and hash-checked in CI; never commit a hand-made copy.
-- Never delete companion art, even when nothing uses it any more. Remove the references, keep the files, so they can be reused or merged later.
-- Each character needs a core set of poses before it goes live in the apps: face, asleep, happy, streak (on fire), sad, hopeful, frozen and neglected. A character without the full core set stays hidden.
-- Every other pose is an extension: streak tiers, milestones, frozen days 2 and 3, hurt, dead, welcome, a defeated leech, and poses for other rare moments. Extensions are optional. A missing extension falls back to its core pose (a streak tier to streak, frozen 3 to frozen, a defeated leech to happy).
-- The core set, the extensions and their fallbacks are defined once, in [`tests/fixtures/companion_poses.json`](https://github.com/AnkiQuest/AnkiQuest-Server/blob/master/tests/fixtures/companion_poses.json) in AnkiQuest-Server; both clients use that list.
+- Masters live only in `static/<companion>/` in AnkiQuest-Server. Every exported copy (share cards, add-on, Android, docs) is generated from its master by the exporters and hash-checked in CI; never commit a hand-made copy.
+- Never delete a master or an exported copy, even when nothing uses it any more. Remove the references, keep the files, so they can be reused or merged later.
+- Every live companion has every pose listed in [`tests/fixtures/companion_poses.json`](https://github.com/AnkiQuest/AnkiQuest-Server/blob/master/tests/fixtures/companion_poses.json) in AnkiQuest-Server; both clients use that list.
+- A new companion goes live only with every pose drawn.
+- A PR that adds a pose to the list adds its master for every live companion. CI fails a PR that adds a pose without them. A mood that needs a new picture adds a pose this way; otherwise it maps to an existing pose.
+- No placeholder pictures: no stand-in, recoloured or borrowed picture for a missing pose.
+- One exception (hill, 2026-11-19): Anki-tan goes live before her missing extensions are drawn (`streak_hot`, `streak_blazing`, `frozen_2`, `frozen_3`, `abandoned`, `leech_defeated`, `winner`); they show their fallbacks until then. Drawing them comes first in AnkiQuest/AnkiQuest-Server#57. No other companion goes live with missing poses.
+- Until the missing poses are drawn (AnkiQuest/AnkiQuest-Server#57), the clients keep the current fallbacks: a missing extension shows the fallback the list gives it (a streak tier shows streak, frozen 3 shows frozen), and Bluma shows Ankilope's poses recoloured where hers are missing. These are the only poses not drawn for every live companion, and they are temporary. Once every live companion has every pose, remove the fallbacks from the list and both clients.
 
 ## Writing
 
@@ -92,9 +106,10 @@ Mannered prose substitutes metaphor and flourish for direct statement. Instead o
 
 AnkiQuest-Desktop holds the Anki desktop add-on and its releases.
 
-- **Layout.** `addon/`: the add-on, Python because Anki requires it. `tests/`: add-on tests (Python). `crates/xtask` holds the repository tools (`cargo run -p ankiquest-xtask -- <command>`), the add-on packager (`package-addon`) included. Python is only the add-on and its tests; write every other tool, check and test in Rust.
+- **Layout.** `addon/`: the add-on, Python because Anki requires it. `tests/`: add-on tests (Python). `tools/package-addon`: the add-on packager (`cargo run --manifest-path tools/package-addon/Cargo.toml -- --output <file>`), a Rust workspace of its own that stays when the server moves out. `crates/xtask` holds the other repository tools (`cargo run -p ankiquest-xtask -- <command>`). Python is only the add-on and its tests; write every other tool, check and test in Rust.
 - **Freeze.** Server code (`src/`, `crates/` except xtask, `web/`, server docs and `docs/api`) is frozen here: open server changes against AnkiQuest-Server. The remaining copy is removed by #306.
 - **The server is moving out.** The server, web, API, fixture and deployment code still here (`src/`, `crates/` other than `xtask`, `web/`, `static/`, the TypeScript tests, `docs/api/`, `flake.nix`) is removed by #306. Change it in AnkiQuest-Server, not here. Until then the add-on tests read this copy of `tests/fixtures/*.json`; change a fixture in AnkiQuest-Server first.
 - **Shared instructions.** Everything above "This repository" in this file is a copy of AnkiQuest-Server's `AGENTS.md`; the `agents-copy` workflow fails while they differ. Change it there first.
+- **Merging.** Pull requests merge through the merge queue on `master`, as merge commits. Every workflow with a required check also runs on `merge_group`. A job that cannot run in a merge group is skipped there by an `if:` on the job, which counts as passing; a path or branch filter on the workflow would leave the check pending and stall the queue. Queue settings: merge method Merge, build concurrency 5, group size 1 to 5, wait 5 minutes for the minimum group size, "Only merge non-failing pull requests", status check timeout 60 minutes. "Require branches to be up to date before merging" stays off: the queue tests every pull request on top of the latest `master` and the ones queued ahead of it.
 - **Releases** are the `addon-*` tags and GitHub releases of this repository; AnkiWeb lists the add-on as 414948448.
-- **Checks to run** before pushing, for what you changed: `python -m unittest discover -s tests` for the add-on; `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` for `xtask`. Leave the full matrix to CI.
+- **Checks to run** before pushing, for what you changed: `python -m unittest discover -s tests` for the add-on; `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` for `xtask`; the same three with `--manifest-path tools/package-addon/Cargo.toml` for the packager. Leave the full matrix to CI.

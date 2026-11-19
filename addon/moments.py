@@ -51,7 +51,9 @@ def _offer(profile, account, items):
 
 
 def _pending(profile, account):
-    items = _record(profile, account)["pending"]
+    """The moments to show; an unlock of a companion without art here waits in the queue until
+    an update adds it, as on the app."""
+    items = [item for item in _record(profile, account)["pending"] if _drawable(item)]
     return sorted(items, key=lambda item: (-_PRIORITY.get(item["topic"], 30), -item["at"], item["key"]))
 
 
@@ -75,7 +77,7 @@ def _notice(entry):
     # Cheers and friends' shares may carry our key too; only our own win belongs here.
     if not inbox.shareable(entry):
         return None
-    return {
+    item = {
         "key": entry.get("moment") or "notice:%d" % entry["id"],
         "topic": entry.get("topic") or "unlocks",
         "title": entry.get("title") or "", "body": entry.get("body") or "",
@@ -84,6 +86,19 @@ def _notice(entry):
         # The row, and whether another device has read it yet (companion_reveal.due).
         "notice": entry.get("id"), "unread": not entry.get("read_at"),
     }
+    return item
+
+
+def _drawable(item):
+    # A card for a companion without art here would show another companion.
+    return item["topic"] != "companion" or joined(item) is not None
+
+
+def _held(item):
+    """An unlock nobody has seen yet, offered whatever the inbox cursor: Server#16 sends it
+    only once the add-on draws its companion, by then below the cursor. _offer skips the
+    ones already shown."""
+    return item["topic"] == "companion" and item["unread"] is True
 
 
 def _rank(change, place, week, at):

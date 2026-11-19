@@ -1,3 +1,11 @@
+> Anki is hard, free and effective.
+>
+> Duolingo is easy, commercial and ineffective.
+>
+> If you ask a random successful language learner what software to use they'll probably suggest Anki.
+>
+> —lsusr, [Invisible Choices, Made by Default](https://www.lesswrong.com/s/3xKXGh9RXaYTYZYgZ/p/k6nncsXAZD3bK6fe3)
+
 <p align="center">
 <img alt="" src="docs/graphics/banner_readme.png"/>
 </p>
@@ -13,6 +21,8 @@
 # AnkiQuest-Desktop
 
 The AnkiQuest add-on for Anki desktop.
+
+AnkiQuest leaves Anki's scheduling unchanged and adds streaks, friends and leaderboards to keep you studying.
 
 AnkiQuest adds XP, streaks, daily quests, friends and leaderboards to Anki. Clients send review history without card content; sharing a conquered card label or a deck copy is an explicit choice. AnkiQuest has three repositories:
 
@@ -33,7 +43,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r tests/requirements-anki-26.9.4.txt
 QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests
-cargo run -p ankiquest-xtask -- package-addon --output ankiquest.ankiaddon
+cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.ankiaddon
 ```
 
 [Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The server code still in this repository moves to AnkiQuest-Server (#306); change it there.

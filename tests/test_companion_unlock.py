@@ -1,9 +1,6 @@
 """Companions earned at milestones: the shared conditions, what the picker offers, and the art."""
 
 import json
-import os
-import subprocess
-import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -121,11 +118,9 @@ class Offered(unittest.TestCase):
         self.assertEqual(({"cow"}, {}), (set(odd.unlocks), odd.progress))
         self.assertEqual(frozenset(), unlock.parse(None).unlocks)
 
-    def test_a_server_without_unlocks_answers_nothing_unlocked(self):
+    def test_fetch_reads_the_unlocks(self):
         api = SimpleNamespace(unlocks=Mock(return_value=example("unlocks")))
-        self.assertEqual({"cow"}, unlock.fetch(api, frozenset([unlock.FEATURE])).unlocks)
-        older = unlock.fetch(api, frozenset())
-        self.assertEqual((frozenset(), {}), (older.unlocks, older.progress))
+        self.assertEqual({"cow"}, unlock.fetch(api).unlocks)
         api.unlocks.assert_called_once()
 
     def test_each_companion_is_offered_by_its_state(self):
@@ -135,7 +130,6 @@ class Offered(unittest.TestCase):
             "anki_tan": {"kind": "streak", "value": 12, "goal": 66},
         })
         earned = unlock.Found(["ankilope", "cow"])
-        older = unlock.Found()
         cases = (
             # (companion, found, current, offered)
             ("aki", None, "aki", Choice.FREE),
@@ -148,14 +142,12 @@ class Offered(unittest.TestCase):
             ("ankilope", locked, "ankilope", Choice.UNLOCKED),
             # Before the server answers only the current one shows.
             ("ankilope", None, "aki", Choice.HIDDEN),
-            # A server from before milestones: Ankilope as it was, the cow only once unlocked.
-            ("ankilope", older, "aki", Choice.FREE),
-            ("cow", older, "aki", Choice.HIDDEN),
+            # Neither unlocked nor listed with progress: a secret companion.
+            ("ankilope", unlock.Found(), "aki", Choice.HIDDEN),
             ("cow", unlock.Found(["cow"]), "aki", Choice.UNLOCKED),
             # Anki-tan, like the cow, was never offered before milestones.
             ("anki_tan", locked, "aki", Choice.LOCKED),
             ("anki_tan", unlock.Found(["anki_tan"]), "aki", Choice.UNLOCKED),
-            ("anki_tan", older, "aki", Choice.HIDDEN),
         )
         for companion, found, current, offered in cases:
             with self.subTest(companion=companion, current=current):
@@ -177,6 +169,42 @@ class Client(unittest.TestCase):
         self.assertEqual(example("unlocks_save"), api.unlock("anki_tan_chibi"))
         api._request.assert_called_with("/api/unlocks/hill", {"unlock": "anki_tan_chibi"})
 
+    def test_every_request_names_the_companions_the_add_on_draws(self):
+        sent = {}
+
+        def request_json(url, body, headers, method=None):
+            sent.update(headers)
+            return {}
+
+        api = client.Client("https://example.test", "hill", "secret")
+        original, client.request_json = client.request_json, request_json
+        try:
+            api.unlocks()
+        finally:
+            client.request_json = original
+        self.assertEqual("aki, ankilope, cow, anki_tan", sent.get("X-AnkiQuest-Companion-Art"))
+
+    def test_the_header_names_the_companions_moments_draw(self):
+        # moments.joined filters by moods.NAMES; the header must name the same companions.
+        drawn = client.DRAWS["X-AnkiQuest-Companion-Art"].split(", ")
+        self.assertEqual(sorted(moods.NAMES), sorted(drawn))
+        self.assertEqual(set(moods.NAMES), set(client.COMPANIONS) - {"none"})
+
+    def test_an_extra_language_header_is_replaced(self):
+        sent = {}
+
+        def request_json(url, body, headers, method=None):
+            sent.update(headers)
+            return {}
+
+        api = client.Client("https://example.test", "hill", "secret", "de")
+        original, client.request_json = client.request_json, request_json
+        try:
+            api._request("/api/notifications/hill", extra={"Accept-Language": "fr"})
+        finally:
+            client.request_json = original
+        self.assertEqual("de", sent.get("Accept-Language"))
+
     def test_the_cow_can_be_saved_and_read(self):
         self.assertIn("cow", client.COMPANIONS)
         self.assertIn("anki_tan", client.COMPANIONS)
@@ -195,8 +223,13 @@ class UnlockMoment(unittest.TestCase):
         self.assertEqual("ankilope_celebrate", moments._pose(item, moments.shown_companion(item, "none")))
         level = moments._notice({**row, "moment": "level:3", "topic": "level"})
         self.assertEqual("aki", moments.shown_companion(level, "aki"))
-        horse = moments._notice({**row, "moment": "companion:horse"})
-        self.assertEqual("aki", moments.shown_companion(horse, "aki"))
+
+    def test_a_companion_the_add_on_cannot_draw_waits(self):
+        # Shown, it would announce the horse with the chosen companion's art; it waits instead.
+        row = next(row for row in example("notifications_companion") if row.get("moment") == "companion:cow")
+        self.assertTrue(moments._drawable(moments._notice(row)))
+        self.assertFalse(moments._drawable(moments._notice({**row, "moment": "companion:horse"})))
+        self.assertFalse(moments._drawable(moments._notice({**row, "moment": None})))
 
     def test_the_sharing_settings_name_the_new_kind(self):
         sharing = load_in_package("aq_cow", "sharing")
@@ -236,16 +269,6 @@ class CowArt(unittest.TestCase):
         self.assertEqual("Bluma", moods.NAMES["cow"])
         mentions = [path.name for path in ADDON.glob("*.py") if "Bluma" in path.read_text("utf-8")]
         self.assertEqual(["moods.py"], mentions)
-
-
-class PickerWindow(unittest.TestCase):
-    def test_the_picker_with_real_qt(self):
-        result = subprocess.run(
-            [sys.executable, str(Path(__file__).with_name("qt_companion.py"))],
-            env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-            capture_output=True, text=True, timeout=120,
-        )
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

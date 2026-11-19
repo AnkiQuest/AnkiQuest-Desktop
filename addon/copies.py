@@ -169,16 +169,19 @@ def _remove(name):
 
 def export_deck(col, deck_id, target):
     """Cards, notes, media and deck options, never scheduling, with the modern exporter where Anki has it."""
-    try:
-        from anki.collection import DeckIdLimit
-        from anki.import_export_pb2 import ExportAnkiPackageOptions
+    from anki.collection import DeckIdLimit
 
-        options = ExportAnkiPackageOptions(
-            with_scheduling=False, with_deck_configs=True, with_media=True, legacy=False
-        )
-        col.export_anki_package(out_path=target, options=options, limit=DeckIdLimit(deck_id))
-    except (ImportError, TypeError, ValueError, AttributeError):
+    # Anki 23.10 has no ExportAnkiPackageOptions; only there the legacy exporter runs.
+    try:
+        from anki.import_export_pb2 import ExportAnkiPackageOptions
+    except ImportError:
         _legacy_export(col, deck_id, target)
+        return
+
+    options = ExportAnkiPackageOptions(
+        with_scheduling=False, with_deck_configs=True, with_media=True, legacy=False
+    )
+    col.export_anki_package(out_path=target, options=options, limit=DeckIdLimit(deck_id))
 
 
 def _legacy_export(col, deck_id, target):
