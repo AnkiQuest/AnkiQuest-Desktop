@@ -10,11 +10,11 @@ import time
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QBuffer, QByteArray, QColor, QFont, QFontDatabase, QImage, QIODevice, QPalette, QWidget
+from aqt.qt import QBuffer, QByteArray, QColor, QFont, QFontDatabase, QImage, QIODevice, QPalette, QWidget
 
 from addon_loader import load_in_package
+from qt_support import app, complete
 
-app = QApplication.instance() or QApplication([])
 if os.environ.get("ANKIQUEST_QT_FONT"):
     font = os.environ["ANKIQUEST_QT_FONT"]
     family = QFontDatabase.applicationFontFamilies(QFontDatabase.addApplicationFont(font))[0]
@@ -23,6 +23,7 @@ if os.environ.get("ANKIQUEST_QT_FONT"):
         if fallback:
             QFontDatabase.addApplicationFont(fallback)
 ui = load_in_package("share_qt", "moment_share_ui")
+OUTDATED = load_in_package("share_qt", "client").OUTDATED
 ui.tr = ui.share_ui.tr = lambda text: text
 picture = load_in_package("share_picture_qt", "share_picture")
 STREAKS = json.loads((Path(__file__).parent / "fixtures/streak_moods.json").read_text("utf-8"))
@@ -106,16 +107,7 @@ class ShareWindow(unittest.TestCase):
         if self.defer:
             self.tasks.append((work, done))
         else:
-            self.complete((work, done))
-
-    def complete(self, task):
-        work, done = task
-        future = Future()
-        try:
-            future.set_result(work())
-        except Exception as error:
-            future.set_exception(error)
-        done(future)
+            complete((work, done))
 
     def open(self):
         window = ui._Picker(self.parent, self.api, self.win, "none", lambda: self.current, self.run_task)
@@ -170,7 +162,7 @@ class ShareWindow(unittest.TestCase):
         self.defer = True
         window._send.click()
         self.assertEqual("Sending…", window._status.text())
-        self.complete(self.tasks.pop())
+        complete(self.tasks.pop())
         self.assertIn("Shared with 1 friend", window._status.text())
 
     def test_friends_that_fail_to_load_point_to_other_apps(self):
@@ -277,7 +269,7 @@ class ShareWindow(unittest.TestCase):
         window._submit()
         self.assertEqual(1, len(self.tasks))
         self.current = SimpleNamespace(base=self.api.base, user="other", token="other")
-        self.complete(self.tasks.pop())
+        complete(self.tasks.pop())
         self.assertEqual({}, self.delivered)
         self.assertEqual({}, self.parent.pm.profile)
 
@@ -285,12 +277,12 @@ class ShareWindow(unittest.TestCase):
         self.defer = True
         window = self.open()
         self.parent.pm.profile = {}
-        self.complete(self.tasks.pop())
+        complete(self.tasks.pop())
         self.assertEqual([], self.requests)
         self.assertEqual([], window._rows)
         closed = self.open()
         closed._dialog.close()
-        self.complete(self.tasks.pop())
+        complete(self.tasks.pop())
         self.assertEqual([], self.requests)
         self.assertIs(closed._phase, ui._Phase.CLOSED)
 
@@ -316,14 +308,19 @@ class ShareWindow(unittest.TestCase):
         window._invite.click()
         self.assertIn("Study with me on AnkiQuest", app.clipboard().text())
 
-    def test_older_servers_keep_legacy_actions_without_fetching_recipients(self):
+    def test_an_older_server_asks_for_an_update(self):
         self.features = set()
         window = self.open()
-        self.assertIs(window._phase, ui._Phase.LEGACY)
+        self.assertIs(window._phase, ui._Phase.ERROR)
         self.assertEqual([], self.requests)
-        self.assertTrue(window._legacy.isVisible())
-        window._legacy.click()
-        self.assertEqual({"win": 17, "to": "friends"}, self.requests[-1][1])
+        self.assertEqual(OUTDATED, window._status.text())
+
+    def test_a_win_without_a_reference_shows_only_the_exports(self):
+        self.win = {"title": "Level 4!", "body": "", "kind": "level"}
+        window = self.open()
+        self.assertIs(window._phase, ui._Phase.EXPORT_ONLY)
+        self.assertEqual([], self.requests)
+        self.assertTrue(window._exports.isVisible())
 
     def test_more_apps_reuses_the_preview_without_publishing(self):
         window = self.open()

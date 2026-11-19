@@ -1,7 +1,6 @@
 """Account choice -> server query -> ranked rows; never infer a stranger's study data."""
 from dataclasses import dataclass, replace
 from enum import Enum
-from http import HTTPStatus
 from urllib.parse import urlencode
 
 from . import today
@@ -9,6 +8,12 @@ from . import today
 _CHOICES = "ankiquestBoards"
 _OLD_PERIOD = "ankiquestBoardPeriod"
 _TOP = 5
+
+
+class _Counting(Enum):
+    """A weekly row's XP that counts toward a week other than the board's, by its row field."""
+    LAST_WEEK = "closing_xp"
+    NEXT_WEEK = "next_xp"
 
 
 class _Visibility(Enum):
@@ -33,6 +38,9 @@ class _Board:
     can_hide: bool
     # Why the server showed no other players ("upload_first"), or None.
     locked: object = None
+    # When the board switches to the next week (`GET /api/week` `ends_at`, ms); None outside
+    # the weekly board or when the server does not say.
+    week_ends: object = None
 
 
 def _key(api):
@@ -56,18 +64,9 @@ def _remember(profile, api, query):
     profile[_OLD_PERIOD] = query.period
 
 
-def _legacy(read):
-    try:
-        return read()
-    except Exception as error:
-        if getattr(error, "status", None) == HTTPStatus.NOT_FOUND:
-            return {}
-        raise
-
-
 def _fetch(api, query):
-    settings = _legacy(api.deck_settings)
-    social = _legacy(lambda: api._request("/api/social/" + api.user))
+    settings = api.deck_settings()
+    social = api._request("/api/social/" + api.user)
     scopes = [("friends", "Friends")]
     scopes += [("group:%d" % group["id"], group["name"]) for group in social.get("groups", [])]
     if isinstance(settings.get("global_leaderboard"), bool):
@@ -76,7 +75,34 @@ def _fetch(api, query):
         query = replace(query, scope="friends")
     features = api.server_info()[0] if "global" in dict(scopes) else frozenset()
     rows = api.leaderboard(**query._params())
-    return _Board(query, rows, scopes, "global_leaderboard_hide" in features, getattr(rows, "locked", None))
+    week_ends = _week_ends(api) if query.period == "week" else None
+    return _Board(query, rows, scopes, "global_leaderboard_hide" in features, getattr(rows, "locked", None), week_ends)
+
+
+def _week_ends(api):
+    """The board's switch time; a failed read only hides next-week XP, so it never fails the board."""
+    try:
+        found = api._request("/api/week")
+    except Exception as error:
+        print("ankiquest week:", error)
+        return None
+    ends = found.get("ends_at") if isinstance(found, dict) else None
+    return ends if type(ends) is int else None
+
+
+def _counting(board, entry, now_ms):
+    """(_Counting, xp) pairs for a weekly row, as on the website: closing_xp while that player's
+    Sunday still runs (`day_ends_at`), next_xp until the board switches (`week_ends`)."""
+    if board.query.period != "week":
+        return ()
+    found = []
+    closing, ends = entry.get(_Counting.LAST_WEEK.value), entry.get("day_ends_at")
+    if type(closing) is int and type(ends) is int and ends > now_ms:
+        found.append((_Counting.LAST_WEEK, closing))
+    ahead = entry.get(_Counting.NEXT_WEEK.value)
+    if type(ahead) is int and board.week_ends is not None and board.week_ends > now_ms:
+        found.append((_Counting.NEXT_WEEK, ahead))
+    return tuple(found)
 
 
 def _rows(board, me):

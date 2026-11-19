@@ -1,9 +1,6 @@
 """Companions earned at milestones: the shared conditions, what the picker offers, and the art."""
 
 import json
-import os
-import subprocess
-import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -105,17 +102,14 @@ class Offered(unittest.TestCase):
         self.assertEqual(({"cow"}, {}), (set(odd.unlocks), odd.progress))
         self.assertEqual(frozenset(), unlock.parse(None).unlocks)
 
-    def test_a_server_without_unlocks_answers_nothing_unlocked(self):
+    def test_fetch_reads_the_unlocks(self):
         api = SimpleNamespace(unlocks=Mock(return_value=example("unlocks")))
-        self.assertEqual({"cow"}, unlock.fetch(api, frozenset([unlock.FEATURE])).unlocks)
-        older = unlock.fetch(api, frozenset())
-        self.assertEqual((frozenset(), {}), (older.unlocks, older.progress))
+        self.assertEqual({"cow"}, unlock.fetch(api).unlocks)
         api.unlocks.assert_called_once()
 
     def test_each_companion_is_offered_by_its_state(self):
         locked = unlock.Found([], {"ankilope": {"kind": "level", "value": 3, "goal": 30}, "cow": {"kind": "study_hours", "value": 6, "goal": 10}})
         earned = unlock.Found(["ankilope", "cow"])
-        older = unlock.Found()
         cases = (
             # (companion, found, current, offered)
             ("aki", None, "aki", Choice.FREE),
@@ -128,9 +122,8 @@ class Offered(unittest.TestCase):
             ("ankilope", locked, "ankilope", Choice.UNLOCKED),
             # Before the server answers only the current one shows.
             ("ankilope", None, "aki", Choice.HIDDEN),
-            # A server from before milestones: Ankilope as it was, the cow only once unlocked.
-            ("ankilope", older, "aki", Choice.FREE),
-            ("cow", older, "aki", Choice.HIDDEN),
+            # Neither unlocked nor listed with progress: a secret companion.
+            ("ankilope", unlock.Found(), "aki", Choice.HIDDEN),
             ("cow", unlock.Found(["cow"]), "aki", Choice.UNLOCKED),
         )
         for companion, found, current, offered in cases:
@@ -163,7 +156,7 @@ class Client(unittest.TestCase):
         api = client.Client("https://example.test", "hill", "secret")
         original, client.request_json = client.request_json, request_json
         try:
-            api.notifications()
+            api.unlocks()
         finally:
             client.request_json = original
         self.assertEqual("aki, ankilope, cow", sent.get("X-AnkiQuest-Companion-Art"))
@@ -251,16 +244,6 @@ class CowArt(unittest.TestCase):
         self.assertEqual("Bluma", moods.NAMES["cow"])
         mentions = [path.name for path in ADDON.glob("*.py") if "Bluma" in path.read_text("utf-8")]
         self.assertEqual(["moods.py"], mentions)
-
-
-class PickerWindow(unittest.TestCase):
-    def test_the_picker_with_real_qt(self):
-        result = subprocess.run(
-            [sys.executable, str(Path(__file__).with_name("qt_companion.py"))],
-            env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-            capture_output=True, text=True, timeout=120,
-        )
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,14 @@
-"""Real Qt checks for the Tools menu's help entries, run in a separate process by test_help_links.py."""
+"""Real Qt checks for the Tools menu's help entries, run by test_qt_windows.py."""
 
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QMenu, QWidget
+from aqt.qt import QMenu, QWidget
 
 from addon_loader import load_in_package
+from qt_support import app
 
 
-app = QApplication.instance() or QApplication([])
 help_ui = load_in_package("help_qt", "help_ui")
 links = help_ui.links
 help_ui.tr = lambda text: text

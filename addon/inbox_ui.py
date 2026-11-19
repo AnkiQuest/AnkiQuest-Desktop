@@ -598,18 +598,10 @@ class _Inbox:
             try:
                 answer = future.result()
             except Exception as error:
-                self._status.setText(tr("Could not load your inbox (%s).") % inbox.error_text(error))
+                self._status.setText(inbox.failure("Could not load your inbox (%s).", error))
                 return
             self._page = activity._append(self._page, answer) if before is not None and self._page else answer
             self._status.clear()
-            if answer.source is activity._Source.UNFILTERED:
-                self._category.blockSignals(True)
-                self._unread.blockSignals(True)
-                self._category.setCurrentIndex(0)
-                self._unread.setChecked(False)
-                self._category.blockSignals(False)
-                self._unread.blockSignals(False)
-                self._status.setText(tr("This server shows all activity without filters."))
             self._render()
 
         self._context.run(lambda: activity._load(self._context.api, category, read, before), loaded)
@@ -621,11 +613,6 @@ class _Inbox:
         page = self._page
         self._counts.setText(tr("%d unread · %d awaiting action") % (page.unread, page.actions) if page else "")
         if page:
-            legacy = page.source is activity._Source.LEGACY
-            self._category.setVisible(not legacy)
-            self._unread.setVisible(not legacy)
-            if legacy:
-                self._counts.setText(tr("This server provides recent messages without read counts or filters."))
             if page.locked:
                 self._rows.addWidget(_plain(tr(board.UPLOAD_FIRST), muted=True))
             attention = page.attention if self._category.currentData() is activity._Category.ALL else []

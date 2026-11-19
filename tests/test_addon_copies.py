@@ -249,7 +249,7 @@ class Preview(unittest.TestCase):
     def test_reviews_after_the_servers_last_one_are_previewed_and_remembered(self):
         api = SimpleNamespace(base="https://x", user="ana", token="", profile=Mock(return_value={"last_review_id": 100}),
                               _request=Mock(return_value={"feedback": {"status": "+5 XP"}}))
-        rows = Mock(return_value=[(101, 1, 1, 3, 1000, 1)])
+        rows = Mock(return_value=[(101, 1, 1, 3, 1000, 1, 3)])
         self.assertEqual(preview.fetch(api, rows, 1_000), {"feedback": {"status": "+5 XP"}})
         rows.assert_called_once_with(100)
         path, body = api._request.call_args.args

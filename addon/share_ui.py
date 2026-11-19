@@ -245,7 +245,7 @@ def _route(sharing, legacy):
     from . import moment_share
     if not sharing.owned():
         return
-    if moment_share._moment(sharing.win) is None or not hasattr(sharing.api, "capabilities"):
+    if moment_share._moment(sharing.win) is None:
         legacy()
         return
 
