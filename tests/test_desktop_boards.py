@@ -1,5 +1,6 @@
 """The server owns ranks, scopes and the privacy of global rows."""
 import json
+import time
 from dataclasses import replace
 from http import HTTPStatus
 from pathlib import Path
@@ -30,6 +31,38 @@ class Boards(unittest.TestCase):
         found = self.home.board_view(self.api, {"_day_status": "met"})
         self.assertEqual([(1, 107), (12, 20)], [(place, row["xp"]) for place, row, _ in found["rows"]])
         self.api.leaderboard.assert_called_once_with(period="day", scope="friends")
+
+    def weekly(self, week_ends, period="week"):
+        """Renders Today's board with one row counting for next week and one for last week."""
+        now = int(time.time() * 1000)
+        week = {"ends_at": week_ends, "starts_at": week_ends - 7 * 86_400_000, "timezone": "UTC"}
+        inbox = {"items": [], "unread_count": 0, "action_count": 0}
+        self.api._request = Mock(side_effect=lambda path, *_args: week if path == "/api/week" else inbox)
+        self.api.leaderboard.return_value = [
+            {"user": "hill", "display": "Hill", "periods": {"week": 5, "day": 5}, "next_xp": 40},
+            {"user": "cerro", "display": "Cerro", "periods": {"week": 3, "day": 3}, "closing_xp": 12,
+             "day_ends_at": now + 600_000},
+        ]
+        self.mw.pm.profile[self.home.PERIOD_KEY] = period
+        return self.render().stats
+
+    def test_weekly_rows_show_xp_counting_for_another_week(self):
+        # Server #48: Monday morning east of UTC-12 counts for next week until the board
+        # switches (GET /api/week ends_at); a far-west Sunday still counts for last week.
+        html = self.weekly(int(time.time() * 1000) + 3_600_000)
+        self.assertIn("40 XP already counting for next week", html)
+        self.assertIn("12 XP still counting for last week", html)
+        self.assertIn("/api/week", [call.args[0] for call in self.api._request.call_args_list])
+
+    def test_next_week_xp_goes_once_the_board_switches(self):
+        html = self.weekly(int(time.time() * 1000) - 1)
+        self.assertNotIn("already counting for next week", html)
+        self.assertIn("12 XP still counting for last week", html)
+
+    def test_other_periods_show_no_other_week(self):
+        html = self.weekly(int(time.time() * 1000) + 3_600_000, period="day")
+        self.assertNotIn("counting for", html)
+        self.assertNotIn("/api/week", [call.args[0] for call in self.api._request.call_args_list])
 
     def test_a_player_who_never_uploaded_is_told_to_study_first(self):
         class Locked(list):

@@ -94,6 +94,29 @@ class Boards(unittest.TestCase):
         self.assertIn("you, not shown to others", table.topLevelItem(2).text(1))
         self.assertFalse(self.window._hide.isEnabled())
 
+    def test_weekly_rows_show_xp_counting_for_next_week(self):
+        self.window._close()
+        self.tasks.clear()
+        ui.board_data._remember(self.mw.pm.profile, self.api, ui.board_data._Query("week", "friends"))
+        plain = self.request
+        week = {"ends_at": 4_102_444_800_000, "starts_at": 4_101_840_000_000, "timezone": "UTC"}
+
+        def request(path, body=None):
+            if path == "/api/week":
+                self.calls.append((path, body))
+                return week
+            found = plain(path, body)
+            if urlsplit(path).path == "/api/leaderboard":
+                found[1]["next_xp"] = 40
+            return found
+
+        self.api._request = request
+        self.window = ui._Window(self.addon, self.pictures, self.choose)
+        self.finish()
+        table = self.window._tables["board"]
+        self.assertIn("Ana · 40 XP already counting for next week", table.topLevelItem(1).text(1))
+        self.assertIn(("/api/week", None), self.calls)
+
     def test_newer_period_wins_and_group_queries_are_sent_to_the_server(self):
         self.finish()
         periods = self.window._periods
