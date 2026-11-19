@@ -43,7 +43,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r tests/requirements-anki-26.9.4.txt
 QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests
-cargo run -p ankiquest-xtask -- package-addon --output ankiquest.ankiaddon
+cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.ankiaddon
 ```
 
 ### Screenshots and banner

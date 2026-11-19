@@ -8,7 +8,7 @@ The sign-in dialog starts with the main AnkiQuest server. If you self-host, ente
 
 Use **Switch account…** or **Sign out** in **Tools → AnkiQuest → Settings**. Signing out clears the saved connection and account data shown in the add-on. Your upload checkpoint stays with that server and account in this Anki profile, so signing back in continues with new reviews.
 
-Open **Tools → AnkiQuest → Settings** to change your preferences. **Manage account on the website…** opens the account settings for your server, including devices, sign-in methods and your data. **Manual connection** contains the server, player and token fields and the connection check.
+Open **Tools → AnkiQuest → Settings** to change your preferences. **Manage account on the website…** opens the account settings for your server, including devices, sign-in methods and your data. On a server that offers it, **Two-factor authentication…** opens the website's two-factor settings; once it is on, signing in here asks for the code from your authenticator app or a recovery code. **Manual connection** contains the server, player and token fields and the connection check.
 
 The settings dialog has four groups and scrolls within the window:
 
@@ -29,6 +29,8 @@ The local options below match `config.json`. Account choices stay on the server;
 - `update_channel`: `stable` for `addon-<n>` releases, `nightly` for the build of every change (untested)
 
 For a GitHub package, once a day and from **Tools → AnkiQuest → Check for updates**, the add-on looks for a newer build on that channel and offers to install it; restart Anki afterwards. AnkiWeb installations leave updates to **Tools → Add-ons → Check for Updates** and hide the GitHub channel picker. Local source copies never update themselves. The installed version appears under **App and privacy** and in Anki's add-on manager.
+
+At the end of **Tools → AnkiQuest**, **Rate AnkiQuest** opens the add-on's AnkiWeb page or its GitHub repository, **AnkiQuest changelog** shows the release notes of the installed version, with **All releases** and **Rate AnkiQuest**, and **Report a bug** opens the bug report form on GitHub. When no browser opens the link, it is copied to the clipboard.
 
 a line under the deck list shows your weekly place, level and streak. its links and **Tools → AnkiQuest → Website** open the website in a window inside Anki, already signed in with your token, where you can see the leaderboard, reply to messages and join challenges.
 

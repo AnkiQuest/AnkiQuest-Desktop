@@ -18,7 +18,7 @@ from aqt.utils import openLink, tooltip
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
 from . import companion_ui, greeting, inbox_ui, moments, moments_ui, moods, reveal_ui, share, sharing
 from .inbox import CHALLENGE_ROUTE
-from .language import _plural, tr
+from .language import plural, tr
 from .client import (
     COUNT_SQL,
     DEFAULT_SERVER,
@@ -27,17 +27,20 @@ from .client import (
     UNDO_WINDOW_MS,
     WINDOW_SQL,
     InsecureServer,
+    TWO_FACTOR,
+    SecondFactor,
     ServerError,
     Client,
     check_deletes,
     offset_west_min,
     reconcile,
     rows_to_reviews,
+    second_factor_text,
     sign_in,
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, deck_names, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, deck_names, help_ui, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -609,9 +612,9 @@ def announce(rank, profile, inbox, quiet):
     mw.pm.profile[ORDER_WEEK_KEY] = rank.get("week")
     previous_cursor = mw.pm.profile.get(INBOX_KEY, 0)
     _, cursor = notify.fresh_messages(inbox, previous_cursor, now_ms // 1000)
-    wins = [item for entry in inbox if entry["id"] > previous_cursor
-            and entry.get("created_at", 0) >= now_ms // 1000 - notify.FRESH_SECONDS
-            if (item := moments._notice(entry)) is not None]
+    wins = [item for entry in inbox if (item := moments._notice(entry)) is not None
+            and (moments._held(item) or entry["id"] > previous_cursor
+                 and entry.get("created_at", 0) >= now_ms // 1000 - notify.FRESH_SECONDS)]
     _delivery._receive(inbox, delivery._Mode.QUIET if quiet else delivery._Mode.ANNOUNCE)
     mw.pm.profile[INBOX_KEY] = cursor
     if quiet:
@@ -716,6 +719,8 @@ def account_error(error):
     if isinstance(error, InsecureServer):
         return tr("Use HTTPS to send a password outside your local network.")
     if isinstance(error, ServerError):
+        if second_factor_text(error):
+            return tr(second_factor_text(error))
         if error.status == 401:
             return tr("Username or password not recognized.")
         if error.status == 403:
@@ -736,13 +741,15 @@ def submit_account(values, finish):
     def work():
         if values["new"]:
             return sign_up(values["url"], values["user"], values["password"], values["display"], device)
-        return sign_in(values["url"], values["user"], values["password"], device)
+        return sign_in(values["url"], values["user"], values["password"], device, values.get("code"))
 
     def done(future):
         try:
             answer = future.result()
         except Exception as e:
-            finish(None, account_error(e))
+            # A right password for an account with two-factor: ask for the code next.
+            asks = isinstance(e, ServerError) and e.second_factor is not SecondFactor.NONE
+            finish(None, account_error(e), ui.Ask.CODE if asks else ui.Ask.NOTHING)
             return
         finish({"url": values["url"], "user": answer["user"], "token": answer["token"]}, None)
 
@@ -873,6 +880,7 @@ def open_settings():
         mw, config(), test_connection, upload_everything, state["companion"], ask_account,
         extra=settings_sections, on_manage=_manage_account,
         on_decks=open_deck_notifications, on_privacy=_open_privacy,
+        on_two_factor=_open_two_factor if home.server_has(client(), TWO_FACTOR) else None,
     )
     if values is None:
         return
@@ -896,6 +904,11 @@ def _manage_account(base=None):
             return
         base = api.base
     _open_site_page(base, "/settings")
+
+
+def _open_two_factor(base):
+    """Two-factor authentication is set up on the website, in its own Settings card."""
+    _open_site_page(base, "/settings#two-factor")
 
 
 def _open_privacy():
@@ -1009,7 +1022,7 @@ def save_deck_choice(api, shared, unshared, recipients, nudges, celebrations=Non
         except Exception as e:
             failed(tr("AnkiQuest: could not save your decks (%s)"), e)
             return
-        tooltip(_plural("%d deck shared.", "%d decks shared.", len(shared)) % len(shared))
+        tooltip(plural("%d deck shared.", "%d decks shared.", len(shared)) % len(shared))
 
     mw.taskman.run_in_background(work, done)
 
@@ -1140,6 +1153,7 @@ copies_ui.setup(mw, lambda: client(), lambda: state["companion"], _tools)
 add_action(tr("Website"), open_website, WEBSITE_SHORTCUT)
 add_action(tr("Settings"), open_settings)
 add_action(tr("Check for updates"), lambda: check_updates(quiet=False))
+help_ui.setup(mw, _tools)
 
 
 gui_hooks.reviewer_did_answer_card.append(on_answer)

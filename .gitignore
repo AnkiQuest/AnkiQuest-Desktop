@@ -1,4 +1,5 @@
 /target
+/tools/package-addon/target
 /result
 /state
 /node_modules

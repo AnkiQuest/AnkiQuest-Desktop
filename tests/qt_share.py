@@ -170,10 +170,13 @@ class ShareWindow(unittest.TestCase):
         window._undo.click()
         self.assertEqual({}, self.delivered)
 
+    def place_sharing(self):
+        return SimpleNamespace(owned=lambda: True, api=self.api, win={"place": 2},
+                               status=Mock(), dialog=self.parent, _companion="none",
+                               current_client=lambda: self.current, run=self.run_task)
+
     def test_place_routing(self):
-        sharing = SimpleNamespace(owned=lambda: True, api=self.api, win={"place": 2},
-                                  status=Mock(), dialog=self.parent, _companion="none",
-                                  current_client=lambda: self.current, run=self.run_task)
+        sharing = self.place_sharing()
         legacy = Mock()
         with patch.object(ui.share_ui, "win_dialog") as opened:
             ui.share_ui._route(sharing, legacy)
@@ -185,6 +188,20 @@ class ShareWindow(unittest.TestCase):
             legacy.assert_not_called()
             opened.assert_called_once()
             opened.return_value.show.assert_called_once()
+
+    def test_place_routing_falls_back_when_capabilities_fail(self):
+        def offline():
+            raise OSError("offline")
+
+        # Without the server's features the place goes out the old way, as on an older server.
+        self.api.capabilities = offline
+        sharing = self.place_sharing()
+        legacy = Mock()
+        with patch.object(ui.share_ui, "win_dialog") as opened:
+            ui.share_ui._route(sharing, legacy)
+        legacy.assert_called_once()
+        opened.assert_not_called()
+        sharing.status.setText.assert_not_called()
 
     def test_stale_capabilities_do_not_retract_the_first_send(self):
         self.features = {"share_moments"}

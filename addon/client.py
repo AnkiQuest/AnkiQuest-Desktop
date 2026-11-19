@@ -3,6 +3,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from enum import Enum
 from http import HTTPStatus
 from ipaddress import ip_address, ip_network
 
@@ -41,24 +42,58 @@ def rows_to_reviews(rows):
     ]
 
 
-class ServerError(Exception):
-    """The server answered with an error status. `status` is the HTTP code; `message` is the server's own words, if any."""
+# The capability of a server that offers two-factor authentication.
+TWO_FACTOR = "two_factor"
 
-    def __init__(self, status, message):
+
+class SecondFactor(Enum):
+    """Where a password sign-in stands with two-factor authentication, as its refusal says."""
+
+    # Not about a second factor: a wrong password, or a server without two-factor.
+    NONE = "none"
+    # The password is right and the account wants a code; none was sent.
+    ASKED = "asked"
+    # The code sent is wrong or was used before.
+    REFUSED = "refused"
+    # Too many wrong codes lately; the server says when to try again.
+    LOCKED = "locked"
+
+
+# The same words as the website and the Android app, in that order of the steps above.
+_SECOND_FACTOR_TEXT = {
+    SecondFactor.ASKED: "Enter the code from your authenticator app.",
+    SecondFactor.REFUSED: "That code is not right.",
+    SecondFactor.LOCKED: "Too many wrong codes. Try again in 15 minutes.",
+}
+
+
+class ServerError(Exception):
+    """The server answered with an error status. `status` is the HTTP code; `message` is the server's own words, if any.
+    `second_factor` is set by `sign_in` when the server asks for a two-factor code."""
+
+    def __init__(self, status, message, asks_code=False):
         super().__init__(message or "HTTP Error %d" % status)
         self.status = status
         self.message = message
+        self.asks_code = asks_code
+        self.second_factor = SecondFactor.NONE
+
+
+def second_factor_text(error):
+    """The untranslated words for a sign-in held back for its second factor; None for any other refusal."""
+    return _SECOND_FACTOR_TEXT.get(error.second_factor)
 
 
 class InsecureServer(ValueError):
     """The server cannot receive an account password securely."""
 
 
-def _error_text(error):
+def _error_body(error):
     try:
-        return json.load(error).get("error") or ""
+        body = json.load(error)
     except (ValueError, AttributeError):
-        return ""
+        return {}
+    return body if isinstance(body, dict) else {}
 
 
 def open_url(url, data=None, headers=None, method=None, timeout=20):
@@ -67,7 +102,8 @@ def open_url(url, data=None, headers=None, method=None, timeout=20):
     try:
         return urllib.request.urlopen(request, timeout=timeout)
     except urllib.error.HTTPError as error:
-        raise ServerError(error.code, _error_text(error)) from None
+        body = _error_body(error)
+        raise ServerError(error.code, body.get("error") or "", body.get("second_factor") is True) from None
 
 
 class Rows(list):
@@ -116,9 +152,25 @@ def _account(base, path, body):
     return request_json(base + path, body)
 
 
-def sign_in(base, user, password, device):
-    """Trades an account's password for a token for this device. The password is not kept."""
-    return _account(base, "/api/accounts/tokens", {"user": user, "password": password, "device": device})
+def sign_in(base, user, password, device, code=None):
+    """Trades an account's password for a token for this device. The password is not kept.
+
+    `code` is the two-factor code or a recovery code. Send it only after the server asked for
+    one (`SecondFactor.ASKED`): servers without two-factor refuse fields they do not know."""
+    body = {"user": user, "password": password, "device": device}
+    code = (code or "").strip()
+    if code:
+        body["code"] = code
+    try:
+        return _account(base, "/api/accounts/tokens", body)
+    except ServerError as error:
+        if error.asks_code:
+            error.second_factor = (
+                SecondFactor.LOCKED if error.status == HTTPStatus.TOO_MANY_REQUESTS
+                else SecondFactor.REFUSED if code
+                else SecondFactor.ASKED
+            )
+        raise
 
 
 def sign_up(base, user, password, display, device):
@@ -133,6 +185,10 @@ COMPANIONS = ("aki", "ankilope", "cow", "none")
 
 # Tells the server this add-on shows locked companions, so it refuses one still locked.
 SHOWS_LOCKS = {"X-AnkiQuest-Companions": "milestones"}
+
+# Sent with every request: the companions this add-on draws, so the inbox leaves out moments
+# about any other.
+DRAWS = {"X-AnkiQuest-Companion-Art": ", ".join(companion for companion in COMPANIONS if companion != "none")}
 
 
 def _companion(answer):
@@ -153,7 +209,7 @@ class Client:
         return bool(self.base and self.user and self.token)
 
     def _request(self, path, body=None, method=None, extra=None):
-        headers = dict(extra or {}, **{"Accept-Language": self.language})
+        headers = {**DRAWS, **(extra or {}), "Accept-Language": self.language}
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         return request_json(self.base + path, body, headers, method=method)

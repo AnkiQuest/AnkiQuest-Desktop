@@ -101,7 +101,7 @@ class Picker(unittest.TestCase):
     def test_each_card_previews_its_poses(self):
         self.answer = {"unlocks": ["ankilope"], "progress": {}}
         picker = self.picker()
-        for companion, count in (("aki", 3), ("ankilope", 2), ("none", 1)):
+        for companion, count in (("aki", 3), ("ankilope", 3), ("none", 1)):
             labels = [label for label in self.card(picker, companion).findChildren(QLabel) if label.pixmap() is not None and not label.pixmap().isNull()]
             self.assertEqual(count if companion != "none" else 0, len(labels), companion)
 

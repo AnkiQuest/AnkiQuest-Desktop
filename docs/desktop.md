@@ -15,7 +15,7 @@ python3 -m venv .venv
 python -m pip install -r tests/requirements-anki-26.9.4.txt
 python -m pyflakes addon
 QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests -v
-cargo run -p ankiquest-xtask -- package-addon --output ankiquest.ankiaddon
+cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.ankiaddon
 ```
 
 On Windows, activate `.venv\Scripts\Activate.ps1` and set
@@ -26,8 +26,7 @@ the older requirements explicitly pin those packages. Do not install an
 unbounded PyQt/WebEngine combination on top of these environments.
 
 The two **Desktop (Anki …)** jobs use Rust only to build the archive the
-smoke installs (`cargo run -p ankiquest-xtask -- package-addon`, as releases
-do). Each checks:
+smoke installs (`tools/package-addon`, as releases do). Each checks:
 
 - Every add-on unit test, including real Qt dialogs in separate processes.
 - The whole packaged add-on, installed through Anki's real `AddonManager` into
@@ -48,8 +47,9 @@ do). Each checks:
   `qt_moments.py`.
 
 The **Add-on archive** job publishes `ankiquest-addon` as a downloadable PR
-artifact. PR and release builds use the same packager, `package-addon` in
-`crates/xtask`; `--ankiweb` builds the AnkiWeb upload. Archives omit local
+artifact. PR and release builds use the same packager, `tools/package-addon`;
+`--ankiweb` builds the AnkiWeb upload. The job also checks that the archives
+match, byte for byte, those of the Python packager it replaced. Archives omit local
 `meta.json`, caches, tests and hidden files, and include `version.json` and a
 manifest `human_version`. The latter is verified through Anki's installed
 metadata, and Settings shows the same version. A source checkout says

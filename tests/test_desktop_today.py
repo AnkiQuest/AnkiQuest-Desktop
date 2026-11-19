@@ -348,7 +348,7 @@ class MoodTests(unittest.TestCase):
 
     def test_art_respects_the_companion(self):
         self.assertEqual("aki_freeze", moods.art("aki", moods.FREEZE))
-        self.assertEqual("ankilope_study", moods.art("ankilope", moods.FREEZE))
+        self.assertEqual("ankilope_frozen", moods.art("ankilope", moods.FREEZE))
         self.assertEqual("ankilope_celebrate", moods.art("ankilope", moods.WINNER))
         self.assertIsNone(moods.art("none", moods.REVIEW))
         self.assertIn("Aki", moods.message("aki", moods.WELCOME))
@@ -452,7 +452,7 @@ class LeaderboardTests(unittest.TestCase):
         {"user": "d", "display": "Di", "xp_total": 40, "periods": {"day": 9, "week": 9, "all": 40}},
         {"user": "e", "display": "Ed", "xp_total": 30, "periods": {"day": 8, "week": 8, "all": 30}},
         {"user": "f", "display": "Fa", "xp_total": 20, "periods": {"day": 7, "week": 7, "all": 20}},
-        {"user": "hill", "display": "Hill", "xp_total": 10, "periods": {"day": 1, "week": 1, "all": 10}},
+        {"user": "hill", "display": "hill", "xp_total": 10, "periods": {"day": 1, "week": 1, "all": 10}},
     ]
 
     def test_periods_reorder_the_board(self):
@@ -622,7 +622,7 @@ class HomeTests(unittest.TestCase):
         self.settings = {"url": "https://example.test", "user": "hill", "token": "secret"}
         self.api = SimpleNamespace(
             configured=True, base="https://example.test", user="hill", name="hill", token="secret",
-            leaderboard=Mock(return_value=[{"user": "hill", "display": "Hill", "xp_total": 5, "periods": {"week": 5}}]),
+            leaderboard=Mock(return_value=[{"user": "hill", "display": "hill", "xp_total": 5, "periods": {"week": 5}}]),
             rank=Mock(return_value={"order": ["hill"]}), notifications=Mock(return_value=[]),
             profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0}}),
             companion=Mock(return_value="ankilope"),
@@ -700,7 +700,8 @@ class HomeTests(unittest.TestCase):
 
     def test_the_deck_list_gets_the_today_panel_and_deck_badges(self):
         content = self.render()
-        self.assertIn("/_addons/ankiquest/art/ankilope_study.png", content.stats)
+        # A one-day streak not studied yet: Ankilope is sad.
+        self.assertIn("/_addons/ankiquest/art/ankilope_sad.png", content.stats)
         self.assertIn("pycmd('ankiquest:study:5')", content.stats)
         self.assertIn("Today’s goal", content.stats)
         self.assertIn("Change goal", content.stats)
@@ -718,7 +719,7 @@ class HomeTests(unittest.TestCase):
         self.addon.state["profile"]["streak"] = 64
         self.home.local["days"] = None
         content = self.render()
-        self.assertIn("/_addons/ankiquest/art/aki_at_risk.png", content.stats)
+        self.assertIn("/_addons/ankiquest/art/aki_sad.png", content.stats)
         self.assertNotIn("art/aki_review.png", content.stats)
 
     def test_studying_and_period_links_act_only_from_the_deck_list(self):

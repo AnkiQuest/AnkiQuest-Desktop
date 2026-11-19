@@ -26,12 +26,13 @@ from aqt.reviewer import Reviewer
 from aqt.taskman import TaskManager
 
 ROOT = Path(__file__).resolve().parents[1]
+PACKAGER = ROOT / "tools/package-addon/Cargo.toml"
 app = QApplication.instance() or QApplication([])
 
 
 def package(archive, *flags):
-    """Builds the release 13 archive with the repository's packager (crates/xtask)."""
-    command = ["cargo", "run", "--quiet", "-p", "ankiquest-xtask", "--", "package-addon",
+    """Builds the release 13 archive with the repository's packager (tools/package-addon)."""
+    command = ["cargo", "run", "--quiet", "--locked", "--manifest-path", str(PACKAGER), "--",
                "--ref", "refs/tags/addon-13", "--output", str(archive), *flags]
     subprocess.run(command, cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
 
@@ -168,7 +169,8 @@ class RealAnki(unittest.TestCase):
                         self.assertTrue(hasattr(value, part), ".".join(path))
                         value = getattr(value, part)
                 self.assertEqual("AnkiQuest", module._tools.title())
-                self.assertEqual(9, len(module._tools.actions()))
+                # Nine destinations, a separator, then Rate AnkiQuest, AnkiQuest changelog and Report a bug.
+                self.assertEqual(13, len(module._tools.actions()))
                 content = DeckBrowserContent(tree="", stats="")
                 module.on_deck_browser(mw.deckBrowser, content)
                 self.assertIn("AnkiQuest", content.stats)

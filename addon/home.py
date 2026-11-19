@@ -166,7 +166,7 @@ def today_mood():
 
 def pose_url(chosen_companion):
     """The companion's pose for today's streak."""
-    return _pose_url(moods.companion_pose(chosen_companion, moods.streak_pose(*today_mood())))
+    return _pose_url(moods.mood_pose(chosen_companion, *today_mood()))
 
 
 def streak_flame(view):
@@ -508,7 +508,7 @@ def today_view(deck_browser, chosen_companion):
     profile = day_verdict._for_display(addon().state["profile"], status.verdict)
     mood = moods.mood([day.due for day in days], focus.due if focus else 0, profile, now_ms())
     goal = moods.Goal.REACHED if status.goal_done else moods.Goal.OPEN
-    pose = moods.companion_pose(chosen_companion, moods.today_pose(profile, goal))
+    pose = moods.today_pose(chosen_companion, profile, goal)
     session = last_session(api)
     return {
         "profile": profile,
@@ -772,6 +772,13 @@ def move_to_main_address(api, main):
             addon().state["companion_account"] = account(there)
 
     mw.taskman.run_in_background(lambda: there.devices() if _owns_request(_Job.MOVE, request) else None, done)
+
+
+def server_has(api, feature):
+    """Whether the player's server is known to name `feature` at /api/capabilities. False until
+    the answer, loaded when the profile opens, is in."""
+    known = local["capabilities"]
+    return known is not None and known[0] == api.base and feature in known[1]
 
 
 def server_celebrates_goal(api):

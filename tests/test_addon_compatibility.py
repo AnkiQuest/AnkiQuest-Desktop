@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class Compatibility(unittest.TestCase):
     def test_the_addon_loads_into_real_anki(self):
         # The smoke installs archives from the Rust packager; compile it outside the smoke's time limit.
-        subprocess.run(["cargo", "build", "--quiet", "-p", "ankiquest-xtask"], cwd=ROOT, check=True, timeout=1800)
+        packager = ROOT / "tools/package-addon/Cargo.toml"
+        subprocess.run(["cargo", "build", "--quiet", "--locked", "--manifest-path", str(packager)], cwd=ROOT, check=True, timeout=1800)
         result = subprocess.run(
             [sys.executable, str(Path(__file__).with_name("qt_addon_smoke.py"))],
             env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),

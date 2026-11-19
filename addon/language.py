@@ -35,7 +35,9 @@ SPANISH = {
     "Frozen: a freeze kept your streak. Study today to thaw.": "Bajo cero: una congelación salvó tu racha. Estudia hoy para descongelarla.",
     "Frozen for 2 days: study today to thaw.": "2 días bajo cero: estudia hoy para descongelar.",
     "Frozen for 3 days or more: study today to thaw.": "3 días o más bajo cero: estudia hoy para descongelar.",
+    "Thawing: keep studying and the freeze melts.": "Deshielo: sigue estudiando y el hielo se derrite.",
     "Hopeful: a little more study and today counts.": "Esperanza: un poco más de estudio y hoy cuenta.",
+    "Almost: a few more minutes and today counts.": "Casi: unos minutos más y hoy cuenta.",
     "On fire: today counts for your %d-day streak.": "En llamas: hoy cuenta para tu racha de %d días.",
     "Choose %s": "Elegir a %s",
     "Later": "Más tarde",
@@ -185,7 +187,9 @@ GERMAN = {
     "Frozen: a freeze kept your streak. Study today to thaw.": "Eingefroren: Ein Freeze hat deinen Streak gehalten. Lerne heute zum Auftauen.",
     "Frozen for 2 days: study today to thaw.": "Seit 2 Tagen eingefroren: Lerne heute zum Auftauen.",
     "Frozen for 3 days or more: study today to thaw.": "Seit 3 Tagen oder länger eingefroren: Lerne heute zum Auftauen.",
+    "Thawing: keep studying and the freeze melts.": "Taut auf: Lerne weiter, dann schmilzt das Eis.",
     "Hopeful: a little more study and today counts.": "Hoffnungsvoll: Noch etwas lernen, dann zählt heute.",
+    "Almost: a few more minutes and today counts.": "Fast: Noch ein paar Minuten, dann zählt heute.",
     "On fire: today counts for your %d-day streak.": "Feuer und Flamme: Heute zählt für deinen %d-Tage-Streak.",
     "Choose %s": "%s wählen",
     "Later": "Später",
@@ -302,7 +306,9 @@ FRENCH = {
     "Frozen: a freeze kept your streak. Study today to thaw.": "Gel : un gel a protégé ta série. Étudie aujourd’hui pour dégeler.",
     "Frozen for 2 days: study today to thaw.": "Gel depuis 2 jours : étudie aujourd’hui pour dégeler.",
     "Frozen for 3 days or more: study today to thaw.": "Gel depuis 3 jours ou plus : étudie aujourd’hui pour dégeler.",
+    "Thawing: keep studying and the freeze melts.": "Dégel : continue d’étudier et la glace fond.",
     "Hopeful: a little more study and today counts.": "Espoir : encore un peu d’étude et aujourd’hui compte.",
+    "Almost: a few more minutes and today counts.": "Presque : encore quelques minutes et aujourd’hui compte.",
     "On fire: today counts for your %d-day streak.": "En feu : aujourd’hui compte pour ta série de %d jours.",
     "Choose %s": "Choisir %s",
     "Later": "Plus tard",
@@ -419,7 +425,9 @@ PORTUGUESE = {
     "Frozen: a freeze kept your streak. Study today to thaw.": "Gelo: um congelamento manteve a tua sequência. Estuda hoje para descongelar.",
     "Frozen for 2 days: study today to thaw.": "Gelo há 2 dias: estuda hoje para descongelar.",
     "Frozen for 3 days or more: study today to thaw.": "Gelo há 3 dias ou mais: estuda hoje para descongelar.",
+    "Thawing: keep studying and the freeze melts.": "A descongelar: continua a estudar e o gelo derrete.",
     "Hopeful: a little more study and today counts.": "Esperança: mais um pouco de estudo e hoje conta.",
+    "Almost: a few more minutes and today counts.": "Quase: mais uns minutos e hoje conta.",
     "On fire: today counts for your %d-day streak.": "Em chamas: hoje conta para a tua sequência de %d dias.",
     "Choose %s": "Escolher %s",
     "Later": "Mais tarde",
@@ -520,7 +528,7 @@ def _current():
     return current_lang or "en"
 
 
-def _plural(one, other, count, translate=tr):
+def plural(one, other, count, translate=tr):
     # Nonnegative integer counts: French uses "one" for 0 and 1. The pt table is pt-PT.
     singular = count in (0, 1) if language_code(_current()) == "fr" else count == 1
     return translate(one if singular else other)
@@ -1193,6 +1201,43 @@ PORTUGUESE.update({
     "Manual connection": "Ligação manual",
 })
 
+# Two-factor authentication: the same words as the website and the Android app.
+SPANISH.update({
+    "Authenticator code or recovery code": "Código del autenticador o código de recuperación",
+    "Enter the code from your authenticator app.": "Introduce el código de tu aplicación de autenticación.",
+    "That code is not right.": "Ese código no es correcto.",
+    "Too many wrong codes. Try again in 15 minutes.": "Demasiados códigos incorrectos. Vuelve a intentarlo en 15 minutos.",
+    "Two-factor authentication…": "Verificación en dos pasos…",
+    "Set it up or turn it off on the website.": "Configúrala o desactívala en la web.",
+})
+
+GERMAN.update({
+    "Authenticator code or recovery code": "Code aus der Authenticator-App oder Wiederherstellungscode",
+    "Enter the code from your authenticator app.": "Gib den Code aus deiner Authenticator-App ein.",
+    "That code is not right.": "Dieser Code ist nicht richtig.",
+    "Too many wrong codes. Try again in 15 minutes.": "Zu viele falsche Codes. Versuche es in 15 Minuten erneut.",
+    "Two-factor authentication…": "Zwei-Faktor-Authentifizierung…",
+    "Set it up or turn it off on the website.": "Richte sie auf der Website ein oder schalte sie aus.",
+})
+
+FRENCH.update({
+    "Authenticator code or recovery code": "Code de l'application d'authentification ou code de secours",
+    "Enter the code from your authenticator app.": "Saisis le code de ton application d'authentification.",
+    "That code is not right.": "Ce code n'est pas correct.",
+    "Too many wrong codes. Try again in 15 minutes.": "Trop de codes incorrects. Réessaie dans 15 minutes.",
+    "Two-factor authentication…": "Authentification à deux facteurs…",
+    "Set it up or turn it off on the website.": "Configure-la ou désactive-la sur le site.",
+})
+
+PORTUGUESE.update({
+    "Authenticator code or recovery code": "Código da aplicação de autenticação ou código de recuperação",
+    "Enter the code from your authenticator app.": "Introduz o código da tua aplicação de autenticação.",
+    "That code is not right.": "Esse código não está certo.",
+    "Too many wrong codes. Try again in 15 minutes.": "Demasiados códigos errados. Tenta novamente daqui a 15 minutos.",
+    "Two-factor authentication…": "Autenticação de dois fatores…",
+    "Set it up or turn it off on the website.": "Configura-a ou desativa-a no site.",
+})
+
 SPANISH.update({"Sign out": "Cerrar sesión"})
 GERMAN.update({"Sign out": "Abmelden"})
 FRENCH.update({"Sign out": "Se déconnecter"})
@@ -1235,6 +1280,13 @@ SPANISH.update({
     "Website": "Sitio web",
     "Settings": "Ajustes",
     "Check for updates": "Buscar actualizaciones",
+    "Rate AnkiQuest": "Valorar AnkiQuest",
+    "Rate on AnkiWeb": "Valorar en AnkiWeb",
+    "Star on GitHub": "Dar una estrella en GitHub",
+    "AnkiQuest changelog": "Novedades de AnkiQuest",
+    "All releases": "Todas las versiones",
+    "Report a bug": "Informar de un error",
+    "No app can open the link. Link copied.": "Ninguna app puede abrir el enlace. Enlace copiado.",
     "Send a deck": "Enviar un mazo",
     "Tools → AnkiQuest → Inbox to reply": "Herramientas → AnkiQuest → Bandeja de entrada para responder",
     "Tools → AnkiQuest → Decks offered to me": "Herramientas → AnkiQuest → Mazos que me han ofrecido",
@@ -1257,6 +1309,13 @@ GERMAN.update({
     "Website": "Website",
     "Settings": "Einstellungen",
     "Check for updates": "Nach Updates suchen",
+    "Rate AnkiQuest": "AnkiQuest bewerten",
+    "Rate on AnkiWeb": "Auf AnkiWeb bewerten",
+    "Star on GitHub": "Auf GitHub einen Stern geben",
+    "AnkiQuest changelog": "AnkiQuest-Änderungsprotokoll",
+    "All releases": "Alle Versionen",
+    "Report a bug": "Fehler melden",
+    "No app can open the link. Link copied.": "Keine App kann den Link öffnen. Link kopiert.",
     "Send a deck": "Einen Stapel senden",
     "Tools → AnkiQuest → Inbox to reply": "Zum Antworten: Werkzeuge → AnkiQuest → Posteingang",
     "Tools → AnkiQuest → Decks offered to me": "Werkzeuge → AnkiQuest → Mir angebotene Stapel",
@@ -1279,6 +1338,13 @@ FRENCH.update({
     "Website": "Site web",
     "Settings": "Paramètres",
     "Check for updates": "Rechercher des mises à jour",
+    "Rate AnkiQuest": "Évaluer AnkiQuest",
+    "Rate on AnkiWeb": "Évaluer sur AnkiWeb",
+    "Star on GitHub": "Ajouter une étoile sur GitHub",
+    "AnkiQuest changelog": "Journal des modifications d’AnkiQuest",
+    "All releases": "Toutes les versions",
+    "Report a bug": "Signaler un bug",
+    "No app can open the link. Link copied.": "Aucune app ne peut ouvrir le lien. Lien copié.",
     "Send a deck": "Envoyer un paquet",
     "Tools → AnkiQuest → Inbox to reply": "Outils → AnkiQuest → Boîte de réception pour répondre",
     "Tools → AnkiQuest → Decks offered to me": "Outils → AnkiQuest → Paquets qui me sont proposés",
@@ -1301,6 +1367,13 @@ PORTUGUESE.update({
     "Website": "Site",
     "Settings": "Definições",
     "Check for updates": "Procurar atualizações",
+    "Rate AnkiQuest": "Avaliar o AnkiQuest",
+    "Rate on AnkiWeb": "Avaliar no AnkiWeb",
+    "Star on GitHub": "Dar uma estrela no GitHub",
+    "AnkiQuest changelog": "Novidades do AnkiQuest",
+    "All releases": "Todas as versões",
+    "Report a bug": "Comunicar um erro",
+    "No app can open the link. Link copied.": "Nenhuma aplicação consegue abrir a ligação. Ligação copiada.",
     "Send a deck": "Enviar um baralho",
     "Tools → AnkiQuest → Inbox to reply": "Ferramentas → AnkiQuest → Caixa de entrada para responder",
     "Tools → AnkiQuest → Decks offered to me": "Ferramentas → AnkiQuest → Baralhos que me ofereceram",
