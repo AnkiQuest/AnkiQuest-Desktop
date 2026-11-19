@@ -130,8 +130,6 @@ POSE_FALLBACKS = {
     "streak_milestone": "streak_legend",
     "frozen_2": "frozen",
     "frozen_3": "frozen_2",
-    "thawing": "frozen",
-    "almost": "hopeful",
     "welcome": "happy",
     "review": "happy",
     "hurt": "sad",
@@ -163,7 +161,8 @@ _AKI_PICTURES = {
     "aki_winner": "winner",
 }
 
-# The pose each streak mood shows; fire burns by heat (`HEAT`).
+# The pose each streak mood shows; fire burns by heat (`HEAT`). thawing and almost are moods with
+# no pose of their own (AnkiQuest-Server#45).
 _MOOD_POSE_NAMES = {
     MOOD_UNKNOWN: "face",
     ASLEEP: "asleep",
@@ -171,9 +170,9 @@ _MOOD_POSE_NAMES = {
     FROZEN_1: "frozen",
     FROZEN_2: "frozen_2",
     FROZEN_3: "frozen_3",
-    THAWING: "thawing",
+    THAWING: "frozen",
     HOPEFUL: "hopeful",
-    ALMOST: "almost",
+    ALMOST: "hopeful",
 }
 
 # Aki's art for each pose she has, as the phone's AnkiquestCompanion maps them. She has no frozen 2
