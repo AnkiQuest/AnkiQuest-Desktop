@@ -119,6 +119,21 @@ jobs:
           persist-credentials: false
       - name: Check the shared quiet-hour cases
         run: cmp tests/fixtures/quiet_hours.json server-contract/tests/fixtures/quiet_hours.json
+      - name: Read the shared countdown and synced settings cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: 94a22b06dcc80b3f188c66e995ce96f9b5a078a6 # Server PR 76
+          path: server-countdowns
+          sparse-checkout: |
+            /tests/fixtures/countdowns.json
+            /tests/fixtures/synced_settings.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared countdown and synced settings cases
+        run: |
+          cmp tests/server-fixtures/countdowns.json server-countdowns/tests/fixtures/countdowns.json
+          cmp tests/server-fixtures/synced_settings.json server-countdowns/tests/fixtures/synced_settings.json
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:

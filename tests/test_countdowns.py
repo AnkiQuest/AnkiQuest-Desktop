@@ -1,4 +1,4 @@
-"""Countdowns follow tests/fixtures/countdowns.json, which the Android app tests against too."""
+"""Countdowns follow tests/server-fixtures/countdowns.json, which the Android app tests against too."""
 
 import json
 import os
@@ -15,8 +15,8 @@ settings_sync = load_in_package("aq_countdowns", "settings_sync")
 board = load_in_package("aq_countdowns", "board")
 language = load_in_package("aq_countdowns", "language")
 
-FIXTURE = json.loads((ADDON.parent / "tests/fixtures/countdowns.json").read_text("utf-8"))
-SETTINGS = json.loads((ADDON.parent / "tests/fixtures/synced_settings.json").read_text("utf-8"))
+FIXTURE = json.loads((ADDON.parent / "tests/server-fixtures/countdowns.json").read_text("utf-8"))
+SETTINGS = json.loads((ADDON.parent / "tests/server-fixtures/synced_settings.json").read_text("utf-8"))
 
 
 def events(rows):
