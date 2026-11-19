@@ -52,6 +52,7 @@ impl Mirrors {
                 let status = if url.starts_with("/redirect/") {
                     REDIRECT
                 } else if url.starts_with("/healthy/")
+                    || url.starts_with("/spare/")
                     || (url.starts_with("/no-security/") && !url.ends_with("-security/InRelease"))
                 {
                     HEALTHY
@@ -117,15 +118,21 @@ esac
 }
 
 #[test]
-fn follow_redirect_before_selecting() {
+fn select_reachable_mirrors() {
     let mirrors = Mirrors::start();
     let redirect = format!("{}/redirect", mirrors.base);
     let healthy = format!("{}/healthy", mirrors.base);
+    let spare = format!("{}/spare", mirrors.base);
     let no_security = format!("{}/no-security", mirrors.base);
     let fallback = tempfile::tempdir().unwrap();
     let result = select(
         fallback.path(),
-        &[redirect.clone(), no_security, healthy.clone()],
+        &[
+            redirect.clone(),
+            no_security,
+            healthy.clone(),
+            spare.clone(),
+        ],
     );
     assert!(
         result.status.success(),
@@ -134,7 +141,7 @@ fn follow_redirect_before_selecting() {
     );
     assert_eq!(
         fs::read_to_string(fallback.path().join("selected")).unwrap(),
-        format!("{healthy}/\n")
+        format!("{healthy}/\n{spare}/\n")
     );
     assert!(mirrors.redirected.load(Ordering::Relaxed));
     assert_eq!(
