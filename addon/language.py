@@ -1597,13 +1597,13 @@ GERMAN.update({
 })
 FRENCH.update({
     "Global": "Mondial", "Leaderboard scope": "Groupe du classement",
-    "you, not shown to others": "vous, invisible pour les autres",
+    "you, not shown to others": "toi, invisible pour les autres",
     "Place": "Place", "Level": "Niveau", "Streak": "Série",
     "Hidden players": "Joueurs masqués", "Hide for me": "Masquer pour moi", "Show again": "Afficher à nouveau",
     "Loading leaderboard…": "Chargement du classement…",
     "Could not load the leaderboard (%s).": "Impossible de charger le classement (%s).",
     "No uploaded players on this board yet.": "Aucun joueur n’a encore envoyé de données pour ce classement.",
-    "Hidden only from your Global board. Select a player to show them again.": "Masqués uniquement dans votre classement mondial. Sélectionnez un joueur pour l’afficher à nouveau.",
+    "Hidden only from your Global board. Select a player to show them again.": "Masqués uniquement dans ton classement mondial. Sélectionne un joueur pour l’afficher à nouveau.",
     "Saving…": "Enregistrement…", "Could not save this choice (%s).": "Impossible d’enregistrer ce choix (%s).",
 })
 PORTUGUESE.update({
@@ -1785,8 +1785,8 @@ FRENCH.update({
     "Join group": "Rejoindre le groupe",
     "Invitation link copied.": "Lien d’invitation copié.",
     "%s · %d members": "%s · %d membres",
-    "Use an invitation from this server.": "Utilisez une invitation de ce serveur.",
-    "Enter a group invitation link or code.": "Saisissez un lien ou un code d’invitation au groupe.",
+    "Use an invitation from this server.": "Utilise une invitation de ce serveur.",
+    "Enter a group invitation link or code.": "Saisis un lien ou un code d’invitation au groupe.",
     "Could not complete this action (%s).": "Impossible d’effectuer cette action (%s).",
     "Invite friend": "Inviter un ami",
     "Not this week": "Pas cette semaine",
@@ -1805,7 +1805,7 @@ FRENCH.update({
     "Duration in days": "Durée en jours",
     "Start after everyone accepts": "Commencer quand tout le monde accepte",
     "Invite friends": "Inviter des amis",
-    "Choose between 1 and 30 friends.": "Choisissez entre 1 et 30 amis.",
+    "Choose between 1 and 30 friends.": "Choisis entre 1 et 30 amis.",
     "View friend goal": "Voir l’objectif entre amis",
     "reviews": "révisions",
     "study days": "jours d’étude",
