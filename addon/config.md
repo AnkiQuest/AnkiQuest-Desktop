@@ -57,7 +57,7 @@ the daily goal lives on the server, so every device agrees. pick it with **Chang
 - `deck_status`: mark decks in the deck list as done today, learning later today, or ready
 - `session_summary`: show a recap with your reviews, time and cards left when you leave a study session
 - `goal_celebrations`: add the once-per-day streak and goal cues to the moments card, with the session recap below them. a server with wins supplies the daily goal moment; the add-on supplies the streak cue
-- `review_heatmap`: show the review heatmap under the deck list, as AnkiQuest for Android does: a year of reviews per day, the next 90 days' forecast and your streaks. it works without an account; with one, the days ankiquest judged are coloured by its verdict. click a day to open its cards in the browser
+- `review_heatmap`: show the review heatmap under the deck list, as AnkiQuest for Android does: a year of reviews per day, the next 90 days' forecast, your streaks and the share of days you studied. it works without an account; with one, the days ankiquest judged are coloured by its verdict. click a day to open its cards in the browser
 
 to give friends a copy of a deck, open **Tools → AnkiQuest → Send a deck**, pick the deck and the friends. they get an independent `.apkg` with cards, notes, media and deck options, never your review history; copies over 25 MB are refused, so use Anki's normal export for those. decks friends send you wait under **Tools → AnkiQuest → Decks offered to me** (the number shows how many) for 30 days, where **Import** opens Anki's usual import dialog and **Dismiss** removes the offer.
 
