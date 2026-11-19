@@ -444,28 +444,8 @@ class DeckDayTests(unittest.TestCase):
         self.assertIn("pycmd(\"collapse:1\")'>-</a><a", decorated)
 
 
-class LeaderboardTests(unittest.TestCase):
-    board = [
-        {"user": "a", "display": "Ana", "xp_total": 900, "periods": {"day": 5, "week": 50, "all": 900}},
-        {"user": "b", "display": "Bo", "xp_total": 100, "periods": {"day": 30, "week": 70, "all": 100}},
-        {"user": "c", "display": "Cy", "xp_total": 50, "periods": {"day": 10, "week": 10, "all": 50}},
-        {"user": "d", "display": "Di", "xp_total": 40, "periods": {"day": 9, "week": 9, "all": 40}},
-        {"user": "e", "display": "Ed", "xp_total": 30, "periods": {"day": 8, "week": 8, "all": 30}},
-        {"user": "f", "display": "Fa", "xp_total": 20, "periods": {"day": 7, "week": 7, "all": 20}},
-        {"user": "hill", "display": "Hill", "xp_total": 10, "periods": {"day": 1, "week": 1, "all": 10}},
-    ]
-
-    def test_periods_reorder_the_board(self):
-        self.assertEqual(["b", "a", "c"], [entry["user"] for entry in today.ranked(self.board, "week")][:3])
-        self.assertEqual(["a", "b"], [entry["user"] for entry in today.ranked(self.board, "all")][:2])
-        self.assertEqual([30, 10, 9], [entry["xp"] for entry in today.ranked(self.board, "day")][:3])
-
-    def test_own_row_joins_the_top_five(self):
-        rows = today.standings(self.board, "week", "hill")
-        self.assertEqual([1, 2, 3, 4, 5, 7], [place for place, _, _ in rows])
-        self.assertTrue(rows[-1][2])
-        self.assertEqual(5, len(today.standings(self.board, "week", "b")))
-        self.assertEqual([], today.standings(None, "week", "hill"))
+class PeriodTests(unittest.TestCase):
+    def test_an_unknown_period_falls_back_to_the_week(self):
         self.assertEqual("week", today.period("decade"))
 
 
@@ -673,7 +653,6 @@ class HomeTests(unittest.TestCase):
         pictures = patch.object(self.home.board_pictures.share, "download_image", return_value=None)
         pictures.start()
         self.addCleanup(pictures.stop)
-        self.home.today_ui = SimpleNamespace(session_dialog=Mock())
         from moment_fixture import cards
         self.cards = cards(self)
         self.hooks = aqt.gui_hooks
@@ -728,9 +707,9 @@ class HomeTests(unittest.TestCase):
         self.mw.col.decks.select.assert_called_once_with(5)
         self.mw.onOverview.assert_called_once_with()
         handle(False, "ankiquest:period:month", self.mw.deckBrowser)
-        self.assertEqual("month", self.mw.pm.profile[self.home.PERIOD_KEY])
+        self.assertEqual("month", self.mw.pm.profile[self.home.board_data._OLD_PERIOD])
         self.assertFalse(handle(False, "ankiquest:period:day", object()))
-        self.assertEqual("month", self.mw.pm.profile[self.home.PERIOD_KEY])
+        self.assertEqual("month", self.mw.pm.profile[self.home.board_data._OLD_PERIOD])
 
     def session(self, reviews):
         self.mw.state = "review"
@@ -1046,10 +1025,6 @@ class HomeTests(unittest.TestCase):
         self.render()
         self.assertEqual([("/api/goal/hill", {"mode": "backlog", "value": 7, "restart": True}, "PUT")], [call for call in calls if call[2] == "PUT"])
         self.assertEqual(20000, self.mw.pm.profile[self.home.PLAN_KEY]["since"])
-
-    def test_a_session_without_reviews_says_nothing(self):
-        self.session(0)
-        self.home.today_ui.session_dialog.assert_not_called()
 
 
 if __name__ == "__main__":

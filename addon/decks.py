@@ -9,10 +9,6 @@ def ordered(decks):
     return sorted(decks, key=sort_key)
 
 
-def depth(deck):
-    return deck["name"].count("::")
-
-
 def label(deck):
     return deck["name"].split("::")[-1]
 

@@ -45,13 +45,16 @@ def code_strings():
     return found
 
 
+def shared_wording():
+    return json.loads((ADDON.parent / "tests/fixtures/desktop-wording.json").read_text("utf-8"))["strings"]
+
+
 language = load_module("aq_language_tables", "language.py")
 
 
 class TranslationTables(unittest.TestCase):
     def test_shared_screens_match_the_reviewed_android_wording(self):
-        fixture = json.loads((ADDON.parent / "tests/fixtures/desktop-wording.json").read_text("utf-8"))
-        for row in fixture["strings"]:
+        for row in shared_wording():
             for code, expected in row["translations"].items():
                 with self.subTest(resource=row["android_resource"], language=code):
                     self.assertEqual(expected, language.tr(row["source"], code))
@@ -72,7 +75,10 @@ class TranslationTables(unittest.TestCase):
                 self.assertEqual(sorted(labels() - set(table)), [])
 
     def test_every_translated_label_is_still_in_the_code(self):
-        self.assertEqual(sorted(set(language.SPANISH) - code_strings()), [])
+        # The shared wording fixture comes from AnkiQuest-Server; its rows stay translated
+        # until the fixture drops them, even when no desktop screen shows one any more.
+        shared = {row["source"] for row in shared_wording()}
+        self.assertEqual(sorted(set(language.SPANISH) - code_strings() - shared), [])
 
     def test_placeholders_survive_translation(self):
         for code, table in language.TABLES.items():

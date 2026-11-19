@@ -57,7 +57,7 @@ class DayState(unittest.TestCase):
     def test_the_own_today_board_row_does_not_reuse_yesterdays_xp(self):
         self.pending_day()
         self.addon.state["profile"]["day_ends_at"] = int(time.time() * 1000) - 1
-        self.mw.pm.profile[self.home.PERIOD_KEY] = "day"
+        self.mw.pm.profile[self.home.board_data._OLD_PERIOD] = "day"
         self.api.leaderboard.return_value = [{"user": "hill", "display": "Hill", "periods": {"day": 200}}]
         html = self.render().stats
         self.assertIn("— XP", html)

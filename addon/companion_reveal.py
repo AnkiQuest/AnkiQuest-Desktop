@@ -85,15 +85,6 @@ class Reveal:
         self.phase = Phase.CLOSED
 
 
-def length_ms(motion):
-    """The whole animation's length before the companion shows."""
-    phase, total = _FIRST[motion], 0
-    while phase in _NEXT:
-        total += DURATION_MS[phase]
-        phase = _NEXT[phase]
-    return total
-
-
 def beam(companion):
     return BEAMS.get(companion, Beam.WHITE)
 
