@@ -5,7 +5,7 @@ of his Anki-tan asset pack, licensed CC BY-SA 4.0. See LICENSE-Anki-tan.md.
 
 These and aki_sad.png, aki_hopeful.png, aki_frozen.png and
 aki_neglected.png were generated with OpenAI's built-in image_gen tool.
-The five Ankilope additions (sad, hopeful, frozen, sleeping and neglected)
+The five Ankilope additions (sad, hopeful, frozen, asleep and neglected)
 were generated with the same tool.
 
 The tool did not expose its model identifier. The masters, prompts and

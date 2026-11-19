@@ -266,7 +266,7 @@ class RefreshTests(unittest.TestCase):
             {"user": "cerro", "display": "Cerro", "level": 3, "streak": 2, "periods": {"week": 90}},
         ]
         self.inbox = [
-            {"id": 4, "title": "Deck complete", "body": "Hill finished Spanish.",
+            {"id": 4, "title": "Deck complete", "body": "hill finished Spanish.",
              "created_at": int(time.time()), "sender": "hill", "replied": False},
         ]
         self.api.name = "cerro"
@@ -369,13 +369,13 @@ class RefreshTests(unittest.TestCase):
         self.mw.pm.profile["ankiquestLastOrder"] = ["hill", "cerro"]
         self.api.rank.return_value = {
             "order": ["cerro", "hill"],
-            "change": {"title": "\U0001f451 You took the crown", "body": "You passed Hill."},
+            "change": {"title": "\U0001f451 You took the crown", "body": "You passed hill."},
         }
         self.addon.poll()
         self.api.rank.assert_called_once_with(["hill", "cerro"], None)
         items = self.addon.moments._pending(self.mw.pm.profile, (self.api.base, self.api.user))
         self.assertEqual("\U0001f451 You took the crown", items[0]["title"])
-        self.assertEqual("You passed Hill.", items[0]["body"])
+        self.assertEqual("You passed hill.", items[0]["body"])
         self.assertFalse(any("crown" in call.args[0] for call in self.addon.tooltip.call_args_list))
         self.assertEqual(self.mw.pm.profile["ankiquestLastOrder"], ["cerro", "hill"])
 
@@ -383,11 +383,11 @@ class RefreshTests(unittest.TestCase):
         self.with_board()
         self.addon.poll(quiet=True)
         self.addon.poll()
-        self.assertIn("Hill finished Spanish", self.addon.tooltip.call_args.args[0])
+        self.assertIn("hill finished Spanish", self.addon.tooltip.call_args.args[0])
         self.addon.tooltip.reset_mock()
         self.addon.poll()
         self.addon.tooltip.assert_not_called()
-        self.inbox.append({"id": 5, "title": "\U0001f4ac Hill", "body": "Good job!",
+        self.inbox.append({"id": 5, "title": "\U0001f4ac hill", "body": "Good job!",
                            "created_at": int(time.time()), "sender": "hill", "replied": False})
         self.addon.poll()
         self.assertIn("Good job!", self.addon.tooltip.call_args.args[0])
@@ -396,11 +396,11 @@ class RefreshTests(unittest.TestCase):
     def test_challenge_rows_count_as_unread_and_actions_but_not_replies(self):
         self.with_board()
         self.addon.poll()
-        self.inbox.append({"id": 5, "title": "⚔️ Hill", "body": "Hill challenged you.",
+        self.inbox.append({"id": 5, "title": "⚔️ hill", "body": "hill challenged you.",
                            "created_at": int(time.time()), "sender": "hill", "replied": False,
                            "route": "/community#challenge-3", "action_required": True})
         self.addon.poll()
-        self.assertIn("Hill challenged you.", self.addon.tooltip.call_args.args[0])
+        self.assertIn("hill challenged you.", self.addon.tooltip.call_args.args[0])
         self.assertNotIn("to reply", self.addon.tooltip.call_args.args[0])
         content = SimpleNamespace(stats="")
         self.addon.on_deck_browser(None, content)
