@@ -94,7 +94,8 @@ class RealAnki(unittest.TestCase):
                 mw.form.setupUi(mw)
                 manager = AddonManager(mw)
                 archives = {}
-                for flags, name in (((), "ankiquest"), (("--ankiweb",), "414948448")):
+                # The flags of the GitHub release and the AnkiWeb upload (addon.yml).
+                for flags, name in ((("--updates", "github"), "ankiquest"), (("--ankiweb",), "414948448")):
                     archive = Path(folder) / (name + ".ankiaddon")
                     package(archive, *flags)
                     archives[name] = archive
@@ -151,7 +152,7 @@ class RealAnki(unittest.TestCase):
             mw.reviewer = Reviewer.__new__(Reviewer)
             mw.addonManager = AddonManager(mw)
             archive = Path(folder) / "ankiquest.ankiaddon"
-            package(archive)
+            package(archive, "--updates", "github")
             installed = mw.addonManager.install(str(archive), manifest={"package": "ankiquest_smoke"})
             self.assertIsInstance(installed, InstallOk)
             self.assertTrue(installed.compatible)
@@ -169,6 +170,8 @@ class RealAnki(unittest.TestCase):
                         self.assertTrue(hasattr(value, part), ".".join(path))
                         value = getattr(value, part)
                 self.assertEqual("AnkiQuest", module._tools.title())
+                # The installed build.json turns the update check on.
+                self.assertIs(module.updates.UpdateSource.GITHUB, module.updates.SOURCE)
                 # Nine destinations, a separator, then Rate AnkiQuest, AnkiQuest changelog and Report a bug.
                 self.assertEqual(13, len(module._tools.actions()))
                 content = DeckBrowserContent(tree="", stats="")

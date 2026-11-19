@@ -54,7 +54,6 @@ SPANISH = {
     "Celebrate achievements, streak milestones and personal bests": "Celebrar logros, rachas y récords personales",
     "Update channel": "Canal de actualizaciones", "Stable releases": "Versiones estables",
     "Nightly builds (untested)": "Compilaciones nocturnas (sin probar)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Este AnkiQuest es una copia local; no se actualiza solo.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: no se pudieron buscar actualizaciones (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest está actualizado (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s está disponible. ¿Instalarlo ahora? Después hay que reiniciar Anki.",
@@ -206,7 +205,6 @@ GERMAN = {
     "Celebrate achievements, streak milestones and personal bests": "Erfolge, Meilensteine der Lernserie und persönliche Bestleistungen feiern",
     "Update channel": "Update-Kanal", "Stable releases": "Stabile Versionen",
     "Nightly builds (untested)": "Nightly-Builds (ungetestet)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Dieses AnkiQuest ist eine lokale Kopie und aktualisiert sich nicht selbst.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: Suche nach Updates fehlgeschlagen (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest ist aktuell (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s ist verfügbar. Jetzt installieren? Danach muss Anki neu gestartet werden.",
@@ -325,7 +323,6 @@ FRENCH = {
     "Celebrate achievements, streak milestones and personal bests": "Fêter les réussites, les étapes de série et les records personnels",
     "Update channel": "Canal de mise à jour", "Stable releases": "Versions stables",
     "Nightly builds (untested)": "Versions nocturnes (non testées)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Cet AnkiQuest est une copie locale ; il ne se met pas à jour tout seul.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest : impossible de rechercher des mises à jour (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest est à jour (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s est disponible. L’installer maintenant ? Il faudra ensuite redémarrer Anki.",
@@ -444,7 +441,6 @@ PORTUGUESE = {
     "Celebrate achievements, streak milestones and personal bests": "Celebrar conquistas, marcos da sequência e recordes pessoais",
     "Update channel": "Canal de atualizações", "Stable releases": "Versões estáveis",
     "Nightly builds (untested)": "Versões noturnas (não testadas)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Este AnkiQuest é uma cópia local; não se atualiza sozinho.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: não foi possível procurar atualizações (%s)",
     "AnkiQuest is up to date (%s).": "O AnkiQuest está atualizado (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s está disponível. Instalar agora? Depois é preciso reiniciar o Anki.",
@@ -2021,26 +2017,22 @@ PORTUGUESE.update({
     "Show system notifications when Anki is in the background": "Mostrar notificações do sistema quando o Anki está em segundo plano",
 })
 
-# Packaged versions and AnkiWeb-owned updates.
+# Packaged versions and their update source.
 SPANISH.update({
     "Local copy": "Copia local", "Version: %s": "Versión: %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb gestiona las actualizaciones.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalación se actualiza desde AnkiWeb. Usa Herramientas → Complementos → Comprobar actualizaciones.",
+    "Updates: %s": "Actualizaciones: %s",
 })
 GERMAN.update({
     "Local copy": "Lokale Kopie", "Version: %s": "Version: %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb verwaltet die Updates.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Diese Installation wird über AnkiWeb aktualisiert. Nutze Extras → Erweiterungen → Auf Aktualisierungen prüfen.",
+    "Updates: %s": "Updates: %s",
 })
 FRENCH.update({
     "Local copy": "Copie locale", "Version: %s": "Version : %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb gère les mises à jour.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Cette installation est mise à jour via AnkiWeb. Utilise Outils → Greffons → Rechercher des mises à jour.",
+    "Updates: %s": "Mises à jour : %s",
 })
 PORTUGUESE.update({
     "Local copy": "Cópia local", "Version: %s": "Versão: %s",
-    "Updates are managed by AnkiWeb.": "O AnkiWeb gere as atualizações.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalação é atualizada pelo AnkiWeb. Usa Ferramentas → Extras → Procurar atualizações.",
+    "Updates: %s": "Atualizações: %s",
 })
 
 # Native moment recipients; wording matches Android's share sheet.

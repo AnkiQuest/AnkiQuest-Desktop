@@ -1052,14 +1052,12 @@ def on_profile_open():
 
 
 def check_updates(quiet=True):
-    if updates._source(ADDON_DIR) is updates._Source.ANKIWEB:
-        if not quiet:
-            tooltip(tr("This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates."))
+    # Builds without --updates github (AnkiWeb, local copies) never look for updates.
+    if updates.SOURCE is not updates.UpdateSource.GITHUB:
         return
+    # The packager writes version.json next to build.json, so a GitHub build always has one.
     current = updates.installed(ADDON_DIR)
     if current is None:
-        if not quiet:
-            tooltip(tr("This AnkiQuest is a local copy; it does not update itself."))
         return
     channel = config().get("update_channel", "stable")
 
@@ -1079,7 +1077,7 @@ def check_updates(quiet=True):
 
 
 def maybe_check_updates():
-    if updates._source(ADDON_DIR) is updates._Source.ANKIWEB:
+    if updates.SOURCE is not updates.UpdateSource.GITHUB:
         return
     now_ms = int(time.time() * 1000)
     if not updates.due(mw.pm.profile.get(UPDATE_CHECK_KEY, 0), now_ms):
@@ -1152,7 +1150,8 @@ add_action(tr("Study companion"), lambda: open_companion())
 copies_ui.setup(mw, lambda: client(), lambda: state["companion"], _tools)
 add_action(tr("Website"), open_website, WEBSITE_SHORTCUT)
 add_action(tr("Settings"), open_settings)
-add_action(tr("Check for updates"), lambda: check_updates(quiet=False))
+if updates.SOURCE is updates.UpdateSource.GITHUB:
+    add_action(tr("Check for updates"), lambda: check_updates(quiet=False))
 help_ui.setup(mw, _tools)
 
 
