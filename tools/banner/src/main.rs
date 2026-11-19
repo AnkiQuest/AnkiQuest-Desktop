@@ -291,6 +291,10 @@ fn check(image: &RgbImage, kind: Kind) -> Result<String, String> {
         .map_err(|e| format!("{}: {e}", path.display()))?
         .into_rgb8();
     if committed == *image {
+        let bytes = fs::metadata(&path)
+            .map_err(|e| format!("{}: {e}", path.display()))?
+            .len();
+        fits_upload(kind, bytes)?;
         return Ok(format!("{} is current", kind.path()));
     }
     let social = if kind == Kind::Social {
@@ -305,8 +309,14 @@ fn check(image: &RgbImage, kind: Kind) -> Result<String, String> {
 }
 
 /// Whether a committed `kind` of `bytes` can be uploaded: GitHub limits the social preview.
-fn fits_upload(_kind: Kind, _bytes: u64) -> Result<(), String> {
-    Ok(())
+fn fits_upload(kind: Kind, bytes: u64) -> Result<(), String> {
+    if kind != Kind::Social || bytes < SOCIAL_LIMIT {
+        return Ok(());
+    }
+    Err(format!(
+        "{} has {bytes} bytes; GitHub takes a social preview under {SOCIAL_LIMIT}",
+        kind.path()
+    ))
 }
 
 /// Draws the image.
