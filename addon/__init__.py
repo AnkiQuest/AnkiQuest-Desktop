@@ -609,9 +609,9 @@ def announce(rank, profile, inbox, quiet):
     mw.pm.profile[ORDER_WEEK_KEY] = rank.get("week")
     previous_cursor = mw.pm.profile.get(INBOX_KEY, 0)
     _, cursor = notify.fresh_messages(inbox, previous_cursor, now_ms // 1000)
-    wins = [item for entry in inbox if entry["id"] > previous_cursor
-            and entry.get("created_at", 0) >= now_ms // 1000 - notify.FRESH_SECONDS
-            if (item := moments._notice(entry)) is not None]
+    wins = [item for entry in inbox if (item := moments._notice(entry)) is not None
+            and (moments._held(item) or entry["id"] > previous_cursor
+                 and entry.get("created_at", 0) >= now_ms // 1000 - notify.FRESH_SECONDS)]
     _delivery._receive(inbox, delivery._Mode.QUIET if quiet else delivery._Mode.ANNOUNCE)
     mw.pm.profile[INBOX_KEY] = cursor
     if quiet:
