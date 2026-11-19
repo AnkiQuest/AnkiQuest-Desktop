@@ -45,6 +45,22 @@ def code_strings():
     return found
 
 
+def table_entries():
+    """Every (table, label) pair as written in language.py, so a label written twice shows
+    up even though the later entry silently replaces the earlier one at import."""
+    found = []
+    for node in ast.parse((ADDON / "language.py").read_text("utf-8")).body:
+        # TABLE = {...} and TABLE.update({...}).
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict):
+            name, table = node.targets[0].id, node.value
+        elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and getattr(node.value.func, "attr", None) == "update":
+            name, table = node.value.func.value.id, node.value.args[0]
+        else:
+            continue
+        found += [(name, key.value) for key in table.keys]
+    return found
+
+
 language = load_module("aq_language_tables", "language.py")
 
 
@@ -65,6 +81,10 @@ class TranslationTables(unittest.TestCase):
             with self.subTest(code=code):
                 self.assertEqual(sorted(keys - set(table)), [])
                 self.assertEqual(sorted(set(table) - keys), [])
+
+    def test_no_label_is_translated_twice(self):
+        entries = table_entries()
+        self.assertEqual(sorted({entry for entry in entries if entries.count(entry) > 1}), [])
 
     def test_every_label_in_the_code_is_translated(self):
         for code, table in language.TABLES.items():
