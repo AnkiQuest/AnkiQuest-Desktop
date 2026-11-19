@@ -7,6 +7,7 @@ import sys
 import unittest
 from unittest.mock import Mock, patch
 
+from addon_loader import load_in_package, load_module
 import test_deck_completion as addon_fixture
 
 
@@ -30,18 +31,25 @@ class SettingsMenu(unittest.TestCase):
         menu = self.addon._tools
         self.mw.form.menuTools.addAction.assert_called_once_with(menu.menuAction())
 
-        # Ten destinations, then the help entries: Rate AnkiQuest's submenu, the changelog and
-        # Report a bug (help_ui, tested in qt_help.py).
-        self.assertEqual(13, menu.addAction.call_count)
+        # Nine destinations, then the help entries: Rate AnkiQuest's submenu, the changelog and
+        # Report a bug (help_ui, tested in qt_help.py). A build without updates has no update check.
+        self.assertEqual(12, menu.addAction.call_count)
         menu.addSeparator.assert_called_once_with()
         self.assertEqual(
-            ["Today", "Inbox", "Friends", "Countdowns", "Study companion", "Website", "Settings", "Check for updates"],
+            ["Today", "Inbox", "Friends", "Countdowns", "Study companion", "Website", "Settings"],
             [call.args[0] for call in self.addon.QAction.call_args_list],
         )
         self.assertEqual(
             ["Send a deck", "Decks offered to me"],
             [call.args[0] for call in self.addon.copies_ui.QAction.call_args_list],
         )
+
+    def test_github_builds_add_the_update_check(self):
+        # The menu is built on import, so load a second copy whose build updates from GitHub.
+        updates = load_in_package("ankiquest_github_build", "updates")
+        updates.SOURCE = updates.UpdateSource.GITHUB
+        addon = load_module("ankiquest_github_build", "__init__.py", package=True)
+        self.assertEqual("Check for updates", addon.QAction.call_args_list[-1].args[0])
 
     def saved_callback(self):
         with patch.object(self.addon.preferences, "section", return_value=None) as section, \

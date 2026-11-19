@@ -27,9 +27,9 @@ The local options below match `config.json`. Account choices stay on the server;
 - `notify_rank`: say something when your place on the leaderboard changes
 - `streak_hours`: warn you this many hours before your streak ends (0 turns it off)
 - `reduce_motion`: off by default; on, a companion that joins you fades in instead of playing the full reveal. Anki's own Reduce motion does not change it
-- `update_channel`: `stable` for `addon-<n>` releases, `nightly` for the build of every change (untested)
+- `update_channel`: `stable` for `addon-<n>` releases, `nightly` for the build of every change (untested); used only by the GitHub package
 
-For a GitHub package, once a day and from **Tools → AnkiQuest → Check for updates**, the add-on looks for a newer build on that channel and offers to install it; restart Anki afterwards. AnkiWeb installations leave updates to **Tools → Add-ons → Check for Updates** and hide the GitHub channel picker. Local source copies never update themselves. The installed version appears under **App and privacy** and in Anki's add-on manager.
+For the GitHub package, once a day and from **Tools → AnkiQuest → Check for updates**, the add-on looks for a newer build on that channel and offers to install it; restart Anki afterwards. Other builds (AnkiWeb, local copies) never update themselves: they have no update check and no channel picker, and Settings shows **Updates: none**. AnkiWeb installations update through **Tools → Add-ons → Check for Updates**. The installed version appears under **App and privacy** and in Anki's add-on manager.
 
 At the end of **Tools → AnkiQuest**, **Rate AnkiQuest** opens the add-on's AnkiWeb page or its GitHub repository, **AnkiQuest changelog** shows the release notes of the installed version, with **All releases** and **Rate AnkiQuest**, and **Report a bug** opens the bug report form on GitHub. When no browser opens the link, it is copied to the clipboard.
 
