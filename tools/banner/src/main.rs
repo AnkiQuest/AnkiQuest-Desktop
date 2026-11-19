@@ -98,6 +98,9 @@ const FAMILY: &str = "Roboto";
 const USAGE: &str =
     "usage: banner --server <AnkiQuest-Server checkout> [--social] [--check | --out <file>]";
 
+/// GitHub refuses a social preview of this many bytes or more.
+const SOCIAL_LIMIT: u64 = 1_000_000;
+
 /// Which image to draw.
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Kind {
@@ -299,6 +302,11 @@ fn check(image: &RgbImage, kind: Kind) -> Result<String, String> {
         "{} differs from the drawing: run `cargo run --manifest-path tools/banner/Cargo.toml -- --server <checkout>{social}`",
         kind.path()
     ))
+}
+
+/// Whether a committed `kind` of `bytes` can be uploaded: GitHub limits the social preview.
+fn fits_upload(_kind: Kind, _bytes: u64) -> Result<(), String> {
+    Ok(())
 }
 
 /// Draws the image.
@@ -656,6 +664,20 @@ mod tests {
                 window.shot
             );
         }
+    }
+
+    #[test]
+    fn a_social_preview_must_stay_under_githubs_limit() {
+        assert!(fits_upload(Kind::Social, SOCIAL_LIMIT - 1).is_ok());
+        assert!(fits_upload(Kind::Social, SOCIAL_LIMIT).is_err());
+        assert!(fits_upload(Kind::Readme, SOCIAL_LIMIT).is_ok());
+    }
+
+    #[test]
+    fn the_committed_social_preview_fits() {
+        let path = root().join(Kind::Social.path());
+        let bytes = fs::metadata(&path).unwrap().len();
+        assert!(fits_upload(Kind::Social, bytes).is_ok(), "{bytes} bytes");
     }
 
     #[test]
