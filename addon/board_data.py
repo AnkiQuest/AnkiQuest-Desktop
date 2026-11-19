@@ -70,12 +70,10 @@ def _fetch(api, query):
 
 
 def _rows(board, me):
-    # Older circle rows have no rank; their server order still supplies it.
+    # Friends and group rows have no rank; their server order supplies it.
     result = []
     for index, row in enumerate(board.rows, 1):
-        entry = dict(row)
-        if "xp" not in entry:
-            entry["xp"] = (entry.get("periods") or {}).get(board.query.period, 0)
+        entry = dict(row, xp=int(row.get("xp") or 0))
         result.append((int(entry.get("rank", index)), entry, entry.get("user") == me))
     return result
 

@@ -16,7 +16,8 @@ from aqt.qt import (
 )
 
 from . import companion_art, share
-from .inbox import error_text
+from .client import OUTDATED
+from .inbox import error_text, failure
 from .language import tr
 
 state = {"popup": None}
@@ -240,26 +241,27 @@ def _buttons(sharing):
     return [friends, copy, save, text, public]
 
 
-def _route(sharing, legacy):
-    """Existing entry points open the recipient picker only on supporting servers."""
+def _route(sharing, local):
+    """Opens the recipient picker. `local` runs instead for a win with no server reference (a
+    moment saved before references), which only the local actions can share."""
     from . import moment_share
     if not sharing.owned():
         return
     if moment_share._moment(sharing.win) is None:
-        legacy()
+        local()
         return
 
+    # A server without the picker's features is older than this add-on.
     def checked(future):
         if not sharing.owned():
             return
-        # Unknown features: send the old way, as to a server without the recipient picker.
         try:
             features = future.result()
-        except Exception:
-            legacy()
+        except Exception as error:
+            sharing.status.setText(failure("Couldn't share it (%s).", error))
             return
         if not moment_share._supported(sharing.win, features):
-            legacy()
+            sharing.status.setText(tr(OUTDATED))
             return
         win_dialog(sharing.dialog, sharing.api, sharing.win, sharing._companion, sharing.current_client, sharing.run).show()
 

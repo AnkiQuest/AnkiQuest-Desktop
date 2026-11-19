@@ -156,11 +156,10 @@ class Contracts(unittest.TestCase):
         self.assertTrue({"activity", "wins", "global_leaderboard_hide"}.issubset(features))
         self.assertEqual("https://anki.example.test", address)
 
-    def test_conquest_label_stats_tell_and_undo_match_the_server(self):
+    def test_conquest_label_stats_and_undo_match_the_server(self):
         at = 1793097000000
         path = "/api/conquests/hill/%d" % at
-        self.routes = {("GET", path): "conquest", ("POST", path + "/tell"): "conquest_tell",
-                       ("DELETE", path + "/tell"): "conquest_untell"}
+        self.routes = {("GET", path): "conquest", ("DELETE", path + "/tell"): "conquest_untell"}
         found = conquests._load(self.api, at)
         self.assertEqual("4 lapses · 11 answers · 10 days to learn", conquests._stats(found, str))
         win = conquests._win(self.api, at, found, "Spanish", str)
@@ -168,7 +167,6 @@ class Contracts(unittest.TestCase):
         self.assertIn("From my deck “Spanish”.", win["body"])
         self.assertEqual(6, win["win"])
         self.assertFalse(conquests._can_undo(found, 0))
-        self.assertEqual({"told": 0}, conquests._tell(self.api, at))
         self.assertEqual({"retracted": 0}, conquests._undo(self.api, at))
 
     def test_moment_recipients_and_send_specific_undo_use_recorded_contracts(self):

@@ -4,7 +4,7 @@ from concurrent.futures import Future
 import json
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from aqt.qt import QApplication, QImage, QLabel, QPushButton
 
@@ -67,8 +67,9 @@ class Reveal(unittest.TestCase):
         def sharing(dialog, run, status):
             if not shared:
                 return None
-            # The signed-in account still owns the win, so Share opens its choices.
-            api = SimpleNamespace(base="https://quest.test", user="sam", token="t", capabilities=frozenset)
+            # The signed-in account still owns the win, so Share opens the recipient picker.
+            api = SimpleNamespace(base="https://quest.test", user="sam", token="t",
+                                  capabilities=lambda: frozenset({"share_moments"}))
             return share_ui.Sharing(dialog, api, item["share"], lambda: api, run, status)
 
         window = reveal_ui.RevealWindow(None, item, how, chosen, self.chosen.append, sharing, run_now)
@@ -144,11 +145,13 @@ class Reveal(unittest.TestCase):
         window._skip()
         self.assertEqual(["Later"], self.buttons(window))
 
-    def test_share_shows_the_moment_cards_choices(self):
+    def test_share_opens_the_recipient_picker(self):
         window = self.window()
         window._skip()
-        window.share.click()
-        self.assertIn("Tell friends", self.buttons(window))
+        with patch.object(share_ui, "win_dialog") as opened:
+            window.share.click()
+        opened.assert_called_once()
+        opened.return_value.show.assert_called_once()
 
 
 if __name__ == "__main__":
