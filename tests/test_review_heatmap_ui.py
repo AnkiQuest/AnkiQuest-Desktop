@@ -94,6 +94,12 @@ class Block(unittest.TestCase):
         self.assertIn("class=hm-body hidden", ui.html(heatmap.summarize(TODAY, {}, {}), english, expanded=False))
         self.assertIn("class=hm-body>", ui.html(heatmap.summarize(TODAY, {}, {}), english))
 
+    def test_collapsed_keeps_the_stats(self):
+        # As on Android, collapsing hides the calendar only.
+        block = ui.html(heatmap.summarize(TODAY, {day(0): 1}, {}), english, expanded=False)
+        self.assertLess(block.index("class=hm-stats"), block.index("class=hm-body"))
+        self.assertLess(block.index("Reviews in available history"), block.index("class=hm-body"))
+
     def test_says_so_before_the_first_review(self):
         self.assertIn("Your reviews will appear here after you study.", ui.html(heatmap.summarize(TODAY, {}, {}), english))
         self.assertNotIn("Your reviews will appear here", ui.html(heatmap.summarize(TODAY, {day(0): 1}, {}), english))
