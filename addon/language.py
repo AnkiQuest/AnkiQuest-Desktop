@@ -35,7 +35,9 @@ SPANISH = {
     "Frozen: a freeze kept your streak. Study today to thaw.": "Bajo cero: una congelación salvó tu racha. Estudia hoy para descongelarla.",
     "Frozen for 2 days: study today to thaw.": "2 días bajo cero: estudia hoy para descongelar.",
     "Frozen for 3 days or more: study today to thaw.": "3 días o más bajo cero: estudia hoy para descongelar.",
+    "Thawing: keep studying and the freeze melts.": "Deshielo: sigue estudiando y el hielo se derrite.",
     "Hopeful: a little more study and today counts.": "Esperanza: un poco más de estudio y hoy cuenta.",
+    "Almost: a few more minutes and today counts.": "Casi: unos minutos más y hoy cuenta.",
     "On fire: today counts for your %d-day streak.": "En llamas: hoy cuenta para tu racha de %d días.",
     "Choose %s": "Elegir a %s",
     "Later": "Más tarde",
@@ -185,7 +187,9 @@ GERMAN = {
     "Frozen: a freeze kept your streak. Study today to thaw.": "Eingefroren: Ein Freeze hat deinen Streak gehalten. Lerne heute zum Auftauen.",
     "Frozen for 2 days: study today to thaw.": "Seit 2 Tagen eingefroren: Lerne heute zum Auftauen.",
     "Frozen for 3 days or more: study today to thaw.": "Seit 3 Tagen oder länger eingefroren: Lerne heute zum Auftauen.",
+    "Thawing: keep studying and the freeze melts.": "Taut auf: Lerne weiter, dann schmilzt das Eis.",
     "Hopeful: a little more study and today counts.": "Hoffnungsvoll: Noch etwas lernen, dann zählt heute.",
+    "Almost: a few more minutes and today counts.": "Fast: Noch ein paar Minuten, dann zählt heute.",
     "On fire: today counts for your %d-day streak.": "Feuer und Flamme: Heute zählt für deinen %d-Tage-Streak.",
     "Choose %s": "%s wählen",
     "Later": "Später",
@@ -302,7 +306,9 @@ FRENCH = {
     "Frozen: a freeze kept your streak. Study today to thaw.": "Gel : un gel a protégé ta série. Étudie aujourd’hui pour dégeler.",
     "Frozen for 2 days: study today to thaw.": "Gel depuis 2 jours : étudie aujourd’hui pour dégeler.",
     "Frozen for 3 days or more: study today to thaw.": "Gel depuis 3 jours ou plus : étudie aujourd’hui pour dégeler.",
+    "Thawing: keep studying and the freeze melts.": "Dégel : continue d’étudier et la glace fond.",
     "Hopeful: a little more study and today counts.": "Espoir : encore un peu d’étude et aujourd’hui compte.",
+    "Almost: a few more minutes and today counts.": "Presque : encore quelques minutes et aujourd’hui compte.",
     "On fire: today counts for your %d-day streak.": "En feu : aujourd’hui compte pour ta série de %d jours.",
     "Choose %s": "Choisir %s",
     "Later": "Plus tard",
@@ -419,7 +425,9 @@ PORTUGUESE = {
     "Frozen: a freeze kept your streak. Study today to thaw.": "Gelo: um congelamento manteve a tua sequência. Estuda hoje para descongelar.",
     "Frozen for 2 days: study today to thaw.": "Gelo há 2 dias: estuda hoje para descongelar.",
     "Frozen for 3 days or more: study today to thaw.": "Gelo há 3 dias ou mais: estuda hoje para descongelar.",
+    "Thawing: keep studying and the freeze melts.": "A descongelar: continua a estudar e o gelo derrete.",
     "Hopeful: a little more study and today counts.": "Esperança: mais um pouco de estudo e hoje conta.",
+    "Almost: a few more minutes and today counts.": "Quase: mais uns minutos e hoje conta.",
     "On fire: today counts for your %d-day streak.": "Em chamas: hoje conta para a tua sequência de %d dias.",
     "Choose %s": "Escolher %s",
     "Later": "Mais tarde",
@@ -1191,6 +1199,43 @@ PORTUGUESE.update({
     "Switch account…": "Mudar de conta…",
     "Manage account on the website…": "Gerir a conta no site…",
     "Manual connection": "Ligação manual",
+})
+
+# Two-factor authentication: the same words as the website and the Android app.
+SPANISH.update({
+    "Authenticator code or recovery code": "Código del autenticador o código de recuperación",
+    "Enter the code from your authenticator app.": "Introduce el código de tu aplicación de autenticación.",
+    "That code is not right.": "Ese código no es correcto.",
+    "Too many wrong codes. Try again in 15 minutes.": "Demasiados códigos incorrectos. Vuelve a intentarlo en 15 minutos.",
+    "Two-factor authentication…": "Verificación en dos pasos…",
+    "Set it up or turn it off on the website.": "Configúrala o desactívala en la web.",
+})
+
+GERMAN.update({
+    "Authenticator code or recovery code": "Code aus der Authenticator-App oder Wiederherstellungscode",
+    "Enter the code from your authenticator app.": "Gib den Code aus deiner Authenticator-App ein.",
+    "That code is not right.": "Dieser Code ist nicht richtig.",
+    "Too many wrong codes. Try again in 15 minutes.": "Zu viele falsche Codes. Versuche es in 15 Minuten erneut.",
+    "Two-factor authentication…": "Zwei-Faktor-Authentifizierung…",
+    "Set it up or turn it off on the website.": "Richte sie auf der Website ein oder schalte sie aus.",
+})
+
+FRENCH.update({
+    "Authenticator code or recovery code": "Code de l'application d'authentification ou code de secours",
+    "Enter the code from your authenticator app.": "Saisis le code de ton application d'authentification.",
+    "That code is not right.": "Ce code n'est pas correct.",
+    "Too many wrong codes. Try again in 15 minutes.": "Trop de codes incorrects. Réessaie dans 15 minutes.",
+    "Two-factor authentication…": "Authentification à deux facteurs…",
+    "Set it up or turn it off on the website.": "Configure-la ou désactive-la sur le site.",
+})
+
+PORTUGUESE.update({
+    "Authenticator code or recovery code": "Código da aplicação de autenticação ou código de recuperação",
+    "Enter the code from your authenticator app.": "Introduz o código da tua aplicação de autenticação.",
+    "That code is not right.": "Esse código não está certo.",
+    "Too many wrong codes. Try again in 15 minutes.": "Demasiados códigos errados. Tenta novamente daqui a 15 minutos.",
+    "Two-factor authentication…": "Autenticação de dois fatores…",
+    "Set it up or turn it off on the website.": "Configura-a ou desativa-a no site.",
 })
 
 SPANISH.update({"Sign out": "Cerrar sesión"})

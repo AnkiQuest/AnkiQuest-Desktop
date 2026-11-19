@@ -52,7 +52,7 @@ class Boards(unittest.TestCase):
                 self.hidden = [{"user": "ana", "display": "Ana"}] if body["action"] == "hide" else []
             return self.hidden
         if route == "/api/records":
-            return [{"window": "day", "unit": "xp", "holders": [{"user": "hill", "display": "Hill", "value": 107}]}]
+            return [{"window": "day", "unit": "xp", "holders": [{"user": "hill", "display": "hill", "value": 107}]}]
         if route == "/api/leaderboard":
             name = "leaderboard_global_hidden" if self.api.name == "ana" else "leaderboard_global"
             rows = json.loads((EXAMPLES / (name + ".json")).read_text(encoding="utf-8"))

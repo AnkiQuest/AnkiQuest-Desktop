@@ -29,7 +29,7 @@ class Announcements(unittest.TestCase):
         self.assertEqual(1, self.addon.state["activity"].unread)
         self.mw.state = "deckBrowser"
         self.addon.on_state_change("deckBrowser", "review")
-        self.assertIn("Hill finished", self.addon.tooltip.call_args.args[0])
+        self.assertIn("hill finished", self.addon.tooltip.call_args.args[0])
         self.addon.poll()
         self.assertEqual(1, self.addon.tooltip.call_count)
 
@@ -37,7 +37,7 @@ class Announcements(unittest.TestCase):
         self.addon.poll(quiet=True)
         self.addon.tooltip.assert_not_called()
         self.addon.poll()
-        self.assertIn("Hill finished", self.addon.tooltip.call_args.args[0])
+        self.assertIn("hill finished", self.addon.tooltip.call_args.args[0])
         self.addon.poll()
         self.assertEqual(1, self.addon.tooltip.call_count)
 
@@ -56,7 +56,7 @@ class Announcements(unittest.TestCase):
         self.addon.tooltip.assert_not_called()
         self.mw.isActiveWindow = lambda: True
         self.addon.poll()
-        self.assertIn("Hill finished", self.addon.tooltip.call_args.args[0])
+        self.assertIn("hill finished", self.addon.tooltip.call_args.args[0])
 
     def test_a_new_profile_cannot_deliver_the_old_profiles_queue(self):
         self.mw.state = "review"
@@ -83,7 +83,7 @@ class Announcements(unittest.TestCase):
         self.addon.tooltip.assert_not_called()
         with patch.object(self.addon.time, "time", return_value=(24 + 7) * 3600):
             self.addon.poll()
-        self.assertIn("Hill finished", self.addon.tooltip.call_args.args[0])
+        self.assertIn("hill finished", self.addon.tooltip.call_args.args[0])
 
     def test_quiet_hours_cover_daytime_and_equal_endpoints_disable_them(self):
         quiet = self.addon.delivery._quiet
@@ -187,7 +187,7 @@ class Announcements(unittest.TestCase):
         self.record()["reminders"] = {"quiet_start": 22, "quiet_end": 9}
         self.inbox[0]["created_at"] = 10 * 3600
         self.warn(profile_hour=None, hour_utc=10)
-        self.assertIn("Hill finished", self.addon.tooltip.call_args.args[0])
+        self.assertIn("hill finished", self.addon.tooltip.call_args.args[0])
         self.warn(profile_hour=None, hour_utc=10)
         self.assertEqual(1, self.addon.tooltip.call_count)
 
@@ -214,7 +214,7 @@ class Announcements(unittest.TestCase):
     def test_background_delivery_uses_plain_tray_text_and_an_owned_click(self):
         self.settings["system_notifications"] = True
         self.mw.isActiveWindow = lambda: False
-        self.inbox[0]["title"] = "<b>Hill</b>"
+        self.inbox[0]["title"] = "<b>hill</b>"
         self.addon.open_inbox = Mock()
         tray_type = Mock()
         with patch.dict("sys.modules", {"aqt.qt": Mock(QSystemTrayIcon=tray_type, QIcon=Mock())}):
@@ -222,7 +222,7 @@ class Announcements(unittest.TestCase):
         self.addon.tooltip.assert_not_called()
         tray = tray_type.return_value
         tray.showMessage.assert_called_once()
-        self.assertEqual("<b>Hill</b>", tray.showMessage.call_args.args[0])
+        self.assertEqual("<b>hill</b>", tray.showMessage.call_args.args[0])
         clicked = tray.messageClicked.connect.call_args.args[0]
         self.api.token = "changed"
         clicked()
@@ -277,17 +277,17 @@ class Announcements(unittest.TestCase):
         self.inbox.append({"id": 5, "kind": "reminder_daily", "created_at": int(time.time()) - 90000, "title": "Stale"})
         self.addon.poll()
         self.addon.tooltip.assert_called_once()
-        self.assertIn("Hill finished", self.addon.tooltip.call_args.args[0])
+        self.assertIn("hill finished", self.addon.tooltip.call_args.args[0])
         self.assertNotIn("Stale", self.addon.tooltip.call_args.args[0])
 
     def test_deck_offers_also_wait_until_review_ends(self):
         self.mw.state = "review"
-        self.addon.copies_ui.announce([{"id": 1, "sender": "hill", "deck": "Spanish"}], {"hill": "Hill"}, False)
+        self.addon.copies_ui.announce([{"id": 1, "sender": "aldanita", "deck": "Spanish"}], {"aldanita": "Aldana"}, False)
         self.addon.tooltip.assert_not_called()
         self.mw.state = "deckBrowser"
         self.addon.on_state_change("deckBrowser", "review")
-        self.assertIn("Hill shared Spanish", self.addon.tooltip.call_args.args[0])
-        self.addon.copies_ui.announce([{"id": 1, "sender": "hill", "deck": "Spanish"}], {}, False)
+        self.assertIn("Aldana shared Spanish", self.addon.tooltip.call_args.args[0])
+        self.addon.copies_ui.announce([{"id": 1, "sender": "aldanita", "deck": "Spanish"}], {}, False)
         self.assertEqual(1, self.addon.tooltip.call_count)
 
     def test_a_current_daily_reminder_does_not_require_an_existing_streak(self):
