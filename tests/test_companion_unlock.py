@@ -183,7 +183,7 @@ class CowArt(unittest.TestCase):
     def test_the_cow_is_drawn_with_ankilope_turned_purple(self):
         self.assertEqual("ankilope", moods.art_owner("cow"))
         self.assertEqual("aki", moods.art_owner("aki"))
-        self.assertEqual("ankilope_study", moods.companion_pose("cow", "aki_at_risk"))
+        self.assertEqual("ankilope_sad", moods.companion_pose("cow", "aki_at_risk"))
         self.assertEqual("ankilope_face.png", Path(share.face_path("cow")).name)
         self.assertEqual("hue-rotate(250deg)", moods.css_filter("cow"))
         for companion in ("aki", "ankilope", "none"):
@@ -197,9 +197,9 @@ class CowArt(unittest.TestCase):
         self.assertIn('class=aq-companion src="/m.png"', board.html(None, mascot="/m.png"))
 
     def test_picker_cards_preview_face_fire_and_sad(self):
-        self.assertEqual(("aki_face", "aki_streak", "aki_at_risk"), moods.PREVIEW_POSES)
-        self.assertEqual(["aki_face", "aki_streak", "aki_at_risk"], moods.preview("aki"))
-        self.assertEqual(["ankilope_face", "ankilope_study"], moods.preview("ankilope"))
+        self.assertEqual(("aki_face", "aki_streak", "aki_sad"), moods.PREVIEW_POSES)
+        self.assertEqual(["aki_face", "aki_streak", "aki_sad"], moods.preview("aki"))
+        self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview("ankilope"))
         self.assertEqual(moods.preview("ankilope"), moods.preview("cow"))
         self.assertEqual([], moods.preview("none"))
         for companion in ("aki", "ankilope", "cow"):

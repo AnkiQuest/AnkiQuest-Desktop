@@ -114,7 +114,7 @@ background:var(--aq-bg);color:var(--aq-text);box-shadow:inset 0 0 0 2px var(--aq
 #ankiquest .aq-note{font-size:13px;color:var(--aq-muted);margin:4px 0}
 #ankiquest .aq-done-today{color:var(--aq-green-dark)}
 #ankiquest .aq-learning-later{color:var(--aq-orange)}
-#ankiquest .aq-button{display:block;width:100%;margin-top:10px;padding:12px 16px;border:0;border-radius:14px;cursor:pointer;
+#ankiquest .aq-button{display:block;box-sizing:border-box;width:100%;margin:10px 0 0;padding:12px 16px;border:0;border-radius:14px;cursor:pointer;
 background:var(--aq-green);color:#fff;font-family:inherit;font-weight:800;font-size:15px;line-height:1;text-transform:uppercase;letter-spacing:.06em;
 box-shadow:0 4px 0 var(--aq-green-dark)}
 #ankiquest .aq-button:hover{filter:brightness(1.05)}

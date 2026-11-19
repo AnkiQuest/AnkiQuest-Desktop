@@ -349,17 +349,26 @@ class MoodTests(unittest.TestCase):
 
     def test_art_respects_the_companion(self):
         self.assertEqual("aki_freeze", moods.art("aki", moods.FREEZE))
-        self.assertEqual("ankilope_study", moods.art("ankilope", moods.FREEZE))
+        self.assertEqual("ankilope_frozen", moods.art("ankilope", moods.FREEZE))
         self.assertEqual("ankilope_celebrate", moods.art("ankilope", moods.WINNER))
         self.assertIsNone(moods.art("none", moods.REVIEW))
         self.assertIn("Aki", moods.message("aki", moods.WELCOME, 0)[0])
         self.assertNotIn("Aki", moods.message("ankilope", moods.WELCOME, 0)[0])
 
+    def test_the_review_mood_keeps_its_pose_but_has_no_line(self):
+        self.assertEqual("aki_review", moods.art("aki", moods.REVIEW))
+        self.assertEqual((None, ()), moods.message("aki", moods.REVIEW, 0))
+        self.assertEqual((None, ()), moods.message("ankilope", moods.REVIEW, 0))
+
+    def test_every_mood_but_review_has_a_line(self):
+        # MOODS and MESSAGES are separate lists; keep them from drifting apart.
+        self.assertEqual(set(moods.MOODS) - {moods.REVIEW}, set(moods.MESSAGES))
+
     def test_every_mood_has_bundled_and_exported_art(self):
         source = (ADDON / "__init__.py").read_text("utf-8")
         pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
         for companion in ("aki", "ankilope"):
-            for mood in moods.MESSAGES:
+            for mood in moods.MOODS:
                 name = "art/%s.png" % moods.art(companion, mood)
                 self.assertTrue((ADDON / name).is_file(), name)
                 self.assertTrue(re.fullmatch(pattern, name), name)
@@ -491,7 +500,7 @@ class PanelTests(unittest.TestCase):
     def view(self, **changes):
         view = {
             "art": "/_addons/1/art/aki_review.png",
-            "mood": "A small step starts with one card.",
+            "mood": "You showed up today. That is progress worth keeping.",
             "winner": "/_addons/1/art/aki_winner.png",
             "focus": {"id": 7, "name": "Spa<b>nish", "review": 3, "learning": 1, "new": 2,
                       "status": "review_now", "label": "6 cards ready", "ready": 6},
@@ -511,7 +520,7 @@ class PanelTests(unittest.TestCase):
     def test_the_panel_shows_every_part(self):
         html = board.html(self.profile, 2, 0, today=self.view())
         self.assertIn("aki_review.png", html)
-        self.assertIn("A small step starts with one card.", html)
+        self.assertIn("You showed up today. That is progress worth keeping.", html)
         self.assertIn("4 day streak", html)
         self.assertIn("pycmd('ankiquest:study:7')", html)
         self.assertIn("Study 6 due", html)
@@ -702,7 +711,8 @@ class HomeTests(unittest.TestCase):
 
     def test_the_deck_list_gets_the_today_panel_and_deck_badges(self):
         content = self.render()
-        self.assertIn("/_addons/ankiquest/art/ankilope_study.png", content.stats)
+        # A one-day streak not studied yet: Ankilope is sad.
+        self.assertIn("/_addons/ankiquest/art/ankilope_sad.png", content.stats)
         self.assertIn("pycmd('ankiquest:study:5')", content.stats)
         self.assertIn("Today’s goal", content.stats)
         self.assertIn("Change goal", content.stats)
@@ -720,7 +730,7 @@ class HomeTests(unittest.TestCase):
         self.addon.state["profile"]["streak"] = 64
         self.home.local["days"] = None
         content = self.render()
-        self.assertIn("/_addons/ankiquest/art/aki_at_risk.png", content.stats)
+        self.assertIn("/_addons/ankiquest/art/aki_sad.png", content.stats)
         self.assertNotIn("art/aki_review.png", content.stats)
 
     def test_a_waiting_streak_says_so_before_the_decks(self):
@@ -747,6 +757,18 @@ class HomeTests(unittest.TestCase):
         content = self.render()
         self.assertIn("Your streak is protected by a freeze. A fresh start is waiting.", content.stats)
         self.assertNotIn("A small step starts with one card.", content.stats)
+
+    def test_cards_due_bring_no_greeting(self):
+        # Regression: "A small step starts with one card." said nothing useful above the deck.
+        self.api.companion.return_value = "aki"
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"]["streak"] = 0
+        content = self.render()
+        self.assertIn("pycmd('ankiquest:study:5')", content.stats)
+        self.assertIn("/_addons/ankiquest/art/aki_", content.stats)
+        self.assertNotIn("small step", content.stats)
+        self.assertNotIn("class=aq-bubble", content.stats)
 
     def test_studying_and_period_links_act_only_from_the_deck_list(self):
         handle = self.hooks.webview_did_receive_js_message[-1]
