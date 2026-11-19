@@ -87,21 +87,68 @@ class Announcements(unittest.TestCase):
 
     def test_quiet_hours_cover_daytime_and_equal_endpoints_disable_them(self):
         quiet = self.addon.delivery._quiet
-        self.assertTrue(quiet({"quiet_start": 8, "quiet_end": 16}, 12 * 3600, 0))
-        self.assertFalse(quiet({"quiet_start": 8, "quiet_end": 16}, 16 * 3600, 0))
-        self.assertFalse(quiet({"quiet_start": 8, "quiet_end": 8}, 8 * 3600, 0))
+        self.assertTrue(quiet({"quiet_start": 8, "quiet_end": 16}, 12))
+        self.assertFalse(quiet({"quiet_start": 8, "quiet_end": 16}, 16))
+        self.assertFalse(quiet({"quiet_start": 8, "quiet_end": 8}, 8))
+
+    def test_an_unknown_hour_is_quiet_unless_quiet_hours_are_off(self):
+        # Android's Reminders.holds: an unknown hour holds while quiet hours are on.
+        quiet = self.addon.delivery._quiet
+        self.assertTrue(quiet({"quiet_start": 22, "quiet_end": 9}, None))
+        self.assertFalse(quiet({"quiet_start": 9, "quiet_end": 9}, None))
 
     def test_shared_quiet_hour_cases(self):
         path = Path(__file__).parent / "fixtures" / "quiet_hours.json"
         cases = json.loads(path.read_text("utf-8"))["cases"]
         self.assertTrue(cases)
         for case in cases:
-            for offset, minute in product((-330, -120, 0, 180), (0, 59)):
-                with self.subTest(case=case["name"], offset=offset, minute=minute):
-                    settings = {"quiet_start": case["start"], "quiet_end": case["end"]}
-                    # Both ends of the local hour keep the same quiet-hour verdict.
-                    now = case["hour"] * 3600 + (offset + minute) * 60
-                    self.assertEqual(case["quiet"], self.addon.delivery._quiet(settings, now, offset))
+            with self.subTest(case=case["name"]):
+                settings = {"quiet_start": case["start"], "quiet_end": case["end"]}
+                self.assertEqual(case["quiet"], self.addon.delivery._quiet(settings, case["hour"]))
+
+    def test_the_device_hour_follows_ankis_offset_through_the_hour(self):
+        for offset, minute in product((-330, -120, 0, 180), (0, 59)):
+            with self.subTest(offset=offset, minute=minute):
+                now = 7 * 3600 + (offset + minute) * 60
+                self.assertEqual(7, self.addon.delivery._device_hour(now, offset))
+
+    def warn(self, profile_hour, hour_utc=19):
+        """Polls once at `hour_utc` (21:00 on the UTC+2 device clock) with a streak warning due."""
+        now = hour_utc * 3600
+        fetched = {"level": 3, "xp_into_level": 1, "xp_for_next": 2}
+        if profile_hour is not None:
+            fetched["local_hour"] = profile_hour
+        self.api.profile = Mock(return_value=fetched)
+        profile = {"streak_warning": {"title": "Study soon"}, "day_ends_at": (now + 3600) * 1000}
+        with patch.object(self.addon.home, "_profile_for_display", return_value=profile), \
+                patch.object(self.addon.time, "time", return_value=now):
+            self.addon.poll()
+
+    def test_the_streak_warning_uses_the_players_hour(self):
+        # Android reads the hour from the profile, not from this computer's clock.
+        self.inbox.clear()
+        self.record()["reminders"] = {"quiet_start": 22, "quiet_end": 9}
+        self.warn(profile_hour=23)
+        self.addon.tooltip.assert_not_called()
+        self.warn(profile_hour=21)
+        self.assertIn("Study soon", self.addon.tooltip.call_args.args[0])
+
+    def test_the_streak_warning_waits_for_the_reminders(self):
+        # Android holds the warning while the reminders cannot be read.
+        self.inbox.clear()
+        self.warn(profile_hour=12)
+        self.addon.tooltip.assert_not_called()
+        self.record()["reminders"] = {"quiet_start": 22, "quiet_end": 9}
+        self.warn(profile_hour=12)
+        self.assertIn("Study soon", self.addon.tooltip.call_args.args[0])
+
+    def test_an_unknown_hour_holds_only_the_streak_warning(self):
+        self.record()["reminders"] = {"quiet_start": 22, "quiet_end": 9}
+        self.inbox[0]["created_at"] = 10 * 3600
+        self.warn(profile_hour=None, hour_utc=10)
+        self.assertIn("Hill finished", self.addon.tooltip.call_args.args[0])
+        self.warn(profile_hour=None, hour_utc=10)
+        self.assertEqual(1, self.addon.tooltip.call_count)
 
     def test_queue_survives_a_restart_and_does_not_replay_after_delivery(self):
         self.addon.poll(quiet=True)
