@@ -316,15 +316,18 @@ def settings_dialog(
     reminders = reminders_ui._Controls(groups["notify"], config)
     hours = reminders._hours
 
-    channel = QComboBox()
-    for value, title in (("stable", tr("Stable releases")), ("nightly", tr("Nightly builds (untested)"))):
-        channel.addItem(title, value)
-    channel.setCurrentIndex(1 if config.get("update_channel") == "nightly" else 0)
     groups["app"].addWidget(QLabel(tr("Version: %s") % help_ui.installed_label(Path(__file__).parent)))
+    groups["app"].addWidget(QLabel(tr("Updates: %s") % updates.SOURCE.value))
     groups["app"].addWidget(_credit())
-    if updates._source(Path(__file__).parent) is updates._Source.ANKIWEB:
-        groups["app"].addWidget(QLabel(tr("Updates are managed by AnkiWeb.")))
-    else:
+
+    # Only a build that updates itself from GitHub has a channel to pick.
+    channel = None
+    if updates.SOURCE is updates.UpdateSource.GITHUB:
+        channel = QComboBox()
+        channel.setObjectName("ankiquest_update_channel")
+        for value, title in (("stable", tr("Stable releases")), ("nightly", tr("Nightly builds (untested)"))):
+            channel.addItem(title, value)
+        channel.setCurrentIndex(1 if config.get("update_channel") == "nightly" else 0)
         groups["app"].addWidget(_row(QLabel(tr("Update channel")), channel))
     today_values = settings_section(groups["app"], config, notify_layout=groups["notify"])
 
@@ -372,7 +375,7 @@ def settings_dialog(
         field.textChanged.connect(account_changed)
     account_changed()
     test = QPushButton(tr("Test connection"))
-    test.clicked.connect(lambda: on_test(_values(url, user, token, rank, hours, channel)))
+    test.clicked.connect(lambda: on_test(_values(url, user, token, rank, hours, channel, config)))
     fields.addWidget(test)
     layout.addLayout(_buttons(dialog, tr("Save")))
 
@@ -381,14 +384,16 @@ def settings_dialog(
     if finish and original == tuple(field.text().strip() for field in (url, user, token)):
         finish()
     return dict(
-        _values(url, user, token, rank, hours, channel), **today_values(), **reminders._values(),
+        _values(url, user, token, rank, hours, channel, config), **today_values(), **reminders._values(),
         **{settings_sync.SWITCH: sync.isChecked()},
     )
 
 
-def _values(url, user, token, rank, hours, channel):
+def _values(url, user, token, rank, hours, channel, config):
+    # Without a channel picker the saved channel stays as it was.
+    picked = config.get("update_channel", "stable") if channel is None else channel.currentData()
     return {
-        "update_channel": channel.currentData() or "stable",
+        "update_channel": picked or "stable",
         "url": url.text().strip(),
         "user": user.text().strip(),
         "token": token.text().strip(),

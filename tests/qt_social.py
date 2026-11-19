@@ -9,10 +9,10 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from aqt.qt import QApplication, QLabel, QPushButton, QWidget, Qt
+from aqt.qt import QLabel, QPushButton, Qt
 from addon_loader import load_in_package
+from qt_support import app, finish, main_window, queue
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("social_qt", "social_ui")
 client = load_in_package("social_qt", "client")
 EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
@@ -28,9 +28,7 @@ class Social(unittest.TestCase):
         for goal in self.goals["challenges"]:
             goal["end_at"] = future
         self.goals["weekly_suggestion"]["expires_at"] = future
-        self.mw = QWidget()
-        self.mw.pm = SimpleNamespace(profile={})
-        self.mw.taskman = SimpleNamespace(run_in_background=lambda work, done: self.tasks.append((work, done)))
+        self.mw = main_window(queue(self.tasks))
         self.api = client.Client("https://quest.test", "hill", "secret")
         self.api._request = self.request
         self.changed = Mock()
@@ -57,14 +55,7 @@ class Social(unittest.TestCase):
         return deepcopy(self.goals)
 
     def finish(self, index=0, error=None):
-        work, done = self.tasks.pop(index)
-        future = Future()
-        if error is None:
-            future.set_result(work())
-        else:
-            future.set_exception(error)
-        done(future)
-        app.processEvents()
+        finish(self.tasks, index, error)
 
     def loaded(self):
         self.finish()

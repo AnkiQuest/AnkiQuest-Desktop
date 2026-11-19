@@ -48,10 +48,9 @@ smoke installs (`tools/package-addon`, as releases do). Each checks:
 
 The **Add-on archive** job publishes `ankiquest-addon` as a downloadable PR
 artifact. PR and release builds use the same packager, `tools/package-addon`;
-`--ankiweb` builds the AnkiWeb upload. The job also checks that the archives
-match, byte for byte, those of the Python packager it replaced. Archives omit local
-`meta.json`, caches, tests and hidden files, and include `version.json` and a
-manifest `human_version`. The latter is verified through Anki's installed
+`--ankiweb` builds the AnkiWeb upload. Archives omit local
+`meta.json`, caches, tests and hidden files, and include `version.json`,
+`build.json` and a manifest `human_version`. The latter is verified through Anki's installed
 metadata, and Settings shows the same version. A source checkout says
 **Local copy**. Stable releases still require an owner-created `addon-N` tag;
 a PR artifact does not publish a stable release.
@@ -76,14 +75,18 @@ Checked against the installed 23.10 and 26.09.4 APIs:
 
 ## Update ownership and AnkiWeb
 
-Anki identifies AnkiWeb installations by their numeric add-on directory. Such
-installations never query or install a GitHub update, even when packaged
-`version.json` is present. Settings replaces the GitHub channel picker with
-**Updates are managed by AnkiWeb**. The Tools update command directs the user
-to Anki's **Tools → Add-ons → Check for Updates**.
+The packager writes the update source into the archive's `build.json`:
+`--updates github` for the GitHub release and nightly archives, `none` for
+`--ankiweb` (AnkiWeb updates add-ons itself) and for every build that does not
+ask (`--ankiweb --updates github` is refused). The add-on reads it once into
+`updates.UpdateSource`. With `none` there is no daily check, no **Check for
+updates** entry, no channel picker and no download or install; Settings shows
+**Updates: none**. A missing or unknown `build.json`, as in a source copy, is
+`none`. Anki identifies AnkiWeb installations by their numeric add-on
+directory; those are `none` whatever `build.json` says.
 
-GitHub packages retain the stable/nightly choice and daily checks. Local
-source copies do not self-update. The live [AnkiWeb listing](https://ankiweb.net/shared/info/414948448)
+GitHub builds show **Updates: github** and keep the stable/nightly choice and
+daily checks. The live [AnkiWeb listing](https://ankiweb.net/shared/info/414948448)
 uses code **414948448**. CI publishes an `ankiquest-ankiweb-addon` artifact
 with that numeric package ID and a conflict with the GitHub `ankiquest`
 package; the GitHub artifact declares the reverse conflict. Repeat updates

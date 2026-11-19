@@ -58,7 +58,6 @@ class Contracts(unittest.TestCase):
                 plan = goals.plan(answer["goal"], 20754)
                 self.assertEqual((goals.BACKLOG, expected_days, 20754), (plan.mode, plan.value, plan.since))
         self.assertIsNone(notify.feedback(uploaded, True))
-        self.assertIsNone(notify.conquest_path(uploaded))
         self.assertEqual({"reviews": [], "silent": True, "deleted": [123],
                           "clock": {"offset_west_min": -60, "rollover_hour": 4}}, self.sent[-1][2])
 
@@ -107,14 +106,14 @@ class Contracts(unittest.TestCase):
         self.routes = {("GET", "/api/activity/hill?limit=50"): "activity"}
         self.assertIsNone(activity._load(self.api).locked)
 
-    def test_activity_and_legacy_notices_keep_actions_and_share_ids(self):
-        self.routes = {("GET", "/api/activity/hill?limit=50"): "activity",
-                       ("GET", "/api/notifications/hill"): "notifications"}
+    def test_activity_keeps_actions_and_notices_keep_share_ids(self):
+        self.routes = {("GET", "/api/activity/hill?limit=50"): "activity"}
         page = activity._load(self.api)
         self.assertEqual((7, 1, 15), (page.unread, page.actions, page.before))
         self.assertEqual(4, inbox.challenge_target(page.attention[0]))
         self.assertFalse(inbox.answerable(page.attention[0]))
-        notices = self.api.notifications()
+        # Notification rows, as activity items carry them.
+        notices = example("notifications")
         level = next(row for row in notices if row.get("topic") == "level")
         self.assertTrue(inbox.shareable(level))
         self.assertEqual("I reached level 3 with 400 XP.", share.win_from_entry(level)["body"])

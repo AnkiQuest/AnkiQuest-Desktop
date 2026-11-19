@@ -5,11 +5,11 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCheckBox, QComboBox, QCoreApplication, QDialog, QEvent, QLabel, QPushButton, Qt, QWidget
+from aqt.qt import QCheckBox, QComboBox, QCoreApplication, QDialog, QEvent, QLabel, QPushButton, Qt
 from PyQt6.QtTest import QTest
 from addon_loader import load_in_package
+from qt_support import app, finish, main_window, queue
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("copies_qt", "copies_ui")
 client = load_in_package("copies_qt", "client")
 
@@ -17,10 +17,8 @@ client = load_in_package("copies_qt", "client")
 class Copies(unittest.TestCase):
     def setUp(self):
         self.tasks = []
-        self.parent = QWidget()
-        self.parent.pm = SimpleNamespace(profile={})
+        self.parent = main_window(queue(self.tasks))
         self.parent.col = object()
-        self.parent.taskman = SimpleNamespace(run_in_background=self.queue)
         self.api = client.Client("https://quest.test", "hill", "secret")
         self.api._request = Mock(return_value={"offers": []})
         ui.state.update(mw=self.parent, client=lambda: self.api, companion=lambda: "aki", action=None, delivery=None)
@@ -44,17 +42,8 @@ class Copies(unittest.TestCase):
         self.parent.close()
         app.processEvents()
 
-    def queue(self, work, done, **_kwargs):
-        self.tasks.append((work, done))
-
     def finish(self, index=0, error=None):
-        work, done = self.tasks.pop(index)
-        future = Future()
-        if error is not None:
-            future.set_exception(error)
-        else:
-            future.set_result(work())
-        done(future)
+        finish(self.tasks, index, error)
 
     def button(self, text):
         return next(button for button in self.holder.findChildren(QPushButton) if button.text() == text)

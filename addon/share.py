@@ -133,12 +133,6 @@ def climbed_to(previous, order, me):
     return now + 1 if before > now else None
 
 
-def podium(previous, order, me):
-    """A climb worth sharing: into the top three."""
-    place = climbed_to(previous, order, me)
-    return place if place and place <= 3 else None
-
-
 def sent_text(recipients, translate=lambda value: value):
     if recipients <= 0:
         return translate("Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.")

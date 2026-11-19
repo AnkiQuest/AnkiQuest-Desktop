@@ -6,6 +6,7 @@ from enum import Enum
 from urllib.parse import unquote
 
 from . import share, social_data
+from .client import Outdated
 
 _FEATURE = "share_moments"
 _PLACE_FEATURE = "share_place"
@@ -144,8 +145,9 @@ def _remember(profile, api, choice):
 
 
 def _load(api, win, recent):
-    # Old servers and old local notices keep the existing share actions.
-    features = api.capabilities() if hasattr(api, "capabilities") else frozenset()
-    if not _supported(win, features):
+    """The friends and groups to send `win` to; None for a win with no server reference."""
+    if _moment(win) is None:
         return None
+    if not _supported(win, api.capabilities()):
+        raise Outdated()
     return _targets(social_data._people(api), unquote(api.user), recent)
