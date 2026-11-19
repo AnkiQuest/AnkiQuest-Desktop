@@ -802,6 +802,11 @@ def _finish_sign_in(answer):
     home.sync_goal(prompt=True)
 
 
+def _account_id(api):
+    """The (server address, username) of a configured client, else None."""
+    return (api.base, api.user) if api.configured else None
+
+
 def _save_account_config(values):
     """Keep upload progress with its account; discard data shown for the old connection."""
     old = client()
@@ -815,6 +820,12 @@ def _save_account_config(values):
     save_config(values)
     if not changed:
         return
+
+    # Private synced settings stay with their account; a new token for the same one keeps them.
+    if (old.base, old.user) != (new.base, new.user):
+        mw.addonManager.writeConfig(
+            __name__, settings_sync.switch_account(config(), _account_id(old), _account_id(new))
+        )
 
     # Retain the review watermark and undo history for a return to this account.
     if checkpoint is not None:

@@ -42,7 +42,7 @@ def _event_dialog(parent, title, event, deck_names, first_day):
     when.setDate(_qdate(countdowns.parse_date(event.date) if event else first_day))
     deck = QComboBox()
     deck.addItem(tr("No deck"), None)
-    for found in deck_names:
+    for found in filter(countdowns.usable_deck, deck_names):
         deck.addItem(found, found)
     if event and event.deck:
         if deck.findData(event.deck) < 0:
@@ -138,8 +138,15 @@ class CountdownsDialog(QDialog):
         item = self._list.currentItem()
         return None if item is None else item.data(Qt.ItemDataRole.UserRole)
 
-    def _store(self):
-        self._save(countdowns.stored(self._items))
+    def _store(self, items):
+        """Saves `items` and shows them, unless the server would refuse the list: saving an
+        unusable list would replace the player's events with an empty one."""
+        value = countdowns.stored(items)
+        if not countdowns.valid(value):
+            _tell(self, tr("This countdown can't be saved. Choose another deck."))
+            return
+        self._items = items
+        self._save(value)
         self._show()
 
     def _new(self):
@@ -148,8 +155,7 @@ class CountdownsDialog(QDialog):
             return
         event = _event_dialog(self, tr("Add countdown"), None, self._deck_names, countdowns.first_date(self._today))
         if event is not None:
-            self._items.append(event)
-            self._store()
+            self._store(self._items + [event])
 
     def _edit(self):
         index = self._chosen()
@@ -157,12 +163,10 @@ class CountdownsDialog(QDialog):
             return
         event = _event_dialog(self, tr("Edit countdown"), self._items[index], self._deck_names, self._today)
         if event is not None:
-            self._items[index] = event
-            self._store()
+            self._store(self._items[:index] + [event] + self._items[index + 1:])
 
     def _remove(self):
         index = self._chosen()
         if index is None:
             return
-        del self._items[index]
-        self._store()
+        self._store(self._items[:index] + self._items[index + 1:])

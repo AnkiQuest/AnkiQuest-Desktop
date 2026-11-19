@@ -32,6 +32,46 @@ KEYS = {
 NEEDS = {"countdowns": countdowns.FEATURE}
 
 
+# Synced settings that belong to the account, not the computer: countdowns name the player's
+# own exams and decks. Each account's values are put away when another account signs in.
+PRIVATE = ("countdowns",)
+
+# Server address -> username -> private key -> {"value", "changed_at"}.
+ACCOUNTS_KEY = "synced_private_accounts"
+
+
+def switch_account(current, old, new):
+    """`current` with the private settings of account `old` put away and those of `new` brought
+    back. Accounts are (server address, username), or None when signed out; an account seen for
+    the first time starts from the defaults, which a sync never sends."""
+    result = dict(current)
+    kept = {base: dict(users) for base, users in (current.get(ACCOUNTS_KEY) or {}).items()}
+    changed = dict(current.get(CHANGED_KEY) or {})
+
+    # Put the old account's values away.
+    if old is not None:
+        values = {}
+        for key in PRIVATE:
+            value, stamp = local(current, key)
+            values[key] = {"value": value, "changed_at": stamp}
+        kept.setdefault(old[0], {})[old[1]] = values
+
+    # Bring the new account's values back, or the defaults.
+    saved = kept.get(new[0], {}).get(new[1], {}) if new is not None else {}
+    for key in PRIVATE:
+        name, default, _ = KEYS[key]
+        entry = saved.get(key) or {}
+        value, stamp = entry.get("value", default), entry.get("changed_at", 0)
+        if not usable(key, value) or type(stamp) is not int or stamp < 0:
+            value, stamp = default, 0
+        result[name] = value
+        changed[key] = stamp
+
+    result[CHANGED_KEY] = changed
+    result[ACCOUNTS_KEY] = kept
+    return result
+
+
 def path(api):
     return "/api/settings/" + api.user
 

@@ -7,6 +7,7 @@ tests against too. The limits are the key's entry in tests/fixtures/synced_setti
 from collections import namedtuple
 from datetime import datetime, timedelta
 from enum import Enum
+import re
 
 FEATURE = "countdowns"
 CONFIG_KEY = "countdowns"
@@ -16,7 +17,9 @@ MAX_NAME_CHARS = 60
 MAX_DECK_CHARS = 200
 
 DATE_FORMAT = "%Y-%m-%d"
-_DATE_LEN = 10
+
+# Exactly YYYY-MM-DD in ASCII digits: strptime alone also reads fullwidth digits.
+_DATE_SHAPE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 # Characters Anki's search treats as special inside a quoted deck name.
 _SEARCH_SPECIAL = '\\"*_'
@@ -42,12 +45,17 @@ Pace = namedtuple("Pace", "kind cards")
 
 def parse_date(text):
     """The date of a `YYYY-MM-DD` string, or None."""
-    if not isinstance(text, str) or len(text) != _DATE_LEN:
+    if not isinstance(text, str) or not _DATE_SHAPE.fullmatch(text):
         return None
     try:
         return datetime.strptime(text, DATE_FORMAT).date()
     except ValueError:
         return None
+
+
+def usable_deck(deck):
+    """Whether a countdown can name `deck`: Anki allows longer names than the server keeps."""
+    return isinstance(deck, str) and bool(deck.strip()) and len(deck) <= MAX_DECK_CHARS
 
 
 def _valid_event(found):
@@ -56,7 +64,7 @@ def _valid_event(found):
     name, deck = found.get("name"), found.get("deck")
     if not isinstance(name, str) or not name.strip() or len(name) > MAX_NAME_CHARS:
         return False
-    if deck is not None and (not isinstance(deck, str) or not deck.strip() or len(deck) > MAX_DECK_CHARS):
+    if deck is not None and not usable_deck(deck):
         return False
     return parse_date(found.get("date")) is not None
 
