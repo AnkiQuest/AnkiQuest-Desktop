@@ -290,7 +290,7 @@ FRENCH = {
     "Study companion": "Compagnon d’étude",
     "No companion": "Aucun compagnon",
     "Choose who cheers you on.": "Choisis qui t’encourage.",
-    "You are 1 tap away from chibi": "Vous êtes à 1 appui de chibi", "You are %d taps away from chibi": "Vous êtes à %d appuis de chibi",
+    "You are 1 tap away from chibi": "Tu es à 1 appui de chibi", "You are %d taps away from chibi": "Tu es à %d appuis de chibi",
     "Reach level %d": "Atteins le niveau %d", "Level %d of %d": "Niveau %d sur %d",
     "Study for %d hours in total": "Étudier %d heures au total", "%d of %d hours": "%d heures sur %d",
     "Could not load your study companion (%s).": "Impossible de charger ton compagnon d’étude (%s).",
