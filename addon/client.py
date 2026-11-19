@@ -84,9 +84,9 @@ def second_factor_text(error):
     return _SECOND_FACTOR_TEXT.get(error.second_factor)
 
 
-# Android's aq_server_outdated. The add-on needs the current AnkiQuest-Server; an endpoint or
-# feature it lacks gets this one message instead of a fallback.
-OUTDATED = "This needs a newer AnkiQuest server. Ask whoever runs yours to update it."
+# Android's aq_server_outdated (AnkiQuest-Android#408). The add-on needs the current
+# AnkiQuest-Server; an endpoint or feature it lacks gets this one message instead of a fallback.
+OUTDATED = "Update your AnkiQuest server"
 
 
 class Outdated(Exception):

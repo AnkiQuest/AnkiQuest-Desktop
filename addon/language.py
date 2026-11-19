@@ -1427,8 +1427,8 @@ SPANISH.update({
     "State": "Estado",
     "Streak freezes off": "Congelaciones de racha desactivadas",
     "Study time": "Tiempo de estudio",
-    # Android's aq_server_outdated.
-    "This needs a newer AnkiQuest server. Ask whoever runs yours to update it.": "Esto necesita un servidor de AnkiQuest más reciente. Pide a quien gestiona el tuyo que lo actualice.",
+    # Android's aq_server_outdated (AnkiQuest-Android#408).
+    "Update your AnkiQuest server": "Actualiza tu servidor de AnkiQuest",
     "Value": "Valor",
     "Weekly recap": "Resumen semanal",
     "Year": "Año",
@@ -1467,8 +1467,8 @@ GERMAN.update({
     "State": "Status",
     "Streak freezes off": "Streak-Freezes ausgeschaltet",
     "Study time": "Lernzeit",
-    # Android's aq_server_outdated.
-    "This needs a newer AnkiQuest server. Ask whoever runs yours to update it.": "Dafür braucht es einen neueren AnkiQuest-Server. Bitte die Person, die deinen betreibt, ihn zu aktualisieren.",
+    # Android's aq_server_outdated (AnkiQuest-Android#408).
+    "Update your AnkiQuest server": "Aktualisiere deinen AnkiQuest-Server",
     "Value": "Wert",
     "Weekly recap": "Wochenrückblick",
     "Year": "Jahr",
@@ -1507,8 +1507,8 @@ FRENCH.update({
     "State": "État",
     "Streak freezes off": "Gels de série désactivés",
     "Study time": "Temps d’étude",
-    # Android's aq_server_outdated.
-    "This needs a newer AnkiQuest server. Ask whoever runs yours to update it.": "Il faut pour cela un serveur AnkiQuest plus récent. Demande à la personne qui gère le tien de le mettre à jour.",
+    # Android's aq_server_outdated (AnkiQuest-Android#408).
+    "Update your AnkiQuest server": "Mets à jour ton serveur AnkiQuest",
     "Value": "Valeur",
     "Weekly recap": "Bilan de la semaine",
     "Year": "Année",
@@ -1547,8 +1547,8 @@ PORTUGUESE.update({
     "State": "Estado",
     "Streak freezes off": "Congelamentos de sequência desativados",
     "Study time": "Tempo de estudo",
-    # Android's aq_server_outdated.
-    "This needs a newer AnkiQuest server. Ask whoever runs yours to update it.": "Isto precisa de um servidor AnkiQuest mais recente. Pede a quem gere o teu que o atualize.",
+    # Android's aq_server_outdated (AnkiQuest-Android#408).
+    "Update your AnkiQuest server": "Atualize seu servidor do AnkiQuest",
     "Value": "Valor",
     "Weekly recap": "Resumo semanal",
     "Year": "Ano",
