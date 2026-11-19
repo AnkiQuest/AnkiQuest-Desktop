@@ -134,6 +134,10 @@ COMPANIONS = ("aki", "ankilope", "cow", "none")
 # Tells the server this add-on shows locked companions, so it refuses one still locked.
 SHOWS_LOCKS = {"X-AnkiQuest-Companions": "milestones"}
 
+# Sent with every request: the companions this add-on draws, so the inbox leaves out moments
+# about any other.
+DRAWS = {"X-AnkiQuest-Companion-Art": ", ".join(companion for companion in COMPANIONS if companion != "none")}
+
 
 def _companion(answer):
     choice = answer["companion"]
@@ -153,7 +157,7 @@ class Client:
         return bool(self.base and self.user and self.token)
 
     def _request(self, path, body=None, method=None, extra=None):
-        headers = dict(extra or {}, **{"Accept-Language": self.language})
+        headers = {**DRAWS, **(extra or {}), "Accept-Language": self.language}
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         return request_json(self.base + path, body, headers, method=method)

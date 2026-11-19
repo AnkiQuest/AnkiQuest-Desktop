@@ -153,6 +153,42 @@ class Client(unittest.TestCase):
         self.assertEqual(example("unlocks_save"), api.unlock("anki_tan_chibi"))
         api._request.assert_called_with("/api/unlocks/hill", {"unlock": "anki_tan_chibi"})
 
+    def test_every_request_names_the_companions_the_add_on_draws(self):
+        sent = {}
+
+        def request_json(url, body, headers, method=None):
+            sent.update(headers)
+            return {}
+
+        api = client.Client("https://example.test", "hill", "secret")
+        original, client.request_json = client.request_json, request_json
+        try:
+            api.notifications()
+        finally:
+            client.request_json = original
+        self.assertEqual("aki, ankilope, cow", sent.get("X-AnkiQuest-Companion-Art"))
+
+    def test_the_header_names_the_companions_moments_draw(self):
+        # moments.joined filters by moods.NAMES; the header must name the same companions.
+        drawn = client.DRAWS["X-AnkiQuest-Companion-Art"].split(", ")
+        self.assertEqual(sorted(moods.NAMES), sorted(drawn))
+        self.assertEqual(set(moods.NAMES), set(client.COMPANIONS) - {"none"})
+
+    def test_an_extra_language_header_is_replaced(self):
+        sent = {}
+
+        def request_json(url, body, headers, method=None):
+            sent.update(headers)
+            return {}
+
+        api = client.Client("https://example.test", "hill", "secret", "de")
+        original, client.request_json = client.request_json, request_json
+        try:
+            api._request("/api/notifications/hill", extra={"Accept-Language": "fr"})
+        finally:
+            client.request_json = original
+        self.assertEqual("de", sent.get("Accept-Language"))
+
     def test_the_cow_can_be_saved_and_read(self):
         self.assertIn("cow", client.COMPANIONS)
         api = client.Client("https://example.test", "hill", "secret")
@@ -170,8 +206,13 @@ class UnlockMoment(unittest.TestCase):
         self.assertEqual("ankilope_celebrate", moments._pose(item, moments.shown_companion(item, "none")))
         level = moments._notice({**row, "moment": "level:3", "topic": "level"})
         self.assertEqual("aki", moments.shown_companion(level, "aki"))
-        horse = moments._notice({**row, "moment": "companion:horse"})
-        self.assertEqual("aki", moments.shown_companion(horse, "aki"))
+
+    def test_a_companion_the_add_on_cannot_draw_waits(self):
+        # Shown, it would announce the horse with the chosen companion's art; it waits instead.
+        row = next(row for row in example("notifications_companion") if row.get("moment") == "companion:cow")
+        self.assertTrue(moments._drawable(moments._notice(row)))
+        self.assertFalse(moments._drawable(moments._notice({**row, "moment": "companion:horse"})))
+        self.assertFalse(moments._drawable(moments._notice({**row, "moment": None})))
 
     def test_the_sharing_settings_name_the_new_kind(self):
         sharing = load_in_package("aq_cow", "sharing")
@@ -183,7 +224,7 @@ class CowArt(unittest.TestCase):
     def test_the_cow_is_drawn_with_ankilope_turned_purple(self):
         self.assertEqual("ankilope", moods.art_owner("cow"))
         self.assertEqual("aki", moods.art_owner("aki"))
-        self.assertEqual("ankilope_study", moods.companion_pose("cow", "aki_at_risk"))
+        self.assertEqual("ankilope_sad", moods.companion_pose("cow", "aki_at_risk"))
         self.assertEqual("ankilope_face.png", Path(share.face_path("cow")).name)
         self.assertEqual("hue-rotate(250deg)", moods.css_filter("cow"))
         for companion in ("aki", "ankilope", "none"):
@@ -197,9 +238,9 @@ class CowArt(unittest.TestCase):
         self.assertIn('class=aq-companion src="/m.png"', board.html(None, mascot="/m.png"))
 
     def test_picker_cards_preview_face_fire_and_sad(self):
-        self.assertEqual(("aki_face", "aki_streak", "aki_at_risk"), moods.PREVIEW_POSES)
-        self.assertEqual(["aki_face", "aki_streak", "aki_at_risk"], moods.preview("aki"))
-        self.assertEqual(["ankilope_face", "ankilope_study"], moods.preview("ankilope"))
+        self.assertEqual(("aki_face", "aki_streak", "aki_sad"), moods.PREVIEW_POSES)
+        self.assertEqual(["aki_face", "aki_streak", "aki_sad"], moods.preview("aki"))
+        self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview("ankilope"))
         self.assertEqual(moods.preview("ankilope"), moods.preview("cow"))
         self.assertEqual([], moods.preview("none"))
         for companion in ("aki", "ankilope", "cow"):

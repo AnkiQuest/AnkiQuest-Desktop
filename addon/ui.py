@@ -26,7 +26,7 @@ from .decks import label, ordered
 from .language import tr
 from .share import face_path
 from .today_ui import settings_section
-from . import companion_art, reminders_ui, settings_sync, updates
+from . import companion_art, help_ui, reminders_ui, settings_sync, updates
 
 # Anki-tan's CC BY-SA 4.0 licence asks for this credit; Android shows the same on its About screen.
 ANKI_TAN_URL = "https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html"
@@ -277,9 +277,7 @@ def settings_dialog(
     for value, title in (("stable", tr("Stable releases")), ("nightly", tr("Nightly builds (untested)"))):
         channel.addItem(title, value)
     channel.setCurrentIndex(1 if config.get("update_channel") == "nightly" else 0)
-    installed = updates.installed(Path(__file__).parent)
-    version = updates.label(installed) if installed is not None else tr("Local copy")
-    groups["app"].addWidget(QLabel(tr("Version: %s") % version))
+    groups["app"].addWidget(QLabel(tr("Version: %s") % help_ui.installed_label(Path(__file__).parent)))
     groups["app"].addWidget(_credit())
     if updates._source(Path(__file__).parent) is updates._Source.ANKIWEB:
         groups["app"].addWidget(QLabel(tr("Updates are managed by AnkiWeb.")))
