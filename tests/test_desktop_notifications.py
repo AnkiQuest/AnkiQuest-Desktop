@@ -194,12 +194,12 @@ class Announcements(unittest.TestCase):
 
     def test_deck_offers_also_wait_until_review_ends(self):
         self.mw.state = "review"
-        self.addon.copies_ui.announce([{"id": 1, "sender": "hill", "deck": "Spanish"}], {"hill": "hill"}, False)
+        self.addon.copies_ui.announce([{"id": 1, "sender": "aldanita", "deck": "Spanish"}], {"aldanita": "Aldana"}, False)
         self.addon.tooltip.assert_not_called()
         self.mw.state = "deckBrowser"
         self.addon.on_state_change("deckBrowser", "review")
-        self.assertIn("hill shared Spanish", self.addon.tooltip.call_args.args[0])
-        self.addon.copies_ui.announce([{"id": 1, "sender": "hill", "deck": "Spanish"}], {}, False)
+        self.assertIn("Aldana shared Spanish", self.addon.tooltip.call_args.args[0])
+        self.addon.copies_ui.announce([{"id": 1, "sender": "aldanita", "deck": "Spanish"}], {}, False)
         self.assertEqual(1, self.addon.tooltip.call_count)
 
     def test_a_current_daily_reminder_does_not_require_an_existing_streak(self):
