@@ -175,7 +175,7 @@ jobs:
       - name: Compare the screenshots with a fresh drawing
         env:
           ANKIQUEST_SCREENSHOTS_OUT: ${{ runner.temp }}/screenshots
-        run: python tests/qt_screenshots.py -v
+        run: python tests/draw_screenshots.py -v
       # The root workspace's rust job does not cover this separate workspace.
       - name: Lint and test the banner tool
         working-directory: tools/banner

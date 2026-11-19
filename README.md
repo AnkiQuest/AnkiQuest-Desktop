@@ -48,10 +48,10 @@ cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.a
 
 ### Screenshots and banner
 
-`docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/qt_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. The banner tool composes `docs/graphics/banner_readme.png` from those screenshots and the duo art in an [AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server) checkout. CI's "Screenshots and banner" job draws all of them again and fails when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed:
+`docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/draw_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. The banner tool composes `docs/graphics/banner_readme.png` from those screenshots and the duo art in an [AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server) checkout. CI's "Screenshots and banner" job draws all of them again and fails when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed:
 
 ```sh
-ANKIQUEST_SCREENSHOTS=write python tests/qt_screenshots.py
+ANKIQUEST_SCREENSHOTS=write python tests/draw_screenshots.py
 cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQuest-Server
 cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQuest-Server --social
 ```

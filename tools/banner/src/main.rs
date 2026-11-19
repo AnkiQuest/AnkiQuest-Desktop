@@ -1,5 +1,5 @@
 //! Composes the README banner and the social preview from the desktop
-//! screenshots (`tests/qt_screenshots.py` draws them) and the duo art master
+//! screenshots (`tests/draw_screenshots.py` draws them) and the duo art master
 //! in an AnkiQuest-Server checkout.
 //!
 //!     cargo run --manifest-path tools/banner/Cargo.toml -- --server <checkout> [--social] [--check | --out <file>]

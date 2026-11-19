@@ -6,11 +6,12 @@ Anki's deck list shows it, and the native windows as Qt widgets. Players, server
 ratio (1) are fixed, so the same Qt build draws the same pixels. A test fails when its picture
 differs from the committed one in any pixel.
 
-    QT_QPA_PLATFORM=offscreen python tests/qt_screenshots.py      # compare
-    ANKIQUEST_SCREENSHOTS=write python tests/qt_screenshots.py    # write docs/screenshots
+    QT_QPA_PLATFORM=offscreen python tests/draw_screenshots.py    # compare
+    ANKIQUEST_SCREENSHOTS=write python tests/draw_screenshots.py    # write docs/screenshots
 
 The pictures are pinned to the Qt of tests/requirements-anki-26.9.4.txt on Ubuntu 24.04, as CI's
 screenshots job runs them. ANKIQUEST_SCREENSHOTS_OUT names a folder for the pictures that differ.
+The file is not named qt_*.py, so the general Qt test runs on other Anki versions don't pick it up.
 """
 
 import atexit
@@ -511,7 +512,7 @@ class Screenshots(unittest.TestCase):
             image.save(str(Path(OUT) / path.name), "PNG", 0)
         count, worst = differences(image, committed)
         self.fail("%s differs from the drawing in %d pixels (largest channel difference %d): "
-                  "run ANKIQUEST_SCREENSHOTS=write python tests/qt_screenshots.py" % (path.name, count, worst))
+                  "run ANKIQUEST_SCREENSHOTS=write python tests/draw_screenshots.py" % (path.name, count, worst))
 
 
 def _test(name):

@@ -1,5 +1,5 @@
 {
-  "_about": "Fake players and server replies for tests/qt_screenshots.py. Times are milliseconds (seconds for inbox rows) on the fixed clock below, 2026-11-11 14:26 UTC.",
+  "_about": "Fake players and server replies for tests/draw_screenshots.py. Times are milliseconds (seconds for inbox rows) on the fixed clock below, 2026-11-11 14:26 UTC.",
   "clock_ms": 1794407160000,
   "player": "hill",
   "last_upload_ms": 1794407100000,
