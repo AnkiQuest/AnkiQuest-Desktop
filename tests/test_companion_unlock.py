@@ -73,13 +73,19 @@ class SharedConditions(unittest.TestCase):
         self.assertEqual("anki_tan_chibi", unlock.chibi_of("anki_tan", {"anki_tan"}, unlock.CHIBIS))
         self.assertIsNone(unlock.chibi_of("anki_tan", {"cow"}, unlock.CHIBIS), "her base is locked")
         self.assertIsNone(unlock.chibi_of("cow", {"cow"}, unlock.CHIBIS), "the cow has no chibi")
+        self.assertEqual("quest_chan_chibi", unlock.chibi_of("quest_chan", {"quest_chan"}, unlock.CHIBIS))
+        self.assertIsNone(unlock.chibi_of("quest_chan", {"anki_tan"}, unlock.CHIBIS), "her base is locked")
 
     def test_a_planned_chibi_is_never_found(self):
-        # Anki-tan is live, her chibi planned: tapping her counts nothing and asks the server for nothing.
-        self.assertIsNone(unlock.chibi_of("anki_tan", {"anki_tan"}))
-        egg = unlock.Egg(["anki_tan"])
-        tapped = [egg.tap("anki_tan", 300 * i, str) for i in range(2 * unlock.TAPS)]
-        self.assertTrue(all(tap.hint is None and tap.chibi is None for tap in tapped))
+        # A planned chibi's unlocked base counts no taps and asks the server for nothing.
+        planned = [rule["requires"] for rule in FIXTURE["companions"] if rule["kind"] == "taps" and rule["status"] == "planned"]
+        self.assertTrue(planned)
+        for base in planned:
+            with self.subTest(base=base):
+                self.assertIsNone(unlock.chibi_of(base, {base}))
+                egg = unlock.Egg([base])
+                tapped = [egg.tap(base, 300 * i, str) for i in range(2 * unlock.TAPS)]
+                self.assertTrue(all(tap.hint is None and tap.chibi is None for tap in tapped))
 
     def test_the_hint_is_the_shared_one(self):
         self.assertEqual(FIXTURE["hint_from"], unlock.HINT_FROM)

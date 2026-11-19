@@ -112,7 +112,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: AnkiQuest/AnkiQuest-Server
-          ref: cea940b1c180abde015215ae44c644b2d60c6dec # Server PR 60
+          ref: 0a7fc2b9a936ea19be429224ffdc0c3112b961ae # Server PR 60
           path: server-unlocks
           sparse-checkout: /tests/fixtures/companion_unlock.json
           sparse-checkout-cone-mode: false

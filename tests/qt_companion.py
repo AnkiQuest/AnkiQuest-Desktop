@@ -166,7 +166,7 @@ class Picker(unittest.TestCase):
         self.api.unlock.assert_called_once_with("anki_tan_chibi")
 
     def test_tapping_anki_tan_finds_nothing_while_her_chibi_is_planned(self):
-        picker, clock = self.egg(["anki_tan"], chibis={})
+        picker, clock = self.egg(["anki_tan"], chibis=dict(companion_unlock.LIVE_CHIBIS))
         art = self.tap(picker, 2 * companion_unlock.TAPS, clock)
         self.assertTrue(picker._hint.isHidden())
         self.assertEqual("anki_tan", art.property("companion"))
