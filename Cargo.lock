@@ -64,7 +64,6 @@ dependencies = [
  "image",
  "libz-sys",
  "png",
- "resvg",
  "serde",
  "serde_json",
  "sha2",

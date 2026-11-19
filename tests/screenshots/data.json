@@ -1,0 +1,928 @@
+{
+  "_about": "Fake players and server replies for tests/qt_screenshots.py. Times are milliseconds (seconds for inbox rows) on the fixed clock below, 2026-11-11 14:26 UTC.",
+  "clock_ms": 1794407160000,
+  "player": "hill",
+  "last_upload_ms": 1794407100000,
+  "invite": "night-owls-3qp",
+  "today": {
+    "today": {
+      "flame": "lit",
+      "profile": {
+        "level": 9,
+        "xp_into_level": 340,
+        "xp_for_next": 600,
+        "streak": 12,
+        "_day_status": "met",
+        "freezes_enabled": true,
+        "stored_freezes": 2,
+        "freeze_earned_today": true,
+        "quests": [
+          {
+            "title": "Review 50 cards",
+            "progress": 50,
+            "target": 50,
+            "done": true,
+            "reward": 20
+          },
+          {
+            "title": "Study 10 minutes",
+            "progress": 10,
+            "target": 10,
+            "done": true,
+            "reward": 15
+          },
+          {
+            "title": "Finish a deck",
+            "progress": 0,
+            "target": 1,
+            "done": false,
+            "reward": 25
+          }
+        ]
+      },
+      "view": {
+        "art": "art/aki_celebrate.png",
+        "mood": "Your cards are done for now. Nice work!",
+        "winner": "art/aki_winner.png",
+        "focus": {
+          "id": 7,
+          "name": "Spanish",
+          "review": 0,
+          "learning": 0,
+          "new": 0,
+          "status": "done",
+          "label": "Done today",
+          "ready": 0
+        },
+        "goal": {
+          "minimum": "Streak secured: you reached today’s 5-minute minimum.",
+          "minimum_meter": null,
+          "daily": "Daily goal: 42 of 50 cards",
+          "daily_meter": [
+            42,
+            50
+          ],
+          "backlog": null,
+          "action": "Change goal"
+        },
+        "board": {
+          "period": "week",
+          "scope": "friends",
+          "scopes": [
+            [
+              "friends",
+              "Friends"
+            ],
+            [
+              "global",
+              "Global"
+            ]
+          ],
+          "locked": false,
+          "rows": [
+            [
+              1,
+              {
+                "user": "hill",
+                "display": "hill",
+                "xp": 1240,
+                "day": {
+                  "level": 9,
+                  "xp_into_level": 340,
+                  "xp_for_next": 600,
+                  "streak": 12,
+                  "_day_status": "met",
+                  "freezes_enabled": true,
+                  "stored_freezes": 2,
+                  "freeze_earned_today": true,
+                  "quests": [
+                    {
+                      "title": "Review 50 cards",
+                      "progress": 50,
+                      "target": 50,
+                      "done": true,
+                      "reward": 20
+                    },
+                    {
+                      "title": "Study 10 minutes",
+                      "progress": 10,
+                      "target": 10,
+                      "done": true,
+                      "reward": 15
+                    },
+                    {
+                      "title": "Finish a deck",
+                      "progress": 0,
+                      "target": 1,
+                      "done": false,
+                      "reward": 25
+                    }
+                  ]
+                }
+              },
+              true
+            ],
+            [
+              2,
+              {
+                "user": "aldana",
+                "display": "Aldana",
+                "xp": 1185
+              },
+              false
+            ],
+            [
+              3,
+              {
+                "user": "cerro",
+                "display": "Cerro",
+                "xp": 760
+              },
+              false
+            ]
+          ]
+        },
+        "session": "42 reviews · 8 minutes · 0 ready at session end",
+        "session_day": {
+          "state": "met",
+          "label": "Streak secured"
+        },
+        "moments": 0,
+        "weekly": {
+          "body": "You reviewed 312 cards and earned 1,560 XP.\nYou finished first among your friends.\nYour best day was Monday."
+        }
+      }
+    },
+    "day": {
+      "flame": "lit",
+      "profile": {
+        "level": 9,
+        "xp_into_level": 340,
+        "xp_for_next": 600,
+        "streak": 12,
+        "_day_status": "syncing",
+        "freezes_enabled": true,
+        "stored_freezes": 2,
+        "freeze_earned_today": false,
+        "quests": []
+      },
+      "view": {
+        "art": "art/aki_celebrate.png",
+        "mood": "You showed up today. That is progress worth keeping.",
+        "focus": {
+          "id": 7,
+          "name": "Spanish",
+          "review": 0,
+          "learning": 2,
+          "new": 0,
+          "status": "learning_later",
+          "label": "2 learning cards later today",
+          "ready": 0
+        },
+        "goal": {
+          "minimum": "Streak secured once your reviews upload: you reached today’s 5-minute minimum.",
+          "minimum_meter": null,
+          "daily": "Daily goal: 42 of 50 cards",
+          "daily_meter": [
+            42,
+            50
+          ],
+          "backlog": null,
+          "action": "Change goal"
+        },
+        "board": {
+          "period": "day",
+          "scope": "friends",
+          "scopes": [
+            [
+              "friends",
+              "Friends"
+            ],
+            [
+              "global",
+              "Global"
+            ]
+          ],
+          "locked": false,
+          "rows": [
+            [
+              1,
+              {
+                "user": "aldana",
+                "display": "Aldana",
+                "xp": 640
+              },
+              false
+            ],
+            [
+              2,
+              {
+                "user": "hill",
+                "display": "hill",
+                "xp": 210,
+                "day": {
+                  "level": 9,
+                  "xp_into_level": 340,
+                  "xp_for_next": 600,
+                  "streak": 12,
+                  "_day_status": "syncing",
+                  "freezes_enabled": true,
+                  "stored_freezes": 2,
+                  "freeze_earned_today": true,
+                  "quests": [
+                    {
+                      "title": "Review 50 cards",
+                      "progress": 50,
+                      "target": 50,
+                      "done": true,
+                      "reward": 20
+                    },
+                    {
+                      "title": "Study 10 minutes",
+                      "progress": 10,
+                      "target": 10,
+                      "done": true,
+                      "reward": 15
+                    },
+                    {
+                      "title": "Finish a deck",
+                      "progress": 0,
+                      "target": 1,
+                      "done": false,
+                      "reward": 25
+                    }
+                  ]
+                }
+              },
+              true
+            ],
+            [
+              3,
+              {
+                "user": "cerro",
+                "display": "Cerro",
+                "xp": 95
+              },
+              false
+            ]
+          ]
+        },
+        "session": "42 reviews · 8 minutes · 0 ready at session end",
+        "session_day": {
+          "state": "syncing",
+          "label": "Syncing — today counts after upload"
+        },
+        "moments": 0
+      }
+    },
+    "boards": {
+      "flame": "unlit",
+      "profile": {
+        "level": 9,
+        "xp_into_level": 340,
+        "xp_for_next": 600,
+        "streak": 12,
+        "_day_status": "pending",
+        "freezes_enabled": true,
+        "stored_freezes": 2,
+        "freeze_earned_today": false,
+        "quests": []
+      },
+      "view": {
+        "art": "art/ankilope_study.png",
+        "mood": "A small step starts with one card.",
+        "focus": {
+          "id": 7,
+          "name": "Spanish",
+          "review": 18,
+          "learning": 3,
+          "new": 10,
+          "status": "review_now",
+          "label": "31 cards ready",
+          "ready": 31
+        },
+        "goal": {
+          "minimum": "Streak minimum: 5 minutes of review today",
+          "minimum_meter": [
+            0,
+            5
+          ],
+          "daily": "Daily goal: 0 of 50 cards",
+          "daily_meter": [
+            0,
+            50
+          ],
+          "backlog": null,
+          "action": "Change goal"
+        },
+        "board": {
+          "period": "week",
+          "scope": "global",
+          "scopes": [
+            [
+              "friends",
+              "Friends"
+            ],
+            [
+              "global",
+              "Global"
+            ],
+            [
+              "group:1",
+              "Spanish club"
+            ]
+          ],
+          "locked": false,
+          "rows": [
+            [
+              1,
+              {
+                "user": "hill",
+                "display": "hill",
+                "xp": 1240,
+                "day": {
+                  "level": 9,
+                  "xp_into_level": 340,
+                  "xp_for_next": 600,
+                  "streak": 12,
+                  "_day_status": "pending",
+                  "freezes_enabled": true,
+                  "stored_freezes": 2,
+                  "freeze_earned_today": true,
+                  "quests": [
+                    {
+                      "title": "Review 50 cards",
+                      "progress": 50,
+                      "target": 50,
+                      "done": true,
+                      "reward": 20
+                    },
+                    {
+                      "title": "Study 10 minutes",
+                      "progress": 10,
+                      "target": 10,
+                      "done": true,
+                      "reward": 15
+                    },
+                    {
+                      "title": "Finish a deck",
+                      "progress": 0,
+                      "target": 1,
+                      "done": false,
+                      "reward": 25
+                    }
+                  ]
+                }
+              },
+              true
+            ],
+            [
+              2,
+              {
+                "user": "aldana",
+                "display": "Aldana",
+                "xp": 1185
+              },
+              false
+            ],
+            [
+              3,
+              {
+                "user": "cerro",
+                "display": "Cerro",
+                "xp": 760
+              },
+              false
+            ],
+            [
+              4,
+              {
+                "user": "ilse",
+                "display": "Ilse",
+                "xp": 215
+              },
+              false
+            ]
+          ]
+        },
+        "session": null,
+        "moments": 0,
+        "unread": 3
+      }
+    }
+  },
+  "heatmap": {
+    "day": {
+      "today": "2026-11-11",
+      "art": "art/aki_celebrate.png",
+      "reviews": {
+        "0": 42,
+        "2": 65,
+        "3": 6,
+        "5": 51,
+        "6": 38,
+        "7": 44,
+        "8": 12,
+        "9": 60,
+        "10": 57,
+        "13": 40,
+        "15": 28,
+        "16": 35,
+        "19": 50,
+        "20": 47,
+        "21": 22,
+        "23": 39,
+        "24": 41,
+        "26": 55,
+        "27": 30,
+        "28": 48,
+        "11": 36,
+        "18": 7,
+        "12": 29
+      },
+      "scheduled": {
+        "1": 35,
+        "2": 28,
+        "3": 40,
+        "4": 22,
+        "5": 31,
+        "6": 18,
+        "7": 27,
+        "8": 33,
+        "9": 20,
+        "10": 25,
+        "12": 30,
+        "14": 21,
+        "18": 26,
+        "21": 19
+      },
+      "verdicts": {
+        "1": "skipped",
+        "4": "frozen",
+        "18": "short"
+      }
+    }
+  },
+  "moments": {
+    "session_day": {
+      "state": "met",
+      "label": "Streak secured"
+    },
+    "session": {
+      "summary": {
+        "reviews": 42,
+        "minutes": 8,
+        "remaining": 3,
+        "finished_at": 1794407100000
+      },
+      "items": [
+        {
+          "key": "secured:2026-11-11",
+          "topic": "secured",
+          "at": 1794407100000,
+          "title": "Streak secured!",
+          "body": "Today counts for your 12-day streak.",
+          "streak": 12
+        },
+        {
+          "key": "goal:2026-11-11",
+          "topic": "goal",
+          "at": 1794407100000,
+          "title": "Daily goal reached!",
+          "body": "You reviewed 50 cards today."
+        }
+      ]
+    },
+    "conquest": {
+      "items": [
+        {
+          "key": "conquered:1794406800000",
+          "topic": "conquered",
+          "at": 1794406800000,
+          "title": "Card conquered!",
+          "body": "You learned a card that used to be difficult."
+        }
+      ]
+    }
+  },
+  "server": {
+    "/api/social/hill": {
+      "public": true,
+      "friends": [
+        {
+          "user": "aldana",
+          "display": "Aldana"
+        },
+        {
+          "user": "cerro",
+          "display": "Cerro"
+        }
+      ],
+      "incoming": [
+        {
+          "user": "ilse",
+          "display": "Ilse"
+        }
+      ],
+      "outgoing": [
+        {
+          "user": "bruno",
+          "display": "Bruno"
+        }
+      ],
+      "muted": [],
+      "groups": [
+        {
+          "id": 1,
+          "name": "Spanish club",
+          "owner": true,
+          "invite": "spanish-club-7k2",
+          "members": [
+            {
+              "user": "aldana",
+              "display": "Aldana"
+            },
+            {
+              "user": "cerro",
+              "display": "Cerro"
+            },
+            {
+              "user": "hill",
+              "display": "hill"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "Night owls",
+          "owner": false,
+          "invite": null,
+          "members": [
+            {
+              "user": "aldana",
+              "display": "Aldana"
+            },
+            {
+              "user": "hill",
+              "display": "hill"
+            }
+          ]
+        }
+      ]
+    },
+    "/api/invites/night-owls-3qp": {
+      "name": "night-owls-3qp",
+      "members": 4
+    },
+    "/api/community/challenges/hill": {
+      "challenges": [
+        {
+          "id": 4,
+          "title": "Fifty reviews each",
+          "kind": "reviews",
+          "cooperative": false,
+          "target": 50,
+          "creator": "aldana",
+          "status": "active",
+          "started": true,
+          "start_when_ready": false,
+          "weekly": false,
+          "start_at": 1794182400000,
+          "end_at": 1794787200000,
+          "progress": 0,
+          "members": [
+            {
+              "user": "aldana",
+              "display": "Aldana",
+              "status": "accepted",
+              "progress": 31
+            },
+            {
+              "user": "hill",
+              "display": "hill",
+              "status": "invited",
+              "progress": 0
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Spanish sprint",
+          "kind": "reviews",
+          "cooperative": true,
+          "target": 120,
+          "creator": "cerro",
+          "status": "complete",
+          "started": true,
+          "start_when_ready": false,
+          "weekly": false,
+          "start_at": 1793750400000,
+          "end_at": 1794787200000,
+          "progress": 126,
+          "members": [
+            {
+              "user": "cerro",
+              "display": "Cerro",
+              "status": "accepted",
+              "progress": 54
+            },
+            {
+              "user": "hill",
+              "display": "hill",
+              "status": "accepted",
+              "progress": 72
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Three study days together",
+          "kind": "study_days",
+          "cooperative": false,
+          "target": 3,
+          "creator": "hill",
+          "status": "active",
+          "started": true,
+          "start_when_ready": true,
+          "weekly": false,
+          "start_at": 1794182400000,
+          "end_at": 1794787200000,
+          "progress": 4,
+          "members": [
+            {
+              "user": "aldana",
+              "display": "Aldana",
+              "status": "accepted",
+              "progress": 2
+            },
+            {
+              "user": "cerro",
+              "display": "Cerro",
+              "status": "accepted",
+              "progress": 1
+            },
+            {
+              "user": "hill",
+              "display": "hill",
+              "status": "accepted",
+              "progress": 1
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "title": "Weekend reviews",
+          "kind": "reviews",
+          "cooperative": false,
+          "target": 40,
+          "creator": "hill",
+          "status": "cancelled",
+          "started": true,
+          "start_when_ready": false,
+          "weekly": false,
+          "start_at": 1793750400000,
+          "end_at": 1794182400000,
+          "progress": 0,
+          "members": [
+            {
+              "user": "cerro",
+              "display": "Cerro",
+              "status": "invited",
+              "progress": 0
+            },
+            {
+              "user": "hill",
+              "display": "hill",
+              "status": "accepted",
+              "progress": 0
+            }
+          ]
+        }
+      ],
+      "recipients": [
+        {
+          "user": "aldana",
+          "display": "Aldana"
+        },
+        {
+          "user": "cerro",
+          "display": "Cerro"
+        }
+      ],
+      "weekly_suggestion": {
+        "challenge_id": null,
+        "dismissed": false,
+        "duration_days": 7,
+        "target": 3,
+        "expires_at": 1794787200000,
+        "week_start": 1794182400000,
+        "friend": {
+          "user": "aldana",
+          "display": "Aldana"
+        }
+      }
+    },
+    "/api/study/hill": {
+      "year": 2026,
+      "years": [
+        2026,
+        2025
+      ],
+      "days": [
+        {
+          "date": "2026-11-11",
+          "state": "met",
+          "reviews": 42,
+          "time_ms": 480000,
+          "xp": 210
+        },
+        {
+          "date": "2026-11-10",
+          "state": "skipped",
+          "reviews": 0,
+          "time_ms": 0,
+          "xp": 0
+        },
+        {
+          "date": "2026-11-09",
+          "state": "met",
+          "reviews": 65,
+          "time_ms": 900000,
+          "xp": 330
+        },
+        {
+          "date": "2026-11-08",
+          "state": "short",
+          "reviews": 6,
+          "time_ms": 120000,
+          "xp": 30
+        },
+        {
+          "date": "2026-11-07",
+          "state": "frozen",
+          "reviews": 0,
+          "time_ms": 0,
+          "xp": 0
+        },
+        {
+          "date": "2026-11-06",
+          "state": "met",
+          "reviews": 51,
+          "time_ms": 660000,
+          "xp": 255
+        }
+      ]
+    },
+    "/api/records": [
+      {
+        "window": "day",
+        "unit": "xp",
+        "holders": [
+          {
+            "user": "aldana",
+            "display": "Aldana",
+            "value": 640
+          }
+        ]
+      },
+      {
+        "window": "week",
+        "unit": "xp",
+        "holders": [
+          {
+            "user": "hill",
+            "display": "hill",
+            "value": 2140
+          }
+        ]
+      },
+      {
+        "window": "streak",
+        "unit": "days",
+        "holders": [
+          {
+            "user": "cerro",
+            "display": "Cerro",
+            "value": 96
+          }
+        ]
+      }
+    ],
+    "/api/leaderboard": [
+      {
+        "user": "hill",
+        "display": "hill",
+        "xp": 1240,
+        "level": 9,
+        "streak": 12,
+        "rank": 1
+      },
+      {
+        "user": "aldana",
+        "display": "Aldana",
+        "xp": 1185,
+        "level": 11,
+        "streak": 30,
+        "rank": 2
+      },
+      {
+        "user": "cerro",
+        "display": "Cerro",
+        "xp": 760,
+        "level": 7,
+        "streak": 96,
+        "rank": 3
+      },
+      {
+        "user": "ilse",
+        "display": "Ilse",
+        "xp": 215,
+        "level": 3,
+        "streak": 2,
+        "rank": 4
+      }
+    ],
+    "/api/leaderboard/hidden/hill": [],
+    "/api/decks/hill": {
+      "global_leaderboard": true,
+      "nudges": true,
+      "celebrations": true,
+      "decks": []
+    },
+    "/api/community/reminders/hill": {
+      "reminder_hour": 20,
+      "quiet_start": 22,
+      "quiet_end": 9,
+      "daily_limit": 2,
+      "gentle_daily": true,
+      "urgent_streak": true,
+      "freeze_used": true,
+      "freeze_refill": false,
+      "milestone": true,
+      "weekly_closing": true,
+      "weekly_recap": true
+    },
+    "/api/streak-freezes/hill": {
+      "enabled": true
+    },
+    "/api/deck-subscriptions/hill": {
+      "enabled": true,
+      "senders": [],
+      "unsubscribed_senders": []
+    },
+    "/api/activity/hill": {
+      "unread_count": 3,
+      "action_count": 1,
+      "latest_id": 12,
+      "next_before": null,
+      "items": [
+        {
+          "id": 11,
+          "kind": "challenge_complete",
+          "category": "challenges",
+          "title": "Friend goal complete",
+          "body": "You and Cerro reached the goal in Spanish sprint.",
+          "created_at": 1794396600,
+          "challenge_id": 3
+        },
+        {
+          "id": 10,
+          "kind": "message",
+          "category": "messages",
+          "sender": "cerro",
+          "sender_display": "Cerro",
+          "title": "Cerro",
+          "body": "96 days! Keep going.",
+          "created_at": 1794303000,
+          "read_at": 1794310000
+        }
+      ],
+      "attention": [
+        {
+          "id": 12,
+          "kind": "challenge_invite",
+          "category": "challenges",
+          "sender": "aldana",
+          "sender_display": "Aldana",
+          "title": "Friend goal invitation",
+          "body": "Aldana invited you to Fifty reviews each.",
+          "created_at": 1794393000,
+          "challenge_id": 4,
+          "action_required": true
+        }
+      ]
+    },
+    "/api/conquests/hill/1794406800000": {
+      "conquest": {
+        "at": 1794406800000,
+        "since": 1791814800000,
+        "lapses": 5,
+        "answers": 20
+      },
+      "label": null,
+      "told": false,
+      "friends": 2,
+      "win": 7
+    }
+  }
+}

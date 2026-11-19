@@ -46,6 +46,18 @@ QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests
 cargo run -p ankiquest-xtask -- package-addon --output ankiquest.ankiaddon
 ```
 
+### Screenshots and banner
+
+`docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/qt_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. The banner tool composes `docs/graphics/banner_readme.png` from those screenshots and the duo art in an [AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server) checkout. CI's "Screenshots and banner" job draws all of them again and fails when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed:
+
+```sh
+ANKIQUEST_SCREENSHOTS=write python tests/qt_screenshots.py
+cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQuest-Server
+cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQuest-Server --social
+```
+
+Another system or Qt draws slightly different text, so CI fails on pictures drawn there. A failing run keeps its drawings as the `screenshots` artifact.
+
 [Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The server code still in this repository moves to AnkiQuest-Server (#306); change it there.
 
 ## License
