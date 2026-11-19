@@ -595,6 +595,7 @@ def poll(quiet=False):
         state["companion"], state["companion_account"] = companion, account
         if reminders is not None:
             announcements["reminders"] = reminders
+        _delivery._see_hour(profile)
         announce(rank, profile, arrivals, quiet)
         redraw()
 
