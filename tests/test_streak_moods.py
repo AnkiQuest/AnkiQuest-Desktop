@@ -11,8 +11,8 @@ moods = load_module("aq_streak_moods", "moods.py")
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "streak_moods.json"
 
-# Aki's picture for each mood but fire, which burns by heat: her art for each pose. She has no
-# frozen_2, frozen_3, thawing or almost art, so those show her frozen and hopeful pictures.
+# Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows
+# frozen and almost shows hopeful; she has no frozen_2 or frozen_3 art, so those show her frozen.
 AKI_MOOD_POSES = {
     moods.MOOD_UNKNOWN: "aki_face",
     moods.ASLEEP: "aki_asleep",
@@ -159,8 +159,6 @@ class StreakMoods(unittest.TestCase):
                     self.assertEqual(pose, moods.mood_pose(moods.AKI, chosen, streak))
         self.assertEqual("aki_streak_hot", moods.mood_pose(moods.AKI, moods.FIRE, 7))
         self.assertEqual("aki_frozen", moods.pose_art(moods.AKI_POSES, "frozen_3"))
-        self.assertEqual("aki_frozen", moods.pose_art(moods.AKI_POSES, "thawing"))
-        self.assertEqual("aki_hopeful", moods.pose_art(moods.AKI_POSES, "almost"))
 
     def test_ankilope_shows_her_pose_for_aki_pictures(self):
         # Aki's welcome picture stays Ankilope's welcome; only the hopeful mood shows her hopeful.
