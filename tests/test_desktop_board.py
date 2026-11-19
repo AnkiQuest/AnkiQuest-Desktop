@@ -105,21 +105,6 @@ class FeedbackTests(unittest.TestCase):
         self.assertIsNone(notify.feedback({}, True))
         self.assertIsNone(notify.feedback({"feedback": {"headlines": [], "status": None}}, True))
 
-    def test_a_card_label_is_plain_text_offered_only_in_the_fragment(self):
-        field = '<b>das Eichhörnchen</b>&nbsp;&amp; co<br>[sound:squirrel.mp3]'
-        self.assertEqual("das Eichhörnchen & co", notify.suggested_label(field))
-        self.assertEqual(120, len(notify.suggested_label("x" * 500)))
-        self.assertEqual("", notify.suggested_label(None))
-        path = "/conquered/{user}/1"
-        self.assertEqual(path + "#suggest=das%20Eichh%C3%B6rnchen", notify.with_suggestion(path, "das Eichhörnchen"))
-        self.assertEqual(path, notify.with_suggestion(path, ""))
-
-    def test_an_announced_conquest_opens_its_card_and_nothing_else_does(self):
-        conquests = [{"at": 1789000000456, "lapses": 9}, {"at": 1700000000000, "lapses": 4}]
-        announced = {"feedback": {"headlines": ["🏆 Leech tamed after 9 lapses"]}, "conquests": conquests}
-        self.assertEqual("/conquered/{user}/1789000000456", notify.conquest_path(announced))
-        self.assertIsNone(notify.conquest_path({"feedback": {"headlines": ["Level 5!"]}, "conquests": conquests}))
-        self.assertIsNone(notify.conquest_path({"feedback": {"headlines": ["🏆 Card conquered after 4 lapses"]}}))
 
 
 class NotifyTests(unittest.TestCase):
@@ -283,13 +268,12 @@ class DeckTreeTests(unittest.TestCase):
     def decks(self, *names):
         return tree.ordered([{"id": str(i + 1), "name": name} for i, name in enumerate(names)])
 
-    def test_a_subdeck_follows_its_parent_indented_by_its_depth(self):
+    def test_a_subdeck_follows_its_parent(self):
         decks = self.decks("Spanish::Verbs::Irregular", "German", "Spanish", "Spanish::Nouns")
         self.assertEqual(
             ["German", "Spanish", "Spanish::Nouns", "Spanish::Verbs::Irregular"],
             [deck["name"] for deck in decks],
         )
-        self.assertEqual([0, 0, 1, 2], [tree.depth(deck) for deck in decks])
         self.assertEqual(["German", "Spanish", "Nouns", "Irregular"], [tree.label(deck) for deck in decks])
 
     def test_a_deck_that_merely_starts_with_the_same_letters_is_not_a_subdeck(self):

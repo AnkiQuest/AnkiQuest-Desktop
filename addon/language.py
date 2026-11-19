@@ -54,7 +54,6 @@ SPANISH = {
     "Celebrate achievements, streak milestones and personal bests": "Celebrar logros, rachas y récords personales",
     "Update channel": "Canal de actualizaciones", "Stable releases": "Versiones estables",
     "Nightly builds (untested)": "Compilaciones nocturnas (sin probar)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Este AnkiQuest es una copia local; no se actualiza solo.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: no se pudieron buscar actualizaciones (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest está actualizado (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s está disponible. ¿Instalarlo ahora? Después hay que reiniciar Anki.",
@@ -206,7 +205,6 @@ GERMAN = {
     "Celebrate achievements, streak milestones and personal bests": "Erfolge, Meilensteine der Lernserie und persönliche Bestleistungen feiern",
     "Update channel": "Update-Kanal", "Stable releases": "Stabile Versionen",
     "Nightly builds (untested)": "Nightly-Builds (ungetestet)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Dieses AnkiQuest ist eine lokale Kopie und aktualisiert sich nicht selbst.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: Suche nach Updates fehlgeschlagen (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest ist aktuell (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s ist verfügbar. Jetzt installieren? Danach muss Anki neu gestartet werden.",
@@ -294,7 +292,7 @@ FRENCH = {
     "Study companion": "Compagnon d’étude",
     "No companion": "Aucun compagnon",
     "Choose who cheers you on.": "Choisis qui t’encourage.",
-    "You are 1 tap away from chibi": "Vous êtes à 1 appui de chibi", "You are %d taps away from chibi": "Vous êtes à %d appuis de chibi",
+    "You are 1 tap away from chibi": "Tu es à 1 appui de chibi", "You are %d taps away from chibi": "Tu es à %d appuis de chibi",
     "Reach level %d": "Atteins le niveau %d", "Level %d of %d": "Niveau %d sur %d",
     "Study for %d hours in total": "Étudier %d heures au total", "%d of %d hours": "%d heures sur %d",
     "Could not load your study companion (%s).": "Impossible de charger ton compagnon d’étude (%s).",
@@ -325,7 +323,6 @@ FRENCH = {
     "Celebrate achievements, streak milestones and personal bests": "Fêter les réussites, les étapes de série et les records personnels",
     "Update channel": "Canal de mise à jour", "Stable releases": "Versions stables",
     "Nightly builds (untested)": "Versions nocturnes (non testées)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Cet AnkiQuest est une copie locale ; il ne se met pas à jour tout seul.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest : impossible de rechercher des mises à jour (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest est à jour (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s est disponible. L’installer maintenant ? Il faudra ensuite redémarrer Anki.",
@@ -444,7 +441,6 @@ PORTUGUESE = {
     "Celebrate achievements, streak milestones and personal bests": "Celebrar conquistas, marcos da sequência e recordes pessoais",
     "Update channel": "Canal de atualizações", "Stable releases": "Versões estáveis",
     "Nightly builds (untested)": "Versões noturnas (não testadas)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Este AnkiQuest é uma cópia local; não se atualiza sozinho.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: não foi possível procurar atualizações (%s)",
     "AnkiQuest is up to date (%s).": "O AnkiQuest está atualizado (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s está disponível. Instalar agora? Depois é preciso reiniciar o Anki.",
@@ -556,10 +552,11 @@ def _hour(hour):
 
 SPANISH.update({
     "Aki is here to help. One card, one small step.": "Aki está aquí para ayudarte. Una tarjeta, un pequeño paso.",
-    "A small step starts with one card.": "Un pequeño paso empieza con una tarjeta.",
     "Your cards are done for now. Nice work!": "Ya terminaste tus tarjetas por ahora. ¡Buen trabajo!",
     "You showed up today. That is progress worth keeping.": "Hoy estuviste presente. Ese progreso vale la pena.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Un protector mantiene tu racha. Te espera un nuevo comienzo.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Hoy no has estudiado. Tu racha de 1 día sigue esperando.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Hoy no has estudiado. Tu racha de %d días sigue esperando.",
     "Every quest is done today. Nice work!": "Completaste todas las misiones de hoy. ¡Buen trabajo!",
     "One card, one small step.": "Una tarjeta, un pequeño paso.",
     "this hour": "esta hora", "today": "hoy", "this week": "esta semana", "this month": "este mes",
@@ -603,10 +600,11 @@ SPANISH.update({
 
 GERMAN.update({
     "Aki is here to help. One card, one small step.": "Aki ist für dich da. Eine Karte, ein kleiner Schritt.",
-    "A small step starts with one card.": "Ein kleiner Schritt beginnt mit einer Karte.",
     "Your cards are done for now. Nice work!": "Deine Karten sind für jetzt erledigt. Gut gemacht!",
     "You showed up today. That is progress worth keeping.": "Du warst heute da. Dieser Fortschritt zählt.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Ein Schutz hält deine Serie. Ein Neustart wartet.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Du hast heute noch nicht gelernt. Deine Lernserie von 1 Tag wartet noch.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Du hast heute noch nicht gelernt. Deine Lernserie von %d Tagen wartet noch.",
     "Every quest is done today. Nice work!": "Alle Aufgaben für heute erledigt. Gut gemacht!",
     "One card, one small step.": "Eine Karte, ein kleiner Schritt.",
     "this hour": "diese Stunde", "today": "heute", "this week": "diese Woche", "this month": "diesen Monat",
@@ -648,10 +646,11 @@ GERMAN.update({
 
 FRENCH.update({
     "Aki is here to help. One card, one small step.": "Aki est là pour t’aider. Une carte, un petit pas.",
-    "A small step starts with one card.": "Un petit pas commence par une carte.",
     "Your cards are done for now. Nice work!": "Tes cartes sont terminées pour l’instant. Bravo !",
     "You showed up today. That is progress worth keeping.": "Tu étais là aujourd’hui. Ce progrès compte.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Une protection garde ta série. Un nouveau départ t’attend.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Tu n’as pas encore étudié aujourd’hui. Ta série de 1 jour t’attend toujours.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Tu n’as pas encore étudié aujourd’hui. Ta série de %d jours t’attend toujours.",
     "Every quest is done today. Nice work!": "Toutes les quêtes du jour sont faites. Bravo !",
     "One card, one small step.": "Une carte, un petit pas.",
     "this hour": "cette heure", "today": "aujourd’hui", "this week": "cette semaine", "this month": "ce mois-ci",
@@ -693,10 +692,11 @@ FRENCH.update({
 
 PORTUGUESE.update({
     "Aki is here to help. One card, one small step.": "O Aki está aqui para ajudar. Uma carta, um pequeno passo.",
-    "A small step starts with one card.": "Um pequeno passo começa com uma carta.",
     "Your cards are done for now. Nice work!": "As tuas cartas estão feitas por agora. Bom trabalho!",
     "You showed up today. That is progress worth keeping.": "Apareceste hoje. Esse progresso conta.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Uma proteção guarda a tua sequência. Um recomeço espera-te.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Ainda não estudaste hoje. A tua sequência de 1 dia continua à espera.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Ainda não estudaste hoje. A tua sequência de %d dias continua à espera.",
     "Every quest is done today. Nice work!": "Todas as missões de hoje estão feitas. Bom trabalho!",
     "One card, one small step.": "Uma carta, um pequeno passo.",
     "this hour": "esta hora", "today": "hoje", "this week": "esta semana", "this month": "este mês",
@@ -1131,6 +1131,10 @@ SPANISH.update({
     "Could not upload review history (%s).": "No se pudo subir el historial de repasos (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Vuelve a iniciar sesión en AnkiQuest para reanudar las subidas.",
     "Offline, will retry": "Sin conexión. Se volverá a intentar",
+    "The server's certificate has expired, will retry": "El certificado del servidor ha caducado. Se volverá a intentar",
+    "The server's certificate is self-signed, will retry": "El certificado del servidor está autofirmado. Se volverá a intentar",
+    "The server's certificate is for another address, will retry": "El certificado del servidor es de otra dirección. Se volverá a intentar",
+    "The server's certificate could not be verified, will retry": "No se pudo verificar el certificado del servidor. Se volverá a intentar",
     "Last upload failed (%s), will retry": "Falló la última subida (%s). Se volverá a intentar",
     "Last upload failed (%s)": "Falló la última subida (%s)",
 })
@@ -1141,6 +1145,10 @@ GERMAN.update({
     "Could not upload review history (%s).": "Der Wiederholungsverlauf konnte nicht hochgeladen werden (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Melde dich erneut bei AnkiQuest an, um Uploads fortzusetzen.",
     "Offline, will retry": "Offline. Erneuter Versuch folgt",
+    "The server's certificate has expired, will retry": "Das Zertifikat des Servers ist abgelaufen. Erneuter Versuch folgt",
+    "The server's certificate is self-signed, will retry": "Das Zertifikat des Servers ist selbst signiert. Erneuter Versuch folgt",
+    "The server's certificate is for another address, will retry": "Das Zertifikat des Servers gilt für eine andere Adresse. Erneuter Versuch folgt",
+    "The server's certificate could not be verified, will retry": "Das Zertifikat des Servers konnte nicht geprüft werden. Erneuter Versuch folgt",
     "Last upload failed (%s), will retry": "Letzter Upload fehlgeschlagen (%s). Erneuter Versuch folgt",
     "Last upload failed (%s)": "Letzter Upload fehlgeschlagen (%s)",
 })
@@ -1151,6 +1159,10 @@ FRENCH.update({
     "Could not upload review history (%s).": "Impossible d’envoyer l’historique des révisions (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Reconnecte-toi à AnkiQuest pour reprendre les envois.",
     "Offline, will retry": "Hors ligne. Nouvel essai prévu",
+    "The server's certificate has expired, will retry": "Le certificat du serveur a expiré. Nouvel essai prévu",
+    "The server's certificate is self-signed, will retry": "Le certificat du serveur est auto-signé. Nouvel essai prévu",
+    "The server's certificate is for another address, will retry": "Le certificat du serveur est celui d’une autre adresse. Nouvel essai prévu",
+    "The server's certificate could not be verified, will retry": "Impossible de vérifier le certificat du serveur. Nouvel essai prévu",
     "Last upload failed (%s), will retry": "Échec du dernier envoi (%s). Nouvel essai prévu",
     "Last upload failed (%s)": "Échec du dernier envoi (%s)",
 })
@@ -1161,6 +1173,10 @@ PORTUGUESE.update({
     "Could not upload review history (%s).": "Não foi possível enviar o histórico de revisões (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Volta a iniciar sessão no AnkiQuest para retomar os envios.",
     "Offline, will retry": "Sem ligação. Nova tentativa em breve",
+    "The server's certificate has expired, will retry": "O certificado do servidor expirou. Nova tentativa em breve",
+    "The server's certificate is self-signed, will retry": "O certificado do servidor é autoassinado. Nova tentativa em breve",
+    "The server's certificate is for another address, will retry": "O certificado do servidor é de outro endereço. Nova tentativa em breve",
+    "The server's certificate could not be verified, will retry": "Não foi possível verificar o certificado do servidor. Nova tentativa em breve",
     "Last upload failed (%s), will retry": "O último envio falhou (%s). Nova tentativa em breve",
     "Last upload failed (%s)": "O último envio falhou (%s)",
 })
@@ -1642,13 +1658,13 @@ GERMAN.update({
 })
 FRENCH.update({
     "Global": "Mondial", "Leaderboard scope": "Groupe du classement",
-    "you, not shown to others": "vous, invisible pour les autres",
+    "you, not shown to others": "toi, invisible pour les autres",
     "Place": "Place", "Level": "Niveau", "Streak": "Série",
     "Hidden players": "Joueurs masqués", "Hide for me": "Masquer pour moi", "Show again": "Afficher à nouveau",
     "Loading leaderboard…": "Chargement du classement…",
     "Could not load the leaderboard (%s).": "Impossible de charger le classement (%s).",
     "No uploaded players on this board yet.": "Aucun joueur n’a encore envoyé de données pour ce classement.",
-    "Hidden only from your Global board. Select a player to show them again.": "Masqués uniquement dans votre classement mondial. Sélectionnez un joueur pour l’afficher à nouveau.",
+    "Hidden only from your Global board. Select a player to show them again.": "Masqués uniquement dans ton classement mondial. Sélectionne un joueur pour l’afficher à nouveau.",
     "Saving…": "Enregistrement…", "Could not save this choice (%s).": "Impossible d’enregistrer ce choix (%s).",
 })
 PORTUGUESE.update({
@@ -1830,8 +1846,8 @@ FRENCH.update({
     "Join group": "Rejoindre le groupe",
     "Invitation link copied.": "Lien d’invitation copié.",
     "%s · %d members": "%s · %d membres",
-    "Use an invitation from this server.": "Utilisez une invitation de ce serveur.",
-    "Enter a group invitation link or code.": "Saisissez un lien ou un code d’invitation au groupe.",
+    "Use an invitation from this server.": "Utilise une invitation de ce serveur.",
+    "Enter a group invitation link or code.": "Saisis un lien ou un code d’invitation au groupe.",
     "Could not complete this action (%s).": "Impossible d’effectuer cette action (%s).",
     "Invite friend": "Inviter un ami",
     "Not this week": "Pas cette semaine",
@@ -1850,7 +1866,7 @@ FRENCH.update({
     "Duration in days": "Durée en jours",
     "Start after everyone accepts": "Commencer quand tout le monde accepte",
     "Invite friends": "Inviter des amis",
-    "Choose between 1 and 30 friends.": "Choisissez entre 1 et 30 amis.",
+    "Choose between 1 and 30 friends.": "Choisis entre 1 et 30 amis.",
     "View friend goal": "Voir l’objectif entre amis",
     "reviews": "révisions",
     "study days": "jours d’étude",
@@ -2021,56 +2037,56 @@ PORTUGUESE.update({
     "Show system notifications when Anki is in the background": "Mostrar notificações do sistema quando o Anki está em segundo plano",
 })
 
-# Packaged versions and AnkiWeb-owned updates.
+# Packaged versions and their update source.
 SPANISH.update({
     "Local copy": "Copia local", "Version: %s": "Versión: %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb gestiona las actualizaciones.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalación se actualiza desde AnkiWeb. Usa Herramientas → Complementos → Comprobar actualizaciones.",
+    "Updates: %s": "Actualizaciones: %s",
 })
 GERMAN.update({
     "Local copy": "Lokale Kopie", "Version: %s": "Version: %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb verwaltet die Updates.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Diese Installation wird über AnkiWeb aktualisiert. Nutze Extras → Erweiterungen → Auf Aktualisierungen prüfen.",
+    "Updates: %s": "Updates: %s",
 })
 FRENCH.update({
     "Local copy": "Copie locale", "Version: %s": "Version : %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb gère les mises à jour.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Cette installation est mise à jour via AnkiWeb. Utilise Outils → Greffons → Rechercher des mises à jour.",
+    "Updates: %s": "Mises à jour : %s",
 })
 PORTUGUESE.update({
     "Local copy": "Cópia local", "Version: %s": "Versão: %s",
-    "Updates are managed by AnkiWeb.": "O AnkiWeb gere as atualizações.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalação é atualizada pelo AnkiWeb. Usa Ferramentas → Extras → Procurar atualizações.",
+    "Updates: %s": "Atualizações: %s",
 })
 
 # Native moment recipients; wording matches Android's share sheet.
 SPANISH.update({
     "Search friends and groups": "Buscar amigos y grupos", "All friends": "Todos los amigos",
-    "Retry": "Reintentar",
+    "No friend or group has that name.": "Ningún amigo ni grupo se llama así.",
     "Add a note (optional)": "Añadir una nota (opcional)", "More apps…": "Más aplicaciones…",
     "Add friends in AnkiQuest to send them your moments.": "Añade amigos en AnkiQuest para enviarles tus momentos.",
-    "Invite a friend": "Invitar a un amigo", "Couldn't load friends (%s).": "No se pudieron cargar los amigos (%s).",
+    "Invite a friend": "Invitar a un amigo",
+    "Couldn't load your friends. Check your connection, or share with another app.": "No se pudieron cargar tus amigos. Revisa tu conexión o compártelo con otra aplicación.",
 })
 GERMAN.update({
     "Search friends and groups": "Freunde und Gruppen suchen", "All friends": "Alle Freunde",
-    "Retry": "Erneut versuchen",
+    "No friend or group has that name.": "Kein Freund und keine Gruppe heißt so.",
     "Add a note (optional)": "Nachricht hinzufügen (optional)", "More apps…": "Weitere Apps…",
     "Add friends in AnkiQuest to send them your moments.": "Füge Freunde in AnkiQuest hinzu, um deine Momente mit ihnen zu teilen.",
-    "Invite a friend": "Freund einladen", "Couldn't load friends (%s).": "Freunde konnten nicht geladen werden (%s).",
+    "Invite a friend": "Freund einladen",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Deine Freunde konnten nicht geladen werden. Prüfe deine Verbindung oder teile mit einer anderen App.",
 })
 FRENCH.update({
     "Search friends and groups": "Chercher des amis et des groupes", "All friends": "Tous les amis",
-    "Retry": "Réessayer",
+    "No friend or group has that name.": "Aucun ami ni groupe ne porte ce nom.",
     "Add a note (optional)": "Ajouter un message (facultatif)", "More apps…": "Autres applis…",
     "Add friends in AnkiQuest to send them your moments.": "Ajoute des amis dans AnkiQuest pour leur envoyer tes moments.",
-    "Invite a friend": "Inviter un ami", "Couldn't load friends (%s).": "Impossible de charger les amis (%s).",
+    "Invite a friend": "Inviter un ami",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Impossible de charger tes amis. Vérifie ta connexion ou partage avec une autre appli.",
 })
 PORTUGUESE.update({
     "Search friends and groups": "Procurar amigos e grupos", "All friends": "Todos os amigos",
-    "Retry": "Tentar novamente",
+    "No friend or group has that name.": "Nenhum amigo ou grupo tem esse nome.",
     "Add a note (optional)": "Adicionar uma nota (opcional)", "More apps…": "Mais apps…",
     "Add friends in AnkiQuest to send them your moments.": "Adiciona amigos no AnkiQuest para lhes enviares os teus momentos.",
-    "Invite a friend": "Convidar um amigo", "Couldn't load friends (%s).": "Não foi possível carregar os amigos (%s).",
+    "Invite a friend": "Convidar um amigo",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Não foi possível carregar os teus amigos. Verifica a ligação ou partilha com outra app.",
 })
 
 # Shared settings, moments and sharing wording; see tests/fixtures/desktop-wording.json.
@@ -2104,7 +2120,6 @@ FRENCH.update({
 PORTUGUESE.update({
     "Don’t show this again": "Não voltar a mostrar",
     "Aki is here to help. One card, one small step.": "Aki está aqui para te ajudar. Um cartão, um pequeno passo.",
-    "A small step starts with one card.": "Um pequeno passo começa com um cartão.",
     "Your cards are done for now. Nice work!": "Já terminaste os cartões por agora. Bom trabalho!",
     "You showed up today. That is progress worth keeping.": "Estudaste hoje. Vale a pena preservar esse progresso.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Uma proteção salvou a tua sequência. Um novo começo espera por ti.",
