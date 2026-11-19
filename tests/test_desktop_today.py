@@ -544,21 +544,53 @@ class PanelTests(unittest.TestCase):
         at = lambda ms: "04:00" if ms == 10_000 else "?"
         self.assertEqual(
             "Last week still counting: 1,234 XP · closes at 04:00",
-            board.closing_week(closing, lambda value: value, 9_999, at),
+            board.own_week(closing, lambda value: value, 9_999, at),
         )
-        self.assertIsNone(board.closing_week(closing, lambda value: value, 10_000, at))
-        self.assertIsNone(board.closing_week({}, lambda value: value, 0, at))
-        self.assertIsNone(board.closing_week({"closing_week": {"xp": 5, "ends_at": "soon"}}, lambda value: value, 0, at))
-        self.assertIsNone(board.closing_week(None, lambda value: value, 0, at))
-        spanish = board.closing_week(closing, lambda value: language.tr(value, "es"), 9_999, at)
+        self.assertIsNone(board.own_week(closing, lambda value: value, 10_000, at))
+        self.assertIsNone(board.own_week({}, lambda value: value, 0, at))
+        self.assertIsNone(board.own_week({"closing_week": {"xp": 5, "ends_at": "soon"}}, lambda value: value, 0, at))
+        self.assertIsNone(board.own_week(None, lambda value: value, 0, at))
+        spanish = board.own_week(closing, lambda value: language.tr(value, "es"), 9_999, at)
         self.assertEqual("La semana pasada aún cuenta: 1,234 XP · cierra a las 04:00", spanish)
 
         live = dict(self.profile, closing_week={"xp": 50, "ends_at": int(time.time() * 1000) + 3_600_000})
-        self.assertIn("aq-closing-week'>Last week still counting: 50 XP", board.html(live, 2, 0, today=self.view()))
+        self.assertIn("aq-own-week'>Last week still counting: 50 XP", board.html(live, 2, 0, today=self.view()))
         self.assertIn("Last week still counting: 50 XP", board.html(live, 2, 0))
         ended = dict(self.profile, closing_week={"xp": 50, "ends_at": 1})
         self.assertNotIn("Last week still counting", board.html(ended, 2, 0, today=self.view()))
         self.assertNotIn("Last week still counting", board.html(self.profile, 2, 0, today=self.view()))
+
+    def test_next_week_already_counting_shows_until_the_board_switches(self):
+        # Berlin, Monday 09:00 (weekly_board.json in AnkiQuest-Server): the day counts for next
+        # week while the board shows this one until Monday 12:00 UTC.
+        now, switch = 1795420800000, 1795435200000
+        ahead = {"next_week": {"xp": 321, "starts_at": switch}}
+        at = lambda ms: "13:00" if ms == switch else "?"
+        same = lambda value: value
+        self.assertEqual(
+            "Next week already counting: 321 XP · the board switches at 13:00",
+            board.own_week(ahead, same, now, at),
+        )
+        self.assertIsNone(board.own_week(ahead, same, switch, at))
+        self.assertIsNone(board.own_week({"next_week": {"xp": 5, "starts_at": "soon"}}, same, now, at))
+        for code, expected in (
+            ("es", "La próxima semana ya cuenta: 321 XP · la clasificación cambia a las 13:00"),
+            ("de", "Nächste Woche zählt schon: 321 XP · die Rangliste wechselt um 13:00"),
+            ("fr", "La semaine prochaine compte déjà : 321 XP · le classement change à 13:00"),
+            ("pt", "A próxima semana já conta: 321 XP · a classificação muda às 13:00"),
+        ):
+            with self.subTest(language=code):
+                self.assertEqual(expected, board.own_week(ahead, lambda value: language.tr(value, code), now, at))
+
+        # The server sends at most one; a closing week still running comes first, as on the website.
+        both = dict(ahead, closing_week={"xp": 7, "ends_at": switch})
+        self.assertIn("Last week still counting: 7 XP", board.own_week(both, same, now, at))
+
+        live = dict(self.profile, next_week={"xp": 50, "starts_at": int(time.time() * 1000) + 3_600_000})
+        self.assertIn("aq-own-week'>Next week already counting: 50 XP", board.html(live, 2, 0, today=self.view()))
+        self.assertIn("Next week already counting: 50 XP", board.html(live, 2, 0))
+        switched = dict(self.profile, next_week={"xp": 50, "starts_at": 1})
+        self.assertNotIn("Next week already counting", board.html(switched, 2, 0, today=self.view()))
 
     def test_all_quests_done_shows_the_winner(self):
         profile = {"quests": [{"title": "Combo", "progress": 5, "target": 5, "done": True, "reward": 15}]}

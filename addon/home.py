@@ -431,7 +431,9 @@ def board_view(api, profile=None):
     chosen = board.query.period
     rows = []
     pictures = _pictures()
+    moment = now_ms()
     for place, entry, mine in board_data._top(board, api.name):
+        entry = dict(entry, counting=board_data._counting(board, entry, moment))
         if mine:
             entry = dict(entry, day=profile or {"_day_status": "unknown"})
             if chosen == "day" and entry["day"].get("_day_status") == "unknown":

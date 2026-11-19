@@ -2,7 +2,7 @@
 
 import time
 from html import escape
-from . import moods
+from . import board_data, moods
 from .language import _clock
 
 # Shown instead of other players until the server holds one of the player's reviews.
@@ -180,22 +180,38 @@ def clock(ms):
     return _clock(ms)
 
 
-def closing_week(profile, translate, now_ms=None, show_time=clock):
-    """The week that already reset on the board but still counts this player's current day.
+def _other_week(profile, field, at, now_ms):
+    """The profile's `field` week as (xp, its `at` time), or None once that time has passed."""
+    week = (profile or {}).get(field)
+    if not isinstance(week, dict):
+        return None
+    when = week.get(at)
+    if type(when) is not int or when <= now_ms:
+        return None
+    return "{:,}".format(max(0, int(week.get("xp") or 0))), when
 
-    The server sends `closing_week` only while that day lasts; a cached profile whose
-    `ends_at` has passed says nothing."""
-    closing = (profile or {}).get("closing_week")
-    if not isinstance(closing, dict):
-        return None
-    ends_at = closing.get("ends_at")
-    if not isinstance(ends_at, int) or isinstance(ends_at, bool):
-        return None
-    if ends_at <= (int(time.time() * 1000) if now_ms is None else now_ms):
-        return None
-    return translate("Last week still counting: %s XP · closes at %s") % (
-        "{:,}".format(max(0, int(closing.get("xp") or 0))), show_time(ends_at),
-    )
+
+def own_week(profile, translate, now_ms=None, show_time=clock):
+    """The other week that counts this player's current day, as on the website.
+
+    `closing_week`: the board has switched but their Sunday still runs, until `ends_at`.
+    `next_week`: their Monday began before the switch, until `starts_at`. The server sends at
+    most one; a cached profile whose time has passed says nothing."""
+    now = int(time.time() * 1000) if now_ms is None else now_ms
+    closing = _other_week(profile, "closing_week", "ends_at", now)
+    if closing:
+        return translate("Last week still counting: %s XP · closes at %s") % (closing[0], show_time(closing[1]))
+    ahead = _other_week(profile, "next_week", "starts_at", now)
+    if ahead:
+        return translate("Next week already counting: %s XP · the board switches at %s") % (ahead[0], show_time(ahead[1]))
+    return None
+
+
+def counting(kind, xp, translate):
+    """A weekly row's XP for another week (`board_data._Counting`), as on the website."""
+    if kind is board_data._Counting.LAST_WEEK:
+        return translate("%s XP still counting for last week") % "{:,}".format(xp)
+    return translate("%s XP already counting for next week") % "{:,}".format(xp)
 
 
 def flame_icon(flame):
@@ -221,9 +237,9 @@ def summary_parts(profile, place, translate, flame=moods.Flame.NONE):
     parts = []
     if place:
         parts.append(escape(translate("#%d this week") % place))
-    closing = closing_week(profile, translate)
-    if closing:
-        parts.append(escape(closing))
+    other = own_week(profile, translate)
+    if other:
+        parts.append(escape(other))
     if profile:
         parts.append(escape(level_text(profile, translate)))
         if profile.get("streak"):
@@ -504,6 +520,8 @@ def board_row(place, entry, mine, translate=lambda value: value):
     day_html = "<span class=aq-row-day>%s</span>" % escape(day) if day else ""
     if mine and entry.get("shown") is False:
         day_html += "<span class=aq-row-day>%s</span>" % escape(translate("you, not shown to others"))
+    for kind, xp in entry.get("counting", ()):
+        day_html += "<span class=aq-row-day>%s</span>" % escape(counting(kind, xp, translate))
     picture = entry.get("avatar")
     face = '<img class=aq-avatar src="%s" alt="">' % escape(picture, True) if picture and picture.startswith("data:image/png;base64,") else avatar(name)
     xp = "—" if "xp" in entry and entry["xp"] is None else "{:,}".format(int(entry.get("xp") or 0))
@@ -539,9 +557,9 @@ def board_card(today, translate, profile=None):
         rows = "<div class=aq-empty-note>%s</div>" % escape(translate("Nobody else plays yet."))
     if not standing.get("locked") and not any(not mine for _, _, mine in standing["rows"]):
         rows += "<div class=aq-empty-note>%s</div>" % link("challenges", translate("Add friends to study together"))
-    closing = closing_week(profile, translate)
-    if closing:
-        rows += "<div class='aq-note aq-closing-week'>%s</div>" % escape(closing)
+    other = own_week(profile, translate)
+    if other:
+        rows += "<div class='aq-note aq-own-week'>%s</div>" % escape(other)
     title = "<div class=aq-board-head><h3>%s</h3>%s%s</div>" % (
         escape(translate("Leaderboard")), _scope_picker(standing, translate), period_picker(standing["period"], translate),
     )
