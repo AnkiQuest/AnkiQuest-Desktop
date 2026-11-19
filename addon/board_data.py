@@ -1,7 +1,6 @@
 """Account choice -> server query -> ranked rows; never infer a stranger's study data."""
 from dataclasses import dataclass, replace
 from enum import Enum
-from http import HTTPStatus
 from urllib.parse import urlencode
 
 from . import today
@@ -65,18 +64,9 @@ def _remember(profile, api, query):
     profile[_OLD_PERIOD] = query.period
 
 
-def _legacy(read):
-    try:
-        return read()
-    except Exception as error:
-        if getattr(error, "status", None) == HTTPStatus.NOT_FOUND:
-            return {}
-        raise
-
-
 def _fetch(api, query):
-    settings = _legacy(api.deck_settings)
-    social = _legacy(lambda: api._request("/api/social/" + api.user))
+    settings = api.deck_settings()
+    social = api._request("/api/social/" + api.user)
     scopes = [("friends", "Friends")]
     scopes += [("group:%d" % group["id"], group["name"]) for group in social.get("groups", [])]
     if isinstance(settings.get("global_leaderboard"), bool):

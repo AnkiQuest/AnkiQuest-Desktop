@@ -84,6 +84,23 @@ def second_factor_text(error):
     return _SECOND_FACTOR_TEXT.get(error.second_factor)
 
 
+# Android's aq_server_outdated (AnkiQuest-Android#408). The add-on needs the current
+# AnkiQuest-Server; an endpoint or feature it lacks gets this one message instead of a fallback.
+OUTDATED = "Update your AnkiQuest server"
+
+
+class Outdated(Exception):
+    """The server lacks an endpoint or feature this add-on needs."""
+
+    def __init__(self):
+        super().__init__(OUTDATED)
+
+
+def outdated(error):
+    """Whether `error` means the server is older than this add-on: Outdated, or a 404 from an endpoint."""
+    return isinstance(error, Outdated) or getattr(error, "status", None) == HTTPStatus.NOT_FOUND
+
+
 class InsecureServer(ValueError):
     """The server cannot receive an account password securely."""
 
@@ -280,9 +297,6 @@ class Client:
         """Asks for a chibi the player found; the server grants it once its base is unlocked and
         answers as `unlocks`."""
         return self._request("/api/unlocks/" + self.user, {"unlock": unlock})
-
-    def notifications(self):
-        return self._request("/api/notifications/" + self.user)
 
     def deck_settings(self):
         return self._request("/api/decks/" + self.user)

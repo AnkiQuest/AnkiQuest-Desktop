@@ -1,4 +1,4 @@
-"""Activity contracts preserve global counts, fallback rules and notification ownership."""
+"""Activity contracts preserve global counts and notification ownership."""
 from http import HTTPStatus
 import json
 from pathlib import Path
@@ -31,32 +31,13 @@ class Pages(unittest.TestCase):
         self.assertEqual(combined, activity._append(combined, older))
         self.assertEqual(older.before, combined.before)
 
-    def test_only_first_page_404_uses_legacy_and_never_infers_unread(self):
-        api = SimpleNamespace(user="hill", _request=Mock(side_effect=Refused(HTTPStatus.NOT_FOUND)),
-                              notifications=Mock(return_value=[{"id": 7}, {"id": 8}]))
-        page = activity._load(api)
-        self.assertEqual([8, 7], [row["id"] for row in page.items])
-        self.assertEqual((0, 0, None), (page.unread, page.actions, page.before))
-        self.assertIs(activity._Source.LEGACY, page.source)
-        api.notifications.assert_called_once()
-        for code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN, HTTPStatus.INTERNAL_SERVER_ERROR):
-            api._request.side_effect = Refused(code)
+    def test_errors_reach_the_window_without_a_fallback(self):
+        # The add-on needs the current server; a 404 is shown as an outdated server, not retried.
+        for code in (HTTPStatus.BAD_REQUEST, HTTPStatus.NOT_FOUND, HTTPStatus.INTERNAL_SERVER_ERROR):
+            api = SimpleNamespace(user="hill", _request=Mock(side_effect=Refused(code)))
             with self.assertRaises(Refused):
-                activity._load(api)
-        api._request.side_effect = Refused(HTTPStatus.NOT_FOUND)
-        with self.assertRaises(Refused):
-            activity._load(api, before=7)
-        api.notifications.assert_called_once()
-
-    def test_an_unsupported_filter_retries_unfiltered_not_legacy(self):
-        api = SimpleNamespace(user="hill", notifications=Mock(), _request=Mock(side_effect=[
-            Refused(HTTPStatus.BAD_REQUEST), {"items": [], "unread_count": 9, "action_count": 2},
-        ]))
-        page = activity._load(api, activity._Category.MESSAGES, activity._Read.UNREAD, 20)
-        self.assertIs(activity._Source.UNFILTERED, page.source)
-        self.assertEqual("/api/activity/hill?limit=50&category=messages&unread_only=true&before=20", api._request.call_args_list[0].args[0])
-        self.assertEqual("/api/activity/hill?limit=50&before=20", api._request.call_args_list[1].args[0])
-        api.notifications.assert_not_called()
+                activity._load(api, activity._Category.MESSAGES, activity._Read.UNREAD)
+            api._request.assert_called_once()
 
 
 class Poll(unittest.TestCase):

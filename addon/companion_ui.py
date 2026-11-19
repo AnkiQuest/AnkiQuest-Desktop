@@ -16,7 +16,7 @@ from aqt.qt import (
     QButtonGroup, QDialog, QEasingCurve, QHBoxLayout, QLabel, QPushButton, QVariantAnimation, QVBoxLayout, QWidget, Qt,
 )
 
-from . import companion_art, companion_unlock, moods, share_ui
+from . import companion_art, companion_unlock, inbox, moods, share_ui
 from .companion_reveal import Motion
 from .companion_unlock import Choice
 from .language import tr
@@ -54,8 +54,7 @@ _STYLE = (
 
 def _load(api):
     """The account's companion and the server's unlocks."""
-    features = api.capabilities()
-    return api.companion(), companion_unlock.fetch(api, features)
+    return api.companion(), companion_unlock.fetch(api)
 
 
 def _locked_lines(progress):
@@ -268,7 +267,7 @@ class Picker:
             return
         except Exception as error:
             print("ankiquest companion:", error)
-            self._status.setText(tr("Could not load your study companion (%s).") % error)
+            self._status.setText(inbox.failure("Could not load your study companion (%s).", error))
             return
         self._status.hide()
         self._loaded, self._found = companion, found
