@@ -115,7 +115,7 @@ class Announcements(unittest.TestCase):
     def warn(self, profile_hour, hour_utc=19):
         """Polls once at `hour_utc` (21:00 on the UTC+2 device clock) with a streak warning due."""
         now = hour_utc * 3600
-        fetched = {"level": 3, "xp_into_level": 1, "xp_for_next": 2}
+        fetched = {"level": 3, "xp_into_level": 1, "xp_for_next": 2, "day_ends_at": (now + 3600) * 1000}
         if profile_hour is not None:
             fetched["local_hour"] = profile_hour
         self.api.profile = Mock(return_value=fetched)
@@ -131,6 +131,47 @@ class Announcements(unittest.TestCase):
         self.warn(profile_hour=23)
         self.addon.tooltip.assert_not_called()
         self.warn(profile_hour=21)
+        self.assertIn("Study soon", self.addon.tooltip.call_args.args[0])
+
+    def fractional_hour(self, offset_minutes, server_hour):
+        """End review across a quiet-hour boundary in a half/quarter-hour zone."""
+        self.inbox.clear()
+        self.record()["reminders"] = {"quiet_start": 22, "quiet_end": 9}
+        self.addon.offset_west_min = lambda: 0
+        offset = (5 * 60 + offset_minutes) * 60
+        now = server_hour * 3600 + 50 * 60 - offset
+        profile = {
+            "level": 3, "xp_into_level": 1, "xp_for_next": 2,
+            "local_hour": server_hour,
+            "day_ends_at": ((server_hour + 2) * 3600 - offset) * 1000,
+            "streak_warning": {"title": "Study soon"},
+        }
+        self.api.profile = Mock(return_value=profile)
+        self.mw.state = "review"
+        with patch.object(self.addon.home, "_profile_for_display", return_value=profile), \
+                patch.object(self.addon.time, "time", return_value=now) as clock:
+            self.addon.poll()
+            self.addon.tooltip.assert_not_called()
+            clock.return_value = now + 15 * 60
+            self.mw.state = "deckBrowser"
+            self.addon._delivery._flush()
+
+    def test_half_hour_zone_enters_quiet_on_server_time(self):
+        self.fractional_hour(30, 21)
+        self.addon.tooltip.assert_not_called()
+
+    def test_quarter_hour_zone_enters_quiet_on_server_time(self):
+        self.fractional_hour(45, 21)
+        self.addon.tooltip.assert_not_called()
+
+    def test_half_hour_zone_leaves_quiet_on_server_time(self):
+        self.fractional_hour(30, 8)
+        self.addon.tooltip.assert_called_once()
+        self.assertIn("Study soon", self.addon.tooltip.call_args.args[0])
+
+    def test_quarter_hour_zone_leaves_quiet_on_server_time(self):
+        self.fractional_hour(45, 8)
+        self.addon.tooltip.assert_called_once()
         self.assertIn("Study soon", self.addon.tooltip.call_args.args[0])
 
     def test_the_streak_warning_waits_for_the_reminders(self):

@@ -8,6 +8,7 @@ _KEY = "ankiquestAnnouncements"
 _REMINDER_AGE = 3600
 _COPY_KIND = "deck_copy"
 _HOURS = 24
+_HOUR_MS = 3_600_000
 
 
 class _Mode(Enum):
@@ -86,8 +87,8 @@ class _Delivery:
         self._addon = addon
         self._owner = self._profile = self._tray = None
         self._destination = None
-        # Hours from this computer's clock to the player's server time zone; None until a
-        # profile with local_hour arrives for this account.
+        # Milliseconds from UTC to the player's clock, modulo one day; unknown until
+        # this account's profile supplies its hour and exact day boundary.
         self._shift = None
 
     def _clear(self):
@@ -114,11 +115,16 @@ class _Delivery:
         if self._current() is None:
             return
         hour = profile.get("local_hour") if isinstance(profile, dict) else None
-        if type(hour) is not int or not 0 <= hour < _HOURS:
+        end = profile.get("day_ends_at") if isinstance(profile, dict) else None
+        now_ms = int(self._addon.time.time() * 1000)
+        if type(hour) is not int or not 0 <= hour < _HOURS or type(end) is not int or end <= now_ms:
             self._shift = None
             return
-        device = _device_hour(int(self._addon.time.time()), self._addon.offset_west_min())
-        self._shift = (hour - device) % _HOURS
+
+        # Anki's rollover is a whole local hour. Its UTC boundary therefore tells us
+        # the minute within this hour, including zones with a 30/45-minute offset.
+        within_hour = (now_ms - end) % _HOUR_MS
+        self._shift = (hour * _HOUR_MS + within_hour - now_ms) % (_HOURS * _HOUR_MS)
 
     def _receive(self, rows, mode):
         record = self._current()
@@ -145,7 +151,7 @@ class _Delivery:
 
         # The player's hour on the server; messages fall back to this computer's clock.
         device = _device_hour(now_ms // 1000, addon.offset_west_min())
-        hour = None if self._shift is None else (device + self._shift) % _HOURS
+        hour = None if self._shift is None else (now_ms + self._shift) // _HOUR_MS % _HOURS
         if reminders is not None and _quiet(reminders, device if hour is None else hour):
             return
         profile = addon.home._profile_for_display(addon.state["profile"], now_ms) or {}
