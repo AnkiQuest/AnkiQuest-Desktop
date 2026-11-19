@@ -25,7 +25,9 @@ def labels():
         for node in ast.walk(ast.parse(path.read_text("utf-8"))):
             if isinstance(node, ast.Call):
                 name = getattr(node.func, "id", None)
-                count = 2 if name == "_plural" else 1 if name in ("tr", "translate") else 0
+                # language.plural(...) is an attribute call, as in conquests.py.
+                helper = name or getattr(node.func, "attr", None)
+                count = 2 if helper == "plural" else 1 if name in ("tr", "translate") else 0
                 for argument in node.args[:count]:
                     found.update(literals(argument))
     return found
