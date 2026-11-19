@@ -169,8 +169,12 @@ class RealAnki(unittest.TestCase):
                         self.assertTrue(hasattr(value, part), ".".join(path))
                         value = getattr(value, part)
                 self.assertEqual("AnkiQuest", module._tools.title())
-                # Nine destinations, a separator, then Rate AnkiQuest, AnkiQuest changelog and Report a bug.
-                self.assertEqual(13, len(module._tools.actions()))
+                # Ten destinations, a separator, then Rate AnkiQuest, AnkiQuest changelog and Report a bug.
+                self.assertEqual(14, len(module._tools.actions()))
+                # The countdown search is one Anki accepts, escapes included.
+                for deck in ("Default", 'Math "Calc" 1_2*\\b'):
+                    mw.col.find_cards(module.countdowns.search(deck, 3))
+                self.assertIsNone(module.home.countdown_view())
                 content = DeckBrowserContent(tree="", stats="")
                 module.on_deck_browser(mw.deckBrowser, content)
                 self.assertIn("AnkiQuest", content.stats)

@@ -4,6 +4,8 @@ The shared keys are defined in tests/fixtures/synced_settings.json; tests keep `
 its desktop names. Each synced setting remembers when it last changed on this computer, and the
 newer side wins, key by key."""
 
+from . import countdowns
+
 FEATURE = "settings_sync"
 
 # This device's switch; never synced.
@@ -13,7 +15,8 @@ SWITCH = "sync_settings"
 # before sync existed.
 CHANGED_KEY = "synced_settings_changed_at"
 
-# Shared key -> (config key, default, allowed range for numbers).
+# Shared key -> (config key, default, allowed range for numbers). A list default is never
+# changed in place.
 KEYS = {
     "notify_rank": ("notify_rank", True, None),
     "streak_warning_hours": ("streak_hours", 2, (0, 12)),
@@ -21,7 +24,12 @@ KEYS = {
     "goal_celebrations": ("goal_celebrations", True, None),
     "deck_status": ("deck_status", True, None),
     "review_heatmap": ("review_heatmap", True, None),
+    "countdowns": (countdowns.CONFIG_KEY, [], None),
 }
+
+# Keys only a server with this feature can keep: an older one refuses an unknown value over
+# 1024 bytes, which a countdown list can exceed.
+NEEDS = {"countdowns": countdowns.FEATURE}
 
 
 def path(api):
@@ -35,6 +43,8 @@ def enabled(config):
 def usable(key, value):
     """Whether `value` has the type and range this computer can use for `key`."""
     _, default, bounds = KEYS[key]
+    if key == "countdowns":
+        return countdowns.valid(value)
     if type(value) is not type(default):
         return False
     return bounds is None or bounds[0] <= value <= bounds[1]
@@ -82,11 +92,17 @@ def turned_on(config, values):
     return SWITCH in values and values[SWITCH] is not False and not enabled(config)
 
 
-def plan(config, remote):
-    """The config values to apply, the change times to keep and the body to send, from the
-    server's `settings`."""
+def synced(features):
+    """The keys this server can keep."""
+    return [key for key in KEYS if NEEDS.get(key, FEATURE) in features]
+
+
+def plan(config, remote, keys=tuple(KEYS)):
+    """The config values to apply, the change times to keep and the body to send for `keys`,
+    from the server's `settings`."""
     updates, changed, push = {}, {}, {}
-    for key, (name, default, _) in KEYS.items():
+    for key in keys:
+        name, default, _ = KEYS[key]
         value, stamp = local(config, key)
         found = remote.get(key)
         if not _entry(found):
@@ -107,10 +123,11 @@ def _entry(found):
 def run(api, config):
     """Reads the server's settings, sends newer local ones and returns (config values to apply,
     change times), or None when this server does not sync settings. Runs in the background."""
-    if FEATURE not in api.capabilities():
+    features = api.capabilities()
+    if FEATURE not in features:
         return None
     answer = api._request(path(api))
-    updates, changed, push = plan(config, _settings(answer))
+    updates, changed, push = plan(config, _settings(answer), synced(features))
     if not push:
         return updates, changed
 
@@ -131,13 +148,13 @@ def _settings(answer):
 def settle(snapshot, current, updates, changed):
     """`current` config with a finished sync applied, and whether any setting value changed.
     `snapshot` is the config the sync started from: a setting changed here meanwhile keeps
-    its new value and time, and the next sync sends it."""
+    its new value and time, and the next sync sends it. Keys the sync left out keep theirs."""
     before = snapshot.get(CHANGED_KEY) or {}
     stamps = dict(current.get(CHANGED_KEY) or {})
     result = dict(current)
     applied = False
     for key, (name, _, _) in KEYS.items():
-        if stamps.get(key, 0) != before.get(key, 0):
+        if key not in changed or stamps.get(key, 0) != before.get(key, 0):
             continue
         stamps[key] = changed[key]
         if name in updates:

@@ -2241,3 +2241,57 @@ SPANISH.update({"Share a deck": "Compartir un mazo"})
 GERMAN.update({"Share a deck": "Stapel teilen"})
 FRENCH.update({"Share a deck": "Partager un paquet"})
 PORTUGUESE.update({"Share a deck": "Partilhar um baralho"})
+
+# Countdowns to events and exams; English wording in tests/fixtures/countdowns.json.
+SPANISH.update({
+    "Countdowns": "Cuentas atrás", "Edit countdowns": "Editar cuentas atrás",
+    "Add countdown": "Añadir cuenta atrás", "Edit countdown": "Editar cuenta atrás",
+    "Name": "Nombre", "Date": "Fecha", "Deck (optional)": "Mazo (opcional)", "No deck": "Sin mazo", "Delete": "Eliminar",
+    "Enter a name.": "Escribe un nombre.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Ya tienes el máximo de cuentas atrás. Elimina una para añadir otra.",
+    "Only you see your countdowns.": "Solo tú ves tus cuentas atrás.",
+    "Add an exam or event to count down to it.": "Añade un examen o un evento para contar los días que faltan.",
+    "%s in %d days": "%s en %d días", "%s tomorrow": "%s mañana", "%s today": "%s hoy", "%s is over": "%s ya pasó",
+    "~%d card a day to finish %s by then": "~%d tarjeta al día para terminar %s a tiempo",
+    "~%d cards a day to finish %s by then": "~%d tarjetas al día para terminar %s a tiempo",
+    "Nothing left in %s before then": "No queda nada en %s antes de esa fecha",
+})
+GERMAN.update({
+    "Countdowns": "Countdowns", "Edit countdowns": "Countdowns bearbeiten",
+    "Add countdown": "Countdown hinzufügen", "Edit countdown": "Countdown bearbeiten",
+    "Name": "Name", "Date": "Datum", "Deck (optional)": "Stapel (optional)", "No deck": "Kein Stapel", "Delete": "Löschen",
+    "Enter a name.": "Gib einen Namen ein.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Du hast schon die meisten Countdowns, die du haben kannst. Lösche einen, um einen neuen hinzuzufügen.",
+    "Only you see your countdowns.": "Nur du siehst deine Countdowns.",
+    "Add an exam or event to count down to it.": "Füge eine Prüfung oder ein Ereignis hinzu, um die Tage bis dahin zu zählen.",
+    "%s in %d days": "%s in %d Tagen", "%s tomorrow": "%s morgen", "%s today": "%s heute", "%s is over": "%s ist vorbei",
+    "~%d card a day to finish %s by then": "~%d Karte am Tag, um %s bis dahin abzuschließen",
+    "~%d cards a day to finish %s by then": "~%d Karten am Tag, um %s bis dahin abzuschließen",
+    "Nothing left in %s before then": "In %s ist bis dahin nichts mehr offen",
+})
+FRENCH.update({
+    "Countdowns": "Comptes à rebours", "Edit countdowns": "Modifier les comptes à rebours",
+    "Add countdown": "Ajouter un compte à rebours", "Edit countdown": "Modifier le compte à rebours",
+    "Name": "Nom", "Date": "Date", "Deck (optional)": "Paquet (facultatif)", "No deck": "Aucun paquet", "Delete": "Supprimer",
+    "Enter a name.": "Saisis un nom.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Tu as déjà le nombre maximal de comptes à rebours. Supprimes-en un pour en ajouter un autre.",
+    "Only you see your countdowns.": "Tes comptes à rebours ne sont visibles que par toi.",
+    "Add an exam or event to count down to it.": "Ajoute un examen ou un événement pour compter les jours qui restent.",
+    "%s in %d days": "%s dans %d jours", "%s tomorrow": "%s demain", "%s today": "%s aujourd’hui", "%s is over": "%s : terminé",
+    "~%d card a day to finish %s by then": "~%d carte par jour pour finir %s d’ici là",
+    "~%d cards a day to finish %s by then": "~%d cartes par jour pour finir %s d’ici là",
+    "Nothing left in %s before then": "Plus rien à faire dans %s d’ici là",
+})
+PORTUGUESE.update({
+    "Countdowns": "Contagens decrescentes", "Edit countdowns": "Editar contagens decrescentes",
+    "Add countdown": "Adicionar contagem decrescente", "Edit countdown": "Editar contagem decrescente",
+    "Name": "Nome", "Date": "Data", "Deck (optional)": "Baralho (opcional)", "No deck": "Sem baralho", "Delete": "Eliminar",
+    "Enter a name.": "Escreve um nome.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Já tens o máximo de contagens decrescentes. Elimina uma para adicionar outra.",
+    "Only you see your countdowns.": "Só tu vês as tuas contagens decrescentes.",
+    "Add an exam or event to count down to it.": "Adiciona um exame ou evento para contar os dias que faltam.",
+    "%s in %d days": "%s daqui a %d dias", "%s tomorrow": "%s amanhã", "%s today": "%s hoje", "%s is over": "%s já passou",
+    "~%d card a day to finish %s by then": "~%d cartão por dia para terminar %s até lá",
+    "~%d cards a day to finish %s by then": "~%d cartões por dia para terminar %s até lá",
+    "Nothing left in %s before then": "Não falta nada em %s até lá",
+})

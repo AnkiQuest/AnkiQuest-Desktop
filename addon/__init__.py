@@ -3,6 +3,7 @@ import platform
 import sys
 import tempfile
 import time
+from datetime import datetime
 from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 from http import HTTPStatus
@@ -40,7 +41,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, deck_names, help_ui, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, countdowns, countdowns_ui, deck_names, help_ui, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -879,7 +880,7 @@ def open_settings():
     values = ui.settings_dialog(
         mw, config(), test_connection, upload_everything, state["companion"], ask_account,
         extra=settings_sections, on_manage=_manage_account,
-        on_decks=open_deck_notifications, on_privacy=_open_privacy,
+        on_decks=open_deck_notifications, on_privacy=_open_privacy, on_countdowns=open_countdowns,
         on_two_factor=_open_two_factor if home.server_has(client(), TWO_FACTOR) else None,
     )
     if values is None:
@@ -895,6 +896,21 @@ def open_settings():
     home.sync_goal()
     redraw()
     tooltip(tr("AnkiQuest settings saved."))
+
+
+def open_countdowns():
+    """The countdown list. Each change is saved at once and synced like the other settings."""
+    if mw.col is None:
+        return
+    items = countdowns.events(config().get(countdowns.CONFIG_KEY))
+    names = sorted(deck.name for deck in mw.col.decks.all_names_and_ids(include_filtered=False))
+    today = countdowns.anki_today(datetime.now(), home._day_start_hour())
+
+    def save(value):
+        save_config({countdowns.CONFIG_KEY: value})
+        redraw()
+
+    countdowns_ui.CountdownsDialog(mw, items, names, today, save).exec()
 
 
 def _manage_account(base=None):
@@ -1148,6 +1164,7 @@ mw.form.menuTools.addAction(_tools.menuAction())
 add_action(tr("Today"), lambda: open_page(board.PAGES["today"]))
 add_action(tr("Inbox"), open_inbox, inbox_ui.SHORTCUT)
 add_action(tr("Friends"), home._open_friends)
+add_action(tr("Countdowns"), open_countdowns)
 add_action(tr("Study companion"), lambda: open_companion())
 copies_ui.setup(mw, lambda: client(), lambda: state["companion"], _tools)
 add_action(tr("Website"), open_website, WEBSITE_SHORTCUT)

@@ -379,6 +379,18 @@ def _weekly_card(today, translate):
     return card(translate("Weekly recap"), lines)
 
 
+def countdown_card(today, translate):
+    """The nearest countdown, with the cards a day when a deck is linked."""
+    countdown = today.get("countdown")
+    if not countdown:
+        return ""
+    body = "<div class=aq-deck>%s</div>" % escape(countdown["headline"])
+    if countdown.get("pace"):
+        body += "<div class=aq-note>%s</div>" % escape(countdown["pace"])
+    body += "<button class=aq-goal-edit onclick=\"pycmd('ankiquest:countdowns');return false\">%s</button>" % escape(translate("Edit countdowns"))
+    return card(translate("Countdowns"), body)
+
+
 def counts(deck, translate):
     parts = (
         ("review", translate("%d reviews") % deck["review"]),
@@ -540,7 +552,7 @@ def session_line(today, translate):
 
 
 def panel(profile, place, unread, translate, today, actions=0, flame=moods.Flame.NONE):
-    cards = next_deck(today, translate) + goal_card(today, translate) + quests_card(profile, today, translate) + board_card(today, translate, profile)
+    cards = next_deck(today, translate) + goal_card(today, translate) + countdown_card(today, translate) + quests_card(profile, today, translate) + board_card(today, translate, profile)
     cards += _weekly_card(today, translate)
     moments = ('<button type=button onclick="pycmd(\'ankiquest:moments\')">%s</button>'
                % escape(translate("Your moments (%d)") % today["moments"])) if today.get("moments") else ""
