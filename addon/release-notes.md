@@ -10,6 +10,8 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Sync settings.** Rank and streak notifications, deck markers, session recap, goal celebrations and the review heatmap stay the same on all your devices, Android included. Turn it off under Settings → App and privacy → Sync settings.
 
+**Review heatmap.** Under the streaks, the heatmap says on what share of the days since your first review you studied. Today jumps back to the current day. Collapsing the heatmap hides the calendar and keeps the numbers.
+
 **Conquered cards.** Conquest details count learning days, as on Android.
 
 **Rate and report.** Tools → AnkiQuest ends with Rate AnkiQuest (on AnkiWeb or GitHub), AnkiQuest changelog, which shows these notes, and Report a bug. Settings credits Shigeyuki for Anki-tan.

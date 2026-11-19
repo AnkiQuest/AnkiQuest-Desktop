@@ -45,12 +45,35 @@ class SharedCases(unittest.TestCase):
                 self.assertEqual(expected["longest_streak"], data.longest_streak)
                 self.assertEqual(expected["total_reviews"], data.total_reviews)
                 self.assertEqual(expected["days_studied"], data.days_studied)
+                # This copy of the fixture predates the share; AnkiQuest-Server's has it.
+                if "days_studied_percent" in expected:
+                    self.assertEqual(expected["days_studied_percent"], data.days_studied_percent)
                 self.assertEqual(expected["first_review_date"], first)
                 self.assertAlmostEqual(expected["daily_average"], data.daily_average)
                 self.assertEqual(expected["protected_days"], sorted(day.isoformat() for day in data.protected))
                 self.assertEqual(expected["verdicts"], verdicts)
                 for day, search in expected.get("searches", {}).items():
                     self.assertEqual(search, heatmap.search_for_day(data, date.fromisoformat(day)), day)
+
+
+class StudiedShare(unittest.TestCase):
+    """days_studied_percent, as the cases in AnkiQuest-Server's review_heatmap.json give it."""
+
+    def share(self, today, *studied):
+        return heatmap.summarize(date.fromisoformat(today), {date.fromisoformat(d): 4 for d in studied}, {}).days_studied_percent
+
+    def test_no_reviews_is_zero(self):
+        self.assertEqual(0, self.share("2024-03-01"))
+
+    def test_rounds_down(self):
+        self.assertEqual(66, self.share("2024-03-01", "2024-02-28", "2024-03-01"))
+
+    def test_today_counts_only_once_studied(self):
+        self.assertEqual(100, self.share("2024-03-01", "2024-02-27", "2024-02-28", "2024-02-29"))
+        self.assertEqual(80, self.share("2025-01-04", "2024-12-30", "2024-12-31", "2025-01-01", "2025-01-02"))
+
+    def test_spans_the_leap_day(self):
+        self.assertEqual(7, self.share("2024-03-01", "2024-01-21", "2024-02-28", "2024-02-29"))
 
 
 class Levels(unittest.TestCase):
