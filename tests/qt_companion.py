@@ -133,6 +133,14 @@ class Picker(unittest.TestCase):
         live = patch.dict(companion_unlock.LIVE_CHIBIS, companion_unlock.CHIBIS if chibis is None else chibis, clear=True)
         live.start()
         self.addCleanup(live.stop)
+
+        # Her chibi has only a frozen pose so far; a live one stands in with Anki-tan's art.
+        if chibis is None:
+            path = companion_art.pose_path
+            drawn = patch.object(companion_art, "pose_path", lambda pose: path(pose.replace("anki_tan_chibi_", "anki_tan_", 1)))
+            drawn.start()
+            self.addCleanup(drawn.stop)
+
         self.answer = {"unlocks": unlocks, "progress": {}}
         self.api.companion.return_value = "anki_tan"
         clock = [0]
