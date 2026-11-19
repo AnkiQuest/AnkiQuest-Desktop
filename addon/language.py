@@ -290,7 +290,7 @@ FRENCH = {
     "Study companion": "Compagnon d’étude",
     "No companion": "Aucun compagnon",
     "Choose who cheers you on.": "Choisis qui t’encourage.",
-    "You are 1 tap away from chibi": "Vous êtes à 1 appui de chibi", "You are %d taps away from chibi": "Vous êtes à %d appuis de chibi",
+    "You are 1 tap away from chibi": "Tu es à 1 appui de chibi", "You are %d taps away from chibi": "Tu es à %d appuis de chibi",
     "Reach level %d": "Atteins le niveau %d", "Level %d of %d": "Niveau %d sur %d",
     "Study for %d hours in total": "Étudier %d heures au total", "%d of %d hours": "%d heures sur %d",
     "Could not load your study companion (%s).": "Impossible de charger ton compagnon d’étude (%s).",
@@ -1179,6 +1179,43 @@ PORTUGUESE.update({
     "Manual connection": "Ligação manual",
 })
 
+# Two-factor authentication: the same words as the website and the Android app.
+SPANISH.update({
+    "Authenticator code or recovery code": "Código del autenticador o código de recuperación",
+    "Enter the code from your authenticator app.": "Introduce el código de tu aplicación de autenticación.",
+    "That code is not right.": "Ese código no es correcto.",
+    "Too many wrong codes. Try again in 15 minutes.": "Demasiados códigos incorrectos. Vuelve a intentarlo en 15 minutos.",
+    "Two-factor authentication…": "Verificación en dos pasos…",
+    "Set it up or turn it off on the website.": "Configúrala o desactívala en la web.",
+})
+
+GERMAN.update({
+    "Authenticator code or recovery code": "Code aus der Authenticator-App oder Wiederherstellungscode",
+    "Enter the code from your authenticator app.": "Gib den Code aus deiner Authenticator-App ein.",
+    "That code is not right.": "Dieser Code ist nicht richtig.",
+    "Too many wrong codes. Try again in 15 minutes.": "Zu viele falsche Codes. Versuche es in 15 Minuten erneut.",
+    "Two-factor authentication…": "Zwei-Faktor-Authentifizierung…",
+    "Set it up or turn it off on the website.": "Richte sie auf der Website ein oder schalte sie aus.",
+})
+
+FRENCH.update({
+    "Authenticator code or recovery code": "Code de l'application d'authentification ou code de secours",
+    "Enter the code from your authenticator app.": "Saisis le code de ton application d'authentification.",
+    "That code is not right.": "Ce code n'est pas correct.",
+    "Too many wrong codes. Try again in 15 minutes.": "Trop de codes incorrects. Réessaie dans 15 minutes.",
+    "Two-factor authentication…": "Authentification à deux facteurs…",
+    "Set it up or turn it off on the website.": "Configure-la ou désactive-la sur le site.",
+})
+
+PORTUGUESE.update({
+    "Authenticator code or recovery code": "Código da aplicação de autenticação ou código de recuperação",
+    "Enter the code from your authenticator app.": "Introduz o código da tua aplicação de autenticação.",
+    "That code is not right.": "Esse código não está certo.",
+    "Too many wrong codes. Try again in 15 minutes.": "Demasiados códigos errados. Tenta novamente daqui a 15 minutos.",
+    "Two-factor authentication…": "Autenticação de dois fatores…",
+    "Set it up or turn it off on the website.": "Configura-a ou desativa-a no site.",
+})
+
 SPANISH.update({"Sign out": "Cerrar sesión"})
 GERMAN.update({"Sign out": "Abmelden"})
 FRENCH.update({"Sign out": "Se déconnecter"})
@@ -1575,13 +1612,13 @@ GERMAN.update({
 })
 FRENCH.update({
     "Global": "Mondial", "Leaderboard scope": "Groupe du classement",
-    "you, not shown to others": "vous, invisible pour les autres",
+    "you, not shown to others": "toi, invisible pour les autres",
     "Place": "Place", "Level": "Niveau", "Streak": "Série",
     "Hidden players": "Joueurs masqués", "Hide for me": "Masquer pour moi", "Show again": "Afficher à nouveau",
     "Loading leaderboard…": "Chargement du classement…",
     "Could not load the leaderboard (%s).": "Impossible de charger le classement (%s).",
     "No uploaded players on this board yet.": "Aucun joueur n’a encore envoyé de données pour ce classement.",
-    "Hidden only from your Global board. Select a player to show them again.": "Masqués uniquement dans votre classement mondial. Sélectionnez un joueur pour l’afficher à nouveau.",
+    "Hidden only from your Global board. Select a player to show them again.": "Masqués uniquement dans ton classement mondial. Sélectionne un joueur pour l’afficher à nouveau.",
     "Saving…": "Enregistrement…", "Could not save this choice (%s).": "Impossible d’enregistrer ce choix (%s).",
 })
 PORTUGUESE.update({
@@ -1763,8 +1800,8 @@ FRENCH.update({
     "Join group": "Rejoindre le groupe",
     "Invitation link copied.": "Lien d’invitation copié.",
     "%s · %d members": "%s · %d membres",
-    "Use an invitation from this server.": "Utilisez une invitation de ce serveur.",
-    "Enter a group invitation link or code.": "Saisissez un lien ou un code d’invitation au groupe.",
+    "Use an invitation from this server.": "Utilise une invitation de ce serveur.",
+    "Enter a group invitation link or code.": "Saisis un lien ou un code d’invitation au groupe.",
     "Could not complete this action (%s).": "Impossible d’effectuer cette action (%s).",
     "Invite friend": "Inviter un ami",
     "Not this week": "Pas cette semaine",
@@ -1783,7 +1820,7 @@ FRENCH.update({
     "Duration in days": "Durée en jours",
     "Start after everyone accepts": "Commencer quand tout le monde accepte",
     "Invite friends": "Inviter des amis",
-    "Choose between 1 and 30 friends.": "Choisissez entre 1 et 30 amis.",
+    "Choose between 1 and 30 friends.": "Choisis entre 1 et 30 amis.",
     "View friend goal": "Voir l’objectif entre amis",
     "reviews": "révisions",
     "study days": "jours d’étude",
@@ -1979,31 +2016,35 @@ PORTUGUESE.update({
 # Native moment recipients; wording matches Android's share sheet.
 SPANISH.update({
     "Search friends and groups": "Buscar amigos y grupos", "All friends": "Todos los amigos",
-    "Retry": "Reintentar",
+    "No friend or group has that name.": "Ningún amigo ni grupo se llama así.",
     "Add a note (optional)": "Añadir una nota (opcional)", "More apps…": "Más aplicaciones…",
     "Add friends in AnkiQuest to send them your moments.": "Añade amigos en AnkiQuest para enviarles tus momentos.",
-    "Invite a friend": "Invitar a un amigo", "Couldn't load friends (%s).": "No se pudieron cargar los amigos (%s).",
+    "Invite a friend": "Invitar a un amigo",
+    "Couldn't load your friends. Check your connection, or share with another app.": "No se pudieron cargar tus amigos. Revisa tu conexión o compártelo con otra aplicación.",
 })
 GERMAN.update({
     "Search friends and groups": "Freunde und Gruppen suchen", "All friends": "Alle Freunde",
-    "Retry": "Erneut versuchen",
+    "No friend or group has that name.": "Kein Freund und keine Gruppe heißt so.",
     "Add a note (optional)": "Nachricht hinzufügen (optional)", "More apps…": "Weitere Apps…",
     "Add friends in AnkiQuest to send them your moments.": "Füge Freunde in AnkiQuest hinzu, um deine Momente mit ihnen zu teilen.",
-    "Invite a friend": "Freund einladen", "Couldn't load friends (%s).": "Freunde konnten nicht geladen werden (%s).",
+    "Invite a friend": "Freund einladen",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Deine Freunde konnten nicht geladen werden. Prüfe deine Verbindung oder teile mit einer anderen App.",
 })
 FRENCH.update({
     "Search friends and groups": "Chercher des amis et des groupes", "All friends": "Tous les amis",
-    "Retry": "Réessayer",
+    "No friend or group has that name.": "Aucun ami ni groupe ne porte ce nom.",
     "Add a note (optional)": "Ajouter un message (facultatif)", "More apps…": "Autres applis…",
     "Add friends in AnkiQuest to send them your moments.": "Ajoute des amis dans AnkiQuest pour leur envoyer tes moments.",
-    "Invite a friend": "Inviter un ami", "Couldn't load friends (%s).": "Impossible de charger les amis (%s).",
+    "Invite a friend": "Inviter un ami",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Impossible de charger tes amis. Vérifie ta connexion ou partage avec une autre appli.",
 })
 PORTUGUESE.update({
     "Search friends and groups": "Procurar amigos e grupos", "All friends": "Todos os amigos",
-    "Retry": "Tentar novamente",
+    "No friend or group has that name.": "Nenhum amigo ou grupo tem esse nome.",
     "Add a note (optional)": "Adicionar uma nota (opcional)", "More apps…": "Mais apps…",
     "Add friends in AnkiQuest to send them your moments.": "Adiciona amigos no AnkiQuest para lhes enviares os teus momentos.",
-    "Invite a friend": "Convidar um amigo", "Couldn't load friends (%s).": "Não foi possível carregar os amigos (%s).",
+    "Invite a friend": "Convidar um amigo",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Não foi possível carregar os teus amigos. Verifica a ligação ou partilha com outra app.",
 })
 
 # Shared settings, moments and sharing wording; see tests/fixtures/desktop-wording.json.

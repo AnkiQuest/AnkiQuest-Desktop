@@ -23,7 +23,6 @@ REACHED_KEY = "ankiquestGoalReported"
 SETUP_SHOWN = "goal_setup_shown"
 STREAK_MINUTES_KEY = "ankiquestStreakMinutes"
 CELEBRATED_KEY = "ankiquestGoalCelebrated"
-PERIOD_KEY = "ankiquestBoardPeriod"
 SESSION_KEY = "ankiquestLastStudySession"
 BOARD_MS = 5 * 60 * 1000
 BOARD_RETRY_MS = 30_000
@@ -772,6 +771,13 @@ def move_to_main_address(api, main):
             addon().state["companion_account"] = account(there)
 
     mw.taskman.run_in_background(lambda: there.devices() if _owns_request(_Job.MOVE, request) else None, done)
+
+
+def server_has(api, feature):
+    """Whether the player's server is known to name `feature` at /api/capabilities. False until
+    the answer, loaded when the profile opens, is in."""
+    known = local["capabilities"]
+    return known is not None and known[0] == api.base and feature in known[1]
 
 
 def server_celebrates_goal(api):

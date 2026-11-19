@@ -26,7 +26,7 @@ class Boards(unittest.TestCase):
         rows = example("leaderboard_global")
         rows[1]["rank"] = 12
         self.api.leaderboard.return_value = rows
-        self.mw.pm.profile[self.home.PERIOD_KEY] = "day"
+        self.mw.pm.profile[self.home.board_data._OLD_PERIOD] = "day"
         found = self.home.board_view(self.api, {"_day_status": "met"})
         self.assertEqual([(1, 107), (12, 20)], [(place, row["xp"]) for place, row, _ in found["rows"]])
         self.api.leaderboard.assert_called_once_with(period="day", scope="friends")
