@@ -12,8 +12,8 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Sync settings.** Rank and streak notifications, deck markers, session recap, goal celebrations and the review heatmap stay the same on all your devices, Android included. Turn it off under Settings → App and privacy → Sync settings.
 
-**Conquered cards.** Conquest details count learning days, as on Android.
+**Conquered cards.** Conquest details count learning days, as on Android. A lapse counts only when you pressed Again: the add-on sends your review history once more, with the button pressed, to a server that stores it.
 
 **Rate and report.** Tools → AnkiQuest ends with Rate AnkiQuest (on AnkiWeb or GitHub), AnkiQuest changelog, which shows these notes, and Report a bug. Settings credits Shigeyuki for Anki-tan.
 
-Study uploads contain review history (card id, timestamp, previous and new interval, time taken and review type) and deck progress, never card content.
+Study uploads contain review history (card id, timestamp, previous and new interval, time taken, review type and the button pressed) and deck progress, never card content.

@@ -96,7 +96,7 @@ fn source(folder: &TempDir, files: &[&str]) -> PathBuf {
 
 #[test]
 fn github_conflicts_with_ankiweb() {
-    let manifest = real_manifest(Channel::GitHub);
+    let manifest = real_manifest(Channel::GitHub(Updates::GitHub));
     assert_eq!(json!(["414948448"]), manifest["conflicts"]);
     assert_eq!(json!("ankiquest"), manifest["package"]);
 }
@@ -122,6 +122,7 @@ fn local_state_is_excluded() {
         "art/__pycache__/cached.pyc",
         ".hidden.json",
         "debug.log",
+        "build.json",
     ];
     let source = source(&folder, &files);
     let output = folder.path().join("addon.ankiaddon");
@@ -130,15 +131,16 @@ fn local_state_is_excluded() {
         nightly: 2,
         commit: "abcdef0123456789".to_owned(),
     };
-    build(&source, &output, &version, Channel::GitHub).unwrap();
+    build(&source, &output, &version, Channel::GitHub(Updates::GitHub)).unwrap();
     let first = fs::read(&output).unwrap();
     let members = members(&first);
 
-    // Sorted names, only packaged formats, plus the two written files.
+    // Sorted names, only packaged formats, plus the three written files.
     let names: Vec<&str> = members.iter().map(|m| m.name.as_str()).collect();
     let expected = [
         "__init__.py",
         "art/aki.png",
+        "build.json",
         "config.md",
         "manifest.json",
         "version.json",
@@ -157,7 +159,7 @@ fn local_state_is_excluded() {
     assert_eq!(expected, installed);
 
     // The same input gives the same bytes.
-    build(&source, &output, &version, Channel::GitHub).unwrap();
+    build(&source, &output, &version, Channel::GitHub(Updates::GitHub)).unwrap();
     assert_eq!(first, fs::read(&output).unwrap());
 }
 
@@ -165,7 +167,7 @@ fn local_state_is_excluded() {
 fn manifest_keeps_python_layout() {
     let folder = TempDir::new().unwrap();
     let source = source(&folder, &["__init__.py"]);
-    let bytes = manifest(&source, &release_13(), Channel::GitHub).unwrap();
+    let bytes = manifest(&source, &release_13(), Channel::GitHub(Updates::GitHub)).unwrap();
     let expected = "{\n  \"package\": \"ankiquest\",\n  \"name\": \"AnkiQuest\",\n  \
 \"min_point_version\": 231000,\n  \"human_version\": \"addon-13\",\n  \"conflicts\": [\n    \
 \"414948448\"\n  ]\n}";
@@ -177,7 +179,13 @@ fn entry_point_is_required() {
     let folder = TempDir::new().unwrap();
     let source = source(&folder, &["config.md"]);
     let output = folder.path().join("addon.ankiaddon");
-    let error = build(&source, &output, &release_13(), Channel::GitHub).unwrap_err();
+    let error = build(
+        &source,
+        &output,
+        &release_13(),
+        Channel::GitHub(Updates::GitHub),
+    )
+    .unwrap_err();
     assert_eq!("Missing add-on entry point", error);
 }
 
@@ -188,7 +196,13 @@ fn symlinks_are_refused() {
     let source = source(&folder, &["__init__.py"]);
     std::os::unix::fs::symlink("/etc/hostname", source.join("linked.py")).unwrap();
     let output = folder.path().join("addon.ankiaddon");
-    let error = build(&source, &output, &release_13(), Channel::GitHub).unwrap_err();
+    let error = build(
+        &source,
+        &output,
+        &release_13(),
+        Channel::GitHub(Updates::GitHub),
+    )
+    .unwrap_err();
     assert_eq!("An add-on archive cannot include symbolic links", error);
 }
 
@@ -239,12 +253,63 @@ fn flags_are_parsed() {
     .to_vec();
     let args = parse(&args).unwrap();
     assert!(matches!(args.channel, Channel::AnkiWeb));
+    assert!(matches!(args.channel.updates(), Updates::None));
     assert!(matches!(args.source, Source::Tag(ref tag) if tag == "addon-3"));
     assert_eq!(PathBuf::from("a.zip"), args.output);
     assert!(parse(&[]).is_err());
     assert!(parse(&["--output".to_owned()]).is_err());
     let unknown = ["--output", "a", "--x", "y"].map(String::from);
     assert!(parse(&unknown).is_err());
+}
+
+/// The channel that `flags` (after `--output a`) choose.
+fn channel_of(flags: &[&str]) -> Result<Channel, String> {
+    let args: Vec<String> = ["--output", "a"]
+        .iter()
+        .chain(flags)
+        .map(|flag| (*flag).to_owned())
+        .collect();
+    parse(&args).map(|args| args.channel)
+}
+
+#[test]
+fn updates_are_off_unless_asked_for() {
+    assert!(matches!(
+        channel_of(&[]),
+        Ok(Channel::GitHub(Updates::None))
+    ));
+    let github = channel_of(&["--updates", "github"]);
+    assert!(matches!(github, Ok(Channel::GitHub(Updates::GitHub))));
+    let none = channel_of(&["--updates", "none"]);
+    assert!(matches!(none, Ok(Channel::GitHub(Updates::None))));
+    assert!(channel_of(&["--updates", "nightly"]).is_err());
+}
+
+#[test]
+fn ankiweb_never_updates_itself() {
+    assert!(matches!(channel_of(&["--ankiweb"]), Ok(Channel::AnkiWeb)));
+    let none = channel_of(&["--updates", "none", "--ankiweb"]);
+    assert!(matches!(none, Ok(Channel::AnkiWeb)));
+    assert!(channel_of(&["--ankiweb", "--updates", "github"]).is_err());
+    assert!(channel_of(&["--updates", "github", "--ankiweb"]).is_err());
+}
+
+#[test]
+fn archive_names_its_update_source() {
+    let folder = TempDir::new().unwrap();
+    let source = source(&folder, &["__init__.py"]);
+    let output = folder.path().join("addon.ankiaddon");
+    let cases = [
+        (Channel::GitHub(Updates::GitHub), "github"),
+        (Channel::GitHub(Updates::None), "none"),
+        (Channel::AnkiWeb, "none"),
+    ];
+    for (channel, expected) in cases {
+        build(&source, &output, &release_13(), channel).unwrap();
+        let members = members(&fs::read(&output).unwrap());
+        let written = String::from_utf8(member(&members, "build.json").to_vec()).unwrap();
+        assert_eq!(format!("{{\n  \"updates\": \"{expected}\"\n}}"), written);
+    }
 }
 
 #[test]

@@ -57,13 +57,20 @@ class Choices(unittest.TestCase):
         features = {"share_moments"}
         api = SimpleNamespace(user="hill", capabilities=lambda: features,
                               _request=Mock(return_value={"friends": [], "groups": []}))
-        self.assertIsNone(model._load(api, {"place": 2}, []))
+        with self.assertRaises(model.Outdated):
+            model._load(api, {"place": 2}, [])
         api._request.assert_not_called()
         features.add("share_place")
         self.assertEqual((), model._load(api, {"place": 2}, []))
         api._request.assert_called_once()
         features.remove("share_moments")
-        self.assertIsNone(model._load(api, {"place": 2}, []))
+        with self.assertRaises(model.Outdated):
+            model._load(api, {"place": 2}, [])
+
+    def test_a_win_without_a_reference_offers_only_the_exports(self):
+        api = SimpleNamespace(user="hill", capabilities=Mock(), _request=Mock())
+        self.assertIsNone(model._load(api, {"title": "Level 4!"}, []))
+        api.capabilities.assert_not_called()
 
     def test_shared_order_and_group_membership(self):
         for case in CASES["order"]:

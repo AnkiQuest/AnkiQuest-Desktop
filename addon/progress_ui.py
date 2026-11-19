@@ -1,12 +1,11 @@
 """Year/tab -> scoped background read -> table; stale and closed replies do nothing."""
 from enum import Enum, auto
-from http import HTTPStatus
 
 import time
 
 from aqt.qt import QBrush, QColor, QComboBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QPushButton, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, Qt
 
-from . import heatmap_ui, progress_data, share_ui, study_time, today
+from . import heatmap_ui, inbox, progress_data, share_ui, study_time, today
 from .client import offset_west_min
 from .language import tr
 from .progress_data import _Section
@@ -207,8 +206,7 @@ class _Progress:
             try:
                 data = future.result()
             except Exception as error:
-                message = tr("This server does not support this view yet. Open the website or try again later.") if getattr(error, "status", None) == HTTPStatus.NOT_FOUND else tr("Could not load progress (%s).") % str(error)
-                self._statuses[section].setText(message)
+                self._statuses[section].setText(inbox.failure("Could not load progress (%s).", error))
                 return
             self._statuses[section].clear()
             if section is _Section.HISTORY:

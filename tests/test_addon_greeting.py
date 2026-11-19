@@ -1,9 +1,5 @@
 """Aki's greeting on the first profile open: once per computer, after Anki's own dialogs."""
 
-import os
-from pathlib import Path
-import subprocess
-import sys
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
@@ -12,16 +8,6 @@ import test_deck_completion as addon_fixture
 
 # More rounds than any flow here queues; reaching it means a retry never stops.
 DRAIN_LIMIT = 50
-
-
-class GreetingDialog(unittest.TestCase):
-    def test_the_dialog_with_real_qt(self):
-        result = subprocess.run(
-            [sys.executable, str(Path(__file__).with_name("qt_greeting.py"))],
-            env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-            capture_output=True, text=True, timeout=60,
-        )
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 class GreetingFlow(unittest.TestCase):

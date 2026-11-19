@@ -1,15 +1,13 @@
 """Read-only progress, with out-of-order replies and real Qt controls."""
-from concurrent.futures import Future
-from copy import deepcopy
 from http import HTTPStatus
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCoreApplication, QEvent, QGridLayout, QPushButton, QToolButton, QWidget
+from aqt.qt import QCoreApplication, QEvent, QGridLayout, QPushButton, QToolButton, QWidget
 from addon_loader import load_in_package
+from qt_support import app, finish, main_window, queue
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("progress_qt", "progress_ui")
 ui.tr = lambda text: text
 
@@ -17,9 +15,7 @@ ui.tr = lambda text: text
 class Progress(unittest.TestCase):
     def setUp(self):
         self.paths, self.tasks = [], []
-        self.mw = QWidget()
-        self.mw.pm = SimpleNamespace(profile={})
-        self.mw.taskman = SimpleNamespace(run_in_background=lambda work, done: self.tasks.append((work, done)))
+        self.mw = main_window(queue(self.tasks))
         self.api = SimpleNamespace(base="https://quest.test", user="sam", token="secret", configured=True, _request=self.request)
         self.addon = SimpleNamespace(mw=self.mw, client=lambda: self.api, open_page=Mock())
         self.window = ui._Progress(self.addon)
@@ -41,14 +37,7 @@ class Progress(unittest.TestCase):
         ]}
 
     def finish(self, index=0, error=None):
-        work, done = self.tasks.pop(index)
-        future = Future()
-        if error:
-            future.set_exception(error)
-        else:
-            future.set_result(deepcopy(work()))
-        done(future)
-        app.processEvents()
+        finish(self.tasks, index, error)
 
     def test_reads_history_and_records_with_distinct_day_states(self):
         self.finish()
@@ -80,9 +69,9 @@ class Progress(unittest.TestCase):
         self.window._dialog.close()
         self.finish()
 
-    def test_an_older_server_has_a_clear_fallback_and_retry(self):
+    def test_an_older_server_asks_for_an_update_and_keeps_retry(self):
         self.finish(error=SimpleServerError(HTTPStatus.NOT_FOUND))
-        self.assertIn("does not support", self.window._statuses[ui._Section.HISTORY].text())
+        self.assertEqual(load_in_package("progress_qt", "client").OUTDATED, self.window._statuses[ui._Section.HISTORY].text())
         self.assertTrue(self.window._retry[ui._Section.HISTORY].isEnabled())
         button = next(b for b in self.window._dialog.findChildren(QPushButton) if b.text() == "Open website")
         button.click()
