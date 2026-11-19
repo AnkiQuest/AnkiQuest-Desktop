@@ -169,7 +169,7 @@ state = {
     "settings_synced_at": 0.0,
 }
 
-mw.addonManager.setWebExports(__name__, r"((aki|ankilope)_face|art/(aki|ankilope)_[a-z0-9_]+)\.png")
+mw.addonManager.setWebExports(__name__, r"((aki|ankilope|anki_tan)_face|art/(aki|ankilope|anki_tan)_[a-z0-9_]+)\.png")
 
 
 def config():

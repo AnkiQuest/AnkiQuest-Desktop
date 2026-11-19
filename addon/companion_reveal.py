@@ -10,7 +10,7 @@ from enum import Enum, auto
 from . import moments, moods
 
 # Companions without art yet, as tests/fixtures/companion_unlock.json names them.
-ANKI_TAN, ANKI_TAN_CHIBI, LEECH_TAN = "anki_tan", "anki_tan_chibi", "leech_tan"
+ANKI_TAN_CHIBI, LEECH_TAN = "anki_tan_chibi", "leech_tan"
 
 
 class Motion(Enum):
@@ -52,7 +52,7 @@ BEAMS = {
     moods.AKI: Beam.WHITE,
     moods.ANKILOPE_ID: Beam.BLUE,
     moods.COW: Beam.PURPLE,
-    ANKI_TAN: Beam.GOLD,
+    moods.ANKI_TAN: Beam.GOLD,
     LEECH_TAN: Beam.GOLD,
     ANKI_TAN_CHIBI: Beam.RAINBOW,
 }

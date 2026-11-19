@@ -39,6 +39,7 @@ jobs:
             addon/art/
             addon/aki_face.png
             addon/ankilope_face.png
+            addon/anki_tan_face.png
             crates/xtask/art-exports.json
             assets/retired/
             art-exports/
