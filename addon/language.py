@@ -520,7 +520,7 @@ def _current():
     return current_lang or "en"
 
 
-def _plural(one, other, count, translate=tr):
+def plural(one, other, count, translate=tr):
     # Nonnegative integer counts: French uses "one" for 0 and 1. The pt table is pt-PT.
     singular = count in (0, 1) if language_code(_current()) == "fr" else count == 1
     return translate(one if singular else other)
