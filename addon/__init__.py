@@ -37,7 +37,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, deck_names, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, deck_names, help_ui, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -1140,6 +1140,7 @@ copies_ui.setup(mw, lambda: client(), lambda: state["companion"], _tools)
 add_action(tr("Website"), open_website, WEBSITE_SHORTCUT)
 add_action(tr("Settings"), open_settings)
 add_action(tr("Check for updates"), lambda: check_updates(quiet=False))
+help_ui.setup(mw, _tools)
 
 
 gui_hooks.reviewer_did_answer_card.append(on_answer)
