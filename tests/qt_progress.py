@@ -16,7 +16,7 @@ class Progress(unittest.TestCase):
     def setUp(self):
         self.paths, self.tasks = [], []
         self.mw = main_window(queue(self.tasks))
-        self.api = SimpleNamespace(base="https://quest.test", user="sam", token="secret", _request=self.request)
+        self.api = SimpleNamespace(base="https://quest.test", user="sam", token="secret", configured=True, _request=self.request)
         self.addon = SimpleNamespace(mw=self.mw, client=lambda: self.api, open_page=Mock())
         self.window = ui._Progress(self.addon)
         self.window._dialog.show()
@@ -84,6 +84,82 @@ class Progress(unittest.TestCase):
         self.finish()
         self.assertEqual(2, self.window._tables[ui._Section.HISTORY].topLevelItemCount())
         self.assertEqual(1, self.window._tables[ui._Section.RECORDS].topLevelItemCount())
+
+    def test_study_time_reads_the_collection_without_the_server(self):
+        self.finish()
+        self.finish()
+        reads = []
+        rows = [(20_000, 90_000), (20_005, 3_000_000)]
+        db = SimpleNamespace(all=lambda sql, *args: reads.append(args) or rows)
+        self.mw.col = SimpleNamespace(db=db, get_config=lambda key, default: 4)
+        with patch.object(ui.time, "time", return_value=20_005 * 86_400 + 43_200), patch.object(ui, "offset_west_min", return_value=0):
+            self.window._load_study()
+            self.finish()
+        values = [self.window._study_values[label].text() for label in ui._STUDY_ROWS]
+        self.assertEqual(["50 min", "50 min", "51 min", "51 min", "25 min"], values)
+        self.assertEqual("", self.window._study_status.text())
+        self.assertEqual([(14_400_000, 20_006 * 86_400_000 + 14_400_000)], reads)
+        self.assertEqual(["/api/study/sam", "/api/records"], self.paths)
+
+    def test_study_time_says_when_the_collection_has_no_reviews(self):
+        self.mw.col = SimpleNamespace(db=SimpleNamespace(all=lambda sql, *args: []), get_config=lambda key, default: 4)
+        self.window._load_study()
+        self.finish(len(self.tasks) - 1)
+        self.assertEqual("No reviews in this collection yet.", self.window._study_status.text())
+        self.assertEqual("0 min", self.window._study_values["Total"].text())
+
+    def study_read(self):
+        """Starts a study time read of a collection with 50 minutes today."""
+        rows = [(20_005, 3_000_000)]
+        self.mw.col = SimpleNamespace(db=SimpleNamespace(all=lambda sql, *args: rows), get_config=lambda key, default: 4)
+        with patch.object(ui.time, "time", return_value=20_005 * 86_400 + 43_200), patch.object(ui, "offset_west_min", return_value=0):
+            self.window._load_study()
+        return len(self.tasks) - 1
+
+    def test_a_study_time_read_from_the_previous_profile_is_ignored(self):
+        read = self.study_read()
+        self.mw.pm.profile = {}
+        self.finish(read)
+        self.assertEqual("", self.window._study_values["Total"].text())
+
+    def test_a_study_time_read_from_the_previous_collection_is_ignored(self):
+        read = self.study_read()
+        self.mw.col = SimpleNamespace(db=SimpleNamespace(all=lambda sql, *args: []), get_config=lambda key, default: 4)
+        self.finish(read)
+        self.assertEqual("", self.window._study_values["Total"].text())
+
+    def test_no_study_time_read_starts_for_another_profile(self):
+        self.mw.pm.profile = {}
+        before = len(self.tasks)
+        self.study_read()
+        self.assertEqual(before, len(self.tasks))
+
+    def test_a_study_time_read_after_closing_changes_nothing(self):
+        read = self.study_read()
+        self.window._close()
+        app.processEvents()
+        # The window's labels are gone; the late reply must not touch them.
+        self.finish(read)
+        self.assertIs(ui._Phase.CLOSED, self.window._phase)
+
+    def test_progress_opens_on_study_time_without_an_account(self):
+        home = load_in_package("progress_qt", "home")
+        signed_out = SimpleNamespace(base="", user="", token="", configured=False, _request=self.request)
+        addon = SimpleNamespace(mw=self.mw, client=lambda: signed_out, open_page=Mock(), open_account=Mock())
+        self.paths.clear()
+        with patch.object(home, "addon", return_value=addon):
+            home.open_progress()
+            opened = home.local["progress"]
+            try:
+                addon.open_account.assert_not_called()
+                self.assertIsNotNone(opened)
+                self.assertEqual("Study time", opened._tabs.tabText(opened._tabs.currentIndex()))
+                # History and Records need an account: they say so and read nothing.
+                self.assertEqual([], self.paths)
+                for section in (ui._Section.HISTORY, ui._Section.RECORDS):
+                    self.assertFalse(opened._tabs.isTabEnabled(opened._tab_index[section]))
+            finally:
+                home._close_progress()
 
     def test_browse_has_a_live_entry_and_removes_it_when_closed(self):
         home = load_in_package("progress_qt", "home")

@@ -4,6 +4,8 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Today.** The streak flame stays unlit until today counts. Friends' study stays hidden until you upload your first reviews.
 
+**Study time.** Progress has a Study time tab: today, this week, this month, total and per study day, from this collection's review history, uploaded or not.
+
 **Sharing.** Choose who gets each moment you share, including older moments, completed decks and your weekly place. Share pictures are drawn on your computer, so they work offline, and streak pictures change with the length of the streak. When Undo of a share fails, the add-on says so.
 
 **Deck alerts.** The inbox names the sender of each deck alert and has "Stop deck alerts from" for each sender. The daily deck-sharing prompt is separate from the other notifications.
