@@ -7,7 +7,7 @@ from enum import Enum
 from http import HTTPStatus
 from ipaddress import ip_address, ip_network
 
-DEFAULT_SERVER = "https://ankiquest.rationality-munich.com"
+DEFAULT_SERVER = "https://ankiquest.org"
 
 _LOCAL_NETWORKS = tuple(
     ip_network(cidr)
