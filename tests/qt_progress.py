@@ -20,7 +20,7 @@ class Progress(unittest.TestCase):
         self.mw = QWidget()
         self.mw.pm = SimpleNamespace(profile={})
         self.mw.taskman = SimpleNamespace(run_in_background=lambda work, done: self.tasks.append((work, done)))
-        self.api = SimpleNamespace(base="https://quest.test", user="sam", token="secret", _request=self.request)
+        self.api = SimpleNamespace(base="https://quest.test", user="sam", token="secret", configured=True, _request=self.request)
         self.addon = SimpleNamespace(mw=self.mw, client=lambda: self.api, open_page=Mock())
         self.window = ui._Progress(self.addon)
         self.window._dialog.show()

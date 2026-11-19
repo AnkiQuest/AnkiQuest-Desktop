@@ -17,6 +17,12 @@ class _Phase(Enum):
     CLOSED = auto()
 
 
+class _Access(Enum):
+    """What the window may show: everything for a signed-in account, else only the local tab."""
+    ACCOUNT = auto()
+    LOCAL = auto()
+
+
 _COLOURS = {"met": ("#dff1c9", "#254a12"), "short": ("#e9d8a6", "#534619"),
             "frozen": ("#def0ff", "#16527b"), "skipped": ("#def0ff", "#16527b")}
 _RECORD_NAMES = {"hour": "Best hour", "day": "Best day", "week": "Best week", "month": "Best month",
@@ -35,14 +41,16 @@ class _Progress:
         self._addon, self._api = addon, addon.client()
         self._profile = addon.mw.pm.profile
         self._phase = _Phase.OPEN
+        self._access = _Access.ACCOUNT if self._api.configured else _Access.LOCAL
         self._requests, self._tables, self._statuses, self._retry = {}, {}, {}, {}
         self._dialog = QDialog(addon.mw)
         self._dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self._dialog.setWindowTitle(tr("Progress"))
         self._dialog.finished.connect(self._finished)
         root = QVBoxLayout(self._dialog)
-        tabs = QTabWidget()
+        tabs = self._tabs = QTabWidget()
         root.addWidget(tabs, 1)
+        self._tab_index = {}
         self._years = QComboBox()
         self._years.currentIndexChanged.connect(self._year_changed)
         for section, title, headers in (
@@ -69,11 +77,12 @@ class _Progress:
             table.setAlternatingRowColors(True)
             table.setUniformRowHeights(True)
             layout.addWidget(table, 1)
-            tabs.addTab(page, title)
-        tabs.addTab(self._study_page(), tr("Study time"))
+            self._tab_index[section] = tabs.addTab(page, title)
+        study = tabs.addTab(self._study_page(), tr("Study time"))
         actions = QHBoxLayout()
         website = QPushButton(tr("Open website"))
         website.clicked.connect(lambda: addon.open_page("/history") if self._owns() else self._close())
+        website.setVisible(self._access is _Access.ACCOUNT)
         actions.addWidget(website)
         actions.addStretch(1)
         done = QPushButton(tr("Done"))
@@ -82,9 +91,16 @@ class _Progress:
         root.addLayout(actions)
         screen = self._dialog.screen().availableGeometry()
         self._dialog.resize(min(760, screen.width()), min(640, screen.height()))
+        self._load_study()
+
+        # Without an account only Study time, which reads this computer's collection, is open.
+        if self._access is _Access.LOCAL:
+            for index in self._tab_index.values():
+                tabs.setTabEnabled(index, False)
+            tabs.setCurrentIndex(study)
+            return
         self._load(_Section.HISTORY)
         self._load(_Section.RECORDS)
-        self._load_study()
 
     def _study_page(self):
         """Study time from this computer's collection; it needs no account or upload."""
@@ -109,6 +125,10 @@ class _Progress:
         return page
 
     def _load_study(self):
+        # A read belongs to this window's profile and the collection open when it started.
+        if not self._owns_profile():
+            self._close()
+            return
         col = getattr(self._addon.mw, "col", None)
         if col is None:
             return
@@ -119,7 +139,12 @@ class _Progress:
         rollover = int(col.get_config("rollover", 4))
 
         def done(future):
-            if self._phase is not _Phase.OPEN or self._requests.get(_STUDY) is not request:
+            if not self._owns_profile() or self._requests.get(_STUDY) is not request:
+                return
+            if getattr(self._addon.mw, "col", None) is not col:
+                self._requests.pop(_STUDY)
+                self._study_retry.setEnabled(True)
+                self._study_status.clear()
                 return
             self._requests.pop(_STUDY)
             self._study_retry.setEnabled(True)
@@ -144,14 +169,26 @@ class _Progress:
         if self._phase is _Phase.OPEN:
             self._dialog.close()
 
+    def _owns_profile(self):
+        return self._phase is _Phase.OPEN and self._profile is self._addon.mw.pm.profile
+
     def _owns(self):
-        return self._phase is _Phase.OPEN and self._profile is self._addon.mw.pm.profile and share_ui.same_account(self._api, self._addon.client())
+        return self._owns_profile() and share_ui.same_account(self._api, self._addon.client())
+
+    def current(self):
+        """Whether this window still shows what it opened for: its account, or, without one, its
+        profile while still signed out."""
+        if self._access is _Access.LOCAL:
+            return self._owns_profile() and not self._addon.client().configured
+        return self._owns()
 
     def _year_changed(self, _index):
         if self._years.currentData() is not None:
             self._load(_Section.HISTORY)
 
     def _load(self, section):
+        if self._access is _Access.LOCAL:
+            return
         if not self._owns():
             self._close()
             return

@@ -842,11 +842,9 @@ def continue_studying():
 
 
 def open_progress():
-    if not addon().client().configured:
-        addon().open_account()
-        return
+    # Study time needs no account; History and Records say they need one.
     opened = local["progress"]
-    if opened is not None and opened._owns():
+    if opened is not None and opened.current():
         opened._dialog.raise_()
         opened._dialog.activateWindow()
         return
