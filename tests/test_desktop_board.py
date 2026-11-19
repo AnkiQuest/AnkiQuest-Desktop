@@ -24,6 +24,13 @@ FIXTURES = json.loads((Path(__file__).resolve().parent / "fixtures" / "clients.j
 
 
 class SummaryTests(unittest.TestCase):
+    def test_avatar_initials_keep_the_names_case(self):
+        # hill writes his name in lowercase; his avatar shows "h", as on the website and Android.
+        self.assertEqual("h", board.initial("hill"))
+        self.assertEqual("C", board.initial("Cerro"))
+        self.assertEqual("?", board.initial(""))
+        self.assertIn(">h</span>", board.avatar("hill"))
+
     def test_local_mascot_art_is_decorative_and_does_not_add_a_link(self):
         html = board.html({}, mascot='/_addons/example/aki_face.png')
         self.assertIn('src="/_addons/example/aki_face.png"', html)

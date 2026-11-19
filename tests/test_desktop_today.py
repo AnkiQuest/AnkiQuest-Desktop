@@ -602,7 +602,7 @@ class HomeTests(unittest.TestCase):
         self.settings = {"url": "https://example.test", "user": "hill", "token": "secret"}
         self.api = SimpleNamespace(
             configured=True, base="https://example.test", user="hill", name="hill", token="secret",
-            leaderboard=Mock(return_value=[{"user": "hill", "display": "Hill", "xp_total": 5, "periods": {"week": 5}}]),
+            leaderboard=Mock(return_value=[{"user": "hill", "display": "hill", "xp_total": 5, "periods": {"week": 5}}]),
             rank=Mock(return_value={"order": ["hill"]}), notifications=Mock(return_value=[]),
             profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0}}),
             companion=Mock(return_value="ankilope"),

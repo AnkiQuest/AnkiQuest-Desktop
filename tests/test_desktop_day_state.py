@@ -58,7 +58,7 @@ class DayState(unittest.TestCase):
         self.pending_day()
         self.addon.state["profile"]["day_ends_at"] = int(time.time() * 1000) - 1
         self.mw.pm.profile[self.home.board_data._OLD_PERIOD] = "day"
-        self.api.leaderboard.return_value = [{"user": "hill", "display": "Hill", "periods": {"day": 200}}]
+        self.api.leaderboard.return_value = [{"user": "hill", "display": "hill", "periods": {"day": 200}}]
         html = self.render().stats
         self.assertIn("— XP", html)
         self.assertNotIn("200 XP", html)
