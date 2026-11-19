@@ -17,6 +17,7 @@ from aqt.utils import openLink, tooltip
 
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
 from . import companion_ui, greeting, inbox_ui, moments, moments_ui, moods, reveal_ui, share, sharing
+from . import password_prompt, password_ui
 from .inbox import CHALLENGE_ROUTE
 from .language import _plural, tr
 from .client import (
@@ -38,7 +39,6 @@ from .client import (
 )
 from .deck_completion import deck_snapshots, study_day
 from . import copies_ui, deck_names, preferences, preview, review_offsets, settings_sync
-from . import password_prompt, password_ui
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
