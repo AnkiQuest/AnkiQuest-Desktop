@@ -23,7 +23,6 @@ REACHED_KEY = "ankiquestGoalReported"
 SETUP_SHOWN = "goal_setup_shown"
 STREAK_MINUTES_KEY = "ankiquestStreakMinutes"
 CELEBRATED_KEY = "ankiquestGoalCelebrated"
-PERIOD_KEY = "ankiquestBoardPeriod"
 SESSION_KEY = "ankiquestLastStudySession"
 BOARD_MS = 5 * 60 * 1000
 BOARD_RETRY_MS = 30_000
