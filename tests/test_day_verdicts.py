@@ -26,15 +26,16 @@ class DayVerdicts(unittest.TestCase):
                 self.assertEqual(expected, found)
                 self.assertEqual(expected["met"] and case["server"]["streak_state"] != "studied", waiting)
 
-    def test_an_older_server_without_day_bounds_counts_no_unsent_review(self):
+    def test_a_profile_without_day_bounds_has_no_verdict(self):
+        # Servers older than the add-on leave out today's starts_at and time_ms.
         server = {
             "streak": 3, "streak_state": "pending", "day_ends_at": 2_000, "last_review_id": 100,
-            "today": {"reviews": 1, "minutes": 4, "streak_minutes": 5},
+            "today": {"reviews": 1, "minutes": 4, "streak_minutes": 5, "starts_at": 0, "time_ms": 240_000},
         }
-        found = day_verdict.verdict(server, [{"id": 500, "time_ms": 600_000}], 1_000)
-        self.assertEqual((False, 240_000, 0, "pending", 3), (found["met"], found["time_ms"], found["unsent"], found["streak_state"], found["streak"]))
-        reached = dict(server, today=dict(server["today"], minutes=5))
-        self.assertTrue(day_verdict.verdict(reached, [], 1_000)["met"])
+        self.assertIsNotNone(day_verdict.verdict(server, [], 1_000))
+        for missing in ("starts_at", "time_ms"):
+            today = {key: value for key, value in server["today"].items() if key != missing}
+            self.assertIsNone(day_verdict.verdict(dict(server, today=today), [], 1_000), missing)
 
     def test_no_profile_says_nothing(self):
         self.assertIsNone(day_verdict.verdict(None, [], 1_000))

@@ -30,6 +30,11 @@ PACKAGER = ROOT / "tools/package-addon/Cargo.toml"
 app = QApplication.instance() or QApplication([])
 
 
+def setUpModule():
+    # Compile the packager once, before the tests that install its archives.
+    subprocess.run(["cargo", "build", "--quiet", "--locked", "--manifest-path", str(PACKAGER)], cwd=ROOT, check=True)
+
+
 def package(archive, *flags):
     """Builds the release 13 archive with the repository's packager (tools/package-addon)."""
     command = ["cargo", "run", "--quiet", "--locked", "--manifest-path", str(PACKAGER), "--",

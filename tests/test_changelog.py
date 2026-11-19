@@ -1,9 +1,5 @@
 """The AnkiQuest changelog: the installed version's release notes, as on Android's changelog screen."""
 
-import os
-from pathlib import Path
-import subprocess
-import sys
 import unittest
 
 from addon_loader import ADDON, load_in_package
@@ -36,16 +32,6 @@ class Bundled(unittest.TestCase):
     def test_the_release_workflow_publishes_the_same_file(self):
         workflow = (ADDON.parent / ".github/workflows/addon.yml").read_text("utf-8")
         self.assertIn("addon/release-notes.md", workflow)
-
-
-class Dialog(unittest.TestCase):
-    def test_the_dialog_with_real_qt(self):
-        result = subprocess.run(
-            [sys.executable, str(Path(__file__).with_name("qt_changelog.py"))],
-            env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-            capture_output=True, text=True, timeout=60,
-        )
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

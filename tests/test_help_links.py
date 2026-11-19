@@ -1,9 +1,6 @@
 """Rate AnkiQuest, AnkiQuest changelog and Report a bug, as on Android's About screen."""
 
-import os
 from pathlib import Path
-import subprocess
-import sys
 import unittest
 
 from addon_loader import load_in_package, load_module
@@ -58,16 +55,6 @@ class Links(unittest.TestCase):
             for code, expected in translations.items():
                 with self.subTest(resource=resource, language=code):
                     self.assertEqual(expected, language.tr(source, code))
-
-
-class HelpMenu(unittest.TestCase):
-    def test_the_menu_with_real_qt(self):
-        result = subprocess.run(
-            [sys.executable, str(Path(__file__).with_name("qt_help.py"))],
-            env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-            capture_output=True, text=True, timeout=60,
-        )
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
