@@ -1,8 +1,12 @@
 """Countdowns follow tests/fixtures/countdowns.json, which the Android app tests against too."""
 
 import json
+import os
+import subprocess
+import sys
 import unittest
 from datetime import datetime
+from pathlib import Path
 
 from addon_loader import ADDON, load_in_package
 
@@ -154,3 +158,13 @@ class TodayCard(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Forms(unittest.TestCase):
+    """The real Qt forms run in their own process, away from tests that replace Anki."""
+
+    def test_the_forms_keep_the_list_one_the_server_stores(self):
+        result = subprocess.run([sys.executable, str(Path(__file__).with_name("qt_countdowns.py"))],
+                                env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
+                                capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)

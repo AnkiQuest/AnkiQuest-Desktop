@@ -74,3 +74,57 @@ class SignOut(_HeldTasks):
         self.finish()
 
         self.api.upload.assert_not_called()
+
+
+class PrivateCountdowns(_HeldTasks):
+    """Countdowns belong to the account they were saved on, not to the computer."""
+
+    EXAM = [{"name": "Spanish exam", "date": "2026-12-01", "deck": None}]
+
+    def setUp(self):
+        super().setUp()
+        self.addon.refresh_shared_decks = Mock()
+        self.addon.poll = Mock()
+        self.home.sync_goal = Mock()
+        self.addon.client = lambda: self.addon.Client(
+            self.settings.get("url", ""), self.settings.get("user", ""), self.settings.get("token", "")
+        )
+        self.synced = []
+        self.addon.sync_settings = lambda: self.synced.append(dict(self.settings))
+        self.settings["countdowns"] = self.EXAM
+        self.settings[self.addon.settings_sync.CHANGED_KEY] = {"countdowns": 7}
+
+    def switch(self, user, token):
+        self.addon._save_account_config({"url": "https://example.test" if user else "", "user": user, "token": token})
+
+    def countdowns(self):
+        return self.settings["countdowns"], self.settings[self.addon.settings_sync.CHANGED_KEY]["countdowns"]
+
+    def test_another_account_starts_without_the_first_accounts_countdowns(self):
+        self.switch("second", "second-token")
+
+        # The sync for the new account sees no list, so it sends nothing of the first's.
+        self.assertEqual(([], 0), self.countdowns())
+        self.assertEqual([], self.synced[-1]["countdowns"])
+
+    def test_returning_brings_each_accounts_countdowns_back(self):
+        self.switch("second", "second-token")
+        driving = [{"name": "Driving test", "date": "2027-01-10", "deck": None}]
+        self.settings["countdowns"] = driving
+        self.settings[self.addon.settings_sync.CHANGED_KEY]["countdowns"] = 9
+
+        self.switch("hill", "secret")
+        self.assertEqual((self.EXAM, 7), self.countdowns())
+        self.switch("second", "second-token")
+        self.assertEqual((driving, 9), self.countdowns())
+
+    def test_signing_out_and_back_in_keeps_the_countdowns(self):
+        self.switch("", "")
+        self.assertEqual(([], 0), self.countdowns())
+
+        self.switch("hill", "new-token")
+        self.assertEqual((self.EXAM, 7), self.countdowns())
+
+    def test_a_new_token_for_the_same_account_keeps_its_countdowns(self):
+        self.switch("hill", "new-token")
+        self.assertEqual((self.EXAM, 7), self.countdowns())
