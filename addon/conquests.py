@@ -142,10 +142,6 @@ def _save(api, at, label):
     return api._request(_path(api, at) + "/label", method="DELETE")
 
 
-def _tell(api, at):
-    return api._request(_path(api, at) + "/tell", {})
-
-
 def _undo(api, at):
     return api._request(_path(api, at) + "/tell", method="DELETE")
 
