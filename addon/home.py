@@ -954,10 +954,10 @@ def install(module):
     gui_hooks.state_did_change.append(on_state_change)
     gui_hooks.profile_did_open.append(on_profile_open)
     gui_hooks.sync_did_finish.append(refresh_board)
-    for name, callback in (("top_toolbar_did_init_links", _toolbar_links), ("top_toolbar_did_redraw", _refresh_toolbar),
-                           ("profile_will_close", _close_progress), ("profile_will_close", _clear_boards),
-                           ("profile_will_close", _close_friends), ("profile_will_close", _clear_requests),
-                           ("browser_will_show", _browser_entry)):
-        hook = getattr(gui_hooks, name, None)
-        if hook is not None:
-            hook.append(callback)
+    gui_hooks.top_toolbar_did_init_links.append(_toolbar_links)
+    gui_hooks.top_toolbar_did_redraw.append(_refresh_toolbar)
+    gui_hooks.profile_will_close.append(_close_progress)
+    gui_hooks.profile_will_close.append(_clear_boards)
+    gui_hooks.profile_will_close.append(_close_friends)
+    gui_hooks.profile_will_close.append(_clear_requests)
+    gui_hooks.browser_will_show.append(_browser_entry)

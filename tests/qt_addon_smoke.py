@@ -81,6 +81,30 @@ class RealAnki(unittest.TestCase):
             finally:
                 col.close()
 
+    def test_deck_copy_exports_and_imports(self):
+        # copies.export_deck picks the exporter by Anki version; the package must import with its note.
+        from anki.import_export_pb2 import ImportAnkiPackageRequest
+        from addon_loader import load_in_package
+        copies = load_in_package("aq_copies_smoke", "copies")
+        with tempfile.TemporaryDirectory(prefix="ankiquest-copy-") as folder:
+            col = Collection(str(Path(folder) / "sender.anki2"))
+            try:
+                deck_id = col.decks.id("Spanish::Verbs")
+                note = col.new_note(col.models.by_name("Basic"))
+                note["Front"], note["Back"] = "hablar", "to speak"
+                col.add_note(note, deck_id)
+                package = str(Path(folder) / "copy.apkg")
+                copies.export_deck(col, deck_id, package)
+            finally:
+                col.close()
+            col = Collection(str(Path(folder) / "recipient.anki2"))
+            try:
+                col.import_anki_package(ImportAnkiPackageRequest(package_path=package))
+                self.assertEqual(["hablar"], [col.get_note(nid)["Front"] for nid in col.find_notes("")])
+                self.assertIsNotNone(col.decks.by_name("Spanish::Verbs"))
+            finally:
+                col.close()
+
     def test_channel_conflicts_and_repeat_updates_preserve_enabled_state(self):
         with tempfile.TemporaryDirectory(prefix="ankiquest-channels-") as folder:
             pm = ProfileManager(Path(folder))
