@@ -905,7 +905,7 @@ GERMAN.update({
     "Pick a goal for each day. The estimates come from your own cards and answer times.": "Wähle ein Ziel für jeden Tag. Die Schätzungen beruhen auf deinen eigenen Karten und Antwortzeiten.",
     "Clear my backlog in a number of days": "Meinen Rückstand in einigen Tagen aufholen",
     "Clear my backlog in": "Rückstand aufholen in", "%d days": "%d Tagen", "days": "Tagen", "Custom": "Eigene Angabe",
-    "Not now": "Nicht jetzt",
+    "Not now": "Jetzt nicht",
     "Cards today: about %d": "Karten heute: etwa %d",
     "Time today: about %d minute": "Zeit heute: etwa %d Minute",
     "Time today: about %d minutes": "Zeit heute: etwa %d Minuten",
@@ -2249,6 +2249,51 @@ PORTUGUESE.update({
     "You aren't getting deck alerts from %s.": "Já não recebes avisos de baralhos de %s.",
     "%s no longer shares deck alerts.": "%s já não partilha avisos de baralhos.",
     "Couldn't change deck alerts. Try again.": "Não foi possível alterar os avisos de baralhos. Tenta novamente.",
+})
+# The token-only password card and its form (password_prompt), worded as the app's.
+SPANISH.update({
+    "Set a password": "Crear una contraseña",
+    "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working.":
+        "Solo inicias sesión con un token. Crea una contraseña para poder iniciar sesión en un dispositivo nuevo o si el token deja de funcionar.",
+    "New password": "Contraseña nueva",
+    "New password again": "Repite la contraseña nueva",
+    "Use 10 to 256 characters.": "Usa de 10 a 256 caracteres.",
+    "The two passwords are not the same.": "Las dos contraseñas no coinciden.",
+    "Password saved.": "Contraseña guardada.",
+    "Could not save your password (%s).": "No se pudo guardar tu contraseña (%s).",
+})
+GERMAN.update({
+    "Set a password": "Passwort festlegen",
+    "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working.":
+        "Du meldest dich nur mit einem Token an. Lege ein Passwort fest, damit du dich auch auf einem neuen Gerät anmelden kannst oder wenn das Token nicht mehr funktioniert.",
+    "New password": "Neues Passwort",
+    "New password again": "Neues Passwort wiederholen",
+    "Use 10 to 256 characters.": "Verwende 10 bis 256 Zeichen.",
+    "The two passwords are not the same.": "Die beiden Passwörter stimmen nicht überein.",
+    "Password saved.": "Passwort gespeichert.",
+    "Could not save your password (%s).": "Dein Passwort konnte nicht gespeichert werden (%s).",
+})
+FRENCH.update({
+    "Set a password": "Définir un mot de passe",
+    "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working.":
+        "Tu te connectes uniquement avec un jeton. Définis un mot de passe pour pouvoir te connecter sur un nouvel appareil ou si le jeton ne fonctionne plus.",
+    "New password": "Nouveau mot de passe",
+    "New password again": "Répète le nouveau mot de passe",
+    "Use 10 to 256 characters.": "Utilise de 10 à 256 caractères.",
+    "The two passwords are not the same.": "Les deux mots de passe ne sont pas identiques.",
+    "Password saved.": "Mot de passe enregistré.",
+    "Could not save your password (%s).": "Impossible d’enregistrer ton mot de passe (%s).",
+})
+PORTUGUESE.update({
+    "Set a password": "Definir palavra-passe",
+    "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working.":
+        "Só inicias sessão com um token. Define uma palavra-passe para poderes iniciar sessão num dispositivo novo ou se o token deixar de funcionar.",
+    "New password": "Nova palavra-passe",
+    "New password again": "Repete a nova palavra-passe",
+    "Use 10 to 256 characters.": "Usa 10 a 256 caracteres.",
+    "The two passwords are not the same.": "As duas palavras-passe não são iguais.",
+    "Password saved.": "Palavra-passe guardada.",
+    "Could not save your password (%s).": "Não foi possível guardar a tua palavra-passe (%s).",
 })
 
 # Match Android's deck-copy form title and action.

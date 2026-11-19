@@ -527,6 +527,7 @@ def today_view(deck_browser, chosen_companion):
         "session_day": _session_day(mw.pm.profile[SESSION_KEY]) if session else None,
         "moments": addon()._moments._count(),
         "weekly": _weekly_recap(),
+        "password": addon().state.get("password_prompt") == account(api),
     }
 
 
