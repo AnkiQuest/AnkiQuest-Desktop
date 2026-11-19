@@ -6,10 +6,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from addon_loader import load_module
+from addon_loader import load_in_package
 import test_deck_completion as fixture
 
-updates = load_module("ankiquest_updates", "updates.py")
+updates = load_in_package("ankiquest_updates", "updates")
 
 
 def release(tag, prerelease=False, draft=False, package=True):
@@ -31,7 +31,7 @@ class UpdateTests(unittest.TestCase):
         meta = json.dumps({"release": 10, "nightly": 3, "commit": "1a2b3c4d5e"}).encode()
         nightly = updates.latest_nightly(lambda url, timeout=20: meta)
         self.assertEqual((nightly["release"], nightly["nightly"]), (10, 3))
-        self.assertEqual(nightly["url"], "https://github.com/AnkiQuest/ankiquest/releases/download/addon-nightly/ankiquest.ankiaddon")
+        self.assertEqual(nightly["url"], "https://github.com/AnkiQuest/AnkiQuest-Desktop/releases/download/addon-nightly/ankiquest.ankiaddon")
         self.assertIsNone(updates.latest_nightly(lambda url, timeout=20: b'{"release": 0, "nightly": 1}'))
 
     def test_newer_orders_release_then_nightly_and_never_updates_a_local_copy(self):
