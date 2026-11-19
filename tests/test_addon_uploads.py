@@ -119,6 +119,18 @@ class UploadBatches(HeldTasks):
     def add_reviews(self, ids, ease=3):
         self.db.executemany("insert into revlog values (?, 1, ?, 1, 5000, 1, 3)", ((i, ease) for i in ids))
 
+    def test_each_review_carries_the_button_pressed(self):
+        # The server counts a lapse by Again (ease 1), not by a negative interval, which
+        # forks with intraday review intervals also log on a pass.
+        self.add_reviews([self.now + 1], ease=1)
+        self.add_reviews([self.now + 2], ease=3)
+
+        self.addon.refresh(False)
+        self.finish()
+
+        reviews = self.api.upload.call_args.args[0]
+        self.assertEqual([1, 3], [row.get("ease") for row in reviews])
+
     def test_undo_sends_only_reviews_absent_from_the_revlog(self):
         present, undone = self.now - 2, self.now - 1
         self.profile[self.addon.RECENT_KEY] = [present, undone]
