@@ -137,7 +137,7 @@ def _today(companion, mood, streak):
     box = QWidget()
     layout = QVBoxLayout(box)
     layout.setContentsMargins(0, 0, 0, 0)
-    pose = moods.companion_pose(companion, moods.streak_pose(mood, streak))
+    pose = moods.mood_pose(companion, mood, streak)
     if pose is not None:
         art = _Art()
         art.setObjectName(TODAY_ART)

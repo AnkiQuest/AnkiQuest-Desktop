@@ -112,7 +112,7 @@ def _pose(item, companion):
     if item["topic"] == "streak":
         return moods.companion_pose(companion, "aki_streak_milestone")
     if item["topic"] == "secured":
-        return moods.companion_pose(companion, moods.streak_pose(moods.FIRE, item.get("streak") or 1))
+        return moods.mood_pose(companion, moods.FIRE, item.get("streak") or 1)
     return moods.art(companion, _POSES.get(item["topic"], moods.CELEBRATE))
 
 

@@ -45,7 +45,7 @@ class MoodLine(unittest.TestCase):
         self.assertEqual(moods.SAD, moods.today_mood(view, moods.Goal.OPEN))
         self.assertEqual(moods.FIRE, moods.today_mood(view, moods.Goal.REACHED))
         self.assertEqual(moods.MOOD_UNKNOWN, moods.today_mood(None, moods.Goal.OPEN))
-        self.assertEqual(moods.streak_pose(moods.SAD, 64), moods.today_pose(view, moods.Goal.OPEN))
+        self.assertEqual(moods.streak_pose(moods.SAD, 64), moods.today_pose("aki", view, moods.Goal.OPEN))
 
 
 class TodayPanel(unittest.TestCase):
