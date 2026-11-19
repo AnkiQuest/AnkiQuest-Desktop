@@ -624,7 +624,7 @@ class HomeTests(unittest.TestCase):
             configured=True, base="https://example.test", user="hill", name="hill", token="secret",
             leaderboard=Mock(return_value=[{"user": "hill", "display": "hill", "xp_total": 5, "periods": {"week": 5}}]),
             rank=Mock(return_value={"order": ["hill"]}), notifications=Mock(return_value=[]),
-            profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0}}),
+            profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0, "starts_at": 0, "time_ms": 0}}),
             companion=Mock(return_value="ankilope"),
             deck_settings=Mock(return_value={}), server_info=Mock(return_value=(frozenset(), None)),
             _request=Mock(return_value={"items": [], "unread_count": 0, "action_count": 0}),

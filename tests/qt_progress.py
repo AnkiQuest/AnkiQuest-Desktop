@@ -80,9 +80,9 @@ class Progress(unittest.TestCase):
         self.window._dialog.close()
         self.finish()
 
-    def test_an_older_server_has_a_clear_fallback_and_retry(self):
+    def test_an_older_server_asks_for_an_update_and_keeps_retry(self):
         self.finish(error=SimpleServerError(HTTPStatus.NOT_FOUND))
-        self.assertIn("does not support", self.window._statuses[ui._Section.HISTORY].text())
+        self.assertEqual(load_in_package("progress_qt", "client").OUTDATED, self.window._statuses[ui._Section.HISTORY].text())
         self.assertTrue(self.window._retry[ui._Section.HISTORY].isEnabled())
         button = next(b for b in self.window._dialog.findChildren(QPushButton) if b.text() == "Open website")
         button.click()

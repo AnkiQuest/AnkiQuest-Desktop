@@ -23,6 +23,7 @@ if os.environ.get("ANKIQUEST_QT_FONT"):
         if fallback:
             QFontDatabase.addApplicationFont(fallback)
 ui = load_in_package("share_qt", "moment_share_ui")
+OUTDATED = load_in_package("share_qt", "client").OUTDATED
 ui.tr = ui.share_ui.tr = lambda text: text
 picture = load_in_package("share_picture_qt", "share_picture")
 STREAKS = json.loads((Path(__file__).parent / "fixtures/streak_moods.json").read_text("utf-8"))
@@ -281,14 +282,19 @@ class ShareWindow(unittest.TestCase):
         window._invite.click()
         self.assertIn("Study with me on AnkiQuest", app.clipboard().text())
 
-    def test_older_servers_keep_legacy_actions_without_fetching_recipients(self):
+    def test_an_older_server_asks_for_an_update(self):
         self.features = set()
         window = self.open()
-        self.assertIs(window._phase, ui._Phase.LEGACY)
+        self.assertIs(window._phase, ui._Phase.ERROR)
         self.assertEqual([], self.requests)
-        self.assertTrue(window._legacy.isVisible())
-        window._legacy.click()
-        self.assertEqual({"win": 17, "to": "friends"}, self.requests[-1][1])
+        self.assertEqual(OUTDATED, window._status.text())
+
+    def test_a_win_without_a_reference_shows_only_the_exports(self):
+        self.win = {"title": "Level 4!", "body": "", "kind": "level"}
+        window = self.open()
+        self.assertIs(window._phase, ui._Phase.EXPORT_ONLY)
+        self.assertEqual([], self.requests)
+        self.assertTrue(window._exports.isVisible())
 
     def test_more_apps_reuses_the_preview_without_publishing(self):
         window = self.open()

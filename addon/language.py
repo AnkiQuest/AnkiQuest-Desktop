@@ -1427,7 +1427,8 @@ SPANISH.update({
     "State": "Estado",
     "Streak freezes off": "Congelaciones de racha desactivadas",
     "Study time": "Tiempo de estudio",
-    "This server does not support this view yet. Open the website or try again later.": "Este servidor aún no admite esta vista. Abre el sitio web o inténtalo más tarde.",
+    # Android's aq_server_outdated.
+    "This needs a newer AnkiQuest server. Ask whoever runs yours to update it.": "Esto necesita un servidor de AnkiQuest más reciente. Pide a quien gestiona el tuyo que lo actualice.",
     "Value": "Valor",
     "Weekly recap": "Resumen semanal",
     "Year": "Año",
@@ -1466,7 +1467,8 @@ GERMAN.update({
     "State": "Status",
     "Streak freezes off": "Streak-Freezes ausgeschaltet",
     "Study time": "Lernzeit",
-    "This server does not support this view yet. Open the website or try again later.": "Dieser Server unterstützt diese Ansicht noch nicht. Öffne die Website oder versuche es später erneut.",
+    # Android's aq_server_outdated.
+    "This needs a newer AnkiQuest server. Ask whoever runs yours to update it.": "Dafür braucht es einen neueren AnkiQuest-Server. Bitte die Person, die deinen betreibt, ihn zu aktualisieren.",
     "Value": "Wert",
     "Weekly recap": "Wochenrückblick",
     "Year": "Jahr",
@@ -1505,7 +1507,8 @@ FRENCH.update({
     "State": "État",
     "Streak freezes off": "Gels de série désactivés",
     "Study time": "Temps d’étude",
-    "This server does not support this view yet. Open the website or try again later.": "Ce serveur ne propose pas encore cette vue. Ouvre le site web ou réessaie plus tard.",
+    # Android's aq_server_outdated.
+    "This needs a newer AnkiQuest server. Ask whoever runs yours to update it.": "Il faut pour cela un serveur AnkiQuest plus récent. Demande à la personne qui gère le tien de le mettre à jour.",
     "Value": "Valeur",
     "Weekly recap": "Bilan de la semaine",
     "Year": "Année",
@@ -1544,7 +1547,8 @@ PORTUGUESE.update({
     "State": "Estado",
     "Streak freezes off": "Congelamentos de sequência desativados",
     "Study time": "Tempo de estudo",
-    "This server does not support this view yet. Open the website or try again later.": "Este servidor ainda não suporta esta vista. Abre o site ou tenta novamente mais tarde.",
+    # Android's aq_server_outdated.
+    "This needs a newer AnkiQuest server. Ask whoever runs yours to update it.": "Isto precisa de um servidor AnkiQuest mais recente. Pede a quem gere o teu que o atualize.",
     "Value": "Valor",
     "Weekly recap": "Resumo semanal",
     "Year": "Ano",
@@ -1947,8 +1951,6 @@ SPANISH.update({
     "%d awaiting action": "%d requieren una acción", "%d unread · %d awaiting action": "%d sin leer · %d requieren una acción",
     "All activity": "Toda la actividad", "Deck completions": "Mazos terminados", "Load more": "Cargar más",
     "Messages": "Mensajes", "Needs action": "Requiere una acción", "Study updates": "Novedades de estudio",
-    "This server provides recent messages without read counts or filters.": "Este servidor ofrece mensajes recientes sin recuentos de lectura ni filtros.",
-    "This server shows all activity without filters.": "Este servidor muestra toda la actividad sin filtros.",
     "Unread only": "Solo sin leer", "View invitation": "Ver invitación",
 })
 GERMAN.update({
@@ -1956,8 +1958,6 @@ GERMAN.update({
     "Could not mark this message read (%s).": "Diese Nachricht konnte nicht als gelesen markiert werden (%s).",
     "All activity": "Alle Aktivitäten", "Deck completions": "Abgeschlossene Stapel", "Load more": "Mehr laden",
     "Messages": "Nachrichten", "Needs action": "Antwort ausstehend", "Study updates": "Lernfortschritte",
-    "This server provides recent messages without read counts or filters.": "Dieser Server liefert aktuelle Nachrichten ohne Lesestatus-Zähler oder Filter.",
-    "This server shows all activity without filters.": "Dieser Server zeigt alle Aktivitäten ohne Filter an.",
     "Unread only": "Nur ungelesene", "View invitation": "Einladung ansehen",
 })
 FRENCH.update({
@@ -1965,8 +1965,6 @@ FRENCH.update({
     "Could not mark this message read (%s).": "Impossible de marquer ce message comme lu (%s).",
     "All activity": "Toute l’activité", "Deck completions": "Paquets terminés", "Load more": "Charger plus",
     "Messages": "Messages", "Needs action": "Réponse attendue", "Study updates": "Progrès d’étude",
-    "This server provides recent messages without read counts or filters.": "Ce serveur fournit les messages récents sans compteurs de lecture ni filtres.",
-    "This server shows all activity without filters.": "Ce serveur affiche toute l’activité sans filtres.",
     "Unread only": "Non lus seulement", "View invitation": "Voir l’invitation",
 })
 PORTUGUESE.update({
@@ -1974,8 +1972,6 @@ PORTUGUESE.update({
     "Could not mark this message read (%s).": "Não foi possível marcar esta mensagem como lida (%s).",
     "All activity": "Toda a atividade", "Deck completions": "Baralhos concluídos", "Load more": "Carregar mais",
     "Messages": "Mensagens", "Needs action": "Precisa de uma ação", "Study updates": "Novidades de estudo",
-    "This server provides recent messages without read counts or filters.": "Este servidor fornece mensagens recentes sem contagens de leitura nem filtros.",
-    "This server shows all activity without filters.": "Este servidor mostra toda a atividade sem filtros.",
     "Unread only": "Apenas por ler", "View invitation": "Ver convite",
 })
 

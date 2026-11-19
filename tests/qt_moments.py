@@ -26,7 +26,7 @@ class Moments(unittest.TestCase):
                       "label": None, "told": False, "friends": 2, "win": 7}
         self.requests, self.tasks = [], []
         self.defer = False
-        self.api = SimpleNamespace(configured=True, base="https://quest.test", user="sam", token="token",
+        self.api = SimpleNamespace(configured=True, base="https://quest.test", user="sam", token="token", capabilities=frozenset,
                                    deck_settings=lambda: {"celebrations": True}, _request=self.request)
         self.mw = QWidget()
         self.mw.state = "review"

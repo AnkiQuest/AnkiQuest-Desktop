@@ -4,7 +4,7 @@ from enum import Enum, auto
 
 from aqt.qt import QColor, QComboBox, QDialog, QGridLayout, QHBoxLayout, QIcon, QLabel, QPainter, QPixmap, QPushButton, QTabWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget, Qt
 
-from . import board, board_data, progress_ui, share_ui
+from . import board, board_data, inbox, progress_ui, share_ui
 from .language import tr
 
 
@@ -136,7 +136,7 @@ class _Window:
             try:
                 self._board = future.result()
             except Exception as error:
-                self._status.setText(tr("Could not load the leaderboard (%s).") % str(error))
+                self._status.setText(inbox.failure("Could not load the leaderboard (%s).", error))
                 return
             self._query = self._board.query
             board_data._remember(self._profile, self._api, self._query)
@@ -218,7 +218,7 @@ class _Window:
             try:
                 data = future.result()
             except Exception as error:
-                self._note(key, tr("Could not load the leaderboard (%s).") % str(error))
+                self._note(key, inbox.failure("Could not load the leaderboard (%s).", error))
                 return
             self._note(key, "")
             if key == "records":

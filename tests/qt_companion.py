@@ -15,13 +15,17 @@ companion_art = load_in_package("companion_qt", "companion_art")
 companion_unlock = load_in_package("companion_qt", "companion_unlock")
 companion_reveal = load_in_package("companion_qt", "companion_reveal")
 share = load_in_package("companion_qt", "share")
+client = load_in_package("companion_qt", "client")
 companion_ui.tr = lambda text: text
 
-UNLOCKS = frozenset([companion_unlock.FEATURE])
 LOCKED = {"unlocks": [], "progress": {
     "ankilope": {"kind": "level", "value": 3, "goal": 30},
     "cow": {"kind": "study_hours", "value": 6, "goal": 10},
 }}
+
+
+class NotFound(Exception):
+    status = 404
 
 
 class Picker(unittest.TestCase):
@@ -29,7 +33,7 @@ class Picker(unittest.TestCase):
         self.answer = LOCKED
         self.api = SimpleNamespace(
             base="https://example.test", user="hill", token="secret", name="hill",
-            capabilities=Mock(return_value=UNLOCKS), companion=Mock(return_value="aki"),
+            companion=Mock(return_value="aki"),
             unlocks=Mock(side_effect=lambda: self.answer), set_companion=Mock(),
             unlock=Mock(side_effect=lambda unlock: self.answer),
         )
@@ -84,15 +88,14 @@ class Picker(unittest.TestCase):
         self.api.set_companion.assert_called_once_with("cow")
         self.assertEqual(["cow"], self.saved)
 
-    def test_a_server_before_milestones_offers_ankilope_and_hides_the_cow(self):
-        self.api.capabilities.return_value = frozenset()
+    def test_an_older_server_asks_for_an_update(self):
+        self.api.unlocks.side_effect = NotFound()
         picker = self.picker()
-        self.assertEqual(["aki", "ankilope", "none"], self.cards(picker))
-        self.assertTrue(self.card(picker, "ankilope").isEnabled())
-        self.api.unlocks.assert_not_called()
+        self.assertEqual(["aki", "none"], self.cards(picker))
+        self.assertEqual(client.OUTDATED, picker._status.text())
 
     def test_the_current_companion_shows_before_the_server_answers(self):
-        self.api.capabilities.side_effect = OSError("offline")
+        self.api.unlocks.side_effect = OSError("offline")
         self.api.companion.return_value = "cow"
         picker = companion_ui.Picker(None, self.mw, self.api, lambda: self.current, "cow", self.saved.append)
         self.assertEqual(["aki", "cow", "none"], self.cards(picker))
