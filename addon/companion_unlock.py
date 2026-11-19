@@ -10,14 +10,8 @@ from enum import Enum, auto
 
 from . import moods
 
-FEATURE = "companion_unlocks"
-
 # Companions earned at a milestone, in the picker's order.
 EARNED = (moods.ANKILOPE_ID, moods.COW)
-
-# Earned companions every player could choose before milestones. A server from then lists no
-# progress, so these stay free there; the others stay hidden until unlocked.
-OFFERED_BEFORE = (moods.ANKILOPE_ID,)
 
 # What each milestone counts, as the fixture names it.
 LEVEL, STUDY_HOURS = "level", "study_hours"
@@ -38,7 +32,7 @@ class Choice(Enum):
     UNLOCKED = auto()
     # Shown greyed with its condition and progress; it cannot be chosen.
     LOCKED = auto()
-    # Secret until earned, or unknown to an older server.
+    # Secret until earned, or not yet answered by the server.
     HIDDEN = auto()
 
 
@@ -79,11 +73,8 @@ def parse(answer):
     return Found(unlocks, progress)
 
 
-def fetch(api, features):
-    """The server's unlocks and progress; nothing unlocked for a server without unlocks. Runs
-    in the background."""
-    if FEATURE not in features:
-        return Found()
+def fetch(api):
+    """The server's unlocks and progress. Runs in the background."""
     return parse(api.unlocks())
 
 
@@ -96,7 +87,7 @@ def choice(companion, found, current):
         return Choice.UNLOCKED
     if found is not None and companion in found.progress:
         return Choice.LOCKED
-    return Choice.FREE if companion in OFFERED_BEFORE and found is not None else Choice.HIDDEN
+    return Choice.HIDDEN
 
 
 def condition(progress, tr):

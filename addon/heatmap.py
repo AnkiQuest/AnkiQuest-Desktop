@@ -75,6 +75,7 @@ class Heatmap:
     days_studied: int
     first_review_date: date
     daily_average: float
+    days_studied_percent: int = 0
     protected: frozenset = frozenset()
     verdicts: dict = field(default_factory=dict)
 
@@ -178,6 +179,17 @@ def _streaks(today, counted, kept):
     return current, longest
 
 
+def _studied_percent(today, history):
+    """Days studied as a share of the days since the first review, in whole percent rounded
+    down, so 100 means every day. Today counts once it has reviews: the share does not drop
+    each morning before you study."""
+    if not history:
+        return 0
+    first = min(history)
+    last = today if today in history else today - timedelta(days=1)
+    return len(history) * 100 // ((last - first).days + 1)
+
+
 def summarize(today, reviews, scheduled, protected=(), verdicts=None):
     history = {day: count for day, count in sorted(reviews.items()) if day <= today and count > 0}
     forecast_end = today + timedelta(days=FORECAST_DAYS)
@@ -205,6 +217,7 @@ def summarize(today, reviews, scheduled, protected=(), verdicts=None):
         days_studied=len(history),
         first_review_date=next(iter(history), None),
         daily_average=total / len(history) if history else 0.0,
+        days_studied_percent=_studied_percent(today, history),
         protected=kept,
         verdicts=judged,
     )

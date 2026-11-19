@@ -1,13 +1,13 @@
-"""Real Qt checks for Aki's greeting, run in a separate process by test_addon_greeting.py."""
+"""Real Qt checks for Aki's greeting, run by test_qt_windows.py."""
 
 import unittest
 
-from aqt.qt import QApplication, QDialog, QLabel, QPushButton, QTimer, Qt
+from aqt.qt import QDialog, QLabel, QPushButton, QTimer, Qt
 
 from addon_loader import load_in_package
+from qt_support import app
 
 
-app = QApplication.instance() or QApplication([])
 greeting = load_in_package("greeting_qt", "greeting")
 greeting.tr = lambda text: text
 

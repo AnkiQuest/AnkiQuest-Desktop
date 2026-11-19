@@ -20,7 +20,7 @@ DELETE_QUERY_SIZE = 500
 UNDO_WINDOW_MS = 2 * 86_400_000
 REVIEW_FILTER = "where id > ? and ease > 0 and type < 4"
 WINDOW_SQL = (
-    "select id, cid, lastIvl, ivl, time, type from revlog "
+    "select id, cid, lastIvl, ivl, time, type, ease from revlog "
     + REVIEW_FILTER + " order by id"
 )
 PENDING_SQL = WINDOW_SQL + " limit %d" % MAX_PENDING
@@ -37,7 +37,7 @@ def offset_west_min():
 
 def rows_to_reviews(rows):
     return [
-        {"id": r[0], "cid": r[1], "last_ivl": r[2], "ivl": r[3], "time_ms": r[4], "kind": r[5]}
+        {"id": r[0], "cid": r[1], "last_ivl": r[2], "ivl": r[3], "time_ms": r[4], "kind": r[5], "ease": r[6]}
         for r in rows
     ]
 
@@ -82,6 +82,23 @@ class ServerError(Exception):
 def second_factor_text(error):
     """The untranslated words for a sign-in held back for its second factor; None for any other refusal."""
     return _SECOND_FACTOR_TEXT.get(error.second_factor)
+
+
+# Android's aq_server_outdated (AnkiQuest-Android#408). The add-on needs the current
+# AnkiQuest-Server; an endpoint or feature it lacks gets this one message instead of a fallback.
+OUTDATED = "Update your AnkiQuest server"
+
+
+class Outdated(Exception):
+    """The server lacks an endpoint or feature this add-on needs."""
+
+    def __init__(self):
+        super().__init__(OUTDATED)
+
+
+def outdated(error):
+    """Whether `error` means the server is older than this add-on: Outdated, or a 404 from an endpoint."""
+    return isinstance(error, Outdated) or getattr(error, "status", None) == HTTPStatus.NOT_FOUND
 
 
 class InsecureServer(ValueError):
@@ -249,6 +266,16 @@ class Client:
         """This player's signed-in devices; answers only with a working token, so it also checks one."""
         return self._request("/api/devices/" + self.user)
 
+    def sign_in_methods(self):
+        """How this player signs in: `sign_in` (absent from older servers), `password`, `providers`."""
+        return self._request("/api/sign-in/" + self.user)
+
+    def set_password(self, password):
+        """Sets a first password with this device's token alone, for a player whose `sign_in` is
+        `token_only`; answers as sign_in_methods."""
+        body = {"action": "password", "password": password, "sign_out_others": False}
+        return self._request("/api/sign-in/" + self.user, body)
+
     def leaderboard(self, period="week", scope="friends"):
         """The server's order and XP for this board and period."""
         return self._request("/api/leaderboard?" + urllib.parse.urlencode({"period": period, "scope": scope}))
@@ -270,9 +297,6 @@ class Client:
         """Asks for a chibi the player found; the server grants it once its base is unlocked and
         answers as `unlocks`."""
         return self._request("/api/unlocks/" + self.user, {"unlock": unlock})
-
-    def notifications(self):
-        return self._request("/api/notifications/" + self.user)
 
     def deck_settings(self):
         return self._request("/api/decks/" + self.user)
