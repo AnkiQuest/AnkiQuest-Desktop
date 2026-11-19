@@ -2,8 +2,8 @@
 
 Two rules live here. `streak_mood` picks the pose, and `flame` the flame beside the streak
 number, from today's streak, as the phone's AnkiquestMood does, pinned by
-tests/fixtures/streak_moods.json. `mood` picks the encouraging line from the collection's due
-cards.
+tests/fixtures/streak_moods.json. `mood` picks the encouraging line from that streak mood
+first, then from the collection's due cards, as the phone's AnkiquestAki.message does.
 """
 
 from enum import Enum, auto
@@ -23,6 +23,14 @@ MESSAGES = {
 
 COMPANION_WELCOME = "One card, one small step."
 
+# A streak waiting for today's study (Android's aki_streak_waiting). It has no pose of its own:
+# the sad streak pose shows. The one-day form names its day, so translations can agree with it.
+WAITING = "waiting"
+WAITING_LINES = (
+    "You haven’t studied today. Your 1-day streak is still waiting.",
+    "You haven’t studied today. Your %d-day streak is still waiting.",
+)
+
 # Today's day verdict, as the fixture names it.
 STUDIED, PROTECTED, SHORT, PENDING, UNKNOWN = "studied", "protected", "short", "pending", "unknown"
 
@@ -35,6 +43,9 @@ STREAK_MOODS = ("unknown", "asleep", "sad", "frozen_1", "frozen_2", "frozen_3", 
 
 MINUTE_MS = 60_000
 _PERCENT = 100
+
+# The moods a freeze kept the streak in.
+_FROZEN = (FROZEN_1, FROZEN_2, FROZEN_3)
 
 # The companion tab's line for each mood, saying why; `%d` is the streak.
 MOOD_LINES = {
@@ -226,21 +237,25 @@ def _reviews_today(profile):
     return int(((profile or {}).get("today") or {}).get("reviews") or 0)
 
 
-def mood(decks_due, focus_due, profile, now_ms):
-    """Today's mood; the collection, not the server, says whether cards are still due.
+def mood(chosen, decks_due, focus_due, profile, now_ms):
+    """Today's line for the streak mood `chosen`; the collection, not the server, says whether
+    cards are still due.
 
     `decks_due` lists every deck's due count, `focus_due` is the next deck's.
     """
-    today = current(profile, now_ms)
-    reviews = _reviews_today(today)
-    state = (today or {}).get("streak_state")
-    if state == "protected" and reviews == 0:
+    # A streak waiting for today, or kept by a freeze, comes before anything about the decks.
+    if chosen == SAD:
+        return WAITING
+    if chosen in _FROZEN:
         return FREEZE
+
+    # Otherwise the decks decide: all done after real study, or cards still due.
+    reviews = _reviews_today(current(profile, now_ms))
     if decks_due and all(due == 0 for due in decks_due) and reviews > 0:
         return CELEBRATE
     if focus_due > 0:
         return REVIEW
-    if state == "studied" and reviews > 0:
+    if chosen == FIRE:
         return STREAK
     return WELCOME
 
@@ -421,11 +436,15 @@ def art(companion, chosen):
     return companion_pose(companion, "aki_" + chosen if chosen in MOODS else "aki_welcome")
 
 
-def message(companion, chosen):
-    """The mood line, or None for a mood without one; the welcome names Aki, so other
-    companions get a plainer one."""
+def message(companion, chosen, streak):
+    """The untranslated line (None while reviewing) and its format values. The welcome
+    names Aki, so other companions get a plainer one."""
     if chosen == REVIEW:
-        return None
+        return None, ()
+    if chosen == WAITING:
+        # A sad streak is at least one day long, so the one-day form is the only singular.
+        one, other = WAITING_LINES
+        return (one, ()) if streak == 1 else (other, (streak,))
     if chosen == WELCOME and companion != AKI:
-        return COMPANION_WELCOME
-    return MESSAGES.get(chosen, MESSAGES[WELCOME])
+        return COMPANION_WELCOME, ()
+    return MESSAGES.get(chosen, MESSAGES[WELCOME]), ()

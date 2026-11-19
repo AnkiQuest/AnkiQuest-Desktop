@@ -1,79 +1,8 @@
-"""Qt pieces of the Today features: the session recap and the Today settings."""
+"""Qt pieces of the Today features: the Today settings."""
 
-from aqt.qt import (
-    QCheckBox,
-    QDialog,
-    QHBoxLayout,
-    QLabel,
-    QPixmap,
-    QPushButton,
-    QVBoxLayout,
-    Qt,
-)
+from aqt.qt import QCheckBox, QLabel
 
 from .language import tr
-
-
-def _mascot(path):
-    image = QLabel()
-    image.setPixmap(QPixmap(path).scaled(
-        112, 112,
-        Qt.AspectRatioMode.KeepAspectRatio,
-        Qt.TransformationMode.SmoothTransformation,
-    ))
-    image.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-    return image
-
-
-def _button(text, dialog, action=None):
-    button = QPushButton(text)
-
-    def clicked():
-        dialog.accept()
-        if action is not None:
-            action()
-
-    button.clicked.connect(clicked)
-    return button
-
-
-def session_dialog(parent, title, text, art, on_continue, on_progress, never_again=None, done_text=None):
-    """A small, non-blocking recap with the companion, Continue and progress buttons."""
-    dialog = QDialog(parent)
-    dialog.setWindowTitle(title)
-    dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-    layout = QVBoxLayout(dialog)
-    if art:
-        layout.addWidget(_mascot(art))
-    heading = QLabel(title)
-    heading.setStyleSheet("font-weight:bold;font-size:15px")
-    heading.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-    layout.addWidget(heading)
-    message = QLabel(text)
-    message.setWordWrap(True)
-    message.setTextFormat(Qt.TextFormat.PlainText)
-    layout.addWidget(message)
-    quiet = None
-    if never_again is not None:
-        quiet = QCheckBox(tr("Don’t show this again"))
-        layout.addWidget(quiet)
-    row = QHBoxLayout()
-    row.addWidget(_button(tr("View progress"), dialog, on_progress))
-    row.addStretch(1)
-    finished = _button(done_text or tr("Done"), dialog)
-    row.addWidget(finished)
-    if on_continue is not None:
-        go = _button(tr("Continue studying"), dialog, on_continue)
-        go.setDefault(True)
-        row.addWidget(go)
-    else:
-        finished.setDefault(True)
-    layout.addLayout(row)
-    if quiet is not None:
-        dialog.finished.connect(lambda _result: never_again() if quiet.isChecked() else None)
-    dialog.setMinimumWidth(360)
-    dialog.show()
-    return dialog
 
 
 def settings_section(layout, config, *, notify_layout=None):
