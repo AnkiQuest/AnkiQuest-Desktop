@@ -43,7 +43,9 @@ class Boards(unittest.TestCase):
             {"user": "cerro", "display": "Cerro", "periods": {"week": 3, "day": 3}, "closing_xp": 12,
              "day_ends_at": now + 600_000},
         ]
-        self.mw.pm.profile[self.home.PERIOD_KEY] = period
+        self.home.board_data._remember(
+            self.mw.pm.profile, self.api, self.home.board_data._Query(period, "friends"),
+        )
         return self.render().stats
 
     def test_weekly_rows_show_xp_counting_for_another_week(self):
