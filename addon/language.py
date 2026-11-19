@@ -2046,31 +2046,35 @@ PORTUGUESE.update({
 # Native moment recipients; wording matches Android's share sheet.
 SPANISH.update({
     "Search friends and groups": "Buscar amigos y grupos", "All friends": "Todos los amigos",
-    "Retry": "Reintentar",
+    "No friend or group has that name.": "Ningún amigo ni grupo se llama así.",
     "Add a note (optional)": "Añadir una nota (opcional)", "More apps…": "Más aplicaciones…",
     "Add friends in AnkiQuest to send them your moments.": "Añade amigos en AnkiQuest para enviarles tus momentos.",
-    "Invite a friend": "Invitar a un amigo", "Couldn't load friends (%s).": "No se pudieron cargar los amigos (%s).",
+    "Invite a friend": "Invitar a un amigo",
+    "Couldn't load your friends. Check your connection, or share with another app.": "No se pudieron cargar tus amigos. Revisa tu conexión o compártelo con otra aplicación.",
 })
 GERMAN.update({
     "Search friends and groups": "Freunde und Gruppen suchen", "All friends": "Alle Freunde",
-    "Retry": "Erneut versuchen",
+    "No friend or group has that name.": "Kein Freund und keine Gruppe heißt so.",
     "Add a note (optional)": "Nachricht hinzufügen (optional)", "More apps…": "Weitere Apps…",
     "Add friends in AnkiQuest to send them your moments.": "Füge Freunde in AnkiQuest hinzu, um deine Momente mit ihnen zu teilen.",
-    "Invite a friend": "Freund einladen", "Couldn't load friends (%s).": "Freunde konnten nicht geladen werden (%s).",
+    "Invite a friend": "Freund einladen",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Deine Freunde konnten nicht geladen werden. Prüfe deine Verbindung oder teile mit einer anderen App.",
 })
 FRENCH.update({
     "Search friends and groups": "Chercher des amis et des groupes", "All friends": "Tous les amis",
-    "Retry": "Réessayer",
+    "No friend or group has that name.": "Aucun ami ni groupe ne porte ce nom.",
     "Add a note (optional)": "Ajouter un message (facultatif)", "More apps…": "Autres applis…",
     "Add friends in AnkiQuest to send them your moments.": "Ajoute des amis dans AnkiQuest pour leur envoyer tes moments.",
-    "Invite a friend": "Inviter un ami", "Couldn't load friends (%s).": "Impossible de charger les amis (%s).",
+    "Invite a friend": "Inviter un ami",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Impossible de charger tes amis. Vérifie ta connexion ou partage avec une autre appli.",
 })
 PORTUGUESE.update({
     "Search friends and groups": "Procurar amigos e grupos", "All friends": "Todos os amigos",
-    "Retry": "Tentar novamente",
+    "No friend or group has that name.": "Nenhum amigo ou grupo tem esse nome.",
     "Add a note (optional)": "Adicionar uma nota (opcional)", "More apps…": "Mais apps…",
     "Add friends in AnkiQuest to send them your moments.": "Adiciona amigos no AnkiQuest para lhes enviares os teus momentos.",
-    "Invite a friend": "Convidar um amigo", "Couldn't load friends (%s).": "Não foi possível carregar os amigos (%s).",
+    "Invite a friend": "Convidar um amigo",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Não foi possível carregar os teus amigos. Verifica a ligação ou partilha com outra app.",
 })
 
 # Shared settings, moments and sharing wording; see tests/fixtures/desktop-wording.json.
