@@ -10,7 +10,9 @@ from enum import Enum, auto
 from . import moments, moods
 
 # Companions without art yet, as tests/fixtures/companion_unlock.json names them.
-ANKI_TAN_CHIBI, LEECH_TAN = "anki_tan_chibi", "leech_tan"
+ANKI_TAN_CHIBI = "anki_tan_chibi"
+QUEST_CHAN, QUEST_CHAN_CHIBI = "quest_chan", "quest_chan_chibi"
+LEECH_KUN = "leech_kun"
 
 
 class Motion(Enum):
@@ -53,8 +55,10 @@ BEAMS = {
     moods.ANKILOPE_ID: Beam.BLUE,
     moods.COW: Beam.PURPLE,
     moods.ANKI_TAN: Beam.GOLD,
-    LEECH_TAN: Beam.GOLD,
     ANKI_TAN_CHIBI: Beam.RAINBOW,
+    QUEST_CHAN: Beam.GOLD,
+    QUEST_CHAN_CHIBI: Beam.RAINBOW,
+    LEECH_KUN: Beam.GOLD,
 }
 
 # How long each animated phase lasts, and the phase after it.

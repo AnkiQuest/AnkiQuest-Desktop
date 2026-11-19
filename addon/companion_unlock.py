@@ -4,8 +4,8 @@ streak.
 The server decides and keeps every unlock; the add-on shows what `GET /api/unlocks/{user}`
 answers. The conditions are defined once in tests/fixtures/companion_unlock.json, which the tests
 check these texts against. A chibi is an Easter egg: tapping its unlocked base's picture by the
-fixture's tap rule (`Egg`) finds it, and the add-on then asks the server for it. Anki-tan's chibi
-has no art yet, so tapping Anki-tan finds nothing yet."""
+fixture's tap rule (`Egg`) finds it, and the add-on then asks the server for it. Anki-tan's and
+Quest-chan's chibis have no art yet, so tapping their bases finds nothing yet."""
 
 from enum import Enum, auto
 
@@ -27,10 +27,10 @@ TAPS = 9
 MAX_GAP_MS = 2000
 
 # Each chibi by its base, the companion whose picture is tapped; the fixture's `requires`.
-CHIBIS = {"anki_tan": "anki_tan_chibi"}
+CHIBIS = {"anki_tan": "anki_tan_chibi", "quest_chan": "quest_chan_chibi"}
 
 # Chibis the fixture lists as `planned`: no art yet, so tapping their base finds nothing.
-PLANNED_CHIBIS = frozenset({"anki_tan_chibi"})
+PLANNED_CHIBIS = frozenset({"anki_tan_chibi", "quest_chan_chibi"})
 
 # The chibis tapping can find now.
 LIVE_CHIBIS = {base: chibi for base, chibi in CHIBIS.items() if chibi not in PLANNED_CHIBIS}
