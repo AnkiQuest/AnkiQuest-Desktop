@@ -210,7 +210,7 @@ class RefreshTests(unittest.TestCase):
         self.api = SimpleNamespace(
             configured=True, base="https://example.test", user="cerro", token="secret", upload=Mock(return_value={})
         )
-        self.pending = [[(101, 1, 1, 3, 1000, 1)]]
+        self.pending = [[(101, 1, 1, 3, 1000, 1, 3)]]
         self.settings = {"url": "https://example.test", "user": "cerro", "token": "secret"}
         self.mw = SimpleNamespace(
             col=SimpleNamespace(get_config=lambda *args: 4, db=SimpleNamespace(all=self.read_rows)),
@@ -298,7 +298,7 @@ class RefreshTests(unittest.TestCase):
         self.assertEqual(self.addon.deck_snapshots.call_args.kwargs, {"only": {"1"}})
 
     def test_every_new_conquest_joins_the_queue_without_replaying_old_ones(self):
-        self.pending = [[(101, 1, 1, 21, 1000, 1), (102, 2, 1, 21, 1000, 1)]]
+        self.pending = [[(101, 1, 1, 21, 1000, 1, 3), (102, 2, 1, 21, 1000, 1, 3)]]
         self.api.upload.return_value = {
             "conquests": [{"at": 90}, {"at": 101}, {"at": 102}],
             "feedback": {"headlines": ["🏆 Card conquered after 4 lapses"]},
@@ -455,7 +455,7 @@ class RefreshTests(unittest.TestCase):
         self.addon.refresh(False, resync=True)
         self.assertTrue(self.api.upload.call_args.args[2])
         self.assertEqual(self.addon._upload_prefs(self.api)["through"], 0)
-        self.pending = [[(101, 1, 1, 3, 1000, 1)]]
+        self.pending = [[(101, 1, 1, 3, 1000, 1, 3)]]
         self.addon.refresh(False)
         self.assertFalse(self.api.upload.call_args.args[2])
 
@@ -464,7 +464,7 @@ class RefreshTests(unittest.TestCase):
         self.pending = []
         self.addon.refresh(False, resync=True)
         self.api.user = "other-player"
-        self.pending = [[(101, 1, 1, 3, 1000, 1)]]
+        self.pending = [[(101, 1, 1, 3, 1000, 1, 3)]]
         self.addon.refresh(False)
         self.assertTrue(self.api.upload.call_args.args[2])
 
@@ -486,7 +486,7 @@ class RefreshTests(unittest.TestCase):
     def test_only_reviews_answered_here_carry_their_offset(self):
         # 101 was answered on this computer an hour east of UTC; 102 came in through AnkiWeb.
         self.mw.pm.profile["ankiquestReviewOffsets"] = {101: -60}
-        self.pending = [[(101, 1, 1, 3, 1000, 1), (102, 2, 1, 3, 1000, 1)]]
+        self.pending = [[(101, 1, 1, 3, 1000, 1, 3), (102, 2, 1, 3, 1000, 1, 3)]]
         self.addon.refresh(False)
         stamped, synced = self.api.upload.call_args.args[0]
         self.assertEqual(stamped["offset_west_min"], -60)

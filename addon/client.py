@@ -20,7 +20,7 @@ DELETE_QUERY_SIZE = 500
 UNDO_WINDOW_MS = 2 * 86_400_000
 REVIEW_FILTER = "where id > ? and ease > 0 and type < 4"
 WINDOW_SQL = (
-    "select id, cid, lastIvl, ivl, time, type from revlog "
+    "select id, cid, lastIvl, ivl, time, type, ease from revlog "
     + REVIEW_FILTER + " order by id"
 )
 PENDING_SQL = WINDOW_SQL + " limit %d" % MAX_PENDING
@@ -37,7 +37,7 @@ def offset_west_min():
 
 def rows_to_reviews(rows):
     return [
-        {"id": r[0], "cid": r[1], "last_ivl": r[2], "ivl": r[3], "time_ms": r[4], "kind": r[5]}
+        {"id": r[0], "cid": r[1], "last_ivl": r[2], "ivl": r[3], "time_ms": r[4], "kind": r[5], "ease": r[6]}
         for r in rows
     ]
 
