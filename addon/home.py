@@ -493,7 +493,8 @@ def _session_day(summary):
 
 
 def _streak_title(summary):
-    return tr("Streak secured! 🔥") if _session_day(summary)["state"] == "met" else tr("Streak minimum reached — syncing")
+    counted = _session_day(summary)["state"] in ("met", day_verdict.UNVERIFIED)
+    return tr("Streak secured! 🔥") if counted else tr("Streak minimum reached — syncing")
 
 
 def today_view(deck_browser, chosen_companion):
@@ -547,7 +548,9 @@ def _toolbar_values():
         return "AnkiQuest", tr("Sign in to AnkiQuest")
     profile = _profile_for_display(addon().state["profile"]) or {}
     status = profile.get("_day_status", "unknown")
-    label = tr({"met": "Secured", "syncing": "Syncing", "protected": "Protected", "pending": "Not yet"}.get(status, "Streak unknown"))
+    # An unverified day counts too; the Today panel says its time is not known.
+    label = tr({"met": "Secured", day_verdict.UNVERIFIED: "Secured", "syncing": "Syncing", "protected": "Protected",
+                "pending": "Not yet"}.get(status, "Streak unknown"))
     streak = profile.get("streak")
     return "AnkiQuest · " + ("%d · " % streak if streak is not None else "") + label, tr("Open Today")
 

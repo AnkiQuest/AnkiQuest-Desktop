@@ -4,6 +4,8 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Today.** The streak flame stays unlit until today counts. Friends' study stays hidden until you upload your first reviews.
 
+**AnkiQuest Lite.** A day counted on answers that AnkiQuest Lite read from AnkiDroid without review times shows as studied, with "time not known", on Today, the heatmap and History. Leaderboard rows and your level mark such XP "Observed".
+
 **Study time.** Progress has a Study time tab: today, this week, this month, total and per study day, from this collection's review history, uploaded or not.
 
 **Sharing.** Choose who gets each moment you share, including older moments, completed decks and your weekly place. Share pictures are drawn on your computer, so they work offline, and streak pictures change with the length of the streak. When Undo of a share fails, the add-on says so.

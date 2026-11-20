@@ -152,13 +152,15 @@ class _Window:
             table = self._tables["board"]
             now_ms = int(time.time() * 1000)
             for place, entry, mine in board_data._rows(self._board, self._api.name):
-                name = entry.get("display") or entry["user"]
-                title = name + (" · " + tr("you, not shown to others") if mine and entry.get("shown") is False else "")
+                title = board.row_title(entry, tr)
+                title += " · " + tr("you, not shown to others") if mine and entry.get("shown") is False else ""
                 # XP that counts toward another week, as the website shows beside a weekly row.
                 for kind, xp in board_data._counting(self._board, entry, now_ms):
                     title += " · " + board.counting(kind, xp, tr)
                 item = QTreeWidgetItem([str(place), title, str(entry["xp"]), str(entry.get("level", "")), str(entry.get("streak", ""))])
                 item.setData(1, Qt.ItemDataRole.UserRole, entry)
+                if entry.get("xp_source") == board.XP_OBSERVED:
+                    item.setToolTip(1, tr(board.OBSERVED_REASON))
                 table.addTopLevelItem(item)
             if self._board.locked:
                 self._note("board", tr(board.UPLOAD_FIRST))

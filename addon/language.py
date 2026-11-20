@@ -1632,6 +1632,35 @@ PORTUGUESE.update({
     "Streak minimum reached — syncing": "Mínimo da sequência atingido: a sincronizar",
 })
 
+# Observed study from AnkiQuest Lite, in the website's words (AnkiQuest-Server static/translations-*.json).
+SPANISH.update({
+    "Studied today · time not known": "Estudió hoy · tiempo desconocido",
+    "Time not known": "Tiempo desconocido",
+    "Observed": "Observado",
+    "Includes answers read from AnkiDroid without review times": "Incluye respuestas leídas de AnkiDroid sin tiempos de repaso",
+})
+
+GERMAN.update({
+    "Studied today · time not known": "Heute studiert · Zeit unbekannt",
+    "Time not known": "Zeit unbekannt",
+    "Observed": "Beobachtet",
+    "Includes answers read from AnkiDroid without review times": "Enthält aus AnkiDroid gelesene Antworten ohne Lernzeiten",
+})
+
+FRENCH.update({
+    "Studied today · time not known": "Étudié aujourd'hui · durée inconnue",
+    "Time not known": "Durée inconnue",
+    "Observed": "Observé",
+    "Includes answers read from AnkiDroid without review times": "Inclut des réponses lues dans AnkiDroid sans durée de révision",
+})
+
+PORTUGUESE.update({
+    "Studied today · time not known": "Estudei hoje · tempo desconhecido",
+    "Time not known": "Tempo desconhecido",
+    "Observed": "Observado",
+    "Includes answers read from AnkiDroid without review times": "Inclui respostas lidas do AnkiDroid sem tempos de revisão",
+})
+
 # Scoped boards and private hiding.
 SPANISH.update({
     "Global": "Global", "Leaderboard scope": "Grupo de la clasificación",

@@ -38,9 +38,19 @@ jobs:
       - name: Read Android's public consumed-example catalog
         run: |
           git clone --depth 1 --filter=blob:none --sparse --branch master https://github.com/AnkiQuest/AnkiQuest-Android.git android-client
-          git -C android-client sparse-checkout set --no-cone '/AnkiDroid/src/test/resources/ankiquest-api/' '/AnkiDroid/src/test/resources/ankiquest-server.sha'
+          git -C android-client sparse-checkout set --no-cone \
+            '/AnkiDroid/src/test/resources/ankiquest-api/' '/AnkiDroid/src/test/resources/ankiquest-server.sha' \
+            '/ankiquest-core/src/test/resources/ankiquest-api/' '/ankiquest-core/src/test/resources/ankiquest-server.sha'
       - name: Preserve Android's consumed API shapes
-        run: cargo run -p ankiquest-xtask -- android-contract --android-resources android-client/AnkiDroid/src/test/resources
+        run: |
+          resources=android-client/AnkiDroid/src/test/resources
+          # Select by the committed module, so a missing catalog or pin still fails the guard.
+          if git -C android-client cat-file -e HEAD:ankiquest-core 2>/dev/null; then
+            resources=android-client/ankiquest-core/src/test/resources
+          fi
+          # The legacy Desktop guard still skips an unpublished catalog.
+          test -f "$resources/ankiquest-api/names.json"
+          cargo run -p ankiquest-xtask -- android-contract --android-resources "$resources"
 
   web:
     runs-on: ubuntu-24.04
@@ -85,6 +95,9 @@ jobs:
       - name: Format
         run: nix develop --command cargo fmt --all --check
 
+      - name: Nix format
+        run: nix fmt -- --check .
+
       - name: Test
         run: nix develop --command cargo test --workspace
 
@@ -118,6 +131,17 @@ jobs:
           persist-credentials: false
       - name: Check the shared quiet-hour cases
         run: cmp tests/fixtures/quiet_hours.json server-contract/tests/fixtures/quiet_hours.json
+      - name: Read the shared streak mood cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: 04a5fb6614011ce0631f434e0679e4eed5a1ecf6 # Server PR 60, merged
+          path: server-moods
+          sparse-checkout: /tests/fixtures/streak_moods.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared streak mood cases
+        run: cmp tests/server-fixtures/streak_moods.json server-moods/tests/fixtures/streak_moods.json
       - name: Read the authoritative companion unlock cases
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -140,6 +164,21 @@ jobs:
           persist-credentials: false
       - name: Check the shared study time cases
         run: cmp tests/server-fixtures/study_time.json server-study-time/tests/fixtures/study_time.json
+      - name: Read the shared observed study cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: 0f5d038a29cebf18c466cfdcfa6bece07233d0f7 # Server PR 80, merged
+          path: server-observed
+          sparse-checkout: |
+            /tests/fixtures/day_verdicts.json
+            /tests/fixtures/observed_reviews.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared observed study cases
+        run: |
+          cmp tests/server-fixtures/day_verdicts.json server-observed/tests/fixtures/day_verdicts.json
+          cmp tests/server-fixtures/observed_reviews.json server-observed/tests/fixtures/observed_reviews.json
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
