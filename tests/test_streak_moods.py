@@ -10,7 +10,7 @@ from addon_loader import ADDON, load_module
 moods = load_module("aq_streak_moods", "moods.py")
 
 TESTS = Path(__file__).resolve().parent
-FIXTURE = TESTS / "server-fixtures" / "streak_moods.json"
+FIXTURE = TESTS / "fixtures" / "streak_moods.json"
 POSES = TESTS / "fixtures" / "companion_poses.json"
 
 # Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows

@@ -8,9 +8,8 @@ from addon_loader import load_module
 
 day_verdict = load_module("aq_day_verdict", "day_verdict.py")
 
-# The Server copy (tests/server-fixtures/README.md), with the observed study cases of Server #80;
-# tests/fixtures holds the server code's older one.
-FIXTURE = Path(__file__).resolve().parent / "server-fixtures" / "day_verdicts.json"
+# Shared rules, including observed study, pinned by tests/ankiquest-server.sha.
+FIXTURE = Path(__file__).resolve().parent / "fixtures" / "day_verdicts.json"
 
 
 class DayVerdicts(unittest.TestCase):
