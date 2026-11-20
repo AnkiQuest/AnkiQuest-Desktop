@@ -11,6 +11,7 @@ Callers hand in the collection and the client; language.py owns display formatti
 
 import math
 from collections import namedtuple
+from .day_verdict import UNVERIFIED
 from .language import plural
 
 OFF, BACKLOG, CARDS, MINUTES = "off", "backlog", "cards", "minutes"
@@ -55,6 +56,12 @@ class Status(namedtuple("Status", "day minutes streak_minutes studied_cards mode
     def minimum_waiting(self):
         """Today counts toward the streak only once the reviews not uploaded yet arrive."""
         return self.minimum_done and bool(self.verdict.get("waiting"))
+
+    @property
+    def minimum_reached(self):
+        """Today counts on exact review time; an unverified day counts on observed answers
+        whose time is not known, short of the minimum."""
+        return self.minimum_done and self.verdict.get("streak_state") != UNVERIFIED
 
     @property
     def minimum_minutes(self):
@@ -386,11 +393,11 @@ def backlog_text(current, translate=lambda value: value):
 
 
 def minimum_text(current, translate=lambda value: value):
-    if current.minimum_waiting and current.streak_minutes > 0:
+    if current.minimum_waiting and current.minimum_reached and current.streak_minutes > 0:
         return translate("Streak secured once your reviews upload: you reached today’s %d-minute minimum.") % current.streak_minutes
     if current.minimum_waiting:
         return translate("Streak secured once your reviews upload: today counts for your streak.")
-    if current.minimum_done and current.streak_minutes > 0:
+    if current.minimum_reached and current.streak_minutes > 0:
         return translate("Streak secured: you reached today’s %d-minute minimum.") % current.streak_minutes
     if current.minimum_done:
         return translate("Streak secured: today counts for your streak.")

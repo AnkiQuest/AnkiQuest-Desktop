@@ -127,13 +127,29 @@ class DayState(unittest.TestCase):
         with fixture.patch.object(self.home, "now_ms", return_value=self.addon.state["profile"]["day_ends_at"]):
             self.assertEqual("unknown", self.home._session_day(summary)["state"])
 
+    def test_an_unverified_day_counts_with_time_not_known(self):
+        # Observed answers (AnkiQuest Lite) keep today counting short of the minimum.
+        self.pending_day()
+        self.addon.state["profile"].update(streak_state="unverified", at_risk=False, streak_warning=None)
+        self.addon.state["profile"]["today"].update(observed=1)
+        html = self.render().stats
+        self.assertIn("\U0001f525 7 day streak", html)
+        self.assertIn("Studied today · time not known", html)
+        self.assertIn("Streak secured: today counts for your streak.", html)
+        self.assertNotIn("you reached today", html)
+        self.assertNotIn("Syncing", html)
+        self.assertIn("Secured", self.home._toolbar_values()[0])
+        summary = {"finished_at": self.addon.state["profile"]["today"]["starts_at"] + 1}
+        self.assertEqual({"state": "unverified", "label": "Studied today · time not known"}, self.home._session_day(summary))
+        self.assertEqual("Streak secured! 🔥", self.home._streak_title(summary))
+
     def test_past_session_days_keep_the_servers_distinct_verdicts(self):
         self.pending_day()
         profile = self.addon.state["profile"]
         for state, label in (
             ("met", "Streak minimum met"), ("short", "Short of the streak minimum"),
             ("frozen", "Frozen — streak kept"), ("skipped", "Skipped day — streak kept"),
-            ("none", "No study counted"),
+            ("none", "No study counted"), ("unverified", "Time not known"),
         ):
             with self.subTest(state=state):
                 profile["heatmap"] = [{"date": "2024-01-01", "state": state}]

@@ -8,7 +8,9 @@ from addon_loader import load_module
 
 day_verdict = load_module("aq_day_verdict", "day_verdict.py")
 
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / "day_verdicts.json"
+# The Server copy (tests/server-fixtures/README.md), with the observed study cases of Server #80;
+# tests/fixtures holds the server code's older one.
+FIXTURE = Path(__file__).resolve().parent / "server-fixtures" / "day_verdicts.json"
 
 
 class DayVerdicts(unittest.TestCase):
@@ -28,7 +30,14 @@ class DayVerdicts(unittest.TestCase):
                     expected = dict(expected)
                     self.assertEqual(expected.pop("label"), day_verdict.label(found))
                 self.assertEqual(expected, found)
-                self.assertEqual(expected["met"] and case["server"]["streak_state"] != "studied", waiting)
+                # Waiting: today counts, but the server says so only once the unsent reviews arrive.
+                self.assertEqual(expected["met"] and expected["streak_state"] != case["server"]["streak_state"], waiting)
+
+    def test_the_cases_include_observed_answers(self):
+        # Pending observed answers (AnkiQuest Lite) have no time_ms; their day is unverified.
+        cases = json.loads(FIXTURE.read_text("utf-8"))["cases"]
+        self.assertTrue(any("time_ms" not in review for case in cases for review in case["pending"]))
+        self.assertIn("unverified", {(case["expected"] or {}).get("label") for case in cases})
 
     def test_a_profile_without_day_bounds_has_no_verdict(self):
         # Servers older than the add-on leave out today's starts_at and time_ms.
