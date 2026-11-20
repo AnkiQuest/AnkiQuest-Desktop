@@ -2299,6 +2299,12 @@ SPANISH.update({
     "~%d card a day to finish %s by then": "~%d tarjeta al día para terminar %s a tiempo",
     "~%d cards a day to finish %s by then": "~%d tarjetas al día para terminar %s a tiempo",
     "Nothing left in %s before then": "No queda nada en %s antes de esa fecha",
+    "Add the countdown you made while signed out to %s?": "¿Añadir a %s la cuenta atrás que creaste sin iniciar sesión?",
+    "Add the %d countdowns you made while signed out to %s?": "¿Añadir las %d cuentas atrás que creaste sin iniciar sesión a %s?",
+    "Add to account": "Añadir a la cuenta",
+    "Keep on this device": "Mantener en este dispositivo",
+    "%d countdown did not fit and stays on this device.": "%d cuenta atrás no cabía y se queda en este dispositivo.",
+    "%d countdowns did not fit and stay on this device.": "%d cuentas atrás no cabían y se quedan en este dispositivo.",
 })
 GERMAN.update({
     "Countdowns": "Countdowns", "Edit countdowns": "Countdowns bearbeiten",
@@ -2313,6 +2319,12 @@ GERMAN.update({
     "~%d card a day to finish %s by then": "~%d Karte am Tag, um %s bis dahin abzuschließen",
     "~%d cards a day to finish %s by then": "~%d Karten am Tag, um %s bis dahin abzuschließen",
     "Nothing left in %s before then": "In %s ist bis dahin nichts mehr offen",
+    "Add the countdown you made while signed out to %s?": "Den Countdown, den du ohne Anmeldung erstellt hast, zu %s hinzufügen?",
+    "Add the %d countdowns you made while signed out to %s?": "Die %d Countdowns, die du ohne Anmeldung erstellt hast, zu %s hinzufügen?",
+    "Add to account": "Zum Konto hinzufügen",
+    "Keep on this device": "Auf diesem Gerät behalten",
+    "%d countdown did not fit and stays on this device.": "%d Countdown passte nicht mehr hinein und bleibt auf diesem Gerät.",
+    "%d countdowns did not fit and stay on this device.": "%d Countdowns passten nicht mehr hinein und bleiben auf diesem Gerät.",
 })
 FRENCH.update({
     "Countdowns": "Comptes à rebours", "Edit countdowns": "Modifier les comptes à rebours",
@@ -2327,6 +2339,12 @@ FRENCH.update({
     "~%d card a day to finish %s by then": "~%d carte par jour pour finir %s d’ici là",
     "~%d cards a day to finish %s by then": "~%d cartes par jour pour finir %s d’ici là",
     "Nothing left in %s before then": "Plus rien à faire dans %s d’ici là",
+    "Add the countdown you made while signed out to %s?": "Ajouter à %s le compte à rebours créé sans connexion ?",
+    "Add the %d countdowns you made while signed out to %s?": "Ajouter les %d comptes à rebours créés sans connexion à %s ?",
+    "Add to account": "Ajouter au compte",
+    "Keep on this device": "Garder sur cet appareil",
+    "%d countdown did not fit and stays on this device.": "%d compte à rebours ne tenait plus et reste sur cet appareil.",
+    "%d countdowns did not fit and stay on this device.": "%d comptes à rebours ne tenaient plus et restent sur cet appareil.",
 })
 PORTUGUESE.update({
     "Countdowns": "Contagens decrescentes", "Edit countdowns": "Editar contagens decrescentes",
@@ -2341,6 +2359,12 @@ PORTUGUESE.update({
     "~%d card a day to finish %s by then": "~%d cartão por dia para terminar %s até lá",
     "~%d cards a day to finish %s by then": "~%d cartões por dia para terminar %s até lá",
     "Nothing left in %s before then": "Não falta nada em %s até lá",
+    "Add the countdown you made while signed out to %s?": "Adicionar a %s a contagem decrescente que criaste sem sessão iniciada?",
+    "Add the %d countdowns you made while signed out to %s?": "Adicionar as %d contagens decrescentes que criaste sem sessão iniciada a %s?",
+    "Add to account": "Adicionar à conta",
+    "Keep on this device": "Manter neste dispositivo",
+    "%d countdown did not fit and stays on this device.": "%d contagem decrescente não coube e fica neste dispositivo.",
+    "%d countdowns did not fit and stay on this device.": "%d contagens decrescentes não couberam e ficam neste dispositivo.",
 })
 
 # Progress: study time from the local review log, in Android's wording.

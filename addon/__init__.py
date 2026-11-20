@@ -155,6 +155,13 @@ class _SettingsSync(Enum):
     AGAIN = auto()
 
 
+class _CountdownOffer(Enum):
+    """The offer to add countdowns made while signed out to the account just signed into."""
+    NONE = auto()
+    # Signed in; ask once the account's list has synced, so adding to it keeps the server's.
+    AFTER_SYNC = auto()
+
+
 state = {
     # Idle, uploading, waiting for a retry, or holding the last failure.
     "upload": None,
@@ -170,6 +177,7 @@ state = {
     "inbox": [],
     "activity": None,
     "settings_sync": _SettingsSync.IDLE,
+    "countdown_offer": _CountdownOffer.NONE,
     # None, or a _WelcomeWait for the open profile; a callback that holds another one is stale.
     "welcome": None,
     "settings_synced_at": 0.0,
@@ -209,7 +217,12 @@ def sync_settings():
         return
     snapshot = config()
     api = client()
-    if not settings_sync.enabled(snapshot) or not api.configured:
+    if not api.configured:
+        return
+
+    # With the switch off this computer's list is the account's, so the offer needs no sync.
+    if not settings_sync.enabled(snapshot):
+        _offer_countdowns()
         return
     state["settings_sync"] = _SettingsSync.RUNNING
     state["settings_synced_at"] = time.time()
@@ -222,9 +235,13 @@ def sync_settings():
             result = future.result()
         except Exception as e:
             print("ankiquest settings sync:", e)
-            result = None
+            if again:
+                sync_settings()
+            return
         if result is not None:
             _apply_synced(snapshot, account, *result)
+        if (api.base, api.user, api.token) == account:
+            _offer_countdowns()
         if again:
             sync_settings()
 
@@ -251,6 +268,33 @@ def _apply_synced(snapshot, account, updates, changed):
     mw.addonManager.writeConfig(__name__, settled)
     if applied:
         redraw()
+
+
+def _offer_countdowns():
+    """Asks once per sign-in whether to add the countdowns made while signed out to the account.
+    Declined, they stay on this computer and show whenever no one is signed in."""
+    if state["countdown_offer"] is not _CountdownOffer.AFTER_SYNC:
+        return
+    state["countdown_offer"] = _CountdownOffer.NONE
+    current = config()
+    account = countdowns.events(current.get(countdowns.CONFIG_KEY))
+    device = countdowns.events(settings_sync.signed_out(current, "countdowns"))
+    found = countdowns.imported(account, device)
+    added = len(found.account) - len(account)
+    if added == 0:
+        return
+    offered = added + len(found.left)
+    if not countdowns_ui.ask_import(mw, countdowns.import_question(offered, client().user, plural)):
+        return
+
+    # What was added leaves this computer's list; what did not fit stays on it.
+    mw.addonManager.writeConfig(
+        __name__, settings_sync.keep_signed_out(current, "countdowns", countdowns.stored(found.left))
+    )
+    save_config({countdowns.CONFIG_KEY: countdowns.stored(found.account)})
+    if found.left:
+        tooltip(countdowns.left_text(len(found.left), plural))
+    redraw()
 
 
 def drop_config(keys):
@@ -927,10 +971,12 @@ def _save_account_config(values):
         return
 
     # Private synced settings stay with their account; a new token for the same one keeps them.
+    # Signing in offers what was made while signed out once the account's settings synced.
     if (old.base, old.user) != (new.base, new.user):
         mw.addonManager.writeConfig(
             __name__, settings_sync.switch_account(config(), _account_id(old), _account_id(new))
         )
+    offer = _CountdownOffer.AFTER_SYNC if new.configured else _CountdownOffer.NONE
 
     # Retain the review watermark and undo history for a return to this account.
     if checkpoint is not None:
@@ -941,7 +987,7 @@ def _save_account_config(values):
             profile.pop(key, None)
     state.update(
         upload=None, polling=None, poll_failure=None, reauth=None, profile=None, place=None, inbox=[], activity=None,
-        companion="aki", companion_account=None,
+        companion="aki", companion_account=None, countdown_offer=offer,
     )
     _moments._clear()
     _delivery._clear()

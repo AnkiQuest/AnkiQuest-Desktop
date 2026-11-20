@@ -41,6 +41,8 @@ class PaceKind(Enum):
 Event = namedtuple("Event", "name date deck")
 Days = namedtuple("Days", "state days")
 Pace = namedtuple("Pace", "kind cards")
+# An account's list with signed-out events added, and the signed-out events that did not fit.
+Imported = namedtuple("Imported", "account left")
 
 
 def parse_date(text):
@@ -152,6 +154,35 @@ def pace_text(found, deck_label, plural, translate):
         form = plural("~%d card a day to finish %s by then", "~%d cards a day to finish %s by then", found.cards)
         return form % (found.cards, deck_label)
     return None
+
+
+def imported(account, device):
+    """`account` with the events of `device` added in order, skipping one with the same name and
+    date as an event already in the list; what does not fit is left. Cases: `import`."""
+    merged, left = list(account), []
+    for event in device:
+        if any(kept.name == event.name and kept.date == event.date for kept in merged):
+            continue
+        if len(merged) >= MAX_EVENTS:
+            left.append(event)
+            continue
+        merged.append(event)
+    return Imported(merged, left)
+
+
+def import_question(count, user, plural):
+    """The offer to add `count` signed-out countdowns to `user`'s account. `plural(one, other,
+    count)` picks the translated form; the one form names no count."""
+    form = plural("Add the countdown you made while signed out to %s?",
+                  "Add the %d countdowns you made while signed out to %s?", count)
+    return form % user if count == 1 else form % (count, user)
+
+
+def left_text(count, plural):
+    """What is said about `count` countdowns that did not fit and stay on this computer."""
+    form = plural("%d countdown did not fit and stays on this device.",
+                  "%d countdowns did not fit and stay on this device.", count)
+    return form % count
 
 
 def first_date(today):

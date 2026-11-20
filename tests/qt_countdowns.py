@@ -3,7 +3,7 @@ from datetime import date
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QComboBox, QDialog
+from aqt.qt import QApplication, QComboBox, QDialog, QMessageBox
 from addon_loader import load_in_package
 
 app = QApplication.instance() or QApplication([])
@@ -45,6 +45,22 @@ class CountdownList(unittest.TestCase):
         tell.assert_called_once()
         self.assertEqual([EXAM], dialog._items)
         self.assertEqual(1, dialog._list.count())
+
+
+class ImportOffer(unittest.TestCase):
+    def answer(self, label):
+        def click(box):
+            next(button for button in box.buttons() if button.text() == label).click()
+            return 0
+
+        with patch.object(QMessageBox, "exec", click):
+            return ui.ask_import(None, "Add the 2 countdowns you made while signed out to hill?")
+
+    def test_add_to_account_says_yes(self):
+        self.assertTrue(self.answer("Add to account"))
+
+    def test_keep_on_this_device_says_no(self):
+        self.assertFalse(self.answer("Keep on this device"))
 
 
 if __name__ == "__main__":

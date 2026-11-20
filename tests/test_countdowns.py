@@ -75,10 +75,10 @@ class SharedCases(unittest.TestCase):
     def test_the_import_wording_is_the_shared_english(self):
         wording = FIXTURE["wording"]
         lines = {
-            ("import_one", 1): countdowns.import_question(1, "hill", plural, english),
-            ("import_other", 3): countdowns.import_question(3, "hill", plural, english),
-            ("left_one", 1): countdowns.left_text(1, plural, english),
-            ("left_other", 2): countdowns.left_text(2, plural, english),
+            ("import_one", 1): countdowns.import_question(1, "hill", plural),
+            ("import_other", 3): countdowns.import_question(3, "hill", plural),
+            ("left_one", 1): countdowns.left_text(1, plural),
+            ("left_other", 2): countdowns.left_text(2, plural),
         }
         for (key, count), line in lines.items():
             with self.subTest(key):

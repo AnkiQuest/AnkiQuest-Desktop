@@ -23,6 +23,20 @@ def _tell(parent, text):
     showInfo(text, parent=parent)
 
 
+def ask_import(parent, question):
+    """Whether to add the countdowns made while signed out to the account; no keeps them here."""
+    from aqt.qt import QMessageBox
+    box = QMessageBox(parent)
+    box.setWindowTitle(tr("Countdowns"))
+    box.setText(question)
+    add = box.addButton(tr("Add to account"), QMessageBox.ButtonRole.AcceptRole)
+    keep = box.addButton(tr("Keep on this device"), QMessageBox.ButtonRole.RejectRole)
+    box.setDefaultButton(add)
+    box.setEscapeButton(keep)
+    box.exec()
+    return box.clickedButton() is add
+
+
 def _qdate(day):
     return QDate(day.year, day.month, day.day)
 

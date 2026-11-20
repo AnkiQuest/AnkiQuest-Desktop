@@ -39,25 +39,35 @@ PRIVATE = ("countdowns",)
 # Server address -> username -> private key -> {"value", "changed_at"}.
 ACCOUNTS_KEY = "synced_private_accounts"
 
+# Private key -> {"value", "changed_at"}: what was made while signed out. It stays on this
+# computer, shown whenever no one is signed in, until the player adds it to an account.
+DEVICE_KEY = "synced_private_signed_out"
+
 
 def switch_account(current, old, new):
     """`current` with the private settings of account `old` put away and those of `new` brought
-    back. Accounts are (server address, username), or None when signed out; an account seen for
-    the first time starts from the defaults, which a sync never sends."""
+    back. Accounts are (server address, username), or None when signed out, whose values stay
+    on this computer; an account seen for the first time starts from the defaults, which a sync
+    never sends."""
     result = dict(current)
     kept = {base: dict(users) for base, users in (current.get(ACCOUNTS_KEY) or {}).items()}
     changed = dict(current.get(CHANGED_KEY) or {})
 
-    # Put the old account's values away.
+    # Put the old values away: with their account, or on this computer when signed out.
+    values = {}
+    for key in PRIVATE:
+        value, stamp = local(current, key)
+        values[key] = {"value": value, "changed_at": stamp}
     if old is not None:
-        values = {}
-        for key in PRIVATE:
-            value, stamp = local(current, key)
-            values[key] = {"value": value, "changed_at": stamp}
         kept.setdefault(old[0], {})[old[1]] = values
+    else:
+        result[DEVICE_KEY] = values
 
-    # Bring the new account's values back, or the defaults.
-    saved = kept.get(new[0], {}).get(new[1], {}) if new is not None else {}
+    # Bring the new account's values back, the signed-out ones, or the defaults.
+    if new is not None:
+        saved = kept.get(new[0], {}).get(new[1], {})
+    else:
+        saved = current.get(DEVICE_KEY) or {}
     for key in PRIVATE:
         name, default, _ = KEYS[key]
         entry = saved.get(key) or {}
@@ -70,6 +80,24 @@ def switch_account(current, old, new):
     result[CHANGED_KEY] = changed
     result[ACCOUNTS_KEY] = kept
     return result
+
+
+def signed_out(config, key):
+    """The value of private `key` made while signed out; an unusable one counts as the default."""
+    _, default, _ = KEYS[key]
+    entry = (config.get(DEVICE_KEY) or {}).get(key)
+    value = entry.get("value", default) if isinstance(entry, dict) else default
+    return value if usable(key, value) else default
+
+
+def keep_signed_out(config, key, value):
+    """`config` with `value` as private `key`'s signed-out value, for after an import."""
+    device = dict(config.get(DEVICE_KEY) or {})
+    entry = dict(device.get(key) or {})
+    entry["value"] = value
+    entry.setdefault("changed_at", 0)
+    device[key] = entry
+    return dict(config, **{DEVICE_KEY: device})
 
 
 def path(api):
