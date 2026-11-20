@@ -8,3 +8,4 @@ __pycache__
 *.ankiaddon
 node_modules
 addon/version.json
+/tools/banner/target
