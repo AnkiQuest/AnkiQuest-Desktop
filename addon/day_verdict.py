@@ -10,6 +10,9 @@ Plain Python, so the tests load it without Anki.
 MINUTE_MS = 60_000
 _UNKNOWN, _SYNCING, _MET, _PROTECTED, _PENDING = "unknown", "syncing", "met", "protected", "pending"
 
+# The day's words, as the fixture's `label` names them.
+STUDIED, SHORT = "studied", "short"
+
 # The reviews the uploader sends (client.PENDING_SQL), with only what the verdict needs.
 UNSENT_SQL = "select id, time from revlog where id > ? and ease > 0 and type < 4 order by id"
 
@@ -76,6 +79,22 @@ def verdict(server, pending, now_ms):
     }
 
 
+def label(found):
+    """The words for a `verdict`: studied, unknown, short (reviews under the minimum), protected
+    or pending. Reviews today outrank a protected streak, which says nothing was studied yet."""
+    if found is None:
+        return _UNKNOWN
+    if found["met"]:
+        return STUDIED
+    if found["streak_state"] is None:
+        return _UNKNOWN
+    if found["reviews"] > 0:
+        return SHORT
+    if found["streak_state"] == _PROTECTED:
+        return _PROTECTED
+    return _PENDING
+
+
 def unsent(col, server):
     """The collection's reviews after the server's `last_review_id`, as `verdict` reads them.
     Call where the collection may be read."""
@@ -100,7 +119,7 @@ def _for_display(server, found):
         status = _SYNCING
     elif found["met"]:
         status = _MET
-    elif found["streak_state"] == _PROTECTED:
+    elif label(found) == _PROTECTED:
         status = _PROTECTED
     else:
         status = _UNKNOWN if found["streak"] is None else _PENDING

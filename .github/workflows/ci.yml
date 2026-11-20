@@ -134,6 +134,17 @@ jobs:
         run: |
           cmp tests/server-fixtures/countdowns.json server-countdowns/tests/fixtures/countdowns.json
           cmp tests/server-fixtures/synced_settings.json server-countdowns/tests/fixtures/synced_settings.json
+      - name: Read the authoritative companion unlock cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: 04a5fb6614011ce0631f434e0679e4eed5a1ecf6 # Server PR 60, merged
+          path: server-unlocks
+          sparse-checkout: /tests/fixtures/companion_unlock.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared companion unlock cases
+        run: cmp tests/server-fixtures/companion_unlock.json server-unlocks/tests/fixtures/companion_unlock.json
       - name: Read the shared study time cases
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -165,6 +176,61 @@ jobs:
         run: python -m pyflakes addon
       - name: Test the add-on and its real Anki APIs
         run: python -m unittest discover -s tests -v
+
+  screenshots:
+    name: Screenshots and banner
+    # The committed pictures are drawn by this Ubuntu and the Qt of the 26.9.4 requirements.
+    runs-on: ubuntu-24.04
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # The banner's duo is a companion art master, which lives in AnkiQuest-Server.
+      - name: Read the duo art master
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: 11c9444b18ae1024934042b790888fbd8f0b3b6f # Server PR 43
+          path: server-art
+          sparse-checkout: /static/duo/friends.png
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: tools/banner
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: tests/requirements-anki-26.9.4.txt
+      - name: Install Anki and Qt
+        run: |
+          bash .github/scripts/ubuntu-archive.sh
+          sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
+          python -m pip install -r tests/requirements-anki-26.9.4.txt
+      - name: Compare the screenshots with a fresh drawing
+        env:
+          ANKIQUEST_SCREENSHOTS_OUT: ${{ runner.temp }}/screenshots
+        run: python tests/draw_screenshots.py -v
+      # The root workspace's rust job does not cover this separate workspace.
+      - name: Lint and test the banner tool
+        working-directory: tools/banner
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+      - name: Compare the banner and social preview with a fresh drawing
+        run: |
+          cargo run --release --manifest-path tools/banner/Cargo.toml -- --server server-art --check
+          cargo run --release --manifest-path tools/banner/Cargo.toml -- --server server-art --social --check
+      - name: Keep the screenshots that differ
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: screenshots
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: ignore
 
   addon-package:
     name: Add-on archive

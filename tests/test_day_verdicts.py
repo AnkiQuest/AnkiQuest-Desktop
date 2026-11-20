@@ -23,6 +23,10 @@ class DayVerdicts(unittest.TestCase):
                     self.assertIsNone(found)
                     continue
                 waiting = found.pop("waiting")
+                # Copies from before the server pinned the day's words have no label.
+                if "label" in expected:
+                    expected = dict(expected)
+                    self.assertEqual(expected.pop("label"), day_verdict.label(found))
                 self.assertEqual(expected, found)
                 self.assertEqual(expected["met"] and case["server"]["streak_state"] != "studied", waiting)
 
@@ -36,6 +40,18 @@ class DayVerdicts(unittest.TestCase):
         for missing in ("starts_at", "time_ms"):
             today = {key: value for key, value in server["today"].items() if key != missing}
             self.assertIsNone(day_verdict.verdict(dict(server, today=today), [], 1_000), missing)
+
+    def test_a_review_on_a_protected_day_is_not_protected(self):
+        # The freeze kept yesterday; with a review today the day reads short, not unstudied.
+        server = {
+            "streak": 4, "streak_state": "protected", "day_ends_at": 2_000, "last_review_id": 10,
+            "today": {"starts_at": 100, "reviews": 1, "time_ms": 180_000, "minutes": 3, "streak_minutes": 10},
+        }
+        shown = day_verdict._for_display(server, day_verdict.verdict(server, [], 1_000))
+        self.assertEqual("pending", shown["_day_status"])
+        self.assertEqual("short", day_verdict.label(day_verdict.verdict(server, [], 1_000)))
+        untouched = dict(server, today=dict(server["today"], reviews=0, time_ms=0, minutes=0))
+        self.assertEqual("protected", day_verdict._for_display(untouched, day_verdict.verdict(untouched, [], 1_000))["_day_status"])
 
     def test_no_profile_says_nothing(self):
         self.assertIsNone(day_verdict.verdict(None, [], 1_000))

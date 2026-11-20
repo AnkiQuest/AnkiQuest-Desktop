@@ -10,7 +10,8 @@ moments = load_in_package("aq_tab", "moments")
 board = load_in_package("aq_tab", "board")
 reveal = load_in_package("aq_tab", "companion_reveal")
 
-UNLOCKS = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
+# The Server copy (tests/server-fixtures/README.md); tests/fixtures holds the server code's older one.
+UNLOCKS = json.loads((ADDON.parent / "tests/server-fixtures/companion_unlock.json").read_text("utf-8"))
 EXAMPLES = ADDON.parent / "docs/api/examples"
 Phase, Motion, Beam = reveal.Phase, reveal.Motion, reveal.Beam
 
@@ -111,7 +112,8 @@ class Beams(unittest.TestCase):
     def test_every_companion_has_its_beam(self):
         expected = {
             "aki": Beam.WHITE, "ankilope": Beam.BLUE, "cow": Beam.PURPLE,
-            "anki_tan": Beam.GOLD, "leech_tan": Beam.GOLD, "anki_tan_chibi": Beam.RAINBOW,
+            "anki_tan": Beam.GOLD, "anki_tan_chibi": Beam.RAINBOW,
+            "quest_chan": Beam.GOLD, "quest_chan_chibi": Beam.RAINBOW, "leech_kun": Beam.GOLD,
         }
         listed = {"aki"} | {rule["companion"] for rule in UNLOCKS["companions"]}
         self.assertEqual(listed, set(expected))

@@ -198,7 +198,7 @@ def sign_up(base, user, password, display, device):
     return _account(base, "/api/accounts", body)
 
 
-COMPANIONS = ("aki", "ankilope", "cow", "none")
+COMPANIONS = ("aki", "ankilope", "cow", "anki_tan", "none")
 
 # Tells the server this add-on shows locked companions, so it refuses one still locked.
 SHOWS_LOCKS = {"X-AnkiQuest-Companions": "milestones"}
