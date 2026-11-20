@@ -26,7 +26,7 @@ ui = load_in_package("share_qt", "moment_share_ui")
 OUTDATED = load_in_package("share_qt", "client").OUTDATED
 ui.tr = ui.share_ui.tr = lambda text: text
 picture = load_in_package("share_picture_qt", "share_picture")
-STREAKS = json.loads((Path(__file__).parent / "fixtures/streak_moods.json").read_text("utf-8"))
+STREAKS = json.loads((Path(__file__).parent / "server-fixtures/streak_moods.json").read_text("utf-8"))
 
 
 class ShareWindow(unittest.TestCase):
