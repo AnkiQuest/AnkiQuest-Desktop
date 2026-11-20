@@ -671,6 +671,7 @@ def poll(quiet=False):
             state["password_prompt"] = account if sign_in is password_prompt._SignIn.TOKEN_ONLY else None
         if reminders is not None:
             announcements["reminders"] = reminders
+        _delivery._see_hour(profile)
         announce(rank, profile, arrivals, quiet)
         redraw()
 
