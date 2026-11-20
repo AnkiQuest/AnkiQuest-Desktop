@@ -3,7 +3,7 @@ name = "ankiquest-banner"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
-license = "AGPL-3.0-only"
+license = "AGPL-3.0-or-later"
 description = "The README banner and the social preview, drawn from the desktop screenshots"
 publish = false
 
