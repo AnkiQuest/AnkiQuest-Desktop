@@ -52,11 +52,12 @@ and the fixture, so `nix build` runs the same export.
 because a consumer reads them straight from a checkout:
 
 - `addon/art/*.png` and `addon/*_face.png`: the desktop add-on loads them at
-  runtime. `cargo run -p ankiquest-xtask -- export-addon-art` writes each
-  one whose picture changed, moves the file it replaces to
-  `assets/retired/` (listed as retired), and records each file's SHA-256;
-  the tests fail when a file differs from that hash or from a fresh export
-  of its master.
+  runtime. `cargo run -p ankiquest-xtask -- export-addon-art` overwrites
+  each one whose picture changed and records each file's SHA-256. An entry
+  whose master is gone (removed or renamed) is deleted: export removes the
+  file and drops the entry, and a renamed pose needs a new entry under its
+  new name. The tests fail when a file differs from its hash or from a
+  fresh export of its master, or has no master.
 
 Linux exports are canonical. Other platforms and quantiser versions move a
 few palette entries, so a committed pose is current when a fresh export
@@ -68,22 +69,12 @@ The README banner and social preview are drawn by `xtask banner` and
 checked by its own tests against a fresh render. Android's WebPs live in
 the Android repository, which checks them against the pinned server commit.
 
-## Retired copies
+## Retired art
 
-Companion art is never deleted. Copies nothing reads any more are listed
-under `retired` in the manifest, each with the reason, and a test fails if
-code under `src/`, `web/`, `addon/`, `crates/` or `build.rs` names one:
-
-- `assets/cards/*.png`: the hand-made share-card copies `src/cards.rs` used
-  to embed.
-- `static/aki/face-192.png`, `static/aki/face-32.png`,
-  `static/ankilope/face-192.png`: hand-made icon copies, now exported by
-  `build.rs`.
-- `assets/retired/addon/`: add-on copies replaced by `export-addon-art`,
-  named with the first 8 hex digits of their SHA-256; the twelve from
-  before #297 include hand-made ones.
-- `docs/branding/ankilope-celebrate-review/review.png` and
-  `docs/branding/core-poses-2026-11/aki-core-*.png`: review sheets.
+Retired art is kept only with the masters in AnkiQuest-Server, in
+`static/retired/<companion>/`. Exported copies here are generated: a copy
+that was renamed, retired or is no longer used is deleted with its
+references, never kept in a `retired/` folder or listed as unused.
 
 ## The guard
 
@@ -91,8 +82,9 @@ code under `src/`, `web/`, `addon/`, `crates/` or `build.rs` names one:
 repository. An image is companion art when its path names a companion (Aki,
 the companions in `tests/fixtures/companion_unlock.json`, or a folder in
 `static/`), or when its 16 px fingerprint matches a master at another size.
-It fails unless such an image is a master in `static/<companion>/`, an
-export in the manifest, or retired there. Animated PNGs get no fingerprint:
+It fails unless such an image sits in `static/<companion>/` or
+`static/retired/<companion>/`, or is an export in the manifest. Animated
+PNGs get no fingerprint:
 their frames are not a scaled copy of one still.
 
 Anki-tan's folder holds Shigeyuki's asset pack as published

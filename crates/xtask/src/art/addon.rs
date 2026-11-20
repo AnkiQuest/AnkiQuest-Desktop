@@ -2,10 +2,11 @@
 //! `static/`: every `addon` entry of the art manifest (`art-exports.json`).
 //!
 //! Each pose is a 256 px square, 256-colour palette PNG with transparency.
-//! Export writes every pose whose picture changed, retires the file it
-//! replaces, and records each file's SHA-256 in the manifest. `--check`
-//! writes nothing and fails when a pose differs from what export would
-//! write, or from the hash in the manifest.
+//! Export overwrites every pose whose picture changed, deletes every pose
+//! whose master is gone (removed or renamed) together with its manifest
+//! entry, and records each file's SHA-256. `--check` writes nothing and
+//! fails when a pose differs from what export would write, from the hash
+//! in the manifest, or has no master.
 //!
 //! Linux exports are canonical. Another platform, or a new quantiser
 //! version, maps a few colours to other palette entries: a few hundred
@@ -21,7 +22,7 @@ use std::process::ExitCode;
 use color_quant::NeuQuant;
 use image::RgbaImage;
 
-use super::exports::{self, Export, Exporter, Retired};
+use super::exports::{self, Export, Exporter, MANIFEST};
 use super::{load, root, shrink, target};
 
 /// Pose edge in pixels: the Today panel shows 96 px at up to 2x, and
@@ -47,10 +48,6 @@ const DRIFT: u8 = 16;
 /// since one swapped palette entry can move a pixel by 150.
 const DRIFTED_SHARE: f64 = 0.01;
 
-/// Where export moves a pose it replaces: companion art is never deleted
-/// (AGENTS.md, Companion art), and nothing packaged reads this folder.
-const RETIRED: &str = "assets/retired";
-
 /// What the command does.
 #[derive(PartialEq)]
 enum Mode {
@@ -66,8 +63,8 @@ pub fn run(args: &[String]) -> ExitCode {
         _ => return usage(),
     };
     let result = match mode {
-        Mode::Export => export(),
-        Mode::Check => check(),
+        Mode::Export => export(&root()),
+        Mode::Check => check(&root()),
     };
     match result {
         Ok(code) => code,
@@ -89,6 +86,11 @@ fn is_pose(export: &Export) -> bool {
     export.exporter == Exporter::Addon
 }
 
+/// Whether the master of `export` exists.
+fn has_master(export: &Export) -> bool {
+    root().join(&export.master).is_file()
+}
+
 /// The pose `export` describes, made from its master.
 fn render(export: &Export) -> Result<Vec<u8>, String> {
     let master = load(&root().join(&export.master))?;
@@ -96,37 +98,36 @@ fn render(export: &Export) -> Result<Vec<u8>, String> {
     encode(&shrink(master, width, height))
 }
 
-/// Writes every pose whose picture changed, retiring the file it replaces,
-/// and records each pose's hash in the manifest.
-fn export() -> Result<ExitCode, String> {
-    let mut manifest = exports::read()?;
-    let mut retired = Vec::new();
+/// Writes every pose whose picture changed into `checkout`, deletes every
+/// pose whose master is gone, and records each pose's hash in the
+/// checkout's manifest.
+fn export(checkout: &Path) -> Result<ExitCode, String> {
+    let manifest_path = checkout.join(MANIFEST);
+    let mut manifest = exports::read_at(&manifest_path)?;
+
+    // A copy whose master was removed or renamed goes with its entry.
+    for export in manifest.exports.iter().filter(|e| !has_master(e)) {
+        remove(&checkout.join(&export.file))?;
+        println!("{}: deleted, {} is gone", export.file, export.master);
+    }
+    manifest.exports.retain(has_master);
+
     for export in manifest.exports.iter_mut().filter(|export| is_pose(export)) {
         let fresh = render(export)?;
-        let path = root().join(&export.file);
+        let path = checkout.join(&export.file);
         let committed = fs::read(&path).ok();
-        match step(committed.as_deref(), &fresh)? {
-            // Keep a committed pose that differs only by drift.
-            Step::Keep => {
-                let committed = committed.unwrap_or_default();
-                export.sha256 = exports::sha256(&committed);
-                println!("{}: current", export.file);
-                continue;
-            }
-            Step::Add => {}
 
-            // Move the previous picture aside before replacing it.
-            Step::Replace => {
-                let committed = committed.unwrap_or_default();
-                retired.push(retire(export, &committed)?);
-            }
+        // Keep a committed pose that differs only by drift.
+        if step(committed.as_deref(), &fresh)? == Step::Keep {
+            export.sha256 = exports::sha256(&committed.unwrap_or_default());
+            println!("{}: current", export.file);
+            continue;
         }
         save(&path, &fresh)?;
         export.sha256 = exports::sha256(&fresh);
         println!("{}: {} bytes", export.file, fresh.len());
     }
-    manifest.retired.extend(retired);
-    exports::write(&manifest)?;
+    exports::write(&manifest_path, &manifest)?;
     Ok(ExitCode::SUCCESS)
 }
 
@@ -137,7 +138,7 @@ enum Step {
     Add,
     /// The committed file is current: leave it.
     Keep,
-    /// The picture changed: retire the committed file, then write.
+    /// The picture changed: overwrite the committed file.
     Replace,
 }
 
@@ -152,28 +153,6 @@ fn step(committed: Option<&[u8]>, fresh: &[u8]) -> Result<Step, String> {
     Ok(Step::Replace)
 }
 
-/// Keeps `bytes`, the pose `export` is about to replace, under `RETIRED`
-/// with its hash in the name, and returns its manifest entry.
-fn retire(export: &Export, bytes: &[u8]) -> Result<Retired, String> {
-    let file = retired_path(&export.file, &exports::sha256(bytes));
-    save(&root().join(&file), bytes)?;
-    println!("{}: retired to {file}", export.file);
-    Ok(Retired {
-        file,
-        why: format!(
-            "Earlier {}, replaced when export-addon-art wrote a new export of {}. Unreferenced.",
-            export.file, export.master
-        ),
-    })
-}
-
-/// Where a replaced pose goes: `addon/art/aki_happy.png` with hash
-/// `0123abcd…` becomes `assets/retired/addon/art/aki_happy-0123abcd.png`.
-fn retired_path(file: &str, sha256: &str) -> String {
-    let (stem, extension) = file.rsplit_once('.').unwrap_or((file, "png"));
-    format!("{RETIRED}/{stem}-{}.{extension}", &sha256[..8])
-}
-
 /// Writes `bytes` to `path`, creating its folder.
 fn save(path: &Path, bytes: &[u8]) -> Result<(), String> {
     if let Some(folder) = path.parent() {
@@ -182,9 +161,20 @@ fn save(path: &Path, bytes: &[u8]) -> Result<(), String> {
     fs::write(path, bytes).map_err(|e| format!("{}: {e}", path.display()))
 }
 
-/// Compares every pose with a fresh export and with the manifest.
-fn check() -> Result<ExitCode, String> {
-    let failed = stale()?;
+/// Deletes `path`; a file already gone is fine.
+fn remove(path: &Path) -> Result<(), String> {
+    match fs::remove_file(path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            Err(format!("{}: {e}", path.display()))
+        }
+        _ => Ok(()),
+    }
+}
+
+/// Compares every pose in `checkout` with a fresh export and with the
+/// checkout's manifest.
+fn check(checkout: &Path) -> Result<ExitCode, String> {
+    let failed = stale(checkout)?;
     for line in &failed {
         println!("{line}");
     }
@@ -195,15 +185,20 @@ fn check() -> Result<ExitCode, String> {
     Ok(ExitCode::SUCCESS)
 }
 
-/// One line for each pose that is missing, edited or out of date.
-fn stale() -> Result<Vec<String>, String> {
+/// One line for each pose that is missing, edited, out of date or without
+/// a master.
+fn stale(checkout: &Path) -> Result<Vec<String>, String> {
     let mut failed = Vec::new();
-    for export in exports::read()?
+    for export in exports::read_at(&checkout.join(MANIFEST))?
         .exports
         .iter()
         .filter(|export| is_pose(export))
     {
-        let path = root().join(&export.file);
+        if !has_master(export) {
+            failed.push(format!("{}: {} is gone", export.file, export.master));
+            continue;
+        }
+        let path = checkout.join(&export.file);
         let Ok(committed) = fs::read(&path) else {
             failed.push(format!("missing: {}", export.file));
             continue;
@@ -287,7 +282,7 @@ mod tests {
 
     #[test]
     fn every_addon_pose_is_current() {
-        let failed = stale().unwrap();
+        let failed = stale(&root()).unwrap();
         assert!(
             failed.is_empty(),
             "run `cargo run -p ankiquest-xtask -- export-addon-art`: {failed:?}"
@@ -321,7 +316,7 @@ mod tests {
 
     /// The committed Aki winner pose, decoded.
     fn winner() -> RgbaImage {
-        let path = root().join("addon/art/aki_winner.png");
+        let path = root().join(WINNER);
         image::open(path).unwrap().into_rgba8()
     }
 
@@ -358,11 +353,105 @@ mod tests {
         assert_eq!(step(None, &png(&winner())), Ok(Step::Add));
     }
 
+    /// The add-on's winner pose.
+    const WINNER: &str = "addon/art/aki_winner.png";
+
+    /// A pose under its old name, whose master was renamed.
+    const SLEEPING: &str = "addon/art/aki_sleeping.png";
+
+    /// A master that no longer exists.
+    const GONE: &str = "static/aki/sleeping-renamed.png";
+
+    /// A temporary checkout whose manifest lists only the winner pose,
+    /// before its first export.
+    fn checkout() -> tempfile::TempDir {
+        let checkout = tempfile::tempdir().unwrap();
+        let path = checkout.path().join(MANIFEST);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let winner = Export {
+            file: WINNER.into(),
+            master: "static/aki/winner.png".into(),
+            exporter: Exporter::Addon,
+            sha256: String::new(),
+        };
+        let manifest = exports::Manifest {
+            exports: vec![winner],
+        };
+        exports::write(&path, &manifest).unwrap();
+        checkout
+    }
+
+    /// The names of the files in `folder`, sorted.
+    fn names(folder: &Path) -> Vec<String> {
+        let mut names: Vec<String> = fs::read_dir(folder)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+
     #[test]
-    fn replaced_poses_keep_their_hash() {
+    fn export_writes_checks_and_overwrites() {
+        // A fresh checkout misses the pose; export writes it.
+        let checkout = checkout();
+        let checkout = checkout.path();
+        assert_eq!(vec![format!("missing: {WINNER}")], stale(checkout).unwrap());
+        assert_eq!(ExitCode::SUCCESS, export(checkout).unwrap());
+        assert!(stale(checkout).unwrap().is_empty());
+        let path = checkout.join(WINNER);
+        let written = fs::read(&path).unwrap();
+
+        // An edited pose fails the check.
+        let blue = RgbaImage::from_pixel(SIZE, SIZE, image::Rgba([0, 0, 255, 255]));
+        fs::write(&path, encode(&blue).unwrap()).unwrap();
         assert_eq!(
-            retired_path("addon/art/aki_winner.png", "0123abcd4567"),
-            "assets/retired/addon/art/aki_winner-0123abcd.png"
+            vec![format!("{WINNER}: not the file export wrote")],
+            stale(checkout).unwrap()
         );
+
+        // Export overwrites it in place and keeps no other file.
+        assert_eq!(ExitCode::SUCCESS, export(checkout).unwrap());
+        assert!(stale(checkout).unwrap().is_empty());
+        assert_eq!(written, fs::read(&path).unwrap());
+        assert_eq!(vec!["addon", "crates"], names(checkout));
+        assert_eq!(vec!["aki_winner.png"], names(&checkout.join("addon/art")));
+    }
+
+    #[test]
+    fn export_deletes_a_pose_whose_master_is_gone() {
+        // The winner pose is current; a second pose names a master that
+        // was renamed.
+        let checkout = checkout();
+        let checkout = checkout.path();
+        assert_eq!(ExitCode::SUCCESS, export(checkout).unwrap());
+        let gone = Export {
+            file: SLEEPING.into(),
+            master: GONE.into(),
+            exporter: Exporter::Addon,
+            sha256: String::new(),
+        };
+        fs::write(checkout.join(&gone.file), b"old copy").unwrap();
+        let manifest_path = checkout.join(MANIFEST);
+        let mut manifest = exports::read_at(&manifest_path).unwrap();
+        manifest.exports.push(gone);
+        exports::write(&manifest_path, &manifest).unwrap();
+
+        // Check fails on it; export deletes the file and drops the entry.
+        assert_eq!(
+            vec![format!("{SLEEPING}: {GONE} is gone")],
+            stale(checkout).unwrap()
+        );
+        assert_eq!(ExitCode::SUCCESS, export(checkout).unwrap());
+        assert!(stale(checkout).unwrap().is_empty());
+        assert!(!checkout.join(SLEEPING).exists());
+        assert!(checkout.join(WINNER).is_file());
+        let files: Vec<String> = exports::read_at(&manifest_path)
+            .unwrap()
+            .exports
+            .into_iter()
+            .map(|export| export.file)
+            .collect();
+        assert_eq!(vec![WINNER.to_string()], files);
     }
 }

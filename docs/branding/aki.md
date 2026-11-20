@@ -21,7 +21,7 @@ branding works offline.
 
 the Android app ships WebP copies of the Aki and Ankilope art in `drawable-nodpi`. after changing a PNG in `static/`, run `cargo run -p ankiquest-xtask -- export-android-art <android-checkout>` to rewrite them, and `--check` to confirm every drawable exists at its size.
 
-the desktop add-on ships 256 px palette PNGs of the poses it shows in `addon/art`, and its two faces in `addon/*_face.png`; `crates/xtask/art-exports.json` lists them. `cargo run -p ankiquest-xtask -- export-addon-art` rewrites those whose picture changed, keeps the replaced files in `assets/retired/`, and records their SHA-256, and `cargo test -p ankiquest-xtask` fails while one is missing, edited, or differs from a fresh export of its master. Which pose shows for today's streak is one rule for both clients, pinned by `tests/fixtures/streak_moods.json`.
+the desktop add-on ships 256 px palette PNGs of the poses it shows in `addon/art`, and its two faces in `addon/*_face.png`; `crates/xtask/art-exports.json` lists them. `cargo run -p ankiquest-xtask -- export-addon-art` overwrites those whose picture changed, deletes those whose master is gone, and records their SHA-256, and `cargo test -p ankiquest-xtask` fails while one is missing, edited, has no master, or differs from a fresh export of its master. Which pose shows for today's streak is one rule for both clients, pinned by `tests/fixtures/streak_moods.json`.
 
 the duo also leads the README banner (`docs/graphics/banner_readme.png`) and the repository's social preview (`docs/graphics/social_preview.png`). `cargo run -p ankiquest-xtask -- banner` draws the banner from the duo and `docs/screenshots`, `banner --social` the preview; `cargo test -p ankiquest-xtask` fails while either is stale. Android's README banner shows the duo too, and its social preview comes from `banner --social --out <android-checkout>/docs/graphics/logos/social_preview.png`.
 
@@ -39,7 +39,7 @@ copy is made from the masters and checked.
 | `freeze.png` | Confirmed protection; contextual settings illustration |
 | `winner.png` | Records, trophies, winners and tamed leeches |
 | `face.png` | Compact branding and installed app icon |
-| `face-192` and `face-32` | `face.png` scaled down by `build.rs` for the website's brand mark, touch icon and favicon (also `ankilope/face-192`); the committed `face-192.png` and `face-32.png` are retired copies nothing reads |
+| `face-192` and `face-32` | `face.png` scaled down by `build.rs` for the website's brand mark, touch icon and favicon (also `ankilope/face-192`); the committed `face-192.png` and `face-32.png` are old hand-made copies nothing reads |
 
 ### moment art (#88)
 

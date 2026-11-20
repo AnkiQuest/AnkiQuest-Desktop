@@ -30,7 +30,7 @@ jobs:
         run: |
           cargo run --locked -p ankiquest-xtask -- export-addon-art
           cargo run --locked -p ankiquest-xtask -- export-android-art art-exports/android
-          git diff --binary -- addon crates/xtask/art-exports.json assets/retired > art-exports/changes.patch
+          git diff --binary -- addon crates/xtask/art-exports.json > art-exports/changes.patch
       - name: Store exports for review and commit
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -41,7 +41,6 @@ jobs:
             addon/ankilope_face.png
             addon/anki_tan_face.png
             crates/xtask/art-exports.json
-            assets/retired/
             art-exports/
           if-no-files-found: error
           retention-days: 7
