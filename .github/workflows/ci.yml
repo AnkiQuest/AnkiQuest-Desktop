@@ -155,6 +155,21 @@ jobs:
           persist-credentials: false
       - name: Check the shared study time cases
         run: cmp tests/server-fixtures/study_time.json server-study-time/tests/fixtures/study_time.json
+      - name: Read the shared observed study cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: 0f5d038a29cebf18c466cfdcfa6bece07233d0f7 # Server PR 80, merged
+          path: server-observed
+          sparse-checkout: |
+            /tests/fixtures/day_verdicts.json
+            /tests/fixtures/observed_reviews.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared observed study cases
+        run: |
+          cmp tests/server-fixtures/day_verdicts.json server-observed/tests/fixtures/day_verdicts.json
+          cmp tests/server-fixtures/observed_reviews.json server-observed/tests/fixtures/observed_reviews.json
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
