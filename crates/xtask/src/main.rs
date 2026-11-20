@@ -7,6 +7,8 @@
 
 mod art;
 mod contract;
+#[cfg(test)]
+mod runners;
 
 use std::env;
 use std::path::{Path, PathBuf};
