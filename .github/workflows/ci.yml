@@ -49,6 +49,8 @@ jobs:
           if git -C android-client cat-file -e HEAD:ankiquest-core 2>/dev/null; then
             resources=android-client/ankiquest-core/src/test/resources
           fi
+          # The legacy Desktop guard still skips an unpublished catalog.
+          test -f "$resources/ankiquest-api/names.json"
           cargo run -p ankiquest-xtask -- android-contract --android-resources "$resources"
 
   web:
