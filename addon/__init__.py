@@ -240,7 +240,9 @@ def sync_settings():
             return
         if result is not None:
             _apply_synced(snapshot, account, *result)
-        if (api.base, api.user, api.token) == account:
+        current_api = client()
+        if (result is not None and "countdowns" in result[1]
+                and (current_api.base, current_api.user, current_api.token) == account):
             _offer_countdowns()
         if again:
             sync_settings()
@@ -275,6 +277,10 @@ def _offer_countdowns():
     Declined, they stay on this computer and show whenever no one is signed in."""
     if state["countdown_offer"] is not _CountdownOffer.AFTER_SYNC:
         return
+    api = client()
+    if not api.configured:
+        return
+    identity = (api.base, api.user, api.token)
     state["countdown_offer"] = _CountdownOffer.NONE
     current = config()
     account = countdowns.events(current.get(countdowns.CONFIG_KEY))
@@ -284,12 +290,22 @@ def _offer_countdowns():
     if added == 0:
         return
     offered = added + len(found.left)
-    if not countdowns_ui.ask_import(mw, countdowns.import_question(offered, client().user, plural)):
+    if not countdowns_ui.ask_import(mw, countdowns.import_question(offered, api.user, plural)):
+        return
+
+    # The modal runs the event loop: an account, either list or other settings may change.
+    current_api = client()
+    if (current_api.base, current_api.user, current_api.token) != identity:
+        return
+    latest = config()
+    if (countdowns.events(latest.get(countdowns.CONFIG_KEY)) != account
+            or countdowns.events(settings_sync.signed_out(latest, "countdowns")) != device):
+        state["countdown_offer"] = _CountdownOffer.AFTER_SYNC
         return
 
     # What was added leaves this computer's list; what did not fit stays on it.
     mw.addonManager.writeConfig(
-        __name__, settings_sync.keep_signed_out(current, "countdowns", countdowns.stored(found.left))
+        __name__, settings_sync.keep_signed_out(latest, "countdowns", countdowns.stored(found.left))
     )
     save_config({countdowns.CONFIG_KEY: countdowns.stored(found.account)})
     if found.left:

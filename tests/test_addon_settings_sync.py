@@ -278,6 +278,14 @@ class SignedOutCountdowns(unittest.TestCase):
         self.ask.assert_not_called()
         self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])
 
+    def test_the_offer_waits_until_countdowns_can_sync(self):
+        self.api.capabilities = Mock(return_value={settings_sync.FEATURE})
+        self.addon.sync_settings()
+
+        self.ask.assert_not_called()
+        self.assertEqual([self.DRIVING], self.device())
+        self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])
+
     def test_nothing_to_add_offers_nothing(self):
         self.settings[settings_sync.DEVICE_KEY] = {"countdowns": {"value": [self.EXAM], "changed_at": 3}}
         self.addon.sync_settings()

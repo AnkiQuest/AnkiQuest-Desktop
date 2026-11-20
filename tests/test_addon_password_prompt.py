@@ -1,7 +1,6 @@
 """The Today card asking players who sign in only with a token to set a password; run with python -m unittest discover -s tests."""
 
 import unittest
-from types import SimpleNamespace
 
 from addon_loader import load_in_package
 
