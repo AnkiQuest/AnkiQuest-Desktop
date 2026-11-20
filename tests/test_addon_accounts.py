@@ -129,14 +129,14 @@ class AccountTests(unittest.TestCase):
         headers = Server.headers[-1]
         self.assertEqual((headers["Authorization"], headers["Accept-Language"]), ("Bearer device-token", "es"))
 
-    def test_capabilities_are_read_and_an_older_server_has_none(self):
+    def test_capabilities_are_read_and_an_older_server_refuses(self):
         api = self.client.Client(self.base, "ana", "device-token")
         self.assertEqual(frozenset({"share_cards", "wins"}), api.capabilities())
         self.assertEqual((frozenset({"share_cards", "wins"}), "https://anki.example.test"), api.server_info())
         Server.old_server = True
         try:
-            self.assertEqual(frozenset(), api.capabilities())
-            self.assertEqual((frozenset(), None), api.server_info())
+            with self.assertRaises(self.client.ServerError):
+                api.capabilities()
         finally:
             Server.old_server = False
 

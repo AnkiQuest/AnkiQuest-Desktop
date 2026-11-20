@@ -133,6 +133,13 @@ class Boards(unittest.TestCase):
         self.run_task(*tasks.pop(0))
         self.assertIs(newest, self.home.local["board"])
 
+    def test_xp_comes_from_the_row_and_rank_from_the_order(self):
+        # Friends rows carry no rank; their order gives it. Per-period XP is never read.
+        data = self.home.board_data
+        rows = [{"user": "ana", "xp": 12, "periods": {"week": 90}}, {"user": "hill", "periods": {"week": 70}}]
+        found = data._Board(data._Query(), rows, [], False)
+        self.assertEqual([(1, 12, False), (2, 0, True)], [(place, row["xp"], mine) for place, row, mine in data._rows(found, "hill")])
+
     def test_global_keeps_a_distant_own_rank_after_gaps(self):
         data = self.home.board_data
         rows = [{"user": "p%d" % i, "rank": i * 3, "xp": 50 - i} for i in range(1, 8)]

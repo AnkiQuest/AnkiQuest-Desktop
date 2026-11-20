@@ -203,32 +203,31 @@ class ShareWindow(unittest.TestCase):
                                current_client=lambda: self.current, run=self.run_task)
 
     def test_place_routing(self):
+        # Without share_place the server is older than the add-on; nothing goes out the old way.
         sharing = self.place_sharing()
-        legacy = Mock()
+        local = Mock()
         with patch.object(ui.share_ui, "win_dialog") as opened:
-            ui.share_ui._route(sharing, legacy)
-            legacy.assert_called_once()
+            ui.share_ui._route(sharing, local)
             opened.assert_not_called()
-            legacy.reset_mock()
+            sharing.status.setText.assert_called_once_with(OUTDATED)
             self.features.add("share_place")
-            ui.share_ui._route(sharing, legacy)
-            legacy.assert_not_called()
+            ui.share_ui._route(sharing, local)
             opened.assert_called_once()
             opened.return_value.show.assert_called_once()
+        local.assert_not_called()
 
-    def test_place_routing_falls_back_when_capabilities_fail(self):
+    def test_place_routing_says_why_when_capabilities_fail(self):
         def offline():
             raise OSError("offline")
 
-        # Without the server's features the place goes out the old way, as on an older server.
         self.api.capabilities = offline
         sharing = self.place_sharing()
-        legacy = Mock()
+        local = Mock()
         with patch.object(ui.share_ui, "win_dialog") as opened:
-            ui.share_ui._route(sharing, legacy)
-        legacy.assert_called_once()
+            ui.share_ui._route(sharing, local)
+        local.assert_not_called()
         opened.assert_not_called()
-        sharing.status.setText.assert_not_called()
+        sharing.status.setText.assert_called_once_with("Couldn't share it (offline).")
 
     def test_stale_capabilities_do_not_retract_the_first_send(self):
         self.features = {"share_moments"}

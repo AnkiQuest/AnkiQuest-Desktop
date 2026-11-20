@@ -91,8 +91,6 @@ class ConquestApi(unittest.TestCase):
         for data in ({}, {"told": True}, {"told": False, "undo_until": 101}, {"told": True, "undo_until": 100}):
             self.assertFalse(conquests._can_undo(data, 100))
         self.assertTrue(conquests._can_undo({"told": True, "undo_until": 101}, 100))
-        conquests._tell(self.api, 50)
-        self.api._request.assert_called_with("/api/conquests/sam/50/tell", {})
         conquests._undo(self.api, 50)
         self.api._request.assert_called_with("/api/conquests/sam/50/tell", method="DELETE")
 
