@@ -1015,6 +1015,7 @@ SPANISH.update({
     "Days studied": "Días de estudio",
     "Reviews / study day": "Repasos por día de estudio",
     "Reviews in available history: %s": "Repasos en el historial disponible: %s",
+    "You studied on %s%% of the days since your first review": "Estudiaste el %s %% de los días desde tu primer repaso",
     "Previous year": "Año anterior",
     "Next year": "Año siguiente",
     "Click a day for details. Gray squares show estimated review cards due over the next 90 days.": "Haz clic en un día para ver los detalles. Los cuadros grises estiman las tarjetas de repaso pendientes de los próximos 90 días.",
@@ -1044,6 +1045,7 @@ GERMAN.update({
     "Days studied": "Lerntage",
     "Reviews / study day": "Wiederholungen pro Lerntag",
     "Reviews in available history: %s": "Wiederholungen im verfügbaren Verlauf: %s",
+    "You studied on %s%% of the days since your first review": "Du hast an %s %% der Tage seit deiner ersten Wiederholung gelernt",
     "Previous year": "Vorheriges Jahr",
     "Next year": "Nächstes Jahr",
     "Click a day for details. Gray squares show estimated review cards due over the next 90 days.": "Klicke auf einen Tag für Details. Graue Felder schätzen die fälligen Wiederholungskarten der nächsten 90 Tage.",
@@ -1073,6 +1075,7 @@ FRENCH.update({
     "Days studied": "Jours d’étude",
     "Reviews / study day": "Révisions par jour d’étude",
     "Reviews in available history: %s": "Révisions dans l’historique disponible : %s",
+    "You studied on %s%% of the days since your first review": "Tu as étudié %s %% des jours depuis ta première révision",
     "Previous year": "Année précédente",
     "Next year": "Année suivante",
     "Click a day for details. Gray squares show estimated review cards due over the next 90 days.": "Clique sur un jour pour voir le détail. Les cases grises estiment les cartes à réviser des 90 prochains jours.",
@@ -1102,6 +1105,7 @@ PORTUGUESE.update({
     "Days studied": "Dias de estudo",
     "Reviews / study day": "Revisões por dia de estudo",
     "Reviews in available history: %s": "Revisões no histórico disponível: %s",
+    "You studied on %s%% of the days since your first review": "Estudaste em %s%% dos dias desde a tua primeira revisão",
     "Previous year": "Ano anterior",
     "Next year": "Ano seguinte",
     "Click a day for details. Gray squares show estimated review cards due over the next 90 days.": "Clica num dia para ver os detalhes. Os quadrados cinzentos estimam os cartões de revisão pendentes nos próximos 90 dias.",
@@ -2284,3 +2288,49 @@ SPANISH.update({"Share a deck": "Compartir un mazo"})
 GERMAN.update({"Share a deck": "Stapel teilen"})
 FRENCH.update({"Share a deck": "Partager un paquet"})
 PORTUGUESE.update({"Share a deck": "Partilhar um baralho"})
+
+# Progress: study time from the local review log, in Android's wording.
+SPANISH.update({
+    ("Time spent answering cards in this collection, uploaded or not. "
+     "Days start at Anki’s “Next day starts at” hour, weeks on Monday."):
+        "Tiempo dedicado a responder tarjetas en esta colección, se haya subido o no. "
+        "Los días empiezan a la hora de «El día siguiente comienza a las» de Anki y las semanas, el lunes.",
+    "This week": "Esta semana", "This month": "Este mes", "Total": "Total", "Per study day": "Por día de estudio",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "Cargando el tiempo de estudio…",
+    "Could not read study time (%s).": "No se pudo leer el tiempo de estudio (%s).",
+    "No reviews in this collection yet.": "Aún no hay repasos en esta colección.",
+})
+GERMAN.update({
+    ("Time spent answering cards in this collection, uploaded or not. "
+     "Days start at Anki’s “Next day starts at” hour, weeks on Monday."):
+        "Zeit, die du in dieser Sammlung mit dem Beantworten von Karten verbracht hast, hochgeladen oder nicht. "
+        "Tage beginnen zur Stunde von Ankis „Nächster Tag beginnt um“, Wochen am Montag.",
+    "This week": "Diese Woche", "This month": "Diesen Monat", "Total": "Gesamt", "Per study day": "Pro Lerntag",
+    "%d min": "%d Min.", "%d h %d min": "%d Std. %d Min.",
+    "Loading study time…": "Lernzeit wird geladen…",
+    "Could not read study time (%s).": "Lernzeit konnte nicht gelesen werden (%s).",
+    "No reviews in this collection yet.": "Noch keine Wiederholungen in dieser Sammlung.",
+})
+FRENCH.update({
+    ("Time spent answering cards in this collection, uploaded or not. "
+     "Days start at Anki’s “Next day starts at” hour, weeks on Monday."):
+        "Temps passé à répondre aux cartes de cette collection, envoyé ou non. "
+        "Les jours commencent à l’heure « Le jour suivant commence à » d’Anki, les semaines le lundi.",
+    "This week": "Cette semaine", "This month": "Ce mois-ci", "Total": "Total", "Per study day": "Par jour d’étude",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "Chargement du temps d’étude…",
+    "Could not read study time (%s).": "Impossible de lire le temps d’étude (%s).",
+    "No reviews in this collection yet.": "Aucune révision dans cette collection pour le moment.",
+})
+PORTUGUESE.update({
+    ("Time spent answering cards in this collection, uploaded or not. "
+     "Days start at Anki’s “Next day starts at” hour, weeks on Monday."):
+        "Tempo passado a responder a cartões nesta coleção, enviado ou não. "
+        "Os dias começam à hora de «O dia seguinte começa às» do Anki e as semanas à segunda-feira.",
+    "This week": "Esta semana", "This month": "Este mês", "Total": "Total", "Per study day": "Por dia de estudo",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "A carregar o tempo de estudo…",
+    "Could not read study time (%s).": "Não foi possível ler o tempo de estudo (%s).",
+    "No reviews in this collection yet.": "Ainda não há revisões nesta coleção.",
+})

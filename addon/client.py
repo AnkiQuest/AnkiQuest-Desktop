@@ -232,18 +232,13 @@ class Client:
         return request_json(self.base + path, body, headers, method=method)
 
     def capabilities(self):
-        """The features this server names at /api/capabilities; none for a server without it."""
+        """The features this server names at /api/capabilities."""
         return self.server_info()[0]
 
     def server_info(self):
         """The features this server names at /api/capabilities and its `public_url`, the main
         address, when it names one (else None)."""
-        try:
-            answer = request_json(self.base + "/api/capabilities")
-        except ServerError as error:
-            if error.status == 404:
-                return frozenset(), None
-            raise
+        answer = request_json(self.base + "/api/capabilities")
         features = answer.get("features") if isinstance(answer, dict) else None
         url = answer.get("public_url") if isinstance(answer, dict) else None
         return (
