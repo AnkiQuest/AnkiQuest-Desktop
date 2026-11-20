@@ -303,6 +303,64 @@ class SignedOutCountdowns(unittest.TestCase):
         self.assertEqual([self.EXAM], self.device())
         self.assertIn("1 countdown did not fit", self.addon.tooltip.call_args.args[0])
 
+    def test_an_old_sync_does_not_offer_for_a_new_account(self):
+        original = self.server._request
+
+        def finish_old_request(*args, **kwargs):
+            result = original(*args, **kwargs)
+            # Real clients are captured objects; switching does not mutate the old one.
+            self.api = SimpleNamespace(**dict(vars(self.api), user="other", token="other-token"))
+            self.settings.update(user="other", token="other-token", countdowns=[])
+            return result
+
+        self.api._request = finish_old_request
+        self.addon.sync_settings()
+
+        self.ask.assert_not_called()
+        self.assertEqual([], self.settings["countdowns"])
+        self.assertEqual([self.DRIVING], self.device())
+        self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])
+
+    def test_an_import_answer_does_not_restore_the_previous_account(self):
+        def switch_while_asking(*_):
+            self.api = SimpleNamespace(**dict(vars(self.api), user="other", token="other-token"))
+            self.settings.update(user="other", token="other-token", countdowns=[])
+            self.addon.state["countdown_offer"] = self.addon._CountdownOffer.AFTER_SYNC
+            return True
+
+        self.ask.side_effect = switch_while_asking
+        self.addon.sync_settings()
+
+        self.assertEqual("other", self.settings["user"])
+        self.assertEqual("other-token", self.settings["token"])
+        self.assertEqual([], self.settings["countdowns"])
+        self.assertEqual([self.DRIVING], self.device())
+
+    def test_import_keeps_other_preferences_changed_while_asking(self):
+        def change_while_asking(*_):
+            self.settings["goal_celebrations"] = False
+            return True
+
+        self.ask.side_effect = change_while_asking
+        self.addon.sync_settings()
+
+        self.assertFalse(self.settings.get("goal_celebrations", True))
+        self.assertEqual([self.EXAM, self.DRIVING], self.settings["countdowns"])
+
+    def test_a_changed_list_keeps_both_lists_until_a_fresh_offer(self):
+        changed = [self.EXAM, {"name": "New event", "date": "2027-02-01", "deck": None}]
+
+        def change_while_asking(*_):
+            self.settings["countdowns"] = changed
+            return True
+
+        self.ask.side_effect = change_while_asking
+        self.addon.sync_settings()
+
+        self.assertEqual(changed, self.settings["countdowns"])
+        self.assertEqual([self.DRIVING], self.device())
+        self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])
+
 
 class SettingsDialogValues(unittest.TestCase):
     def test_the_switch_reads_as_on_unless_turned_off(self):
