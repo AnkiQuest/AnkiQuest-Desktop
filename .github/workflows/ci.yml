@@ -119,6 +119,17 @@ jobs:
           persist-credentials: false
       - name: Check the shared quiet-hour cases
         run: cmp tests/fixtures/quiet_hours.json server-contract/tests/fixtures/quiet_hours.json
+      - name: Read the shared streak mood cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: 04a5fb6614011ce0631f434e0679e4eed5a1ecf6 # Server PR 60, merged
+          path: server-moods
+          sparse-checkout: /tests/fixtures/streak_moods.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared streak mood cases
+        run: cmp tests/server-fixtures/streak_moods.json server-moods/tests/fixtures/streak_moods.json
       - name: Read the authoritative companion unlock cases
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
