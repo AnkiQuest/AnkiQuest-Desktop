@@ -128,3 +128,22 @@ class PrivateCountdowns(_HeldTasks):
     def test_a_new_token_for_the_same_account_keeps_its_countdowns(self):
         self.switch("hill", "new-token")
         self.assertEqual((self.EXAM, 7), self.countdowns())
+
+    def test_signed_out_countdowns_stay_on_this_device(self):
+        # Made while signed out, they are not the new account's; signing out shows them again.
+        self.switch("", "")
+        driving = [{"name": "Driving test", "date": "2027-01-10", "deck": None}]
+        self.settings["countdowns"] = driving
+        self.settings[self.addon.settings_sync.CHANGED_KEY]["countdowns"] = 12
+
+        self.switch("first-login", "new-token")
+        self.assertEqual(([], 0), self.countdowns())
+        self.switch("", "")
+        self.assertEqual((driving, 12), self.countdowns())
+
+    def test_signing_in_offers_them_once_settings_have_synced(self):
+        self.switch("", "")
+        self.assertIs(self.addon._CountdownOffer.NONE, self.addon.state["countdown_offer"])
+
+        self.switch("first-login", "new-token")
+        self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])

@@ -65,6 +65,25 @@ class SharedCases(unittest.TestCase):
                     expected["cards"] = found.cards
                 self.assertEqual(case["expected"], expected)
 
+    def test_imports_follow_the_shared_cases(self):
+        for case in FIXTURE["import"]:
+            with self.subTest(case["name"]):
+                found = countdowns.imported(events(case["account"]), events(case["device"]))
+                self.assertEqual(case["expected"]["account"], countdowns.stored(found.account))
+                self.assertEqual(case["expected"]["left"], countdowns.stored(found.left))
+
+    def test_the_import_wording_is_the_shared_english(self):
+        wording = FIXTURE["wording"]
+        lines = {
+            ("import_one", 1): countdowns.import_question(1, "hill", plural, english),
+            ("import_other", 3): countdowns.import_question(3, "hill", plural, english),
+            ("left_one", 1): countdowns.left_text(1, plural, english),
+            ("left_other", 2): countdowns.left_text(2, plural, english),
+        }
+        for (key, count), line in lines.items():
+            with self.subTest(key):
+                self.assertEqual(wording[key].format(count=count, user="hill"), line)
+
     def test_the_wording_is_the_shared_english(self):
         wording = FIXTURE["wording"]
         spanish = countdowns.Event("Spanish exam", "2026-12-01", None)
@@ -92,7 +111,7 @@ class SharedCases(unittest.TestCase):
         # Labels without placeholders appear in the add-on as written in the fixture.
         source = "".join(path.read_text("utf-8") for path in (ADDON / "countdowns_ui.py", ADDON / "board.py", ADDON / "ui.py"))
         for key in ("section", "empty", "add", "edit", "manage", "name", "date", "deck", "no_deck", "save", "delete",
-                    "name_missing", "full", "private"):
+                    "name_missing", "full", "private", "import_add", "import_keep"):
             with self.subTest(key):
                 self.assertIn('tr("%s")' % FIXTURE["wording"][key], source.replace("translate(", "tr("))
 
