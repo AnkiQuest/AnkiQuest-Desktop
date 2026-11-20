@@ -8,6 +8,13 @@ from .language import _clock
 # Shown instead of other players until the server holds one of the player's reviews.
 UPLOAD_FIRST = "Study and sync once to see how others are doing."
 
+# XP that includes answers AnkiQuest Lite observed without review times (`xp_source` on board
+# rows, `xp_sources` on profiles), worded as on the website.
+XP_OBSERVED = "observed"
+OBSERVED = "Observed"
+OBSERVED_REASON = "Includes answers read from AnkiDroid without review times"
+_ALL_TIME = "all"
+
 # The class of every companion picture in the deck list, the Today panel's and the heatmap's.
 COMPANION_CLASS = "aq-companion"
 
@@ -97,7 +104,7 @@ background:var(--aq-bg);color:var(--aq-text);box-shadow:inset 0 0 0 2px var(--aq
 #ankiquest .aq-pill.aq-level{background:var(--aq-purple)}
 #ankiquest .aq-pill.aq-rank{background:var(--aq-gold);color:#5c4400}
 #ankiquest .aq-pill.aq-risk{background:var(--aq-red)}
-#ankiquest .aq-pill.aq-met{background:#dff1c9;color:#254a12}
+#ankiquest .aq-pill.aq-met,#ankiquest .aq-pill.aq-unverified{background:#dff1c9;color:#254a12}
 #ankiquest .aq-pill.aq-syncing,#ankiquest .aq-pill.aq-protected,#ankiquest .aq-pill.aq-frozen,#ankiquest .aq-pill.aq-skipped{background:#def0ff;color:#16527b}
 #ankiquest .aq-pill.aq-short{background:#e9d8a6;color:#534619}
 #ankiquest .aq-row-day{display:block;white-space:normal;font-size:11px;color:var(--aq-muted);font-weight:600}
@@ -246,10 +253,32 @@ def summary_parts(profile, place, translate, flame=moods.Flame.NONE):
             parts.append(streak_html(profile["streak"], flame, translate))
         if profile.get("at_risk"):
             parts.append(escape(translate("streak at risk today")))
+        if _observed_xp(profile):
+            parts.append(escape(translate(OBSERVED)))
         label = _day_label(profile, translate)
         if label:
             parts.append(escape(label))
     return parts
+
+
+def _observed_xp(profile):
+    """Whether the profile's lifetime XP, which the level shows, includes observed answers."""
+    sources = (profile or {}).get("xp_sources")
+    return isinstance(sources, dict) and sources.get(_ALL_TIME) == XP_OBSERVED
+
+
+def _observed_pill(translate):
+    return "<span class='aq-pill aq-ghost' title=\"%s\">%s</span>" % (
+        escape(translate(OBSERVED_REASON), True), escape(translate(OBSERVED)),
+    )
+
+
+def row_title(entry, translate):
+    """A leaderboard row's name, marked when its XP includes observed answers."""
+    name = str(entry.get("display") or entry.get("user") or "")
+    if entry.get("xp_source") == XP_OBSERVED:
+        return name + " · " + translate(OBSERVED)
+    return name
 
 
 def level_text(profile, translate):
@@ -332,6 +361,8 @@ def pills(profile, place, translate, flame=moods.Flame.NONE):
         found += "<span class='aq-pill aq-%s'>%s</span>" % (_STREAK_PILLS[flame], streak_html(profile["streak"], flame, translate))
     if profile:
         found += pill(level_text(profile, translate), "level")
+    if _observed_xp(profile):
+        found += _observed_pill(translate)
     if place:
         found += pill("\U0001f3c6 " + translate("#%d this week") % place, "rank")
     if profile and profile.get("at_risk"):
@@ -339,7 +370,7 @@ def pills(profile, place, translate, flame=moods.Flame.NONE):
     label = _day_label(profile, translate)
     if label:
         state = (profile or {}).get("_day_status") or "unknown"
-        found += pill(label, state if state in ("met", "syncing", "protected") else "ghost")
+        found += pill(label, state if state in ("met", "unverified", "syncing", "protected") else "ghost")
     return "<div class=aq-pills>%s</div>" % found if found else ""
 
 
@@ -349,6 +380,8 @@ def _day_label(profile, translate):
         return translate("Syncing — today counts after upload")
     if state == "met":
         return translate("Streak secured")
+    if state == "unverified":
+        return translate("Studied today · time not known")
     if state == "protected":
         return translate("Protected by a freeze")
     if state == "unknown" or profile is None:
@@ -393,6 +426,18 @@ def _weekly_card(today, translate):
         return ""
     lines = "".join("<p>%s</p>" % escape(line) for line in (recap.get("body") or "").splitlines() if line.strip())
     return card(translate("Weekly recap"), lines)
+
+
+def countdown_card(today, translate):
+    """The nearest countdown, with the cards a day when a deck is linked."""
+    countdown = today.get("countdown")
+    if not countdown:
+        return ""
+    body = "<div class=aq-deck>%s</div>" % escape(countdown["headline"])
+    if countdown.get("pace"):
+        body += "<div class=aq-note>%s</div>" % escape(countdown["pace"])
+    body += "<button class=aq-goal-edit onclick=\"pycmd('ankiquest:countdowns');return false\">%s</button>" % escape(translate("Edit countdowns"))
+    return card(translate("Countdowns"), body)
 
 
 PASSWORD_COMMAND = "ankiquest:password"
@@ -525,15 +570,17 @@ def board_row(place, entry, mine, translate=lambda value: value):
     picture = entry.get("avatar")
     face = '<img class=aq-avatar src="%s" alt="">' % escape(picture, True) if picture and picture.startswith("data:image/png;base64,") else avatar(name)
     xp = "—" if "xp" in entry and entry["xp"] is None else "{:,}".format(int(entry.get("xp") or 0))
+    # As the website marks a row whose XP includes answers AnkiQuest Lite observed.
+    observed = " " + _observed_pill(translate) if entry.get("xp_source") == XP_OBSERVED else ""
     return (
         "<div class='aq-player%s'><span class=aq-place>%s</span>%s<span class=aq-name>%s%s</span>"
-        "<span class=aq-xp>%s XP</span></div>"
+        "<span class=aq-xp>%s XP%s</span></div>"
     ) % (
         " aq-me" if mine else "",
         MEDALS.get(place, "#%d" % place),
         face,
         escape(name),
-        day_html, xp,
+        day_html, xp, observed,
     )
 
 
@@ -570,12 +617,12 @@ def session_line(today, translate):
     if not today.get("session"):
         return ""
     day = today.get("session_day")
-    status = pill(day["label"], day["state"] if day["state"] in ("met", "syncing", "protected", "short", "frozen", "skipped") else "ghost") if day else ""
+    status = pill(day["label"], day["state"] if day["state"] in ("met", "unverified", "syncing", "protected", "short", "frozen", "skipped") else "ghost") if day else ""
     return "<div class=aq-session>%s %s</div>" % (pill("%s: %s" % (translate("Your last study session"), today["session"]), "ghost"), status)
 
 
 def panel(profile, place, unread, translate, today, actions=0, flame=moods.Flame.NONE):
-    cards = next_deck(today, translate) + _password_card(today, translate) + goal_card(today, translate) + quests_card(profile, today, translate) + board_card(today, translate, profile)
+    cards = next_deck(today, translate) + _password_card(today, translate) + goal_card(today, translate) + countdown_card(today, translate) + quests_card(profile, today, translate) + board_card(today, translate, profile)
     cards += _weekly_card(today, translate)
     moments = ('<button type=button onclick="pycmd(\'ankiquest:moments\')">%s</button>'
                % escape(translate("Your moments (%d)") % today["moments"])) if today.get("moments") else ""

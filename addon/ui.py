@@ -219,7 +219,7 @@ def _folded(title, layout):
 
 def settings_dialog(
     parent, config, on_test, on_upload_all, companion="aki", on_account=None, *,
-    extra=None, on_manage=None, on_decks=None, on_privacy=None, on_two_factor=None,
+    extra=None, on_manage=None, on_decks=None, on_privacy=None, on_two_factor=None, on_countdowns=None,
 ):
     """One scrollable dialog. Server sections save only for the account they loaded."""
     dialog = QDialog(parent)
@@ -330,6 +330,12 @@ def settings_dialog(
         channel.setCurrentIndex(1 if config.get("update_channel") == "nightly" else 0)
         groups["app"].addWidget(_row(QLabel(tr("Update channel")), channel))
     today_values = settings_section(groups["app"], config, notify_layout=groups["notify"])
+
+    # The countdown list saves on its own and works without an account.
+    if on_countdowns is not None:
+        countdown_button = QPushButton(tr("Edit countdowns"))
+        countdown_button.clicked.connect(on_countdowns)
+        groups["app"].addWidget(countdown_button)
 
     # This device's switch for the settings above that follow the account.
     sync = QCheckBox(tr("Sync settings"))
