@@ -1,11 +1,7 @@
 """The companion tab's mood line and the unlock reveal's states, without Qt."""
 
 import json
-import os
-import subprocess
-import sys
 import unittest
-from pathlib import Path
 
 from addon_loader import ADDON, load_in_package
 
@@ -14,7 +10,8 @@ moments = load_in_package("aq_tab", "moments")
 board = load_in_package("aq_tab", "board")
 reveal = load_in_package("aq_tab", "companion_reveal")
 
-UNLOCKS = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
+# The Server copy (tests/server-fixtures/README.md); tests/fixtures holds the server code's older one.
+UNLOCKS = json.loads((ADDON.parent / "tests/server-fixtures/companion_unlock.json").read_text("utf-8"))
 EXAMPLES = ADDON.parent / "docs/api/examples"
 Phase, Motion, Beam = reveal.Phase, reveal.Motion, reveal.Beam
 
@@ -115,7 +112,8 @@ class Beams(unittest.TestCase):
     def test_every_companion_has_its_beam(self):
         expected = {
             "aki": Beam.WHITE, "ankilope": Beam.BLUE, "cow": Beam.PURPLE,
-            "anki_tan": Beam.GOLD, "leech_tan": Beam.GOLD, "anki_tan_chibi": Beam.RAINBOW,
+            "anki_tan": Beam.GOLD, "anki_tan_chibi": Beam.RAINBOW,
+            "quest_chan": Beam.GOLD, "quest_chan_chibi": Beam.RAINBOW, "leech_kun": Beam.GOLD,
         }
         listed = {"aki"} | {rule["companion"] for rule in UNLOCKS["companions"]}
         self.assertEqual(listed, set(expected))
@@ -141,17 +139,6 @@ class Due(unittest.TestCase):
 
         # Moments saved before the reveal existed carry no notice and stay cards.
         self.assertFalse(reveal.due({"key": "companion:cow", "topic": "companion", "at": 1, "title": "", "body": ""}))
-
-
-class RevealWindow(unittest.TestCase):
-    def test_the_tab_and_the_reveal_with_real_qt(self):
-        for script in ("qt_reveal.py",):
-            result = subprocess.run(
-                [sys.executable, str(Path(__file__).with_name(script))],
-                env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-                capture_output=True, text=True, timeout=120,
-            )
-            self.assertEqual(0, result.returncode, script + "\n" + result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

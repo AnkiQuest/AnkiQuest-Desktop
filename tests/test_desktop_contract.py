@@ -44,6 +44,13 @@ class Contracts(unittest.TestCase):
         response.headers = self.headers
         return response
 
+    def test_a_server_without_capabilities_is_outdated(self):
+        # Every supported server answers /api/capabilities; a 404 is an error, not "no features".
+        missing = client.ServerError(HTTPStatus.NOT_FOUND, None)
+        with patch.object(client, "open_url", side_effect=missing):
+            with self.assertRaises(client.ServerError):
+                self.api.server_info()
+
     def test_profile_and_upload_produce_the_same_confirmed_day(self):
         self.routes = {("GET", "/api/profile/hill"): "profile", ("POST", "/api/reviews/hill"): "upload"}
         profile = self.api.profile()
@@ -106,14 +113,14 @@ class Contracts(unittest.TestCase):
         self.routes = {("GET", "/api/activity/hill?limit=50"): "activity"}
         self.assertIsNone(activity._load(self.api).locked)
 
-    def test_activity_and_legacy_notices_keep_actions_and_share_ids(self):
-        self.routes = {("GET", "/api/activity/hill?limit=50"): "activity",
-                       ("GET", "/api/notifications/hill"): "notifications"}
+    def test_activity_keeps_actions_and_notices_keep_share_ids(self):
+        self.routes = {("GET", "/api/activity/hill?limit=50"): "activity"}
         page = activity._load(self.api)
         self.assertEqual((7, 1, 15), (page.unread, page.actions, page.before))
         self.assertEqual(4, inbox.challenge_target(page.attention[0]))
         self.assertFalse(inbox.answerable(page.attention[0]))
-        notices = self.api.notifications()
+        # Notification rows, as activity items carry them.
+        notices = example("notifications")
         level = next(row for row in notices if row.get("topic") == "level")
         self.assertTrue(inbox.shareable(level))
         self.assertEqual("I reached level 3 with 400 XP.", share.win_from_entry(level)["body"])
@@ -148,11 +155,10 @@ class Contracts(unittest.TestCase):
         self.assertTrue({"activity", "wins", "global_leaderboard_hide"}.issubset(features))
         self.assertEqual("https://anki.example.test", address)
 
-    def test_conquest_label_stats_tell_and_undo_match_the_server(self):
+    def test_conquest_label_stats_and_undo_match_the_server(self):
         at = 1793097000000
         path = "/api/conquests/hill/%d" % at
-        self.routes = {("GET", path): "conquest", ("POST", path + "/tell"): "conquest_tell",
-                       ("DELETE", path + "/tell"): "conquest_untell"}
+        self.routes = {("GET", path): "conquest", ("DELETE", path + "/tell"): "conquest_untell"}
         found = conquests._load(self.api, at)
         self.assertEqual("4 lapses · 11 answers · 10 days to learn", conquests._stats(found, str))
         win = conquests._win(self.api, at, found, "Spanish", str)
@@ -160,7 +166,6 @@ class Contracts(unittest.TestCase):
         self.assertIn("From my deck “Spanish”.", win["body"])
         self.assertEqual(6, win["win"])
         self.assertFalse(conquests._can_undo(found, 0))
-        self.assertEqual({"told": 0}, conquests._tell(self.api, at))
         self.assertEqual({"retracted": 0}, conquests._undo(self.api, at))
 
     def test_moment_recipients_and_send_specific_undo_use_recorded_contracts(self):

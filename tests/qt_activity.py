@@ -3,14 +3,13 @@ from concurrent.futures import Future
 from copy import deepcopy
 import gc
 from http import HTTPStatus
-from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCoreApplication, QEvent, QLabel, QLineEdit, QPushButton, QWidget
+from aqt.qt import QCoreApplication, QEvent, QLabel, QLineEdit, QPushButton
 from addon_loader import load_in_package
+from qt_support import app, finish, main_window
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("activity_qt", "inbox_ui")
 client = load_in_package("activity_qt", "client")
 
@@ -18,8 +17,7 @@ client = load_in_package("activity_qt", "client")
 class Activity(unittest.TestCase):
     def setUp(self):
         self.tasks = []
-        self.parent = QWidget()
-        self.parent.pm = SimpleNamespace(profile={})
+        self.parent = main_window()
         self.api = client.Client("https://quest.test", "hill", "secret")
         self.page = {"items": [{"id": 4, "title": "Friend", "body": "Hello", "sender": "ana"}],
                      "unread_count": 7, "action_count": 2, "latest_id": 4, "next_before": None}
@@ -37,14 +35,7 @@ class Activity(unittest.TestCase):
         app.processEvents()
 
     def finish(self, index=0, error=None):
-        work, done = self.tasks.pop(index)
-        future = Future()
-        if error is None:
-            future.set_result(work())
-        else:
-            future.set_exception(error)
-        done(future)
-        app.processEvents()
+        finish(self.tasks, index, error)
 
     def test_a_late_load_cannot_touch_a_deleted_dialog(self):
         self.dialog.reload()

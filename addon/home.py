@@ -431,7 +431,9 @@ def board_view(api, profile=None):
     chosen = board.query.period
     rows = []
     pictures = _pictures()
+    moment = now_ms()
     for place, entry, mine in board_data._top(board, api.name):
+        entry = dict(entry, counting=board_data._counting(board, entry, moment))
         if mine:
             entry = dict(entry, day=profile or {"_day_status": "unknown"})
             if chosen == "day" and entry["day"].get("_day_status") == "unknown":
@@ -527,6 +529,7 @@ def today_view(deck_browser, chosen_companion):
         "session_day": _session_day(mw.pm.profile[SESSION_KEY]) if session else None,
         "moments": addon()._moments._count(),
         "weekly": _weekly_recap(),
+        "password": addon().state.get("password_prompt") == account(api),
     }
 
 
@@ -846,11 +849,9 @@ def continue_studying():
 
 
 def open_progress():
-    if not addon().client().configured:
-        addon().open_account()
-        return
+    # Study time needs no account; History and Records say they need one.
     opened = local["progress"]
-    if opened is not None and opened._owns():
+    if opened is not None and opened.current():
         opened._dialog.raise_()
         opened._dialog.activateWindow()
         return

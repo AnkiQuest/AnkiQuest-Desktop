@@ -1,4 +1,4 @@
-"""Real Qt checks for the AnkiQuest changelog dialog, run in a separate process by test_changelog.py."""
+"""Real Qt checks for the AnkiQuest changelog dialog, run by test_qt_windows.py."""
 
 import json
 from pathlib import Path
@@ -6,12 +6,12 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QMenu, QPushButton, QTextBrowser, QUrl, QWidget
+from aqt.qt import QMenu, QPushButton, QTextBrowser, QUrl, QWidget
 
 from addon_loader import load_in_package
+from qt_support import app
 
 
-app = QApplication.instance() or QApplication([])
 help_ui = load_in_package("changelog_qt", "help_ui")
 links = help_ui.links
 help_ui.tr = lambda text: text
@@ -26,6 +26,10 @@ class Changelog(unittest.TestCase):
         self.addCleanup(self.folder.cleanup)
         self.notes = Path(self.folder.name) / "release-notes.md"
         self.notes.write_text(NOTES, "utf-8")
+
+    def tearDown(self):
+        self.window.close()
+        app.processEvents()
 
     def dialog(self, version=None):
         """The dialog for an add-on folder holding `version` as its version.json (none: a local copy)."""

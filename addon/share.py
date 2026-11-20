@@ -150,5 +150,4 @@ def face_path(companion):
     """The bundled face for the chosen companion; None means no art."""
     if companion == moods.NONE:
         return None
-    owner = moods.art_owner(companion)
-    return str(Path(__file__).with_name("ankilope_face.png" if owner == moods.ANKILOPE_ID else "aki_face.png"))
+    return str(Path(__file__).with_name("%s_face.png" % moods.art_owner(companion)))

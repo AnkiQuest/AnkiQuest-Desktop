@@ -8,6 +8,7 @@ from http import HTTPStatus
 from aqt.qt import QCheckBox, QDialog, QLabel, QLineEdit, QPushButton, QScrollArea, QTimer, QVBoxLayout, QWidget, Qt
 
 from . import moment_share as model, share, share_ui
+from .client import OUTDATED, outdated
 from .inbox import error_text
 from .language import tr
 
@@ -20,7 +21,8 @@ class _Phase(Enum):
     READY = "ready"
     SENDING = "sending"
     RETRACTING = "retracting"
-    LEGACY = "legacy"
+    # A win with no server reference (a moment saved before references): only the exports.
+    EXPORT_ONLY = "export_only"
     ERROR = "error"
     CLOSED = "closed"
 
@@ -98,10 +100,8 @@ class _Picker:
         self._sharing = share_ui.Sharing(self._dialog, api, win, current_client, self._run, self._status, companion)
         self._exports = QWidget()
         exports = QVBoxLayout(self._exports)
-        self._legacy, *options = share_ui._buttons(self._sharing)
-        self._legacy.hide()
-        layout.addWidget(self._legacy)
-        for button in options:
+        # The picker replaces the first button, "Share with friends".
+        for button in share_ui._buttons(self._sharing)[1:]:
             exports.addWidget(button)
         self._exports.hide()
         self._more = QPushButton(tr("More apps…"))
@@ -153,15 +153,18 @@ class _Picker:
     def _loaded(self, future):
         try:
             targets = future.result()
-        except Exception:
+        except Exception as error:
             # Same as Android's share sheet: no Retry; "More apps…" still works offline.
+            # A server older than the add-on gets the one line that asks to update it.
             self._phase = _Phase.ERROR
+            if outdated(error):
+                self._status.setText(tr(OUTDATED))
+                return
             self._status.setText(tr("Couldn't load your friends. Check your connection, or share with another app."))
             return
         self._status.clear()
         if targets is None:
-            self._phase = _Phase.LEGACY
-            self._legacy.show()
+            self._phase = _Phase.EXPORT_ONLY
             self._more.setChecked(True)
             return
         self._phase, self._targets = _Phase.READY, targets

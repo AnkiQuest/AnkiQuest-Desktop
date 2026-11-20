@@ -15,14 +15,13 @@ use image::RgbaImage;
 use crate::root;
 
 mod addon;
-mod banner;
 mod coverage;
 mod exports;
 #[cfg(test)]
 mod guard;
 
 /// Drawable folder inside an AnkiQuest-Android checkout.
-const DRAWABLES: &str = "AnkiDroid/src/main/res/drawable-nodpi";
+const DRAWABLES: &str = "ankiquest-ui/src/main/res/drawable-nodpi";
 
 /// WebP quality for most drawables.
 const QUALITY: f32 = 88.0;
@@ -244,11 +243,6 @@ pub fn addon(args: &[String]) -> ExitCode {
 /// Runs the art coverage report.
 pub fn coverage(args: &[String]) -> ExitCode {
     coverage::run(args)
-}
-
-/// Runs the banner command: `[--social] [--out <file>]`.
-pub fn banner(args: &[String]) -> ExitCode {
-    banner::run(args)
 }
 
 /// Prints the usage text and fails.

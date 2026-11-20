@@ -3,7 +3,8 @@
 `api` is a client.Client; `translate` is language.tr, which also owns date formatting."""
 
 import re
-from .language import _date_time
+from .client import OUTDATED, outdated
+from .language import _date_time, tr
 
 MAX_MESSAGE = 200
 READ_BATCH = 200
@@ -162,6 +163,14 @@ def react(api, notification):
     """Cheers a row with 🎉; answers whether it had been cheered already."""
     answer = api._request("/api/react/" + api.user, {"notification": int(notification)})
     return bool((answer or {}).get("already"))
+
+
+def failure(template, error):
+    """`template`, an untranslated line with one %s, filled with the error; for a server older than
+    this add-on, the one message that asks to update it."""
+    if outdated(error):
+        return tr(OUTDATED)
+    return tr(template) % error_text(error)
 
 
 def error_text(error):

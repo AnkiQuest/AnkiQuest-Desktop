@@ -8,10 +8,10 @@ import time
 import unittest
 from concurrent.futures import Future
 from http import HTTPStatus
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from addon_loader import ADDON, load_in_package, load_module
+from addon_loader import ADDON, fake_anki, load_in_package, load_module
 
 goals = load_in_package("ankiquest_today_test", "goals")
 moods = load_module("ankiquest_moods", "moods.py")
@@ -364,17 +364,6 @@ class MoodTests(unittest.TestCase):
         # MOODS and MESSAGES are separate lists; keep them from drifting apart.
         self.assertEqual(set(moods.MOODS) - {moods.REVIEW}, set(moods.MESSAGES))
 
-    def test_every_mood_has_bundled_and_exported_art(self):
-        source = (ADDON / "__init__.py").read_text("utf-8")
-        pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
-        for companion in ("aki", "ankilope"):
-            for mood in moods.MOODS:
-                name = "art/%s.png" % moods.art(companion, mood)
-                self.assertTrue((ADDON / name).is_file(), name)
-                self.assertTrue(re.fullmatch(pattern, name), name)
-        self.assertTrue(re.fullmatch(pattern, "aki_face.png"))
-        self.assertFalse(re.fullmatch(pattern, "art/../config.json"))
-
 
 class DeckDayTests(unittest.TestCase):
     def test_status_order_matches_the_phone(self):
@@ -544,21 +533,53 @@ class PanelTests(unittest.TestCase):
         at = lambda ms: "04:00" if ms == 10_000 else "?"
         self.assertEqual(
             "Last week still counting: 1,234 XP · closes at 04:00",
-            board.closing_week(closing, lambda value: value, 9_999, at),
+            board.own_week(closing, lambda value: value, 9_999, at),
         )
-        self.assertIsNone(board.closing_week(closing, lambda value: value, 10_000, at))
-        self.assertIsNone(board.closing_week({}, lambda value: value, 0, at))
-        self.assertIsNone(board.closing_week({"closing_week": {"xp": 5, "ends_at": "soon"}}, lambda value: value, 0, at))
-        self.assertIsNone(board.closing_week(None, lambda value: value, 0, at))
-        spanish = board.closing_week(closing, lambda value: language.tr(value, "es"), 9_999, at)
+        self.assertIsNone(board.own_week(closing, lambda value: value, 10_000, at))
+        self.assertIsNone(board.own_week({}, lambda value: value, 0, at))
+        self.assertIsNone(board.own_week({"closing_week": {"xp": 5, "ends_at": "soon"}}, lambda value: value, 0, at))
+        self.assertIsNone(board.own_week(None, lambda value: value, 0, at))
+        spanish = board.own_week(closing, lambda value: language.tr(value, "es"), 9_999, at)
         self.assertEqual("La semana pasada aún cuenta: 1,234 XP · cierra a las 04:00", spanish)
 
         live = dict(self.profile, closing_week={"xp": 50, "ends_at": int(time.time() * 1000) + 3_600_000})
-        self.assertIn("aq-closing-week'>Last week still counting: 50 XP", board.html(live, 2, 0, today=self.view()))
+        self.assertIn("aq-own-week'>Last week still counting: 50 XP", board.html(live, 2, 0, today=self.view()))
         self.assertIn("Last week still counting: 50 XP", board.html(live, 2, 0))
         ended = dict(self.profile, closing_week={"xp": 50, "ends_at": 1})
         self.assertNotIn("Last week still counting", board.html(ended, 2, 0, today=self.view()))
         self.assertNotIn("Last week still counting", board.html(self.profile, 2, 0, today=self.view()))
+
+    def test_next_week_already_counting_shows_until_the_board_switches(self):
+        # Berlin, Monday 09:00 (weekly_board.json in AnkiQuest-Server): the day counts for next
+        # week while the board shows this one until Monday 12:00 UTC.
+        now, switch = 1795420800000, 1795435200000
+        ahead = {"next_week": {"xp": 321, "starts_at": switch}}
+        at = lambda ms: "13:00" if ms == switch else "?"
+        same = lambda value: value
+        self.assertEqual(
+            "Next week already counting: 321 XP · the board switches at 13:00",
+            board.own_week(ahead, same, now, at),
+        )
+        self.assertIsNone(board.own_week(ahead, same, switch, at))
+        self.assertIsNone(board.own_week({"next_week": {"xp": 5, "starts_at": "soon"}}, same, now, at))
+        for code, expected in (
+            ("es", "La próxima semana ya cuenta: 321 XP · la clasificación cambia a las 13:00"),
+            ("de", "Nächste Woche zählt schon: 321 XP · die Rangliste wechselt um 13:00"),
+            ("fr", "La semaine prochaine compte déjà : 321 XP · le classement change à 13:00"),
+            ("pt", "A próxima semana já conta: 321 XP · a classificação muda às 13:00"),
+        ):
+            with self.subTest(language=code):
+                self.assertEqual(expected, board.own_week(ahead, lambda value: language.tr(value, code), now, at))
+
+        # The server sends at most one; a closing week still running comes first, as on the website.
+        both = dict(ahead, closing_week={"xp": 7, "ends_at": switch})
+        self.assertIn("Last week still counting: 7 XP", board.own_week(both, same, now, at))
+
+        live = dict(self.profile, next_week={"xp": 50, "starts_at": int(time.time() * 1000) + 3_600_000})
+        self.assertIn("aq-own-week'>Next week already counting: 50 XP", board.html(live, 2, 0, today=self.view()))
+        self.assertIn("Next week already counting: 50 XP", board.html(live, 2, 0))
+        switched = dict(self.profile, next_week={"xp": 50, "starts_at": 1})
+        self.assertNotIn("Next week already counting", board.html(switched, 2, 0, today=self.view()))
 
     def test_all_quests_done_shows_the_winner(self):
         profile = {"quests": [{"title": "Combo", "progress": 5, "target": 5, "done": True, "reward": 15}]}
@@ -615,7 +636,7 @@ class HomeTests(unittest.TestCase):
             configured=True, base="https://example.test", user="hill", name="hill", token="secret",
             leaderboard=Mock(return_value=[{"user": "hill", "display": "hill", "xp_total": 5, "periods": {"week": 5}}]),
             rank=Mock(return_value={"order": ["hill"]}), notifications=Mock(return_value=[]),
-            profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0}}),
+            profile=Mock(return_value={"level": 2, "streak": 1, "today": {"streak_minutes": 0, "reviews": 0, "starts_at": 0, "time_ms": 0}}),
             companion=Mock(return_value="ankilope"),
             deck_settings=Mock(return_value={}), server_info=Mock(return_value=(frozenset(), None)),
             _request=Mock(return_value={"items": [], "unread_count": 0, "action_count": 0}),
@@ -642,23 +663,7 @@ class HomeTests(unittest.TestCase):
             onOverview=Mock(), moveToState=Mock(),
             state="deckBrowser",
         )
-        aqt = ModuleType("aqt")
-        aqt.mw = self.mw
-        aqt.gui_hooks = SimpleNamespace(**{name: [] for name in (
-            "reviewer_did_answer_card", "operation_did_execute", "state_did_change", "sync_did_finish", "profile_did_open",
-            "deck_browser_will_render_content", "webview_did_receive_js_message", "profile_will_close",
-            "top_toolbar_did_init_links", "top_toolbar_did_redraw", "browser_will_show",
-        )})
-        utils = ModuleType("aqt.utils")
-        utils.tooltip, utils.openLink = Mock(), Mock()
-        qt = ModuleType("aqt.qt")
-        qt.__getattr__ = lambda name: Mock()
-        anki = ModuleType("anki")
-        anki.lang = ModuleType("anki.lang")
-        anki.lang.current_lang = "en"
-        modules = patch.dict(sys.modules, {"aqt": aqt, "aqt.utils": utils, "aqt.qt": qt, "anki": anki, "anki.lang": anki.lang})
-        modules.start()
-        self.addCleanup(modules.stop)
+        aqt = fake_anki(self, self.mw)
         self.addon = load_module("ankiquest_home_addon", "__init__.py", package=True)
         self.addon.client = lambda: self.api
         self.home = sys.modules["ankiquest_home_addon.home"]

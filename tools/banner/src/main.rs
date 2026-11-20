@@ -1,23 +1,26 @@
-//! Composes the README banner and the social preview from the committed
-//! desktop screenshots and the duo art.
+//! Composes the README banner and the social preview from the desktop
+//! screenshots (`tests/draw_screenshots.py` draws them) and the duo art master
+//! in an AnkiQuest-Server checkout.
+//!
+//!     cargo run --manifest-path tools/banner/Cargo.toml -- --server <checkout> [--social] [--check | --out <file>]
 //!
 //! Both follow the Android README banner (`tools/ankiquest-banner` in
 //! AnkiQuest-Android): its blue gradient, the warm glow, Roboto title and
 //! tagline, the companion beside the title. Vector parts are SVG drawn with
 //! resvg; screenshots and art are downscaled with Lanczos and placed at whole
-//! pixels, so every run gives the same pixels.
+//! pixels, so every run gives the same pixels. `--check` writes nothing and
+//! fails when the committed image differs in any pixel.
 
+use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 
 use image::codecs::png::{CompressionType, PngEncoder};
-use image::imageops;
-use image::{ImageEncoder, RgbImage, RgbaImage};
+use image::imageops::{self, FilterType};
+use image::{ImageEncoder, RgbImage, Rgba32FImage, RgbaImage};
 use resvg::{tiny_skia, usvg};
-
-use super::{load, root, shrink};
 
 const TITLE: &str = "AnkiQuest";
 const TAGLINE: &str = "Study together, keep your streak";
@@ -82,12 +85,21 @@ const BAR_TEXT: f32 = 13.0;
 /// Title bar buttons, left to right: close, minimise, zoom.
 const BUTTONS: [&str; 3] = ["#ff5f57", "#febc2e", "#28c840"];
 
-/// Inputs, relative to the repository root.
+/// The duo master, relative to an AnkiQuest-Server checkout.
 const DUO: &str = "static/duo/friends.png";
+
+/// Inputs relative to this repository's root: the screenshots and the
+/// Roboto faces the screenshots are drawn with.
 const SHOTS: &str = "docs/screenshots";
-const BOLD: &str = "assets/fonts/Roboto-Bold.ttf";
-const REGULAR: &str = "assets/fonts/Roboto-Regular.ttf";
+const BOLD: &str = "tests/screenshots/fonts/Roboto-Bold.ttf";
+const REGULAR: &str = "tests/screenshots/fonts/Roboto-Regular.ttf";
 const FAMILY: &str = "Roboto";
+
+const USAGE: &str =
+    "usage: banner --server <AnkiQuest-Server checkout> [--social] [--check | --out <file>]";
+
+/// GitHub refuses a social preview of this many bytes or more.
+const SOCIAL_LIMIT: u64 = 1_000_000;
 
 /// Which image to draw.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -163,26 +175,37 @@ const WINDOWS: &[Window] = &[
     },
 ];
 
-/// Runs the command: `[--social] [--out <file>]`.
-pub(super) fn run(args: &[String]) -> ExitCode {
-    let mut kind = Kind::Readme;
-    let mut out = None;
-    let mut args = args.iter();
-    while let Some(arg) = args.next() {
-        match arg.as_str() {
-            "--social" => kind = Kind::Social,
-            "--out" => match args.next() {
-                Some(path) => out = Some(PathBuf::from(path)),
-                None => return usage(),
-            },
-            _ => return usage(),
-        }
-    }
-    let out = out.unwrap_or_else(|| root().join(kind.path()));
+/// What to do with the drawn image.
+enum Action {
+    /// Write it to the committed path, or to `--out`.
+    Write(Option<PathBuf>),
+    /// Compare it with the committed file.
+    Check,
+}
 
-    match render(kind).and_then(|image| save(&image, &out)) {
-        Ok(()) => {
-            println!("{}", out.display());
+/// The parsed command line.
+struct Args {
+    server: PathBuf,
+    kind: Kind,
+    action: Action,
+}
+
+fn main() -> ExitCode {
+    let Some(args) = parse(env::args().skip(1)) else {
+        eprintln!("{USAGE}");
+        return ExitCode::FAILURE;
+    };
+
+    let result = render(args.kind, &args.server).and_then(|image| match args.action {
+        Action::Write(Some(out)) => save(&image, &out).map(|()| out.display().to_string()),
+        Action::Write(None) => {
+            save(&image, &root().join(args.kind.path())).map(|()| args.kind.path().to_string())
+        }
+        Action::Check => check(&image, args.kind),
+    });
+    match result {
+        Ok(message) => {
+            println!("{message}");
             ExitCode::SUCCESS
         }
         Err(error) => {
@@ -192,18 +215,116 @@ pub(super) fn run(args: &[String]) -> ExitCode {
     }
 }
 
-/// Prints the usage text and fails.
-fn usage() -> ExitCode {
-    eprintln!("usage: xtask banner [--social] [--out <file>]");
-    ExitCode::FAILURE
+/// Reads `--server <dir> [--social] [--check | --out <file>]`.
+fn parse(mut args: impl Iterator<Item = String>) -> Option<Args> {
+    let (mut server, mut kind, mut out, mut check) = (None, Kind::Readme, None, false);
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--server" => server = Some(PathBuf::from(args.next()?)),
+            "--social" => kind = Kind::Social,
+            "--out" => out = Some(PathBuf::from(args.next()?)),
+            "--check" => check = true,
+            _ => return None,
+        }
+    }
+
+    // `--check` compares with the committed file, so it takes no output path.
+    let action = match (check, out) {
+        (true, None) => Action::Check,
+        (true, Some(_)) => return None,
+        (false, out) => Action::Write(out),
+    };
+    Some(Args {
+        server: server?,
+        kind,
+        action,
+    })
+}
+
+/// The repository root.
+fn root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
+/// An image file as RGBA.
+fn load(path: &Path) -> Result<RgbaImage, String> {
+    let image = image::open(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(image.into_rgba8())
+}
+
+/// Lanczos downscale in premultiplied alpha, so fully transparent pixels do
+/// not bleed their colour into the edges. The same as `shrink` in
+/// AnkiQuest-Server's `ankiquest-art`, which this repository no longer has.
+fn shrink(image: RgbaImage, width: u32, height: u32) -> RgbaImage {
+    if image.dimensions() == (width, height) {
+        return image;
+    }
+    let mut linear = Rgba32FImage::from(image::DynamicImage::ImageRgba8(image));
+    for pixel in linear.pixels_mut() {
+        let alpha = pixel[3];
+        pixel.0[..3].iter_mut().for_each(|c| *c *= alpha);
+    }
+    let mut small = imageops::resize(&linear, width, height, FilterType::Lanczos3);
+    for pixel in small.pixels_mut() {
+        unpremultiply(&mut pixel.0);
+    }
+    image::DynamicImage::ImageRgba32F(small).into_rgba8()
+}
+
+/// Divides colour by alpha, clamping Lanczos overshoot.
+fn unpremultiply(pixel: &mut [f32; 4]) {
+    let alpha = pixel[3].clamp(0.0, 1.0);
+    pixel[3] = alpha;
+    if alpha == 0.0 {
+        pixel[..3].fill(0.0);
+        return;
+    }
+    pixel[..3]
+        .iter_mut()
+        .for_each(|c| *c = (*c / alpha).clamp(0.0, 1.0));
+}
+
+/// Compares the drawn image with the committed one, pixel for pixel.
+fn check(image: &RgbImage, kind: Kind) -> Result<String, String> {
+    let path = root().join(kind.path());
+    let committed = image::open(&path)
+        .map_err(|e| format!("{}: {e}", path.display()))?
+        .into_rgb8();
+    if committed == *image {
+        let bytes = fs::metadata(&path)
+            .map_err(|e| format!("{}: {e}", path.display()))?
+            .len();
+        fits_upload(kind, bytes)?;
+        return Ok(format!("{} is current", kind.path()));
+    }
+    let social = if kind == Kind::Social {
+        " --social"
+    } else {
+        ""
+    };
+    Err(format!(
+        "{} differs from the drawing: run `cargo run --manifest-path tools/banner/Cargo.toml -- --server <checkout>{social}`",
+        kind.path()
+    ))
+}
+
+/// Whether a committed `kind` of `bytes` can be uploaded: GitHub limits the social preview.
+fn fits_upload(kind: Kind, bytes: u64) -> Result<(), String> {
+    if kind != Kind::Social || bytes < SOCIAL_LIMIT {
+        return Ok(());
+    }
+    Err(format!(
+        "{} has {bytes} bytes; GitHub takes a social preview under {SOCIAL_LIMIT}",
+        kind.path()
+    ))
 }
 
 /// Draws the image.
-fn render(kind: Kind) -> Result<RgbImage, String> {
+fn render(kind: Kind, server: &Path) -> Result<RgbImage, String> {
     let fonts = fonts()?;
     let (width, height) = kind.size();
     let mut canvas = tiny_skia::Pixmap::new(width, height).ok_or("empty canvas")?;
-    let duo = trim(load(&root().join(DUO))?);
+    let duo = trim(load(&server.join(DUO))?);
 
     match kind {
         Kind::Readme => readme(&mut canvas, &fonts, duo)?,
@@ -522,56 +643,26 @@ fn svg_text(text: &str, size: f32, weight: &str, fill: &str, x: f32, y: f32) -> 
 mod tests {
     use super::*;
 
-    /// Largest channel difference allowed against the committed image, for
-    /// float rounding on other machines.
-    const TOLERANCE: u8 = 2;
-
-    /// GitHub's limit for a social preview.
-    const SOCIAL_LIMIT: u64 = 1_000_000;
-
-    /// Renders `kind` and compares it with the committed file.
-    fn matches_committed(kind: Kind) {
-        let image = render(kind).unwrap();
-        assert_eq!(kind.size(), image.dimensions());
-        let path = root().join(kind.path());
-        let committed = image::open(&path).unwrap().into_rgb8();
-        assert_eq!(image.dimensions(), committed.dimensions());
-        let worst = image
-            .as_raw()
-            .iter()
-            .zip(committed.as_raw())
-            .map(|(a, b)| a.abs_diff(*b))
-            .max()
-            .unwrap_or(0);
-        assert!(
-            worst <= TOLERANCE,
-            "{} is stale: run `cargo run -p ankiquest-xtask -- banner{}`",
-            kind.path(),
-            if kind == Kind::Social {
-                " --social"
-            } else {
-                ""
-            }
-        );
+    fn parsed(args: &[&str]) -> Option<Args> {
+        parse(args.iter().map(|arg| arg.to_string()))
     }
 
     #[test]
-    fn readme_banner_is_current() {
-        matches_committed(Kind::Readme);
+    fn the_server_checkout_is_required() {
+        assert!(parsed(&["--social"]).is_none());
+        let args = parsed(&["--server", "../server", "--social"]).unwrap();
+        assert_eq!(PathBuf::from("../server"), args.server);
+        assert_eq!(Kind::Social, args.kind);
+        assert!(matches!(args.action, Action::Write(None)));
     }
 
     #[test]
-    fn social_preview_is_current() {
-        matches_committed(Kind::Social);
-        let bytes = fs::metadata(root().join(Kind::Social.path()))
-            .unwrap()
-            .len();
-        assert!(bytes < SOCIAL_LIMIT, "{bytes} bytes");
-    }
-
-    #[test]
-    fn renders_are_identical() {
-        assert_eq!(render(Kind::Social).unwrap(), render(Kind::Social).unwrap());
+    fn check_takes_no_output_path() {
+        let args = parsed(&["--server", "s", "--check"]).unwrap();
+        assert!(matches!(args.action, Action::Check));
+        assert!(parsed(&["--server", "s", "--check", "--out", "x.png"]).is_none());
+        assert!(parsed(&["--server", "s", "--out"]).is_none());
+        assert!(parsed(&["--server", "s", "--other"]).is_none());
     }
 
     #[test]
@@ -586,10 +677,33 @@ mod tests {
     }
 
     #[test]
+    fn a_social_preview_must_stay_under_githubs_limit() {
+        assert!(fits_upload(Kind::Social, SOCIAL_LIMIT - 1).is_ok());
+        assert!(fits_upload(Kind::Social, SOCIAL_LIMIT).is_err());
+        assert!(fits_upload(Kind::Readme, SOCIAL_LIMIT).is_ok());
+    }
+
+    #[test]
+    fn the_committed_social_preview_fits() {
+        let path = root().join(Kind::Social.path());
+        let bytes = fs::metadata(&path).unwrap().len();
+        assert!(fits_upload(Kind::Social, bytes).is_ok(), "{bytes} bytes");
+    }
+
+    #[test]
     fn trim_drops_transparent_margins() {
         let mut image = RgbaImage::new(10, 8);
         image.put_pixel(3, 2, image::Rgba([1, 2, 3, 255]));
         image.put_pixel(6, 5, image::Rgba([1, 2, 3, 9]));
         assert_eq!((4, 4), trim(image).dimensions());
+    }
+
+    #[test]
+    fn shrink_keeps_transparent_pixels_from_bleeding() {
+        let mut image = RgbaImage::from_pixel(4, 4, image::Rgba([255, 0, 0, 0]));
+        image.put_pixel(0, 0, image::Rgba([0, 0, 255, 255]));
+        let small = shrink(image, 2, 2);
+        assert_eq!((2, 2), small.dimensions());
+        assert!(small.pixels().all(|pixel| pixel[0] == 0));
     }
 }

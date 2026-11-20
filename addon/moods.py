@@ -124,8 +124,8 @@ class Stage(Enum):
 
 
 # The companions in the picker's order, and the names it shows; "none" is named by the picker.
-AKI, ANKILOPE_ID, COW, NONE = "aki", "ankilope", "cow", "none"
-NAMES = {AKI: "Aki", ANKILOPE_ID: "Ankilope", COW: "Bluma"}
+AKI, ANKILOPE_ID, COW, ANKI_TAN, NONE = "aki", "ankilope", "cow", "anki_tan", "none"
+NAMES = {AKI: "Aki", ANKILOPE_ID: "Ankilope", COW: "Bluma", ANKI_TAN: "Anki-tan"}
 
 # The Aki poses each picker card previews, in the phone's order: face, fire, sad.
 PREVIEW_POSES = ("aki_face", "aki_streak", "aki_sad")
@@ -143,8 +143,6 @@ POSE_FALLBACKS = {
     "streak_milestone": "streak_legend",
     "frozen_2": "frozen",
     "frozen_3": "frozen_2",
-    "thawing": "frozen",
-    "almost": "hopeful",
     "welcome": "happy",
     "review": "happy",
     "hurt": "sad",
@@ -176,7 +174,8 @@ _AKI_PICTURES = {
     "aki_winner": "winner",
 }
 
-# The pose each streak mood shows; fire burns by heat (`HEAT`).
+# The pose each streak mood shows; fire burns by heat (`HEAT`). thawing and almost are moods with
+# no pose of their own (AnkiQuest-Server#45).
 _MOOD_POSE_NAMES = {
     MOOD_UNKNOWN: "face",
     ASLEEP: "asleep",
@@ -184,9 +183,9 @@ _MOOD_POSE_NAMES = {
     FROZEN_1: "frozen",
     FROZEN_2: "frozen_2",
     FROZEN_3: "frozen_3",
-    THAWING: "thawing",
+    THAWING: "frozen",
     HOPEFUL: "hopeful",
-    ALMOST: "almost",
+    ALMOST: "hopeful",
 }
 
 # Aki's art for each pose she has, as the phone's AnkiquestCompanion maps them. She has no frozen 2
@@ -221,8 +220,32 @@ ANKILOPE = {
     "review": "ankilope_study",
 }
 
-# Ankilope's picture for Aki's scenes she has no art for.
-_ANKILOPE_SCENE = "ankilope_study"
+# Anki-tan's art for each pose she has: Shigeyuki's pack art and the generated masters, as
+# AnkiQuest-Server static/anki-tan/poses.json maps them. Her other extensions fall back until they
+# are drawn (AnkiQuest-Server#57).
+ANKI_TAN_POSES = {
+    "face": "anki_tan_face",
+    "asleep": "anki_tan_asleep",
+    "happy": "anki_tan_happy",
+    "streak": "anki_tan_streak",
+    "streak_legend": "anki_tan_streak_legend",
+    "streak_milestone": "anki_tan_streak_milestone",
+    "sad": "anki_tan_sad",
+    "hopeful": "anki_tan_hopeful",
+    "frozen": "anki_tan_frozen",
+    "neglected": "anki_tan_neglected",
+    "welcome": "anki_tan_welcome",
+    "review": "anki_tan_review",
+    "hurt": "anki_tan_hurt",
+    "dead": "anki_tan_dead",
+}
+
+# Each companion's art by pose, by whose art draws it (`art_owner`).
+_POSES = {AKI: AKI_POSES, ANKILOPE_ID: ANKILOPE, ANKI_TAN: ANKI_TAN_POSES}
+
+# The picture a companion shows for Aki's scenes it has no art for: Ankilope studies, Anki-tan
+# shows her face.
+_SCENES = {ANKILOPE_ID: "ankilope_study", ANKI_TAN: "anki_tan_face"}
 
 
 def current(profile, now_ms):
@@ -375,8 +398,13 @@ def mood_line(chosen, streak):
 
 def art_owner(companion):
     """Whose art draws `companion`. The cow has none yet (#88): it is Ankilope's, turned by
-    `hue_degrees`."""
-    return ANKILOPE_ID if companion == COW else companion
+    `hue_degrees`. A companion this add-on has no art for, such as one a newer server knows, is
+    drawn as Aki."""
+    if companion == COW:
+        return ANKILOPE_ID
+    if companion == NONE or companion in _POSES:
+        return companion
+    return AKI
 
 
 def hue_degrees(companion):
@@ -401,12 +429,13 @@ def companion_pose(companion, aki):
     """`companion`'s version of Aki's picture `aki`, by the pose it shows; None for no companion."""
     if companion == NONE:
         return None
-    if art_owner(companion) != ANKILOPE_ID:
+    owner = art_owner(companion)
+    if owner == AKI:
         return aki
     pose = _AKI_PICTURES.get(aki)
     if pose is None:
-        return _ANKILOPE_SCENE
-    return pose_art(ANKILOPE, pose)
+        return _SCENES[owner]
+    return pose_art(_POSES[owner], pose)
 
 
 def mood_pose(companion, chosen, streak):
@@ -416,8 +445,7 @@ def mood_pose(companion, chosen, streak):
     stands for two poses (welcome for hopeful)."""
     if companion == NONE:
         return None
-    art = ANKILOPE if art_owner(companion) == ANKILOPE_ID else AKI_POSES
-    return pose_art(art, _mood_pose_name(chosen, streak))
+    return pose_art(_POSES[art_owner(companion)], _mood_pose_name(chosen, streak))
 
 
 def preview(companion):

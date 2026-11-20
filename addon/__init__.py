@@ -18,6 +18,7 @@ from aqt.utils import openLink, tooltip
 
 from . import board, delivery, heatmap_ui, home, notify, ui, updates, web
 from . import companion_ui, greeting, inbox_ui, moments, moments_ui, moods, reveal_ui, share, sharing
+from . import password_prompt, password_ui
 from .inbox import CHALLENGE_ROUTE
 from .language import plural, tr
 from .client import (
@@ -41,7 +42,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, deck_names, help_ui, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, deck_names, ease_resend, help_ui, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -171,9 +172,14 @@ state = {
     # None, or a _WelcomeWait for the open profile; a callback that holds another one is stale.
     "welcome": None,
     "settings_synced_at": 0.0,
+    # The [base, user, token] the password card is offered to, or None (password_prompt).
+    "password_prompt": None,
+    # How often the player answered the card (Not now or a saved password). A poll that started
+    # before the latest answer is stale for the card and leaves it as the answer set it.
+    "password_answers": 0,
 }
 
-mw.addonManager.setWebExports(__name__, r"((aki|ankilope)_face|art/(aki|ankilope)_[a-z0-9_]+)\.png")
+mw.addonManager.setWebExports(__name__, r"((aki|ankilope|anki_tan)_face|art/(aki|ankilope|anki_tan)_[a-z0-9_]+)\.png")
 
 
 def config():
@@ -404,6 +410,15 @@ def _request_upload(request, *, attempts=0):
     saved = _upload_prefs(api)
     mark = int(saved.get("through", 0))
     initial_sync = "through" not in saved
+
+    # The one resend of the history with the button (ease_resend) is checked on the uploads that
+    # already reach back (profile open, resync, history, first sync), not after each answer.
+    resend = ease_resend.load(saved)
+    resend_due = resend is ease_resend.Resend.PENDING and (
+        initial_sync or request.mode >= UploadMode.PROFILE_OPEN
+    )
+    if resend_due:
+        ease_resend.save(saved, ease_resend.start(resend))
     rollover = int(col.get_config("rollover", 4))
     now_ms = int(time.time() * 1000)
     day = study_day(now_ms, offset_west_min(), rollover)
@@ -477,7 +492,33 @@ def _request_upload(request, *, attempts=0):
             if history and sent:
                 mw.taskman.run_on_main(lambda count=sent_count: progress(count, max(count, total)))
             if not full:
-                return max(known, mark), sorted(present), profile, sent_count, conquest_decks
+                check = resend_history(start) if resend_due else None
+                return max(known, mark), sorted(present), profile, sent_count, conquest_decks, check
+
+    def resend_history(start):
+        # A failed resend must not undo the upload before it; it is tried on a later upload.
+        try:
+            return resend_rows(start)
+        except Exception as error:
+            print("ankiquest ease resend:", error)
+            return ease_resend.Check.FAILED
+
+    def resend_rows(start):
+        # An older server drops the button, so the resend waits until it names the feature.
+        check_target()
+        if ease_resend.FEATURE not in api.server_info()[0]:
+            return ease_resend.Check.UNSUPPORTED
+
+        # An upload from the first review already sent everything with the button.
+        if start == 0:
+            return ease_resend.Check.COVERED
+
+        def send(rows):
+            check_target()
+            api.upload(review_offsets.stamp(rows_to_reviews(rows), stamps), rollover, True)
+
+        ease_resend.send_history(lambda after: col.db.all(PENDING_SQL, after), send)
+        return ease_resend.Check.RESENT
 
     def done(future):
         if state["upload"] is not upload:
@@ -488,6 +529,8 @@ def _request_upload(request, *, attempts=0):
         try:
             result = future.result()
         except Exception as error:
+            if resend_due:
+                ease_resend.save(saved, ease_resend.fail(ease_resend.Resend.SENDING))
             _upload_failed(upload, error)
             return
         try:
@@ -498,7 +541,9 @@ def _request_upload(request, *, attempts=0):
 
     def uploaded(result):
         # Advance the mark only after the whole upload was accepted.
-        through, present, profile, sent, conquest_decks = result
+        through, present, profile, sent, conquest_decks, check = result
+        if resend_due:
+            ease_resend.save(saved, ease_resend.finish(ease_resend.Resend.SENDING, check))
         uploaded_at = int(time.time() * 1000)
         saved["through"], saved["recent"] = through, present
         saved["last_upload"] = uploaded_at
@@ -581,6 +626,9 @@ def poll(quiet=False):
 
     previous = prefs.get(ORDER_KEY) or []
     week = prefs.get(ORDER_WEEK_KEY)
+    # Within the days Not now hides the card, the server is not even asked.
+    ask_sign_in = not password_prompt._snoozed(prefs, account, int(time.time() * 1000))
+    answers = state["password_answers"]
     announcements = delivery._record(prefs, api)
     cursor = announcements["cursor"]
 
@@ -592,7 +640,7 @@ def poll(quiet=False):
             companion = api.companion()
         except Exception:
             companion = state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
-        return rank, profile, notifications, companion, arrivals, reminders
+        return rank, profile, notifications, companion, arrivals, reminders, _sign_in(api) if ask_sign_in else None
 
     def done(future):
         if state["polling"] is not request:
@@ -602,7 +650,7 @@ def poll(quiet=False):
         if mw.pm.profile is not prefs or [current.base, current.user, current.token] != account:
             return
         try:
-            rank, profile, inbox, companion, arrivals, reminders = future.result()
+            rank, profile, inbox, companion, arrivals, reminders, sign_in = future.result()
         except Exception as e:
             # Keep a direct sign-in link on the deck list for a revoked credential.
             if isinstance(e, ServerError) and e.status == HTTPStatus.UNAUTHORIZED:
@@ -619,12 +667,64 @@ def poll(quiet=False):
         state["place"] = order.index(api.name) + 1 if api.name in order else None
         state["profile"], state["activity"], state["inbox"] = profile, inbox, inbox.items
         state["companion"], state["companion_account"] = companion, account
+        if state["password_answers"] == answers:
+            state["password_prompt"] = account if sign_in is password_prompt._SignIn.TOKEN_ONLY else None
         if reminders is not None:
             announcements["reminders"] = reminders
+        _delivery._see_hour(profile)
         announce(rank, profile, arrivals, quiet)
         redraw()
 
     mw.taskman.run_in_background(work, done)
+
+
+def _sign_in(api):
+    """How the player signs in; None when the server does not say or cannot be asked, which
+    must never stop the rest of the poll."""
+    try:
+        return password_prompt._sign_in(api.sign_in_methods())
+    except Exception as e:
+        print("ankiquest sign-in methods:", e)
+        return None
+
+
+def set_password():
+    """The form for a token-only player's first password, saved with the token alone."""
+    api = client()
+    account = [api.base, api.user, api.token]
+
+    def submit(password, finish):
+        def done(future):
+            try:
+                future.result()
+            except ServerError as e:
+                finish(e.message or tr("Could not save your password (%s).") % e)
+                return
+            except Exception as e:
+                finish(tr("Could not save your password (%s).") % e)
+                return
+            finish(None)
+
+        mw.taskman.run_in_background(lambda: api.set_password(password), done)
+
+    if not password_ui.password_dialog(mw, submit):
+        return
+    state["password_answers"] += 1
+    if state["password_prompt"] == account:
+        state["password_prompt"] = None
+    tooltip(tr("Password saved."))
+    redraw()
+
+
+def password_later():
+    """Not now: the card stays hidden on this computer for password_prompt.SNOOZE_MS."""
+    api = client()
+    account = [api.base, api.user, api.token]
+    if mw.pm.profile is not None:
+        password_prompt._snooze(mw.pm.profile, account, int(time.time() * 1000))
+    state["password_answers"] += 1
+    state["password_prompt"] = None
+    redraw()
 
 
 def announce(rank, profile, inbox, quiet):
@@ -694,6 +794,12 @@ def on_js_message(handled, message, context):
         return (True, None)
     if message == "ankiquest:account":
         open_account()
+        return (True, None)
+    if message == board.PASSWORD_COMMAND:
+        set_password()
+        return (True, None)
+    if message == board.PASSWORD_LATER_COMMAND:
+        password_later()
         return (True, None)
     if message.startswith("ankiquest:web:"):
         page = message.split(":", 2)[2]
@@ -1128,8 +1234,20 @@ def offer_update(candidate):
 
 
 def install_update(path):
-    from aqt.addons import InstallError
+    from aqt.addons import AddonMeta, InstallError
     from aqt.utils import showInfo
+    from zipfile import BadZipFile, ZipFile
+
+    # Anki's installer replaces the files before reporting incompatibility.
+    # Check its validated manifest first, while the working version is intact.
+    try:
+        with ZipFile(path) as archive:
+            manifest = mw.addonManager.readManifestFile(archive)
+    except (BadZipFile, OSError):
+        manifest = {}
+    if manifest and not AddonMeta.from_json_meta(manifest["package"], manifest).compatible():
+        tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
+        return
 
     result = mw.addonManager.install(str(path))
     if isinstance(result, InstallError):
