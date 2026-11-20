@@ -65,21 +65,6 @@ jobs:
         run: |
           for copy in tests/fixtures/*.json; do cmp "$copy" "server-snapshot/$copy"; done
           for copy in tests/api-examples/*.json; do cmp "$copy" "server-snapshot/docs/api/examples/${copy##*/}"; done
-      # tests/server-fixtures holds the few fixtures the add-on already
-      # implements from a Server commit newer than the pin. Each copy must
-      # equal that commit. They move into tests/fixtures when the pin
-      # reaches it.
-      - name: Read the newer server fixtures
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: AnkiQuest/AnkiQuest-Server
-          ref: 04a5fb6614011ce0631f434e0679e4eed5a1ecf6 # Server PR 60, merged
-          path: server-ahead
-          sparse-checkout: /tests/fixtures/
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-      - name: Check the copies of the newer server fixtures
-        run: for copy in tests/server-fixtures/*.json; do cmp "$copy" "server-ahead/tests/fixtures/${copy##*/}"; done
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:

@@ -4,6 +4,8 @@ The shared keys are defined in tests/fixtures/synced_settings.json; tests keep `
 its desktop names. Each synced setting remembers when it last changed on this computer, and the
 newer side wins, key by key."""
 
+from . import countdowns
+
 FEATURE = "settings_sync"
 
 # This device's switch; never synced.
@@ -13,7 +15,8 @@ SWITCH = "sync_settings"
 # before sync existed.
 CHANGED_KEY = "synced_settings_changed_at"
 
-# Shared key -> (config key, default, allowed range for numbers).
+# Shared key -> (config key, default, allowed range for numbers). A list default is never
+# changed in place.
 KEYS = {
     "notify_rank": ("notify_rank", True, None),
     "streak_warning_hours": ("streak_hours", 2, (0, 12)),
@@ -21,7 +24,80 @@ KEYS = {
     "goal_celebrations": ("goal_celebrations", True, None),
     "deck_status": ("deck_status", True, None),
     "review_heatmap": ("review_heatmap", True, None),
+    "countdowns": (countdowns.CONFIG_KEY, [], None),
 }
+
+# Keys only a server with this feature can keep: an older one refuses an unknown value over
+# 1024 bytes, which a countdown list can exceed.
+NEEDS = {"countdowns": countdowns.FEATURE}
+
+
+# Synced settings that belong to the account, not the computer: countdowns name the player's
+# own exams and decks. Each account's values are put away when another account signs in.
+PRIVATE = ("countdowns",)
+
+# Server address -> username -> private key -> {"value", "changed_at"}.
+ACCOUNTS_KEY = "synced_private_accounts"
+
+# Private key -> {"value", "changed_at"}: what was made while signed out. It stays on this
+# computer, shown whenever no one is signed in, until the player adds it to an account.
+DEVICE_KEY = "synced_private_signed_out"
+
+
+def switch_account(current, old, new):
+    """`current` with the private settings of account `old` put away and those of `new` brought
+    back. Accounts are (server address, username), or None when signed out, whose values stay
+    on this computer; an account seen for the first time starts from the defaults, which a sync
+    never sends."""
+    result = dict(current)
+    kept = {base: dict(users) for base, users in (current.get(ACCOUNTS_KEY) or {}).items()}
+    changed = dict(current.get(CHANGED_KEY) or {})
+
+    # Put the old values away: with their account, or on this computer when signed out.
+    values = {}
+    for key in PRIVATE:
+        value, stamp = local(current, key)
+        values[key] = {"value": value, "changed_at": stamp}
+    if old is not None:
+        kept.setdefault(old[0], {})[old[1]] = values
+    else:
+        result[DEVICE_KEY] = values
+
+    # Bring the new account's values back, the signed-out ones, or the defaults.
+    if new is not None:
+        saved = kept.get(new[0], {}).get(new[1], {})
+    else:
+        saved = current.get(DEVICE_KEY) or {}
+    for key in PRIVATE:
+        name, default, _ = KEYS[key]
+        entry = saved.get(key) or {}
+        value, stamp = entry.get("value", default), entry.get("changed_at", 0)
+        if not usable(key, value) or type(stamp) is not int or stamp < 0:
+            value, stamp = default, 0
+        result[name] = value
+        changed[key] = stamp
+
+    result[CHANGED_KEY] = changed
+    result[ACCOUNTS_KEY] = kept
+    return result
+
+
+def signed_out(config, key):
+    """The value of private `key` made while signed out; an unusable one counts as the default."""
+    _, default, _ = KEYS[key]
+    entry = (config.get(DEVICE_KEY) or {}).get(key)
+    value = entry.get("value", default) if isinstance(entry, dict) else default
+    return value if usable(key, value) else default
+
+
+def keep_signed_out(config, key, value):
+    """`config` with `value` as private `key`'s signed-out value, for after an import."""
+    device = dict(config.get(DEVICE_KEY) or {})
+    entry = dict(device.get(key) or {})
+    entry["value"] = value
+    entry.setdefault("changed_at", 0)
+    device[key] = entry
+    return dict(config, **{DEVICE_KEY: device})
 
 
 def path(api):
@@ -35,6 +111,8 @@ def enabled(config):
 def usable(key, value):
     """Whether `value` has the type and range this computer can use for `key`."""
     _, default, bounds = KEYS[key]
+    if key == "countdowns":
+        return countdowns.valid(value)
     if type(value) is not type(default):
         return False
     return bounds is None or bounds[0] <= value <= bounds[1]
@@ -82,11 +160,17 @@ def turned_on(config, values):
     return SWITCH in values and values[SWITCH] is not False and not enabled(config)
 
 
-def plan(config, remote):
-    """The config values to apply, the change times to keep and the body to send, from the
-    server's `settings`."""
+def synced(features):
+    """The keys this server can keep."""
+    return [key for key in KEYS if NEEDS.get(key, FEATURE) in features]
+
+
+def plan(config, remote, keys=tuple(KEYS)):
+    """The config values to apply, the change times to keep and the body to send for `keys`,
+    from the server's `settings`."""
     updates, changed, push = {}, {}, {}
-    for key, (name, default, _) in KEYS.items():
+    for key in keys:
+        name, default, _ = KEYS[key]
         value, stamp = local(config, key)
         found = remote.get(key)
         if not _entry(found):
@@ -107,10 +191,11 @@ def _entry(found):
 def run(api, config):
     """Reads the server's settings, sends newer local ones and returns (config values to apply,
     change times), or None when this server does not sync settings. Runs in the background."""
-    if FEATURE not in api.capabilities():
+    features = api.capabilities()
+    if FEATURE not in features:
         return None
     answer = api._request(path(api))
-    updates, changed, push = plan(config, _settings(answer))
+    updates, changed, push = plan(config, _settings(answer), synced(features))
     if not push:
         return updates, changed
 
@@ -131,13 +216,13 @@ def _settings(answer):
 def settle(snapshot, current, updates, changed):
     """`current` config with a finished sync applied, and whether any setting value changed.
     `snapshot` is the config the sync started from: a setting changed here meanwhile keeps
-    its new value and time, and the next sync sends it."""
+    its new value and time, and the next sync sends it. Keys the sync left out keep theirs."""
     before = snapshot.get(CHANGED_KEY) or {}
     stamps = dict(current.get(CHANGED_KEY) or {})
     result = dict(current)
     applied = False
     for key, (name, _, _) in KEYS.items():
-        if stamps.get(key, 0) != before.get(key, 0):
+        if key not in changed or stamps.get(key, 0) != before.get(key, 0):
             continue
         stamps[key] = changed[key]
         if name in updates:

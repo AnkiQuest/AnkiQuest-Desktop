@@ -81,10 +81,9 @@ The **Desktop** jobs compare each copied file with the pinned commit. The
 pinned commit when the poses, the manifest or the pin change; when it
 fails it uploads a fresh export as `companion-art-exports`.
 
-`tests/server-fixtures/*.json` holds the fixtures the add-on already
-implements from a Server commit newer than the pin; the Desktop jobs
-compare them with the commit named in `ci.yml`. When the pin reaches that
-commit, they move into `tests/fixtures/`.
+The snapshot includes countdowns, observed study and companion unlocks.
+Every shared fixture is in `tests/fixtures/`; there are no separate copies
+from commits ahead of the pin.
 
 Never edit a copy. Change Server first, then bump the pin and every copy
 in one pull request, from a Server checkout next to this one:

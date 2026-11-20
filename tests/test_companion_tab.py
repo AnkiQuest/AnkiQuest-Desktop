@@ -10,8 +10,8 @@ moments = load_in_package("aq_tab", "moments")
 board = load_in_package("aq_tab", "board")
 reveal = load_in_package("aq_tab", "companion_reveal")
 
-# Newer than the pinned snapshot (tests/server-fixtures/README.md).
-UNLOCKS = json.loads((ADDON.parent / "tests/server-fixtures/companion_unlock.json").read_text("utf-8"))
+# Shared rules pinned by tests/ankiquest-server.sha.
+UNLOCKS = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
 EXAMPLES = ADDON.parent / "tests/api-examples"
 Phase, Motion, Beam = reveal.Phase, reveal.Motion, reveal.Beam
 
