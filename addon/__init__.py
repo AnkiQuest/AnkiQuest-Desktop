@@ -4,6 +4,7 @@ import ssl
 import sys
 import tempfile
 import time
+from datetime import datetime
 from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 from http import HTTPStatus
@@ -42,7 +43,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, deck_names, ease_resend, help_ui, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -154,6 +155,13 @@ class _SettingsSync(Enum):
     AGAIN = auto()
 
 
+class _CountdownOffer(Enum):
+    """The offer to add countdowns made while signed out to the account just signed into."""
+    NONE = auto()
+    # Signed in; ask once the account's list has synced, so adding to it keeps the server's.
+    AFTER_SYNC = auto()
+
+
 state = {
     # Idle, uploading, waiting for a retry, or holding the last failure.
     "upload": None,
@@ -169,6 +177,7 @@ state = {
     "inbox": [],
     "activity": None,
     "settings_sync": _SettingsSync.IDLE,
+    "countdown_offer": _CountdownOffer.NONE,
     # None, or a _WelcomeWait for the open profile; a callback that holds another one is stale.
     "welcome": None,
     "settings_synced_at": 0.0,
@@ -208,7 +217,12 @@ def sync_settings():
         return
     snapshot = config()
     api = client()
-    if not settings_sync.enabled(snapshot) or not api.configured:
+    if not api.configured:
+        return
+
+    # With the switch off this computer's list is the account's, so the offer needs no sync.
+    if not settings_sync.enabled(snapshot):
+        _offer_countdowns()
         return
     state["settings_sync"] = _SettingsSync.RUNNING
     state["settings_synced_at"] = time.time()
@@ -221,9 +235,15 @@ def sync_settings():
             result = future.result()
         except Exception as e:
             print("ankiquest settings sync:", e)
-            result = None
+            if again:
+                sync_settings()
+            return
         if result is not None:
             _apply_synced(snapshot, account, *result)
+        current_api = client()
+        if (result is not None and "countdowns" in result[1]
+                and (current_api.base, current_api.user, current_api.token) == account):
+            _offer_countdowns()
         if again:
             sync_settings()
 
@@ -250,6 +270,47 @@ def _apply_synced(snapshot, account, updates, changed):
     mw.addonManager.writeConfig(__name__, settled)
     if applied:
         redraw()
+
+
+def _offer_countdowns():
+    """Asks once per sign-in whether to add the countdowns made while signed out to the account.
+    Declined, they stay on this computer and show whenever no one is signed in."""
+    if state["countdown_offer"] is not _CountdownOffer.AFTER_SYNC:
+        return
+    api = client()
+    if not api.configured:
+        return
+    identity = (api.base, api.user, api.token)
+    state["countdown_offer"] = _CountdownOffer.NONE
+    current = config()
+    account = countdowns.events(current.get(countdowns.CONFIG_KEY))
+    device = countdowns.events(settings_sync.signed_out(current, "countdowns"))
+    found = countdowns.imported(account, device)
+    added = len(found.account) - len(account)
+    if added == 0:
+        return
+    offered = added + len(found.left)
+    if not countdowns_ui.ask_import(mw, countdowns.import_question(offered, api.user, plural)):
+        return
+
+    # The modal runs the event loop: an account, either list or other settings may change.
+    current_api = client()
+    if (current_api.base, current_api.user, current_api.token) != identity:
+        return
+    latest = config()
+    if (countdowns.events(latest.get(countdowns.CONFIG_KEY)) != account
+            or countdowns.events(settings_sync.signed_out(latest, "countdowns")) != device):
+        state["countdown_offer"] = _CountdownOffer.AFTER_SYNC
+        return
+
+    # What was added leaves this computer's list; what did not fit stays on it.
+    mw.addonManager.writeConfig(
+        __name__, settings_sync.keep_signed_out(latest, "countdowns", countdowns.stored(found.left))
+    )
+    save_config({countdowns.CONFIG_KEY: countdowns.stored(found.account)})
+    if found.left:
+        tooltip(countdowns.left_text(len(found.left), plural))
+    redraw()
 
 
 def drop_config(keys):
@@ -907,6 +968,11 @@ def _finish_sign_in(answer):
     home.sync_goal(prompt=True)
 
 
+def _account_id(api):
+    """The (server address, username) of a configured client, else None."""
+    return (api.base, api.user) if api.configured else None
+
+
 def _save_account_config(values):
     """Keep upload progress with its account; discard data shown for the old connection."""
     old = client()
@@ -921,6 +987,14 @@ def _save_account_config(values):
     if not changed:
         return
 
+    # Private synced settings stay with their account; a new token for the same one keeps them.
+    # Signing in offers what was made while signed out once the account's settings synced.
+    if (old.base, old.user) != (new.base, new.user):
+        mw.addonManager.writeConfig(
+            __name__, settings_sync.switch_account(config(), _account_id(old), _account_id(new))
+        )
+    offer = _CountdownOffer.AFTER_SYNC if new.configured else _CountdownOffer.NONE
+
     # Retain the review watermark and undo history for a return to this account.
     if checkpoint is not None:
         checkpoint.pop("shared", None)
@@ -930,7 +1004,7 @@ def _save_account_config(values):
             profile.pop(key, None)
     state.update(
         upload=None, polling=None, poll_failure=None, reauth=None, profile=None, place=None, inbox=[], activity=None,
-        companion="aki", companion_account=None,
+        companion="aki", companion_account=None, countdown_offer=offer,
     )
     _moments._clear()
     _delivery._clear()
@@ -1008,7 +1082,7 @@ def open_settings():
     values = ui.settings_dialog(
         mw, config(), test_connection, upload_everything, state["companion"], ask_account,
         extra=settings_sections, on_manage=_manage_account,
-        on_decks=open_deck_notifications, on_privacy=_open_privacy,
+        on_decks=open_deck_notifications, on_privacy=_open_privacy, on_countdowns=open_countdowns,
         on_two_factor=_open_two_factor if home.server_has(client(), TWO_FACTOR) else None,
     )
     if values is None:
@@ -1024,6 +1098,21 @@ def open_settings():
     home.sync_goal()
     redraw()
     tooltip(tr("AnkiQuest settings saved."))
+
+
+def open_countdowns():
+    """The countdown list. Each change is saved at once and synced like the other settings."""
+    if mw.col is None:
+        return
+    items = countdowns.events(config().get(countdowns.CONFIG_KEY))
+    names = sorted(deck.name for deck in mw.col.decks.all_names_and_ids(include_filtered=False))
+    today = countdowns.anki_today(datetime.now(), home._day_start_hour())
+
+    def save(value):
+        save_config({countdowns.CONFIG_KEY: value})
+        redraw()
+
+    countdowns_ui.CountdownsDialog(mw, items, names, today, save).exec()
 
 
 def _manage_account(base=None):
@@ -1287,6 +1376,7 @@ mw.form.menuTools.addAction(_tools.menuAction())
 add_action(tr("Today"), lambda: open_page(board.PAGES["today"]))
 add_action(tr("Inbox"), open_inbox, inbox_ui.SHORTCUT)
 add_action(tr("Friends"), home._open_friends)
+add_action(tr("Countdowns"), open_countdowns)
 add_action(tr("Study companion"), lambda: open_companion())
 copies_ui.setup(mw, lambda: client(), lambda: state["companion"], _tools)
 add_action(tr("Website"), open_website, WEBSITE_SHORTCUT)
