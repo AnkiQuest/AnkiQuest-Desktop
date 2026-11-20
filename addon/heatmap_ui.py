@@ -172,6 +172,7 @@ def _days(tr, count):
 def _state_label(state, tr):
     return tr({
         heatmap.MET: "Streak minimum met",
+        heatmap.UNVERIFIED: "Time not known",
         heatmap.SHORT: "Short of the streak minimum",
         heatmap.FROZEN: "Frozen — streak kept",
         heatmap.SKIPPED: "Skipped day — streak kept",
@@ -202,7 +203,7 @@ def describe(data, day, tr):
 def colour(data, day):
     """A day's colour class, as ReviewHeatmapGrid.kt draws it. AnkiQuest's verdict colours the
     days it judged: only a day that met the streak minimum looks studied, and a frozen day
-    looks frozen even with reviews. "k" outlines a day AnkiQuest kept the streak through."""
+    looks frozen even with reviews. An unverified day counted, so it looks studied too. "k" outlines a day AnkiQuest kept the streak through."""
     future = day > data.today
     verdict = None if future else data.verdicts.get(day)
     state = verdict.state if verdict else None

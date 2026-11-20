@@ -35,7 +35,7 @@ WAITING_LINES = (
 STUDIED, PROTECTED, SHORT, PENDING, UNKNOWN = "studied", "protected", "short", "pending", "unknown"
 
 # The displayed day's `_day_status` (day_verdict._for_display) to its verdict; pending splits by reviews.
-_DAY_STATES = {"met": STUDIED, "syncing": STUDIED, "protected": PROTECTED, "pending": PENDING}
+_DAY_STATES = {"met": STUDIED, "unverified": STUDIED, "syncing": STUDIED, "protected": PROTECTED, "pending": PENDING}
 
 # Aki's streak moods, as the phone names them.
 STREAK_MOODS = ("unknown", "asleep", "sad", "frozen_1", "frozen_2", "frozen_3", "thawing", "hopeful", "almost", "fire")
