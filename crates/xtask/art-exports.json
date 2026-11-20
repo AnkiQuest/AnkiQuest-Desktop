@@ -207,6 +207,72 @@
     },
     {
       "exporter": "addon",
+      "file": "addon/anki_tan_face.png",
+      "master": "static/anki-tan/sprite/idle/anki-tan_idle_0001.png",
+      "sha256": "b5f84501c3f6c2a6de6b29682124723578c153ea8afc613d7e5ac1ff89ce0c0b"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_face.png",
+      "master": "static/anki-tan/sprite/idle/anki-tan_idle_0001.png",
+      "sha256": "b5f84501c3f6c2a6de6b29682124723578c153ea8afc613d7e5ac1ff89ce0c0b"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_happy.png",
+      "master": "static/anki-tan/sticker/anki_tan_good.png",
+      "sha256": "8a4b1e0f7dc16442d538b17c1d0082905483dc3ca34ccae2c16c778424b90c93"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_streak.png",
+      "master": "static/anki-tan/emoji/Ankitan_09_fire_eyes.png",
+      "sha256": "6257609802e4e55850dd58b67cfe161f0978983ad3359e9e4fa1a5d8c8e02190"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_hopeful.png",
+      "master": "static/anki-tan/sticker/ankitan_lets_study.png",
+      "sha256": "661ecee2f878a26b5c86d4573e57b8f3ac2ca8b3f8818690744acf16e2b9c39e"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_welcome.png",
+      "master": "static/anki-tan/sticker/anki_tan_hello.png",
+      "sha256": "791a9385e1f572c6a9bbfa2e478ae539a688533a98b19d77dd638513318dc406"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_review.png",
+      "master": "static/anki-tan/sticker/press_spacebar.png",
+      "sha256": "06b0dd18d2a65265d187068d6b18c3159e51c41f883b47dc857e20628373a8ae"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_streak_legend.png",
+      "master": "static/anki-tan/emoji/Ankitan_43_crown.png",
+      "sha256": "dae72eb5ccb7287e5967f28c44df2f3d6d642357a3461262d59a42fb2feeaec5"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_streak_milestone.png",
+      "master": "static/anki-tan/emoji/Ankitan_48_perfect_streaks.png",
+      "sha256": "f4ba3976582c85548f500a2022002fd60191adee0b50f53d2f65c0fa1b47ed39"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_hurt.png",
+      "master": "static/anki-tan/emoji/Ankitan_28_spiral_eyes.png",
+      "sha256": "02f41d939c51372cd7788602f79f1dd5043e7e2c5a30ba42168c06f32a1f6105"
+    },
+    {
+      "exporter": "addon",
+      "file": "addon/art/anki_tan_dead.png",
+      "master": "static/anki-tan/emoji/Ankitan_39_crossed_out_eyes.png",
+      "sha256": "a4f4f01b4f8bcc4c591c8d64c1b519011c566236e3fadc96ca1558a2af31adf3"
+    },
+    {
+      "exporter": "addon",
       "file": "addon/art/bluma_face.png",
       "master": "static/cow/face.png",
       "sha256": "e8de3cc26fb4b94adeffad6a2c2f928e5d50e59ef536021044ac7541de56efce"
