@@ -179,7 +179,7 @@ state = {
     "password_answers": 0,
 }
 
-mw.addonManager.setWebExports(__name__, r"((aki|ankilope)_face|art/(aki|ankilope)_[a-z0-9_]+)\.png")
+mw.addonManager.setWebExports(__name__, r"((aki|ankilope|anki_tan)_face|art/(aki|ankilope|anki_tan)_[a-z0-9_]+)\.png")
 
 
 def config():
@@ -1234,8 +1234,20 @@ def offer_update(candidate):
 
 
 def install_update(path):
-    from aqt.addons import InstallError
+    from aqt.addons import AddonMeta, InstallError
     from aqt.utils import showInfo
+    from zipfile import BadZipFile, ZipFile
+
+    # Anki's installer replaces the files before reporting incompatibility.
+    # Check its validated manifest first, while the working version is intact.
+    try:
+        with ZipFile(path) as archive:
+            manifest = mw.addonManager.readManifestFile(archive)
+    except (BadZipFile, OSError):
+        manifest = {}
+    if manifest and not AddonMeta.from_json_meta(manifest["package"], manifest).compatible():
+        tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
+        return
 
     result = mw.addonManager.install(str(path))
     if isinstance(result, InstallError):

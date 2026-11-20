@@ -43,7 +43,7 @@ class _Window(enum.Enum):
 
 
 # Every companion in the picker's order.
-ORDER = (moods.AKI, moods.ANKILOPE_ID, moods.COW, moods.NONE)
+ORDER = (moods.AKI, moods.ANKILOPE_ID, moods.COW, moods.ANKI_TAN, moods.NONE)
 
 # A selected card has the highlight colour's border.
 _STYLE = (

@@ -2,3 +2,4 @@
 __pycache__
 *.ankiaddon
 addon/version.json
+/tools/banner/target

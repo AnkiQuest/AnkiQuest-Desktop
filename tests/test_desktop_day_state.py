@@ -68,12 +68,24 @@ class DayState(unittest.TestCase):
     def test_a_freeze_is_named_and_expired_days_are_unknown(self):
         self.pending_day()
         self.addon.state["profile"].update(streak_state="protected", at_risk=False)
+        self.addon.state["profile"]["today"].update(reviews=0, time_ms=0, minutes=0)
         self.assertIn("Protected by a freeze", self.render().stats)
         self.addon.state["profile"]["day_ends_at"] = int(time.time() * 1000) - 1
         html = self.render().stats
         self.assertNotIn("7 day streak", html)
         self.assertNotIn("Protected by a freeze", html)
         self.assertIn("Streak unknown", html)
+
+    def test_a_review_on_a_protected_day_is_short(self):
+        # The freeze kept yesterday; today's review is short of the minimum, not unstudied.
+        self.pending_day()
+        self.addon.state["profile"].update(streak_state="protected", at_risk=False)
+        view = self.home._profile_for_display(self.addon.state["profile"])
+        self.assertEqual("short", self.home.moods.day_state(view))
+        self.assertNotIn("Protected by a freeze", self.render().stats)
+        self.assertIn("Not yet", self.home._toolbar_values()[0])
+        finished = self.addon.state["profile"]["today"]["starts_at"] + 1
+        self.assertEqual("short", self.home._session_day({"finished_at": finished})["state"])
 
     def test_the_flame_follows_todays_mood(self):
         # Short of the minimum: grey; counted: lit; a freeze: icy blue; an ended day: none.
