@@ -2322,6 +2322,88 @@ GERMAN.update({"Share a deck": "Stapel teilen"})
 FRENCH.update({"Share a deck": "Partager un paquet"})
 PORTUGUESE.update({"Share a deck": "Partilhar um baralho"})
 
+# Countdowns to events and exams; English wording in tests/fixtures/countdowns.json.
+SPANISH.update({
+    "Countdowns": "Cuentas atrás", "Edit countdowns": "Editar cuentas atrás",
+    "Add countdown": "Añadir cuenta atrás", "Edit countdown": "Editar cuenta atrás",
+    "Name": "Nombre", "Date": "Fecha", "Deck (optional)": "Mazo (opcional)", "No deck": "Sin mazo", "Delete": "Eliminar",
+    "Enter a name.": "Escribe un nombre.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Ya tienes el máximo de cuentas atrás. Elimina una para añadir otra.",
+    "This countdown can't be saved. Choose another deck.": "No se puede guardar esta cuenta atrás. Elige otro mazo.",
+    "Only you see your countdowns.": "Solo tú ves tus cuentas atrás.",
+    "Add an exam or event to count down to it.": "Añade un examen o un evento para contar los días que faltan.",
+    "%s in %d days": "%s en %d días", "%s tomorrow": "%s mañana", "%s today": "%s hoy", "%s is over": "%s ya pasó",
+    "~%d card a day to finish %s by then": "~%d tarjeta al día para terminar %s a tiempo",
+    "~%d cards a day to finish %s by then": "~%d tarjetas al día para terminar %s a tiempo",
+    "Nothing left in %s before then": "No queda nada en %s antes de esa fecha",
+    "Add the countdown you made while signed out to %s?": "¿Añadir a %s la cuenta atrás que creaste sin iniciar sesión?",
+    "Add the %d countdowns you made while signed out to %s?": "¿Añadir las %d cuentas atrás que creaste sin iniciar sesión a %s?",
+    "Add to account": "Añadir a la cuenta",
+    "Keep on this device": "Mantener en este dispositivo",
+    "%d countdown did not fit and stays on this device.": "%d cuenta atrás no cabía y se queda en este dispositivo.",
+    "%d countdowns did not fit and stay on this device.": "%d cuentas atrás no cabían y se quedan en este dispositivo.",
+})
+GERMAN.update({
+    "Countdowns": "Countdowns", "Edit countdowns": "Countdowns bearbeiten",
+    "Add countdown": "Countdown hinzufügen", "Edit countdown": "Countdown bearbeiten",
+    "Name": "Name", "Date": "Datum", "Deck (optional)": "Stapel (optional)", "No deck": "Kein Stapel", "Delete": "Löschen",
+    "Enter a name.": "Gib einen Namen ein.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Du hast schon die meisten Countdowns, die du haben kannst. Lösche einen, um einen neuen hinzuzufügen.",
+    "This countdown can't be saved. Choose another deck.": "Dieser Countdown kann nicht gespeichert werden. Wähle einen anderen Stapel.",
+    "Only you see your countdowns.": "Nur du siehst deine Countdowns.",
+    "Add an exam or event to count down to it.": "Füge eine Prüfung oder ein Ereignis hinzu, um die Tage bis dahin zu zählen.",
+    "%s in %d days": "%s in %d Tagen", "%s tomorrow": "%s morgen", "%s today": "%s heute", "%s is over": "%s ist vorbei",
+    "~%d card a day to finish %s by then": "~%d Karte am Tag, um %s bis dahin abzuschließen",
+    "~%d cards a day to finish %s by then": "~%d Karten am Tag, um %s bis dahin abzuschließen",
+    "Nothing left in %s before then": "In %s ist bis dahin nichts mehr offen",
+    "Add the countdown you made while signed out to %s?": "Den Countdown, den du ohne Anmeldung erstellt hast, zu %s hinzufügen?",
+    "Add the %d countdowns you made while signed out to %s?": "Die %d Countdowns, die du ohne Anmeldung erstellt hast, zu %s hinzufügen?",
+    "Add to account": "Zum Konto hinzufügen",
+    "Keep on this device": "Auf diesem Gerät behalten",
+    "%d countdown did not fit and stays on this device.": "%d Countdown passte nicht mehr hinein und bleibt auf diesem Gerät.",
+    "%d countdowns did not fit and stay on this device.": "%d Countdowns passten nicht mehr hinein und bleiben auf diesem Gerät.",
+})
+FRENCH.update({
+    "Countdowns": "Comptes à rebours", "Edit countdowns": "Modifier les comptes à rebours",
+    "Add countdown": "Ajouter un compte à rebours", "Edit countdown": "Modifier le compte à rebours",
+    "Name": "Nom", "Date": "Date", "Deck (optional)": "Paquet (facultatif)", "No deck": "Aucun paquet", "Delete": "Supprimer",
+    "Enter a name.": "Saisis un nom.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Tu as déjà le nombre maximal de comptes à rebours. Supprimes-en un pour en ajouter un autre.",
+    "This countdown can't be saved. Choose another deck.": "Impossible d'enregistrer ce compte à rebours. Choisis un autre paquet.",
+    "Only you see your countdowns.": "Tes comptes à rebours ne sont visibles que par toi.",
+    "Add an exam or event to count down to it.": "Ajoute un examen ou un événement pour compter les jours qui restent.",
+    "%s in %d days": "%s dans %d jours", "%s tomorrow": "%s demain", "%s today": "%s aujourd’hui", "%s is over": "%s : terminé",
+    "~%d card a day to finish %s by then": "~%d carte par jour pour finir %s d’ici là",
+    "~%d cards a day to finish %s by then": "~%d cartes par jour pour finir %s d’ici là",
+    "Nothing left in %s before then": "Plus rien à faire dans %s d’ici là",
+    "Add the countdown you made while signed out to %s?": "Ajouter à %s le compte à rebours créé sans connexion ?",
+    "Add the %d countdowns you made while signed out to %s?": "Ajouter les %d comptes à rebours créés sans connexion à %s ?",
+    "Add to account": "Ajouter au compte",
+    "Keep on this device": "Garder sur cet appareil",
+    "%d countdown did not fit and stays on this device.": "%d compte à rebours ne tenait plus et reste sur cet appareil.",
+    "%d countdowns did not fit and stay on this device.": "%d comptes à rebours ne tenaient plus et restent sur cet appareil.",
+})
+PORTUGUESE.update({
+    "Countdowns": "Contagens decrescentes", "Edit countdowns": "Editar contagens decrescentes",
+    "Add countdown": "Adicionar contagem decrescente", "Edit countdown": "Editar contagem decrescente",
+    "Name": "Nome", "Date": "Data", "Deck (optional)": "Baralho (opcional)", "No deck": "Sem baralho", "Delete": "Eliminar",
+    "Enter a name.": "Escreve um nome.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Já tens o máximo de contagens decrescentes. Elimina uma para adicionar outra.",
+    "This countdown can't be saved. Choose another deck.": "Não é possível guardar esta contagem decrescente. Escolhe outro baralho.",
+    "Only you see your countdowns.": "Só tu vês as tuas contagens decrescentes.",
+    "Add an exam or event to count down to it.": "Adiciona um exame ou evento para contar os dias que faltam.",
+    "%s in %d days": "%s daqui a %d dias", "%s tomorrow": "%s amanhã", "%s today": "%s hoje", "%s is over": "%s já passou",
+    "~%d card a day to finish %s by then": "~%d cartão por dia para terminar %s até lá",
+    "~%d cards a day to finish %s by then": "~%d cartões por dia para terminar %s até lá",
+    "Nothing left in %s before then": "Não falta nada em %s até lá",
+    "Add the countdown you made while signed out to %s?": "Adicionar a %s a contagem decrescente que criaste sem sessão iniciada?",
+    "Add the %d countdowns you made while signed out to %s?": "Adicionar as %d contagens decrescentes que criaste sem sessão iniciada a %s?",
+    "Add to account": "Adicionar à conta",
+    "Keep on this device": "Manter neste dispositivo",
+    "%d countdown did not fit and stays on this device.": "%d contagem decrescente não coube e fica neste dispositivo.",
+    "%d countdowns did not fit and stay on this device.": "%d contagens decrescentes não couberam e ficam neste dispositivo.",
+})
+
 # Progress: study time from the local review log, in Android's wording.
 SPANISH.update({
     ("Time spent answering cards in this collection, uploaded or not. "

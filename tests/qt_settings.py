@@ -429,5 +429,80 @@ class Settings(unittest.TestCase):
         self.assertEqual(([], [], [], None, None), values)
 
 
+class Countdowns(unittest.TestCase):
+    """The countdown list saves every change at once, in the stored order, and shows it by date."""
+
+    def setUp(self):
+        self.countdowns = load_in_package("settings_qt", "countdowns")
+        self.dialog_ui = load_in_package("settings_qt", "countdowns_ui")
+        self.dialog_ui.tr = lambda text: text
+        self.saved = []
+        today = self.countdowns.parse_date("2026-11-19")
+        items = [
+            self.countdowns.Event("Driving theory", "2026-12-01", None),
+            self.countdowns.Event("Spanish exam", "2026-11-25", "Spanish::A1"),
+        ]
+        self.dialog = self.dialog_ui.CountdownsDialog(None, items, ["Spanish::A1"], today, self.saved.append)
+        self.list = self.dialog.findChild(self.dialog_ui.QListWidget, "ankiquest_countdowns")
+
+    def tearDown(self):
+        self.dialog.deleteLater()
+
+    def rows(self):
+        return [self.list.item(row).text() for row in range(self.list.count())]
+
+    def test_rows_are_in_date_order(self):
+        self.assertEqual(
+            ["2026-11-25 · Spanish exam in 6 days · Spanish::A1", "2026-12-01 · Driving theory in 12 days"],
+            self.rows(),
+        )
+
+    def test_add_edit_and_delete_save_the_whole_list(self):
+        new = self.countdowns.Event("Biology test", "2026-11-20", None)
+        with patch.object(self.dialog_ui, "_event_dialog", return_value=new):
+            self.dialog._new()
+        self.assertEqual("2026-11-20 · Biology test tomorrow", self.rows()[0])
+
+        # The first row is the Biology test; editing keeps its place in the stored list.
+        self.list.setCurrentRow(0)
+        renamed = self.countdowns.Event("Biology exam", "2026-11-20", None)
+        with patch.object(self.dialog_ui, "_event_dialog", return_value=renamed):
+            self.dialog._edit()
+        self.list.setCurrentRow(1)
+        self.dialog._remove()
+        self.assertEqual(
+            [
+                [
+                    {"name": "Driving theory", "date": "2026-12-01", "deck": None},
+                    {"name": "Spanish exam", "date": "2026-11-25", "deck": "Spanish::A1"},
+                    {"name": "Biology test", "date": "2026-11-20", "deck": None},
+                ],
+                [
+                    {"name": "Driving theory", "date": "2026-12-01", "deck": None},
+                    {"name": "Spanish exam", "date": "2026-11-25", "deck": "Spanish::A1"},
+                    {"name": "Biology exam", "date": "2026-11-20", "deck": None},
+                ],
+                [
+                    {"name": "Driving theory", "date": "2026-12-01", "deck": None},
+                    {"name": "Biology exam", "date": "2026-11-20", "deck": None},
+                ],
+            ],
+            self.saved,
+        )
+
+    def test_a_cancelled_form_saves_nothing(self):
+        with patch.object(self.dialog_ui, "_event_dialog", return_value=None):
+            self.dialog._new()
+        self.assertEqual([], self.saved)
+
+    def test_a_full_list_offers_no_new_form(self):
+        self.dialog._items = [self.countdowns.Event("Exam %d" % n, "2026-12-01", None) for n in range(self.countdowns.MAX_EVENTS)]
+        with patch.object(self.dialog_ui, "_tell") as tell, patch.object(self.dialog_ui, "_event_dialog") as form:
+            self.dialog._new()
+        form.assert_not_called()
+        tell.assert_called_once()
+        self.assertEqual([], self.saved)
+
+
 if __name__ == "__main__":
     unittest.main()

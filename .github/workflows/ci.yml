@@ -132,6 +132,21 @@ jobs:
           persist-credentials: false
       - name: Check the shared quiet-hour cases
         run: cmp tests/fixtures/quiet_hours.json server-contract/tests/fixtures/quiet_hours.json
+      - name: Read the shared countdown and synced settings cases
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: f65544f8770a9380ac14bf6a7c2fc8fe7d67b92e # Server PR 98
+          path: server-countdowns
+          sparse-checkout: |
+            /tests/fixtures/countdowns.json
+            /tests/fixtures/synced_settings.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the shared countdown and synced settings cases
+        run: |
+          cmp tests/server-fixtures/countdowns.json server-countdowns/tests/fixtures/countdowns.json
+          cmp tests/server-fixtures/synced_settings.json server-countdowns/tests/fixtures/synced_settings.json
       - name: Read the shared streak mood cases
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

@@ -17,12 +17,12 @@ class SettingsMenu(unittest.TestCase):
         menu = self.addon._tools
         self.mw.form.menuTools.addAction.assert_called_once_with(menu.menuAction())
 
-        # Eight destinations, then the help entries: Rate AnkiQuest's submenu, the changelog and
+        # Nine destinations, then the help entries: Rate AnkiQuest's submenu, the changelog and
         # Report a bug (help_ui, tested in qt_help.py). A build without updates has no update check.
-        self.assertEqual(11, menu.addAction.call_count)
+        self.assertEqual(12, menu.addAction.call_count)
         menu.addSeparator.assert_called_once_with()
         self.assertEqual(
-            ["Today", "Inbox", "Friends", "Study companion", "Website", "Settings"],
+            ["Today", "Inbox", "Friends", "Countdowns", "Study companion", "Website", "Settings"],
             [call.args[0] for call in self.addon.QAction.call_args_list],
         )
         self.assertEqual(
