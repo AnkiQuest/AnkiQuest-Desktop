@@ -1,6 +1,6 @@
 # Screenshot fonts
 
-`tests/draw_screenshots.py` points fontconfig at this folder only, so the screenshots use these fonts and nothing installed on the machine. The banner tool draws its title with the same Roboto.
+`tests/draw_screenshots.py` points fontconfig at this folder only, so the screenshots use these fonts and nothing installed on the machine. The banner tool (AnkiQuest-Dev) bundles the same Roboto for its title.
 
 | File | Font | Source | License |
 | --- | --- | --- | --- |
