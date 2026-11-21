@@ -72,7 +72,7 @@ The add-on tests and poses come from one AnkiQuest-Server commit, named in
   both clients test against.
 - `tests/api-examples/*.json`: copies of the Server `docs/api/examples/`
   the add-on tests read.
-- `addon/art/`, `addon/*_face.png` and `assets/retired/addon/`: poses
+- `addon/art/` and `addon/*_face.png`: poses
   Server's `export-addon-art` writes from its `static/` masters, listed with
   their hashes in `art-exports.json`.
 
