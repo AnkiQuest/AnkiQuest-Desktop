@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import test_deck_completion as addon_fixture
-from addon_loader import ADDON, load_in_package
+from addon_loader import ADDON, FakeApi, load_in_package
 
 settings_sync = load_in_package("aq_settings_sync", "settings_sync")
 FIXTURE = json.loads((ADDON.parent / "tests/fixtures/synced_settings.json").read_text("utf-8"))
@@ -14,20 +14,15 @@ DEFAULTS = json.loads((ADDON / "config.json").read_text("utf-8"))
 NOW_MS = 1793183400000
 
 
-class FakeApi:
+class SettingsServer(FakeApi):
     """A server that keeps settings as the real one does: the newer change wins, ties keep it."""
 
-    def __init__(self, features=("settings_sync",), stored=None):
-        self.user = "hill"
-        self.features = frozenset(features)
+    def __init__(self, features=(settings_sync.FEATURE,), stored=None):
+        super().__init__(features=features)
         self.stored = dict(stored or {})
-        self.calls = []
-
-    def capabilities(self):
-        return self.features
 
     def _request(self, path, body=None, method=None):
-        self.calls.append((method or ("POST" if body else "GET"), path, body))
+        self.sent.append((path, body, method))
         for key, entry in (body or {}).get("settings", {}).items():
             old = self.stored.get(key)
             if old is None or entry["updated_at"] > old["updated_at"]:
@@ -81,12 +76,12 @@ class LocalChanges(unittest.TestCase):
 
 class Runs(unittest.TestCase):
     def test_a_server_without_the_feature_is_left_alone(self):
-        api = FakeApi(features=())
+        api = SettingsServer(features=())
         self.assertIsNone(settings_sync.run(api, {"notify_rank": False}))
-        self.assertEqual([], api.calls)
+        self.assertEqual([], api.sent)
 
     def test_newer_remote_values_apply_and_newer_local_ones_are_sent(self):
-        api = FakeApi(stored={
+        api = SettingsServer(stored={
             "notify_rank": {"value": False, "updated_at": NOW_MS - 10},
             "deck_status": {"value": True, "updated_at": NOW_MS - 50},
             "mood_icon": {"value": False, "updated_at": NOW_MS - 10},
@@ -101,16 +96,16 @@ class Runs(unittest.TestCase):
         self.assertEqual(NOW_MS - 5, changed["deck_status"])
         self.assertEqual(0, changed["streak_warning_hours"])
         self.assertEqual(
-            [("GET", "/api/settings/hill", None),
-             ("PUT", "/api/settings/hill", {"settings": {
+            [("/api/settings/hill", None, None),
+             ("/api/settings/hill", {"settings": {
                  "deck_status": {"value": False, "updated_at": NOW_MS - 5},
                  "streak_warning_hours": {"value": 0, "updated_at": 0},
-             }})],
-            api.calls,
+             }}, "PUT")],
+            api.sent,
         )
 
     def test_the_server_time_replaces_a_time_ahead_of_it(self):
-        api = FakeApi()
+        api = SettingsServer()
         config = {"notify_rank": False, settings_sync.CHANGED_KEY: {"notify_rank": NOW_MS + 60_000}}
         _, changed = settings_sync.run(api, config)
         self.assertEqual(NOW_MS, changed["notify_rank"])
@@ -135,7 +130,7 @@ class AddonSync(unittest.TestCase):
     run_task = addon_fixture.RefreshTests.run_task
 
     def use_server(self, **stored):
-        server = FakeApi(stored=stored)
+        server = SettingsServer(stored=stored)
         server.user = self.api.user
         self.api.capabilities = server.capabilities
         self.api._request = server._request
@@ -152,14 +147,14 @@ class AddonSync(unittest.TestCase):
     def test_other_saves_do_not_sync(self):
         server = self.use_server()
         self.addon.save_config({"update_channel": "nightly"})
-        self.assertEqual([], server.calls)
+        self.assertEqual([], server.sent)
 
     def test_with_the_switch_off_nothing_is_sent_or_applied(self):
         server = self.use_server(notify_rank={"value": False, "updated_at": NOW_MS})
         self.settings[settings_sync.SWITCH] = False
         self.addon.save_config({"deck_status": False})
         self.addon.sync_settings()
-        self.assertEqual([], server.calls)
+        self.assertEqual([], server.sent)
         self.assertNotIn("notify_rank", self.settings)
         self.assertIn("deck_status", self.settings[settings_sync.CHANGED_KEY])
 
@@ -190,10 +185,10 @@ class AddonSync(unittest.TestCase):
             self.addon.poll()
             self.assertFalse(self.settings["review_heatmap"])
             self.addon.poll()
-        self.assertEqual(1, len(server.calls))
+        self.assertEqual(1, len(server.sent))
         with patch.object(self.addon.time, "time", return_value=1000.0 + self.addon.SETTINGS_POLL_GAP_S):
             self.addon.poll()
-        self.assertEqual(2, len(server.calls))
+        self.assertEqual(2, len(server.sent))
 
     def test_the_poll_leaves_a_sync_in_flight_alone(self):
         self.use_server()
@@ -223,6 +218,156 @@ class AddonSync(unittest.TestCase):
             self.addon.sync_settings()
         self.assertNotIn(settings_sync.CHANGED_KEY, self.settings)
         self.assertIs(self.addon._SettingsSync.IDLE, self.addon.state["settings_sync"])
+
+
+class SignedOutCountdowns(unittest.TestCase):
+    """Countdowns made while signed out are offered to the account once its settings have synced."""
+
+    setUp_addon = addon_fixture.RefreshTests.setUp
+    read_rows = addon_fixture.RefreshTests.read_rows
+    write_config = addon_fixture.RefreshTests.write_config
+    run_task = addon_fixture.RefreshTests.run_task
+
+    EXAM = {"name": "Spanish exam", "date": "2026-12-01", "deck": None}
+    DRIVING = {"name": "Driving test", "date": "2027-01-10", "deck": None}
+
+    def setUp(self):
+        self.setUp_addon()
+        self.server = SettingsServer(features=(settings_sync.FEATURE, "countdowns"),
+                                     stored={"countdowns": {"value": [self.EXAM], "updated_at": NOW_MS - 5}})
+        self.server.user = self.api.user
+        self.api.capabilities = self.server.capabilities
+        self.api._request = self.server._request
+        self.addon.redraw = Mock()
+        self.addon.tooltip = Mock()
+        self.ask = Mock(return_value=True)
+        self.addon.countdowns_ui.ask_import = self.ask
+        self.settings[settings_sync.DEVICE_KEY] = {"countdowns": {"value": [self.DRIVING], "changed_at": 3}}
+        self.addon.state["countdown_offer"] = self.addon._CountdownOffer.AFTER_SYNC
+
+    def device(self):
+        return settings_sync.signed_out(self.settings, "countdowns")
+
+    def test_accepting_adds_them_to_the_synced_list(self):
+        with patch.object(self.addon.time, "time", return_value=NOW_MS / 1000):
+            self.addon.sync_settings()
+
+        self.assertEqual(1, self.ask.call_count)
+        self.assertIn(self.api.user, self.ask.call_args.args[1])
+        self.assertEqual([self.EXAM, self.DRIVING], self.settings["countdowns"])
+        self.assertEqual({"value": [self.EXAM, self.DRIVING], "updated_at": NOW_MS}, self.server.stored["countdowns"])
+        self.assertEqual([], self.device())
+        self.assertIs(self.addon._CountdownOffer.NONE, self.addon.state["countdown_offer"])
+
+    def test_declining_keeps_them_on_this_device(self):
+        self.ask.return_value = False
+        self.addon.sync_settings()
+        self.addon.sync_settings()
+
+        self.assertEqual(1, self.ask.call_count)
+        self.assertEqual([self.EXAM], self.settings["countdowns"])
+        self.assertEqual([self.DRIVING], self.device())
+        self.assertIs(self.addon._CountdownOffer.NONE, self.addon.state["countdown_offer"])
+
+    def test_a_failed_sync_offers_nothing_yet(self):
+        # The account's list is not known, so adding to it could replace the server's list.
+        self.api.capabilities = Mock(side_effect=OSError("offline"))
+        with patch("builtins.print"):
+            self.addon.sync_settings()
+
+        self.ask.assert_not_called()
+        self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])
+
+    def test_the_offer_waits_until_countdowns_can_sync(self):
+        self.api.capabilities = Mock(return_value={settings_sync.FEATURE})
+        self.addon.sync_settings()
+
+        self.ask.assert_not_called()
+        self.assertEqual([self.DRIVING], self.device())
+        self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])
+
+    def test_nothing_to_add_offers_nothing(self):
+        self.settings[settings_sync.DEVICE_KEY] = {"countdowns": {"value": [self.EXAM], "changed_at": 3}}
+        self.addon.sync_settings()
+
+        self.ask.assert_not_called()
+        self.assertIs(self.addon._CountdownOffer.NONE, self.addon.state["countdown_offer"])
+
+    def test_with_the_switch_off_the_offer_comes_at_once(self):
+        self.settings[settings_sync.SWITCH] = False
+        self.settings["countdowns"] = [self.EXAM]
+        self.addon.sync_settings()
+
+        self.assertEqual([], self.server.sent)
+        self.assertEqual([self.EXAM, self.DRIVING], self.settings["countdowns"])
+
+    def test_what_does_not_fit_stays_on_this_device(self):
+        full = [{"name": "Quiz %d" % day, "date": "2026-12-%02d" % day, "deck": None} for day in range(1, 21)]
+        self.server.stored["countdowns"] = {"value": full[:19], "updated_at": NOW_MS - 5}
+        self.settings[settings_sync.DEVICE_KEY] = {"countdowns": {"value": [self.DRIVING, self.EXAM], "changed_at": 3}}
+        self.addon.sync_settings()
+
+        self.assertEqual(full[:19] + [self.DRIVING], self.settings["countdowns"])
+        self.assertEqual([self.EXAM], self.device())
+        self.assertIn("1 countdown did not fit", self.addon.tooltip.call_args.args[0])
+
+    def test_an_old_sync_does_not_offer_for_a_new_account(self):
+        original = self.server._request
+
+        def finish_old_request(*args, **kwargs):
+            result = original(*args, **kwargs)
+            # Real clients are captured objects; switching does not mutate the old one.
+            self.api = SimpleNamespace(**dict(vars(self.api), user="other", token="other-token"))
+            self.settings.update(user="other", token="other-token", countdowns=[])
+            return result
+
+        self.api._request = finish_old_request
+        self.addon.sync_settings()
+
+        self.ask.assert_not_called()
+        self.assertEqual([], self.settings["countdowns"])
+        self.assertEqual([self.DRIVING], self.device())
+        self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])
+
+    def test_an_import_answer_does_not_restore_the_previous_account(self):
+        def switch_while_asking(*_):
+            self.api = SimpleNamespace(**dict(vars(self.api), user="other", token="other-token"))
+            self.settings.update(user="other", token="other-token", countdowns=[])
+            self.addon.state["countdown_offer"] = self.addon._CountdownOffer.AFTER_SYNC
+            return True
+
+        self.ask.side_effect = switch_while_asking
+        self.addon.sync_settings()
+
+        self.assertEqual("other", self.settings["user"])
+        self.assertEqual("other-token", self.settings["token"])
+        self.assertEqual([], self.settings["countdowns"])
+        self.assertEqual([self.DRIVING], self.device())
+
+    def test_import_keeps_other_preferences_changed_while_asking(self):
+        def change_while_asking(*_):
+            self.settings["goal_celebrations"] = False
+            return True
+
+        self.ask.side_effect = change_while_asking
+        self.addon.sync_settings()
+
+        self.assertFalse(self.settings.get("goal_celebrations", True))
+        self.assertEqual([self.EXAM, self.DRIVING], self.settings["countdowns"])
+
+    def test_a_changed_list_keeps_both_lists_until_a_fresh_offer(self):
+        changed = [self.EXAM, {"name": "New event", "date": "2027-02-01", "deck": None}]
+
+        def change_while_asking(*_):
+            self.settings["countdowns"] = changed
+            return True
+
+        self.ask.side_effect = change_while_asking
+        self.addon.sync_settings()
+
+        self.assertEqual(changed, self.settings["countdowns"])
+        self.assertEqual([self.DRIVING], self.device())
+        self.assertIs(self.addon._CountdownOffer.AFTER_SYNC, self.addon.state["countdown_offer"])
 
 
 class SettingsDialogValues(unittest.TestCase):

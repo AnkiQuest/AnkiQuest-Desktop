@@ -37,14 +37,14 @@ class CompanionMomentWait(unittest.TestCase):
         moments._acknowledge(self.mw.pm.profile, (self.api.base, self.api.user), self.pending())
 
     def test_an_unknown_companion_from_an_older_server_waits_for_its_art(self):
-        self.poll(self.row(2, "companion:anki_tan"))
+        self.poll(self.row(2, "companion:quest_chan"))
         self.assertEqual([], self.pending(), "no card shows another companion's art")
 
         # An update adds the art: the moment shows once, then never again.
-        with patch.dict(self.addon.moods.NAMES, anki_tan="Anki-tan"):
-            self.assertEqual(["companion:anki_tan"], self.pending())
+        with patch.dict(self.addon.moods.NAMES, quest_chan="Quest-chan"):
+            self.assertEqual(["companion:quest_chan"], self.pending())
             self.acknowledge()
-            self.poll(self.row(2, "companion:anki_tan"))
+            self.poll(self.row(2, "companion:quest_chan"))
             self.assertEqual([], self.pending())
 
     def test_an_unlock_the_server_held_back_shows_after_the_update(self):

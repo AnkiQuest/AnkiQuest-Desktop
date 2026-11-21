@@ -57,7 +57,7 @@ class DayState(unittest.TestCase):
     def test_the_own_today_board_row_does_not_reuse_yesterdays_xp(self):
         self.pending_day()
         self.addon.state["profile"]["day_ends_at"] = int(time.time() * 1000) - 1
-        self.mw.pm.profile[self.home.PERIOD_KEY] = "day"
+        self.mw.pm.profile[self.home.board_data._OLD_PERIOD] = "day"
         self.api.leaderboard.return_value = [{"user": "hill", "display": "hill", "periods": {"day": 200}}]
         html = self.render().stats
         self.assertIn("— XP", html)
@@ -68,12 +68,24 @@ class DayState(unittest.TestCase):
     def test_a_freeze_is_named_and_expired_days_are_unknown(self):
         self.pending_day()
         self.addon.state["profile"].update(streak_state="protected", at_risk=False)
+        self.addon.state["profile"]["today"].update(reviews=0, time_ms=0, minutes=0)
         self.assertIn("Protected by a freeze", self.render().stats)
         self.addon.state["profile"]["day_ends_at"] = int(time.time() * 1000) - 1
         html = self.render().stats
         self.assertNotIn("7 day streak", html)
         self.assertNotIn("Protected by a freeze", html)
         self.assertIn("Streak unknown", html)
+
+    def test_a_review_on_a_protected_day_is_short(self):
+        # The freeze kept yesterday; today's review is short of the minimum, not unstudied.
+        self.pending_day()
+        self.addon.state["profile"].update(streak_state="protected", at_risk=False)
+        view = self.home._profile_for_display(self.addon.state["profile"])
+        self.assertEqual("short", self.home.moods.day_state(view))
+        self.assertNotIn("Protected by a freeze", self.render().stats)
+        self.assertIn("Not yet", self.home._toolbar_values()[0])
+        finished = self.addon.state["profile"]["today"]["starts_at"] + 1
+        self.assertEqual("short", self.home._session_day({"finished_at": finished})["state"])
 
     def test_the_flame_follows_todays_mood(self):
         # Short of the minimum: grey; counted: lit; a freeze: icy blue; an ended day: none.
@@ -115,13 +127,29 @@ class DayState(unittest.TestCase):
         with fixture.patch.object(self.home, "now_ms", return_value=self.addon.state["profile"]["day_ends_at"]):
             self.assertEqual("unknown", self.home._session_day(summary)["state"])
 
+    def test_an_unverified_day_counts_with_time_not_known(self):
+        # Observed answers (AnkiQuest Lite) keep today counting short of the minimum.
+        self.pending_day()
+        self.addon.state["profile"].update(streak_state="unverified", at_risk=False, streak_warning=None)
+        self.addon.state["profile"]["today"].update(observed=1)
+        html = self.render().stats
+        self.assertIn("\U0001f525 7 day streak", html)
+        self.assertIn("Studied today · time not known", html)
+        self.assertIn("Streak secured: today counts for your streak.", html)
+        self.assertNotIn("you reached today", html)
+        self.assertNotIn("Syncing", html)
+        self.assertIn("Secured", self.home._toolbar_values()[0])
+        summary = {"finished_at": self.addon.state["profile"]["today"]["starts_at"] + 1}
+        self.assertEqual({"state": "unverified", "label": "Studied today · time not known"}, self.home._session_day(summary))
+        self.assertEqual("Streak secured! 🔥", self.home._streak_title(summary))
+
     def test_past_session_days_keep_the_servers_distinct_verdicts(self):
         self.pending_day()
         profile = self.addon.state["profile"]
         for state, label in (
             ("met", "Streak minimum met"), ("short", "Short of the streak minimum"),
             ("frozen", "Frozen — streak kept"), ("skipped", "Skipped day — streak kept"),
-            ("none", "No study counted"),
+            ("none", "No study counted"), ("unverified", "Time not known"),
         ):
             with self.subTest(state=state):
                 profile["heatmap"] = [{"date": "2024-01-01", "state": state}]

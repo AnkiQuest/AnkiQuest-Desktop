@@ -175,27 +175,6 @@ def period(value):
     return value if value in PERIODS else DEFAULT_PERIOD
 
 
-def _xp(entry, chosen):
-    periods = entry.get("periods")
-    return int(periods.get(chosen) or 0) if isinstance(periods, dict) else 0
-
-
-def ranked(board, chosen):
-    """Orders a /api/leaderboard answer by the XP of `chosen`."""
-    entries = [entry for entry in board or [] if isinstance(entry, dict)]
-    ordered = sorted(entries, key=lambda entry: (-_xp(entry, chosen), -int(entry.get("xp_total") or 0), entry.get("user") or ""))
-    return [dict(entry, xp=_xp(entry, chosen)) for entry in ordered]
-
-
-def standings(board, chosen, me, size=5):
-    """The top `size` as (place, entry, mine), plus your own row when you are further down."""
-    rows = [(place, entry, entry.get("user") == me) for place, entry in enumerate(ranked(board, chosen), 1)]
-    top = rows[:size]
-    if not any(mine for _, _, mine in top):
-        top += [row for row in rows[size:] if row[2]][:1]
-    return top
-
-
 def valid_session(started_ms, now_ms):
     return bool(started_ms) and 0 < now_ms - started_ms <= MAX_SESSION_MS
 

@@ -14,21 +14,22 @@ The settings dialog has four groups and scrolls within the window:
 
 - **Account:** sign in, switch accounts, sign out, choose your study companion and manage your account on the website. **Data** holds the last upload status and **Upload everything again**. This recovery action quietly replays your history; ordinary uploads resume from their saved checkpoint.
 - **Notify me about:** rank changes, streak warnings, local goal celebrations, server nudges and celebrations, deck completion alerts and unsubscriptions.
-- **Sharing:** choose decks and people for completion notifications, set who hears about each kind of win, and choose whether you appear on the global leaderboard. This switch reads the server's current choice; it is hidden on older servers without the field.
+- **Sharing:** choose decks and people for completion notifications, set who hears about each kind of win, and choose whether you appear on the global leaderboard. This switch reads the server's current choice.
 - **App and privacy:** update channel, deck markers, session recap, review heatmap, **Reduce motion**, **Sync settings**, daily goal, streak protection and the server's privacy notice.
 
 Server choices follow your account across devices. Only changed choices are sent when you save. After switching or editing the connection, save and reopen settings to load that account's choices.
 
 The local options below match `config.json`. Account choices stay on the server; internal bookkeeping keys are not user preferences.
 
-**Sync settings** (`sync_settings`, on by default) keeps `notify_rank`, `streak_hours`, `deck_status`, `session_summary`, `goal_celebrations` and `review_heatmap` the same on every device signed in to your account, including AnkiQuest for Android where it has the same setting. When a setting was changed on two devices, the later change wins. Changes from other devices arrive with the regular five-minute refresh. The switch itself, `system_notifications`, `update_channel`, `reduce_motion` and the connection stay on this computer. While it is off, this computer neither sends nor takes these settings; turning it on again keeps the newer side of each. It needs a server that offers settings sync.
+**Sync settings** (`sync_settings`, on by default) keeps `notify_rank`, `streak_hours`, `deck_status`, `session_summary`, `goal_celebrations`, `review_heatmap` and `countdowns` the same on every device signed in to your account, including AnkiQuest for Android where it has the same setting. When a setting was changed on two devices, the later change wins. Changes from other devices arrive with the regular five-minute refresh. The switch itself, `system_notifications`, `update_channel`, `reduce_motion` and the connection stay on this computer. While it is off, this computer neither sends nor takes these settings; turning it on again keeps the newer side of each. It needs a server that offers settings sync.
 
+- `countdowns`: your events and exams, edited in **Tools → AnkiQuest → Countdowns**, **Edit countdowns** on Today or under **App and privacy**. Each has a name, a date and optionally a deck. Today shows the nearest one that is not over ("Spanish exam in 12 days") and, with a deck, about how many cards a day finish it by then: its new and learning cards and the reviews due before that day, from today up to the day before. Only you see them; they sync to a server that offers countdowns
 - `notify_rank`: say something when your place on the leaderboard changes
 - `streak_hours`: warn you this many hours before your streak ends (0 turns it off)
 - `reduce_motion`: off by default; on, a companion that joins you fades in instead of playing the full reveal. Anki's own Reduce motion does not change it
-- `update_channel`: `stable` for `addon-<n>` releases, `nightly` for the build of every change (untested)
+- `update_channel`: `stable` for `addon-<n>` releases, `nightly` for the build of every change (untested); used only by the GitHub package
 
-For a GitHub package, once a day and from **Tools → AnkiQuest → Check for updates**, the add-on looks for a newer build on that channel and offers to install it; restart Anki afterwards. AnkiWeb installations leave updates to **Tools → Add-ons → Check for Updates** and hide the GitHub channel picker. Local source copies never update themselves. The installed version appears under **App and privacy** and in Anki's add-on manager.
+For the GitHub package, once a day and from **Tools → AnkiQuest → Check for updates**, the add-on looks for a newer build on that channel and offers to install it; restart Anki afterwards. Other builds (AnkiWeb, local copies) never update themselves: they have no update check and no channel picker, and Settings shows **Updates: none**. AnkiWeb installations update through **Tools → Add-ons → Check for Updates**. The installed version appears under **App and privacy** and in Anki's add-on manager.
 
 At the end of **Tools → AnkiQuest**, **Rate AnkiQuest** opens the add-on's AnkiWeb page or its GitHub repository, **AnkiQuest changelog** shows the release notes of the installed version, with **All releases** and **Rate AnkiQuest**, and **Report a bug** opens the bug report form on GitHub. When no browser opens the link, it is copied to the clipboard.
 
@@ -50,14 +51,14 @@ with a server set, the block under the deck list is a Today panel: your companio
 
 Today also shows saved freezes, a freeze earned today and your latest weekly recap for seven days, with one sentence per line. An AnkiQuest entry in the top toolbar and beside Browse's search shows the current streak and day state; click it to return to Today. If the server is unreachable, Today keeps the cached profile, explains what is waiting, and offers **Retry connection**.
 
-**History** and **View progress** open a native Progress window: choose a year of uploaded study days or inspect records in the other tab. Each day keeps the server's met, short, frozen, skipped or no-study label. Refresh retries a failed read; **Open website** remains available for older servers. Changing accounts or closing the Anki profile closes the window and discards late replies.
+**History** and **View progress** open a native Progress window: choose a year of uploaded study days or inspect records in the other tab. Each day keeps the server's met, short, frozen, skipped or no-study label. Refresh retries a failed read. Changing accounts or closing the Anki profile closes the window and discards late replies.
 
 the daily goal lives on the server, so every device agrees. pick it with **Change goal** on Today: clear your overdue backlog in a number of days (on top of what is due), a number of cards or minutes a day, or no goal. the dialog estimates each choice from your own collection: cards and time today, and when the backlog would be gone. it opens once by itself while you have not picked a goal. a goal from an older version of the add-on moves to the server the first time.
 
 - `deck_status`: mark decks in the deck list as done today, learning later today, or ready
 - `session_summary`: show a recap with your reviews, time and cards left when you leave a study session
 - `goal_celebrations`: add the once-per-day streak and goal cues to the moments card, with the session recap below them. a server with wins supplies the daily goal moment; the add-on supplies the streak cue
-- `review_heatmap`: show the review heatmap under the deck list, as AnkiQuest for Android does: a year of reviews per day, the next 90 days' forecast and your streaks. it works without an account; with one, the days ankiquest judged are coloured by its verdict. click a day to open its cards in the browser
+- `review_heatmap`: show the review heatmap under the deck list, as AnkiQuest for Android does: a year of reviews per day, the next 90 days' forecast, your streaks and the share of days you studied. it works without an account; with one, the days ankiquest judged are coloured by its verdict. click a day to open its cards in the browser
 
 to give friends a copy of a deck, open **Tools → AnkiQuest → Send a deck**, pick the deck and the friends. they get an independent `.apkg` with cards, notes, media and deck options, never your review history; copies over 25 MB are refused, so use Anki's normal export for those. decks friends send you wait under **Tools → AnkiQuest → Decks offered to me** (the number shows how many) for 30 days, where **Import** opens Anki's usual import dialog and **Dismiss** removes the offer.
 

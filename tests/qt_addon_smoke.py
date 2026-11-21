@@ -30,6 +30,11 @@ PACKAGER = ROOT / "tools/package-addon/Cargo.toml"
 app = QApplication.instance() or QApplication([])
 
 
+def setUpModule():
+    # Compile the packager once, before the tests that install its archives.
+    subprocess.run(["cargo", "build", "--quiet", "--locked", "--manifest-path", str(PACKAGER)], cwd=ROOT, check=True)
+
+
 def package(archive, *flags):
     """Builds the release 13 archive with the repository's packager (tools/package-addon)."""
     command = ["cargo", "run", "--quiet", "--locked", "--manifest-path", str(PACKAGER), "--",
@@ -118,7 +123,8 @@ class RealAnki(unittest.TestCase):
                 mw.form.setupUi(mw)
                 manager = AddonManager(mw)
                 archives = {}
-                for flags, name in (((), "ankiquest"), (("--ankiweb",), "414948448")):
+                # The flags of the GitHub release and the AnkiWeb upload (addon.yml).
+                for flags, name in ((("--updates", "github"), "ankiquest"), (("--ankiweb",), "414948448")):
                     archive = Path(folder) / (name + ".ankiaddon")
                     package(archive, *flags)
                     archives[name] = archive
@@ -175,7 +181,7 @@ class RealAnki(unittest.TestCase):
             mw.reviewer = Reviewer.__new__(Reviewer)
             mw.addonManager = AddonManager(mw)
             archive = Path(folder) / "ankiquest.ankiaddon"
-            package(archive)
+            package(archive, "--updates", "github")
             installed = mw.addonManager.install(str(archive), manifest={"package": "ankiquest_smoke"})
             self.assertIsInstance(installed, InstallOk)
             self.assertTrue(installed.compatible)
@@ -193,8 +199,14 @@ class RealAnki(unittest.TestCase):
                         self.assertTrue(hasattr(value, part), ".".join(path))
                         value = getattr(value, part)
                 self.assertEqual("AnkiQuest", module._tools.title())
-                # Nine destinations, a separator, then Rate AnkiQuest, AnkiQuest changelog and Report a bug.
-                self.assertEqual(13, len(module._tools.actions()))
+                # The installed build.json turns the update check on.
+                self.assertIs(module.updates.UpdateSource.GITHUB, module.updates.SOURCE)
+                # Ten destinations, a separator, then Rate AnkiQuest, AnkiQuest changelog and Report a bug.
+                self.assertEqual(14, len(module._tools.actions()))
+                # The countdown search is one Anki accepts, escapes included.
+                for deck in ("Default", 'Math "Calc" 1_2*\\b'):
+                    mw.col.find_cards(module.countdowns.search(deck, 3))
+                self.assertIsNone(module.home.countdown_view())
                 content = DeckBrowserContent(tree="", stats="")
                 module.on_deck_browser(mw.deckBrowser, content)
                 self.assertIn("AnkiQuest", content.stats)

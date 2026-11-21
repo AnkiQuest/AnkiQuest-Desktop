@@ -171,16 +171,17 @@ class _Conquest:
                      lambda: self._label.setModified(False))
 
     def _send(self):
-        self._route(lambda: self._change(lambda: conquests._tell(self._api, self._at),
-                                        lambda result: share.sent_text(result.get("told", 0), tr)))
+        # A conquest always has a server reference, so this opens the recipient picker.
+        self._route(self._options.show)
 
     def _share_options(self):
         self._route(lambda: self._options.setVisible(self._share.isChecked()))
 
-    def _route(self, legacy):
+    def _route(self, local):
         if not self._card._owned():
             return
-        share_ui._route(self._sharing(), legacy)
+        # The local actions are also what an offline player can still use.
+        share_ui._route(self._sharing(), local, local)
 
     def _retract(self):
         if conquests._can_undo(self._found or {}, int(time.time() * 1000)):

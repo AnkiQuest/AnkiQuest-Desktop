@@ -8,6 +8,7 @@ from addon_loader import load_module
 
 day_verdict = load_module("aq_day_verdict", "day_verdict.py")
 
+# Shared rules, including observed study, pinned by tests/ankiquest-server.sha.
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "day_verdicts.json"
 
 
@@ -23,18 +24,42 @@ class DayVerdicts(unittest.TestCase):
                     self.assertIsNone(found)
                     continue
                 waiting = found.pop("waiting")
+                # Copies from before the server pinned the day's words have no label.
+                if "label" in expected:
+                    expected = dict(expected)
+                    self.assertEqual(expected.pop("label"), day_verdict.label(found))
                 self.assertEqual(expected, found)
-                self.assertEqual(expected["met"] and case["server"]["streak_state"] != "studied", waiting)
+                # Waiting: today counts, but the server says so only once the unsent reviews arrive.
+                self.assertEqual(expected["met"] and expected["streak_state"] != case["server"]["streak_state"], waiting)
 
-    def test_an_older_server_without_day_bounds_counts_no_unsent_review(self):
+    def test_the_cases_include_observed_answers(self):
+        # Pending observed answers (AnkiQuest Lite) have no time_ms; their day is unverified.
+        cases = json.loads(FIXTURE.read_text("utf-8"))["cases"]
+        self.assertTrue(any("time_ms" not in review for case in cases for review in case["pending"]))
+        self.assertIn("unverified", {(case["expected"] or {}).get("label") for case in cases})
+
+    def test_a_profile_without_day_bounds_has_no_verdict(self):
+        # Servers older than the add-on leave out today's starts_at and time_ms.
         server = {
             "streak": 3, "streak_state": "pending", "day_ends_at": 2_000, "last_review_id": 100,
-            "today": {"reviews": 1, "minutes": 4, "streak_minutes": 5},
+            "today": {"reviews": 1, "minutes": 4, "streak_minutes": 5, "starts_at": 0, "time_ms": 240_000},
         }
-        found = day_verdict.verdict(server, [{"id": 500, "time_ms": 600_000}], 1_000)
-        self.assertEqual((False, 240_000, 0, "pending", 3), (found["met"], found["time_ms"], found["unsent"], found["streak_state"], found["streak"]))
-        reached = dict(server, today=dict(server["today"], minutes=5))
-        self.assertTrue(day_verdict.verdict(reached, [], 1_000)["met"])
+        self.assertIsNotNone(day_verdict.verdict(server, [], 1_000))
+        for missing in ("starts_at", "time_ms"):
+            today = {key: value for key, value in server["today"].items() if key != missing}
+            self.assertIsNone(day_verdict.verdict(dict(server, today=today), [], 1_000), missing)
+
+    def test_a_review_on_a_protected_day_is_not_protected(self):
+        # The freeze kept yesterday; with a review today the day reads short, not unstudied.
+        server = {
+            "streak": 4, "streak_state": "protected", "day_ends_at": 2_000, "last_review_id": 10,
+            "today": {"starts_at": 100, "reviews": 1, "time_ms": 180_000, "minutes": 3, "streak_minutes": 10},
+        }
+        shown = day_verdict._for_display(server, day_verdict.verdict(server, [], 1_000))
+        self.assertEqual("pending", shown["_day_status"])
+        self.assertEqual("short", day_verdict.label(day_verdict.verdict(server, [], 1_000)))
+        untouched = dict(server, today=dict(server["today"], reviews=0, time_ms=0, minutes=0))
+        self.assertEqual("protected", day_verdict._for_display(untouched, day_verdict.verdict(untouched, [], 1_000))["_day_status"])
 
     def test_no_profile_says_nothing(self):
         self.assertIsNone(day_verdict.verdict(None, [], 1_000))

@@ -26,6 +26,7 @@ SPANISH = {
     "You are 1 tap away from chibi": "Estás a 1 toque de chibi", "You are %d taps away from chibi": "Estás a %d toques de chibi",
     "Reach level %d": "Alcanza el nivel %d", "Level %d of %d": "Nivel %d de %d",
     "Study for %d hours in total": "Estudia durante %d horas en total", "%d of %d hours": "%d de %d horas",
+    "Keep a %d-day streak": "Mantén una racha de %d días", "%d of %d days": "%d de %d días",
     "Could not load your study companion (%s).": "No se pudo cargar tu compañero de estudio (%s).",
     "Could not save your study companion (%s).": "No se pudo guardar tu compañero de estudio (%s).",
     "Study companion saved.": "Compañero de estudio guardado.",
@@ -40,7 +41,6 @@ SPANISH = {
     "Almost: a few more minutes and today counts.": "Casi: unos minutos más y hoy cuenta.",
     "On fire: today counts for your %d-day streak.": "En llamas: hoy cuenta para tu racha de %d días.",
     "Choose %s": "Elegir a %s",
-    "Later": "Más tarde",
     "Cancel": "Cancelar", "Save": "Guardar", "Server": "Servidor", "Player": "Jugador", "Token": "Token",
     "Leaderboard": "Clasificación", "Friends": "Amigos", "Decks": "Mazos", "Notify": "Avisar",
     "Test connection": "Probar conexión", "Upload everything again": "Volver a subir todo",
@@ -54,14 +54,17 @@ SPANISH = {
     "Celebrate achievements, streak milestones and personal bests": "Celebrar logros, rachas y récords personales",
     "Update channel": "Canal de actualizaciones", "Stable releases": "Versiones estables",
     "Nightly builds (untested)": "Compilaciones nocturnas (sin probar)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Este AnkiQuest es una copia local; no se actualiza solo.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: no se pudieron buscar actualizaciones (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest está actualizado (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s está disponible. ¿Instalarlo ahora? Después hay que reiniciar Anki.",
     "AnkiQuest: could not download the update (%s)": "AnkiQuest: no se pudo descargar la actualización (%s)",
     "AnkiQuest: the update could not be installed (%s)": "AnkiQuest: no se pudo instalar la actualización (%s)",
     "AnkiQuest was updated. Restart Anki to use the new version.": "AnkiQuest se ha actualizado. Reinicia Anki para usar la nueva versión.",
-    "#%d this week": "Puesto %d esta semana", "Last week still counting: %s XP · closes at %s": "La semana pasada aún cuenta: %s XP · cierra a las %s", "Lv %d  %s/%s XP": "Nv. %d  %s/%s XP",
+    "AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept.": "AnkiQuest: esta actualización no es compatible con tu versión de Anki. Se ha conservado el complemento instalado.",
+    "#%d this week": "Puesto %d esta semana", "Last week still counting: %s XP · closes at %s": "La semana pasada aún cuenta: %s XP · cierra a las %s",
+    "Next week already counting: %s XP · the board switches at %s": "La próxima semana ya cuenta: %s XP · la clasificación cambia a las %s",
+    "%s XP still counting for last week": "%s XP aún cuentan para la semana pasada",
+    "%s XP already counting for next week": "%s XP ya cuentan para la próxima semana", "Lv %d  %s/%s XP": "Nv. %d  %s/%s XP",
     "🔥 %d day streak": "🔥 Racha de %d días",
     "%d day streak": "Racha de %d días", "streak at risk today": "racha en riesgo hoy", "📬 %d new": "📬 %d nuevos",
     "Set the server in AnkiQuest settings first.": "Configura primero el servidor en los ajustes de AnkiQuest.",
@@ -92,13 +95,13 @@ SPANISH = {
     "Signed in as %s.": "Sesión iniciada como %s.",
     "Decks offered to me": "Mazos que me ofrecen",
     "Send an independent copy with cards and media, without your study history. Friends choose whether to import it.": "Envía una copia independiente con tarjetas y archivos multimedia, sin tu historial de estudio. Tus amigos deciden si la importan.",
-    "Choose a deck": "Elige un mazo", "Send to": "Enviar a", "Send": "Enviar",
+    "Choose a deck": "Elige un mazo", "Send to": "Enviar a",
     "Choose at least one friend.": "Elige al menos un amigo.",
     "Choose at most %d friends.": "Elige como máximo %d amigos.",
     "No friends are available on this server yet.": "Todavía no hay amigos disponibles en este servidor.",
     "No deck copies are waiting for you.": "No tienes copias de mazos pendientes.",
     "%s shared %s": "%s compartió %s",
-    "Import": "Importar", "Dismiss": "Descartar", "Close": "Cerrar",
+    "Import": "Importar", "Dismiss": "Descartar",
     "Preparing and sending the deck copy…": "Preparando y enviando la copia del mazo…",
     "Deck copy sent.": "Copia del mazo enviada.",
     "Downloading the deck copy…": "Descargando la copia del mazo…",
@@ -138,9 +141,7 @@ SPANISH.update({
     "Couldn't share it (%s).": "No se pudo compartir (%s).",
     "Couldn't undo this share (%s).": "No se pudo deshacer este envío (%s).",
     "This win belongs to an AnkiQuest account that is no longer signed in.": "Este logro es de una cuenta de AnkiQuest que ya no tiene la sesión iniciada.",
-    "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Nadie nuevo lo recibió: tus amigos ya lo tienen, o todavía no tienes amigos en AnkiQuest.",
     "Shared with %d friend": "Compartido con %d amigo", "Shared with %d friends": "Compartido con %d amigos",
-    "%s: %s\nStudy with me on AnkiQuest: %s": "%s: %s\nEstudia conmigo en AnkiQuest: %s",
     "%s: %s\nI study with AnkiQuest.": "%s: %s\nEstudio con AnkiQuest.",
     "The picture is on the clipboard.": "La imagen está en el portapapeles.",
     "Could not save the picture.": "No se pudo guardar la imagen.",
@@ -178,6 +179,7 @@ GERMAN = {
     "You are 1 tap away from chibi": "Du bist 1 Tipp von Chibi entfernt", "You are %d taps away from chibi": "Du bist %d Tipps von Chibi entfernt",
     "Reach level %d": "Erreiche Level %d", "Level %d of %d": "Level %d von %d",
     "Study for %d hours in total": "Insgesamt %d Stunden lernen", "%d of %d hours": "%d von %d Stunden",
+    "Keep a %d-day streak": "Halte eine Lernserie von %d Tagen", "%d of %d days": "%d von %d Tagen",
     "Could not load your study companion (%s).": "Dein Lernbegleiter konnte nicht geladen werden (%s).",
     "Could not save your study companion (%s).": "Dein Lernbegleiter konnte nicht gespeichert werden (%s).",
     "Study companion saved.": "Lernbegleiter gespeichert.",
@@ -192,7 +194,6 @@ GERMAN = {
     "Almost: a few more minutes and today counts.": "Fast: Noch ein paar Minuten, dann zählt heute.",
     "On fire: today counts for your %d-day streak.": "Feuer und Flamme: Heute zählt für deinen %d-Tage-Streak.",
     "Choose %s": "%s wählen",
-    "Later": "Später",
     "Cancel": "Abbrechen", "Save": "Speichern", "Server": "Server", "Player": "Spieler", "Token": "Token",
     "Leaderboard": "Rangliste", "Friends": "Freunde", "Decks": "Stapel", "Notify": "Benachrichtigen",
     "Test connection": "Verbindung testen", "Upload everything again": "Alles erneut hochladen",
@@ -206,14 +207,17 @@ GERMAN = {
     "Celebrate achievements, streak milestones and personal bests": "Erfolge, Meilensteine der Lernserie und persönliche Bestleistungen feiern",
     "Update channel": "Update-Kanal", "Stable releases": "Stabile Versionen",
     "Nightly builds (untested)": "Nightly-Builds (ungetestet)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Dieses AnkiQuest ist eine lokale Kopie und aktualisiert sich nicht selbst.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: Suche nach Updates fehlgeschlagen (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest ist aktuell (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s ist verfügbar. Jetzt installieren? Danach muss Anki neu gestartet werden.",
     "AnkiQuest: could not download the update (%s)": "AnkiQuest: Update konnte nicht heruntergeladen werden (%s)",
     "AnkiQuest: the update could not be installed (%s)": "AnkiQuest: Update konnte nicht installiert werden (%s)",
     "AnkiQuest was updated. Restart Anki to use the new version.": "AnkiQuest wurde aktualisiert. Starte Anki neu, um die neue Version zu nutzen.",
-    "#%d this week": "Platz %d diese Woche", "Last week still counting: %s XP · closes at %s": "Letzte Woche zählt noch: %s XP · endet um %s", "Lv %d  %s/%s XP": "Stufe %d  %s/%s XP",
+    "AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept.": "AnkiQuest: Dieses Update ist mit deiner Anki-Version nicht kompatibel. Das installierte Add-on wurde beibehalten.",
+    "#%d this week": "Platz %d diese Woche", "Last week still counting: %s XP · closes at %s": "Letzte Woche zählt noch: %s XP · endet um %s",
+    "Next week already counting: %s XP · the board switches at %s": "Nächste Woche zählt schon: %s XP · die Rangliste wechselt um %s",
+    "%s XP still counting for last week": "%s XP zählen noch für letzte Woche",
+    "%s XP already counting for next week": "%s XP zählen schon für nächste Woche", "Lv %d  %s/%s XP": "Stufe %d  %s/%s XP",
     "🔥 %d day streak": "🔥 Lernserie: %d Tage",
     "%d day streak": "Lernserie: %d Tage", "streak at risk today": "Lernserie heute in Gefahr", "📬 %d new": "📬 %d neu",
     "Set the server in AnkiQuest settings first.": "Richte zuerst den Server in den AnkiQuest-Einstellungen ein.",
@@ -244,13 +248,13 @@ GERMAN = {
     "Signed in as %s.": "Angemeldet als %s.",
     "Decks offered to me": "Mir angebotene Stapel",
     "Send an independent copy with cards and media, without your study history. Friends choose whether to import it.": "Sende eine eigenständige Kopie mit Karten und Medien, ohne deinen Lernverlauf. Freunde entscheiden selbst, ob sie sie importieren.",
-    "Choose a deck": "Stapel auswählen", "Send to": "Senden an", "Send": "Senden",
+    "Choose a deck": "Stapel auswählen", "Send to": "Senden an",
     "Choose at least one friend.": "Wähle mindestens einen Freund aus.",
     "Choose at most %d friends.": "Wähle höchstens %d Freunde aus.",
     "No friends are available on this server yet.": "Auf diesem Server sind noch keine Freunde verfügbar.",
     "No deck copies are waiting for you.": "Es warten keine Stapelkopien auf dich.",
     "%s shared %s": "%s hat %s geteilt",
-    "Import": "Importieren", "Dismiss": "Verwerfen", "Close": "Schließen",
+    "Import": "Importieren", "Dismiss": "Verwerfen",
     "Preparing and sending the deck copy…": "Stapelkopie wird vorbereitet und gesendet…",
     "Deck copy sent.": "Stapelkopie gesendet.",
     "Downloading the deck copy…": "Stapelkopie wird heruntergeladen…",
@@ -294,9 +298,10 @@ FRENCH = {
     "Study companion": "Compagnon d’étude",
     "No companion": "Aucun compagnon",
     "Choose who cheers you on.": "Choisis qui t’encourage.",
-    "You are 1 tap away from chibi": "Vous êtes à 1 appui de chibi", "You are %d taps away from chibi": "Vous êtes à %d appuis de chibi",
+    "You are 1 tap away from chibi": "Tu es à 1 appui de chibi", "You are %d taps away from chibi": "Tu es à %d appuis de chibi",
     "Reach level %d": "Atteins le niveau %d", "Level %d of %d": "Niveau %d sur %d",
     "Study for %d hours in total": "Étudier %d heures au total", "%d of %d hours": "%d heures sur %d",
+    "Keep a %d-day streak": "Tenir une série de %d jours", "%d of %d days": "%d jours sur %d",
     "Could not load your study companion (%s).": "Impossible de charger ton compagnon d’étude (%s).",
     "Could not save your study companion (%s).": "Impossible d’enregistrer ton compagnon d’étude (%s).",
     "Study companion saved.": "Compagnon d’étude enregistré.",
@@ -311,7 +316,6 @@ FRENCH = {
     "Almost: a few more minutes and today counts.": "Presque : encore quelques minutes et aujourd’hui compte.",
     "On fire: today counts for your %d-day streak.": "En feu : aujourd’hui compte pour ta série de %d jours.",
     "Choose %s": "Choisir %s",
-    "Later": "Plus tard",
     "Cancel": "Annuler", "Save": "Enregistrer", "Server": "Serveur", "Player": "Joueur", "Token": "Jeton",
     "Leaderboard": "Classement", "Friends": "Amis", "Decks": "Paquets", "Notify": "Prévenir",
     "Test connection": "Tester la connexion", "Upload everything again": "Tout renvoyer",
@@ -325,14 +329,17 @@ FRENCH = {
     "Celebrate achievements, streak milestones and personal bests": "Fêter les réussites, les étapes de série et les records personnels",
     "Update channel": "Canal de mise à jour", "Stable releases": "Versions stables",
     "Nightly builds (untested)": "Versions nocturnes (non testées)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Cet AnkiQuest est une copie locale ; il ne se met pas à jour tout seul.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest : impossible de rechercher des mises à jour (%s)",
     "AnkiQuest is up to date (%s).": "AnkiQuest est à jour (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s est disponible. L’installer maintenant ? Il faudra ensuite redémarrer Anki.",
     "AnkiQuest: could not download the update (%s)": "AnkiQuest : impossible de télécharger la mise à jour (%s)",
     "AnkiQuest: the update could not be installed (%s)": "AnkiQuest : impossible d’installer la mise à jour (%s)",
     "AnkiQuest was updated. Restart Anki to use the new version.": "AnkiQuest a été mis à jour. Redémarre Anki pour utiliser la nouvelle version.",
-    "#%d this week": "%de place cette semaine", "Last week still counting: %s XP · closes at %s": "La semaine dernière compte encore : %s XP · se termine à %s", "Lv %d  %s/%s XP": "Niv. %d  %s/%s XP",
+    "AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept.": "AnkiQuest : cette mise à jour est incompatible avec ta version d’Anki. Le module installé a été conservé.",
+    "#%d this week": "%de place cette semaine", "Last week still counting: %s XP · closes at %s": "La semaine dernière compte encore : %s XP · se termine à %s",
+    "Next week already counting: %s XP · the board switches at %s": "La semaine prochaine compte déjà : %s XP · le classement change à %s",
+    "%s XP still counting for last week": "%s XP comptent encore pour la semaine dernière",
+    "%s XP already counting for next week": "%s XP comptent déjà pour la semaine prochaine", "Lv %d  %s/%s XP": "Niv. %d  %s/%s XP",
     "🔥 %d day streak": "🔥 Série de %d jours",
     "%d day streak": "Série de %d jours", "streak at risk today": "série en danger aujourd’hui", "📬 %d new": "📬 %d nouveaux",
     "Set the server in AnkiQuest settings first.": "Configure d’abord le serveur dans les réglages AnkiQuest.",
@@ -363,13 +370,13 @@ FRENCH = {
     "Signed in as %s.": "Connecté en tant que %s.",
     "Decks offered to me": "Paquets qu’on m’offre",
     "Send an independent copy with cards and media, without your study history. Friends choose whether to import it.": "Envoie une copie indépendante avec les cartes et les médias, sans ton historique de révision. Tes amis choisissent de l’importer ou non.",
-    "Choose a deck": "Choisis un paquet", "Send to": "Envoyer à", "Send": "Envoyer",
+    "Choose a deck": "Choisis un paquet", "Send to": "Envoyer à",
     "Choose at least one friend.": "Choisis au moins un ami.",
     "Choose at most %d friends.": "Choisis au plus %d amis.",
     "No friends are available on this server yet.": "Aucun ami n’est encore disponible sur ce serveur.",
     "No deck copies are waiting for you.": "Aucune copie de paquet ne t’attend.",
     "%s shared %s": "%s a partagé %s",
-    "Import": "Importer", "Dismiss": "Ignorer", "Close": "Fermer",
+    "Import": "Importer", "Dismiss": "Ignorer",
     "Preparing and sending the deck copy…": "Préparation et envoi de la copie…",
     "Deck copy sent.": "Copie du paquet envoyée.",
     "Downloading the deck copy…": "Téléchargement de la copie…",
@@ -416,6 +423,7 @@ PORTUGUESE = {
     "You are 1 tap away from chibi": "Está a 1 toque de chibi", "You are %d taps away from chibi": "Está a %d toques de chibi",
     "Reach level %d": "Chega ao nível %d", "Level %d of %d": "Nível %d de %d",
     "Study for %d hours in total": "Estudar %d horas no total", "%d of %d hours": "%d de %d horas",
+    "Keep a %d-day streak": "Manter uma sequência de %d dias", "%d of %d days": "%d de %d dias",
     "Could not load your study companion (%s).": "Não foi possível carregar o teu companheiro de estudo (%s).",
     "Could not save your study companion (%s).": "Não foi possível guardar o teu companheiro de estudo (%s).",
     "Study companion saved.": "Companheiro de estudo guardado.",
@@ -430,7 +438,6 @@ PORTUGUESE = {
     "Almost: a few more minutes and today counts.": "Quase: mais uns minutos e hoje conta.",
     "On fire: today counts for your %d-day streak.": "Em chamas: hoje conta para a tua sequência de %d dias.",
     "Choose %s": "Escolher %s",
-    "Later": "Mais tarde",
     "Cancel": "Cancelar", "Save": "Guardar", "Server": "Servidor", "Player": "Jogador", "Token": "Token",
     "Leaderboard": "Classificação", "Friends": "Amigos", "Decks": "Baralhos", "Notify": "Avisar",
     "Test connection": "Testar ligação", "Upload everything again": "Enviar tudo novamente",
@@ -444,14 +451,17 @@ PORTUGUESE = {
     "Celebrate achievements, streak milestones and personal bests": "Celebrar conquistas, marcos da sequência e recordes pessoais",
     "Update channel": "Canal de atualizações", "Stable releases": "Versões estáveis",
     "Nightly builds (untested)": "Versões noturnas (não testadas)",
-    "This AnkiQuest is a local copy; it does not update itself.": "Este AnkiQuest é uma cópia local; não se atualiza sozinho.",
     "AnkiQuest: could not check for updates (%s)": "AnkiQuest: não foi possível procurar atualizações (%s)",
     "AnkiQuest is up to date (%s).": "O AnkiQuest está atualizado (%s).",
     "%s is available. Install it now? Anki needs a restart afterwards.": "%s está disponível. Instalar agora? Depois é preciso reiniciar o Anki.",
     "AnkiQuest: could not download the update (%s)": "AnkiQuest: não foi possível transferir a atualização (%s)",
     "AnkiQuest: the update could not be installed (%s)": "AnkiQuest: não foi possível instalar a atualização (%s)",
     "AnkiQuest was updated. Restart Anki to use the new version.": "O AnkiQuest foi atualizado. Reinicia o Anki para usar a nova versão.",
-    "#%d this week": "%dº lugar esta semana", "Last week still counting: %s XP · closes at %s": "A semana passada ainda conta: %s XP · fecha às %s", "Lv %d  %s/%s XP": "Nv. %d  %s/%s XP",
+    "AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept.": "AnkiQuest: esta atualização não é compatível com a tua versão do Anki. O complemento instalado foi mantido.",
+    "#%d this week": "%dº lugar esta semana", "Last week still counting: %s XP · closes at %s": "A semana passada ainda conta: %s XP · fecha às %s",
+    "Next week already counting: %s XP · the board switches at %s": "A próxima semana já conta: %s XP · a classificação muda às %s",
+    "%s XP still counting for last week": "%s XP ainda contam para a semana passada",
+    "%s XP already counting for next week": "%s XP já contam para a próxima semana", "Lv %d  %s/%s XP": "Nv. %d  %s/%s XP",
     "🔥 %d day streak": "🔥 Sequência de %d dias",
     "%d day streak": "Sequência de %d dias", "streak at risk today": "sequência em risco hoje", "📬 %d new": "📬 %d novas",
     "Set the server in AnkiQuest settings first.": "Configura primeiro o servidor nas definições do AnkiQuest.",
@@ -482,13 +492,13 @@ PORTUGUESE = {
     "Signed in as %s.": "Sessão iniciada como %s.",
     "Decks offered to me": "Baralhos que me ofereceram",
     "Send an independent copy with cards and media, without your study history. Friends choose whether to import it.": "Envia uma cópia independente com cartões e multimédia, sem o teu histórico de estudo. Os amigos decidem se a importam.",
-    "Choose a deck": "Escolhe um baralho", "Send to": "Enviar a", "Send": "Enviar",
+    "Choose a deck": "Escolhe um baralho", "Send to": "Enviar a",
     "Choose at least one friend.": "Escolhe pelo menos um amigo.",
     "Choose at most %d friends.": "Escolhe no máximo %d amigos.",
     "No friends are available on this server yet.": "Ainda não há amigos disponíveis neste servidor.",
     "No deck copies are waiting for you.": "Não há cópias de baralhos à tua espera.",
     "%s shared %s": "%s partilhou %s",
-    "Import": "Importar", "Dismiss": "Descartar", "Close": "Fechar",
+    "Import": "Importar", "Dismiss": "Descartar",
     "Preparing and sending the deck copy…": "A preparar e enviar a cópia do baralho…",
     "Deck copy sent.": "Cópia do baralho enviada.",
     "Downloading the deck copy…": "A transferir a cópia do baralho…",
@@ -556,10 +566,11 @@ def _hour(hour):
 
 SPANISH.update({
     "Aki is here to help. One card, one small step.": "Aki está aquí para ayudarte. Una tarjeta, un pequeño paso.",
-    "A small step starts with one card.": "Un pequeño paso empieza con una tarjeta.",
     "Your cards are done for now. Nice work!": "Ya terminaste tus tarjetas por ahora. ¡Buen trabajo!",
     "You showed up today. That is progress worth keeping.": "Hoy estuviste presente. Ese progreso vale la pena.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Un protector mantiene tu racha. Te espera un nuevo comienzo.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Hoy no has estudiado. Tu racha de 1 día sigue esperando.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Hoy no has estudiado. Tu racha de %d días sigue esperando.",
     "Every quest is done today. Nice work!": "Completaste todas las misiones de hoy. ¡Buen trabajo!",
     "One card, one small step.": "Una tarjeta, un pequeño paso.",
     "this hour": "esta hora", "today": "hoy", "this week": "esta semana", "this month": "este mes",
@@ -602,11 +613,8 @@ SPANISH.update({
 })
 
 GERMAN.update({
-    "Aki is here to help. One card, one small step.": "Aki ist für dich da. Eine Karte, ein kleiner Schritt.",
-    "A small step starts with one card.": "Ein kleiner Schritt beginnt mit einer Karte.",
-    "Your cards are done for now. Nice work!": "Deine Karten sind für jetzt erledigt. Gut gemacht!",
-    "You showed up today. That is progress worth keeping.": "Du warst heute da. Dieser Fortschritt zählt.",
-    "Your streak is protected by a freeze. A fresh start is waiting.": "Ein Schutz hält deine Serie. Ein Neustart wartet.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Du hast heute noch nicht gelernt. Deine Lernserie von 1 Tag wartet noch.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Du hast heute noch nicht gelernt. Deine Lernserie von %d Tagen wartet noch.",
     "Every quest is done today. Nice work!": "Alle Aufgaben für heute erledigt. Gut gemacht!",
     "One card, one small step.": "Eine Karte, ein kleiner Schritt.",
     "this hour": "diese Stunde", "today": "heute", "this week": "diese Woche", "this month": "diesen Monat",
@@ -648,10 +656,8 @@ GERMAN.update({
 
 FRENCH.update({
     "Aki is here to help. One card, one small step.": "Aki est là pour t’aider. Une carte, un petit pas.",
-    "A small step starts with one card.": "Un petit pas commence par une carte.",
-    "Your cards are done for now. Nice work!": "Tes cartes sont terminées pour l’instant. Bravo !",
-    "You showed up today. That is progress worth keeping.": "Tu étais là aujourd’hui. Ce progrès compte.",
-    "Your streak is protected by a freeze. A fresh start is waiting.": "Une protection garde ta série. Un nouveau départ t’attend.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Tu n’as pas encore étudié aujourd’hui. Ta série de 1 jour t’attend toujours.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Tu n’as pas encore étudié aujourd’hui. Ta série de %d jours t’attend toujours.",
     "Every quest is done today. Nice work!": "Toutes les quêtes du jour sont faites. Bravo !",
     "One card, one small step.": "Une carte, un petit pas.",
     "this hour": "cette heure", "today": "aujourd’hui", "this week": "cette semaine", "this month": "ce mois-ci",
@@ -681,8 +687,8 @@ FRENCH.update({
     "You reached today’s goal: %s.": "Tu as atteint l’objectif du jour : %s.",
     "%s And you reached today’s goal: %s.": "%s Et tu as atteint l’objectif du jour : %s.",
     "Daily goal: %s": "Objectif du jour : %s",
-    "Done": "Terminé", "View progress": "Voir les progrès", "Continue studying": "Continuer à étudier",
-    "Your study session": "Ta séance d’étude", "Don’t show this again": "Ne plus afficher",
+    "Done": "Terminé", "Continue studying": "Continuer à étudier",
+    "Your study session": "Ta séance d’étude",
     "No daily goal": "Pas d’objectif du jour",
     "Cards per day": "Cartes par jour",
     "Minutes per day": "Minutes par jour", "Daily goal": "Objectif du jour", "cards": "cartes",
@@ -692,11 +698,8 @@ FRENCH.update({
 })
 
 PORTUGUESE.update({
-    "Aki is here to help. One card, one small step.": "O Aki está aqui para ajudar. Uma carta, um pequeno passo.",
-    "A small step starts with one card.": "Um pequeno passo começa com uma carta.",
-    "Your cards are done for now. Nice work!": "As tuas cartas estão feitas por agora. Bom trabalho!",
-    "You showed up today. That is progress worth keeping.": "Apareceste hoje. Esse progresso conta.",
-    "Your streak is protected by a freeze. A fresh start is waiting.": "Uma proteção guarda a tua sequência. Um recomeço espera-te.",
+    "You haven’t studied today. Your 1-day streak is still waiting.": "Ainda não estudaste hoje. A tua sequência de 1 dia continua à espera.",
+    "You haven’t studied today. Your %d-day streak is still waiting.": "Ainda não estudaste hoje. A tua sequência de %d dias continua à espera.",
     "Every quest is done today. Nice work!": "Todas as missões de hoje estão feitas. Bom trabalho!",
     "One card, one small step.": "Uma carta, um pequeno passo.",
     "this hour": "esta hora", "today": "hoje", "this week": "esta semana", "this month": "este mês",
@@ -727,7 +730,7 @@ PORTUGUESE.update({
     "%s And you reached today’s goal: %s.": "%s E alcançaste o objetivo de hoje: %s.",
     "Daily goal: %s": "Objetivo diário: %s",
     "Done": "Feito", "View progress": "Ver progresso", "Continue studying": "Continuar a estudar",
-    "Your study session": "A tua sessão de estudo", "Don’t show this again": "Não mostrar de novo",
+    "Your study session": "A tua sessão de estudo",
     "No daily goal": "Sem objetivo diário",
     "Cards per day": "Cartas por dia",
     "Minutes per day": "Minutos por dia", "Daily goal": "Objetivo diário", "cards": "cartas",
@@ -787,11 +790,8 @@ FRENCH.update({
     "Copy as image": "Copier comme image", "Save image…": "Enregistrer l’image…", "Sharing…": "Partage…",
     "Couldn't share it (%s).": "Impossible de partager (%s).",
     "Couldn't undo this share (%s).": "Impossible d’annuler ce partage (%s).",
-    "This win belongs to an AnkiQuest account that is no longer signed in.": "Cette réussite appartient à un compte AnkiQuest qui n’est plus connecté.",
     "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Personne de nouveau ne l’a reçu : tes amis l’ont déjà, ou tu n’as pas encore d’amis sur AnkiQuest.",
     "Shared with %d friend": "Partagé avec %d ami", "Shared with %d friends": "Partagé avec %d amis",
-    "%s: %s\nStudy with me on AnkiQuest: %s": "%s : %s\nÉtudie avec moi sur AnkiQuest : %s",
-    "%s: %s\nI study with AnkiQuest.": "%s : %s\nJ’étudie avec AnkiQuest.",
     "The picture is on the clipboard.": "L’image est dans le presse-papiers.",
     "Could not save the picture.": "Impossible d’enregistrer l’image.",
     "Picture saved.": "Image enregistrée.",
@@ -821,7 +821,6 @@ PORTUGUESE.update({
     "Couldn't share it (%s).": "Não foi possível partilhar (%s).",
     "Couldn't undo this share (%s).": "Não foi possível anular esta partilha (%s).",
     "This win belongs to an AnkiQuest account that is no longer signed in.": "Esta conquista pertence a uma conta AnkiQuest que já não tem sessão iniciada.",
-    "Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.": "Ninguém novo a recebeu: os teus amigos já a têm, ou ainda não tens amigos no AnkiQuest.",
     "Shared with %d friend": "Partilhado com %d amigo", "Shared with %d friends": "Partilhado com %d amigos",
     "%s: %s\nStudy with me on AnkiQuest: %s": "%s: %s\nEstuda comigo no AnkiQuest: %s",
     "%s: %s\nI study with AnkiQuest.": "%s: %s\nEstudo com o AnkiQuest.",
@@ -905,7 +904,7 @@ GERMAN.update({
     "Pick a goal for each day. The estimates come from your own cards and answer times.": "Wähle ein Ziel für jeden Tag. Die Schätzungen beruhen auf deinen eigenen Karten und Antwortzeiten.",
     "Clear my backlog in a number of days": "Meinen Rückstand in einigen Tagen aufholen",
     "Clear my backlog in": "Rückstand aufholen in", "%d days": "%d Tagen", "days": "Tagen", "Custom": "Eigene Angabe",
-    "Not now": "Nicht jetzt",
+    "Not now": "Jetzt nicht",
     "Cards today: about %d": "Karten heute: etwa %d",
     "Time today: about %d minute": "Zeit heute: etwa %d Minute",
     "Time today: about %d minutes": "Zeit heute: etwa %d Minuten",
@@ -1020,6 +1019,7 @@ SPANISH.update({
     "Days studied": "Días de estudio",
     "Reviews / study day": "Repasos por día de estudio",
     "Reviews in available history: %s": "Repasos en el historial disponible: %s",
+    "You studied on %s%% of the days since your first review": "Estudiaste el %s %% de los días desde tu primer repaso",
     "Previous year": "Año anterior",
     "Next year": "Año siguiente",
     "Click a day for details. Gray squares show estimated review cards due over the next 90 days.": "Haz clic en un día para ver los detalles. Los cuadros grises estiman las tarjetas de repaso pendientes de los próximos 90 días.",
@@ -1049,6 +1049,7 @@ GERMAN.update({
     "Days studied": "Lerntage",
     "Reviews / study day": "Wiederholungen pro Lerntag",
     "Reviews in available history: %s": "Wiederholungen im verfügbaren Verlauf: %s",
+    "You studied on %s%% of the days since your first review": "Du hast an %s %% der Tage seit deiner ersten Wiederholung gelernt",
     "Previous year": "Vorheriges Jahr",
     "Next year": "Nächstes Jahr",
     "Click a day for details. Gray squares show estimated review cards due over the next 90 days.": "Klicke auf einen Tag für Details. Graue Felder schätzen die fälligen Wiederholungskarten der nächsten 90 Tage.",
@@ -1078,6 +1079,7 @@ FRENCH.update({
     "Days studied": "Jours d’étude",
     "Reviews / study day": "Révisions par jour d’étude",
     "Reviews in available history: %s": "Révisions dans l’historique disponible : %s",
+    "You studied on %s%% of the days since your first review": "Tu as étudié %s %% des jours depuis ta première révision",
     "Previous year": "Année précédente",
     "Next year": "Année suivante",
     "Click a day for details. Gray squares show estimated review cards due over the next 90 days.": "Clique sur un jour pour voir le détail. Les cases grises estiment les cartes à réviser des 90 prochains jours.",
@@ -1107,6 +1109,7 @@ PORTUGUESE.update({
     "Days studied": "Dias de estudo",
     "Reviews / study day": "Revisões por dia de estudo",
     "Reviews in available history: %s": "Revisões no histórico disponível: %s",
+    "You studied on %s%% of the days since your first review": "Estudaste em %s%% dos dias desde a tua primeira revisão",
     "Previous year": "Ano anterior",
     "Next year": "Ano seguinte",
     "Click a day for details. Gray squares show estimated review cards due over the next 90 days.": "Clica num dia para ver os detalhes. Os quadrados cinzentos estimam os cartões de revisão pendentes nos próximos 90 dias.",
@@ -1131,6 +1134,10 @@ SPANISH.update({
     "Could not upload review history (%s).": "No se pudo subir el historial de repasos (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Vuelve a iniciar sesión en AnkiQuest para reanudar las subidas.",
     "Offline, will retry": "Sin conexión. Se volverá a intentar",
+    "The server's certificate has expired, will retry": "El certificado del servidor ha caducado. Se volverá a intentar",
+    "The server's certificate is self-signed, will retry": "El certificado del servidor está autofirmado. Se volverá a intentar",
+    "The server's certificate is for another address, will retry": "El certificado del servidor es de otra dirección. Se volverá a intentar",
+    "The server's certificate could not be verified, will retry": "No se pudo verificar el certificado del servidor. Se volverá a intentar",
     "Last upload failed (%s), will retry": "Falló la última subida (%s). Se volverá a intentar",
     "Last upload failed (%s)": "Falló la última subida (%s)",
 })
@@ -1141,6 +1148,10 @@ GERMAN.update({
     "Could not upload review history (%s).": "Der Wiederholungsverlauf konnte nicht hochgeladen werden (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Melde dich erneut bei AnkiQuest an, um Uploads fortzusetzen.",
     "Offline, will retry": "Offline. Erneuter Versuch folgt",
+    "The server's certificate has expired, will retry": "Das Zertifikat des Servers ist abgelaufen. Erneuter Versuch folgt",
+    "The server's certificate is self-signed, will retry": "Das Zertifikat des Servers ist selbst signiert. Erneuter Versuch folgt",
+    "The server's certificate is for another address, will retry": "Das Zertifikat des Servers gilt für eine andere Adresse. Erneuter Versuch folgt",
+    "The server's certificate could not be verified, will retry": "Das Zertifikat des Servers konnte nicht geprüft werden. Erneuter Versuch folgt",
     "Last upload failed (%s), will retry": "Letzter Upload fehlgeschlagen (%s). Erneuter Versuch folgt",
     "Last upload failed (%s)": "Letzter Upload fehlgeschlagen (%s)",
 })
@@ -1151,6 +1162,10 @@ FRENCH.update({
     "Could not upload review history (%s).": "Impossible d’envoyer l’historique des révisions (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Reconnecte-toi à AnkiQuest pour reprendre les envois.",
     "Offline, will retry": "Hors ligne. Nouvel essai prévu",
+    "The server's certificate has expired, will retry": "Le certificat du serveur a expiré. Nouvel essai prévu",
+    "The server's certificate is self-signed, will retry": "Le certificat du serveur est auto-signé. Nouvel essai prévu",
+    "The server's certificate is for another address, will retry": "Le certificat du serveur est celui d’une autre adresse. Nouvel essai prévu",
+    "The server's certificate could not be verified, will retry": "Impossible de vérifier le certificat du serveur. Nouvel essai prévu",
     "Last upload failed (%s), will retry": "Échec du dernier envoi (%s). Nouvel essai prévu",
     "Last upload failed (%s)": "Échec du dernier envoi (%s)",
 })
@@ -1161,6 +1176,10 @@ PORTUGUESE.update({
     "Could not upload review history (%s).": "Não foi possível enviar o histórico de revisões (%s).",
     "Sign in to AnkiQuest again to resume uploads.": "Volta a iniciar sessão no AnkiQuest para retomar os envios.",
     "Offline, will retry": "Sem ligação. Nova tentativa em breve",
+    "The server's certificate has expired, will retry": "O certificado do servidor expirou. Nova tentativa em breve",
+    "The server's certificate is self-signed, will retry": "O certificado do servidor é autoassinado. Nova tentativa em breve",
+    "The server's certificate is for another address, will retry": "O certificado do servidor é de outro endereço. Nova tentativa em breve",
+    "The server's certificate could not be verified, will retry": "Não foi possível verificar o certificado do servidor. Nova tentativa em breve",
     "Last upload failed (%s), will retry": "O último envio falhou (%s). Nova tentativa em breve",
     "Last upload failed (%s)": "O último envio falhou (%s)",
 })
@@ -1265,9 +1284,7 @@ PORTUGUESE.update({
 
 SPANISH.update({
     "Account": "Cuenta",
-    "Notify me about": "Notificarme sobre",
     "Sharing": "Compartir",
-    "App and privacy": "Aplicación y privacidad",
     "Data": "Datos",
     "Save this account, then reopen settings to load its choices.": "Guarda esta cuenta y vuelve a abrir los ajustes para cargar sus preferencias.",
     "Show me on the global leaderboard": "Mostrarme en la clasificación global",
@@ -1299,7 +1316,6 @@ GERMAN.update({
     "App and privacy": "App und Datenschutz",
     "Data": "Daten",
     "Save this account, then reopen settings to load its choices.": "Speichere dieses Konto und öffne die Einstellungen erneut, um seine Auswahl zu laden.",
-    "Show me on the global leaderboard": "Mich in der globalen Rangliste anzeigen",
     "Could not save your account choices (%s).": "Deine Kontoeinstellungen konnten nicht gespeichert werden (%s).",
     "Show the review heatmap under the deck list": "Die Wiederholungsübersicht unter der Stapelliste anzeigen",
     "Reduce motion": "Bewegung reduzieren",
@@ -1323,12 +1339,9 @@ GERMAN.update({
 
 FRENCH.update({
     "Account": "Compte",
-    "Notify me about": "Me prévenir de",
     "Sharing": "Partage",
-    "App and privacy": "Application et confidentialité",
     "Data": "Données",
     "Save this account, then reopen settings to load its choices.": "Enregistre ce compte, puis rouvre les paramètres pour charger ses préférences.",
-    "Show me on the global leaderboard": "Afficher mon profil dans le classement mondial",
     "Could not save your account choices (%s).": "Impossible d’enregistrer les préférences de ton compte (%s).",
     "Show the review heatmap under the deck list": "Afficher la carte des révisions sous la liste des paquets",
     "Reduce motion": "Réduire les animations",
@@ -1352,9 +1365,7 @@ FRENCH.update({
 
 PORTUGUESE.update({
     "Account": "Conta",
-    "Notify me about": "Notificar-me sobre",
     "Sharing": "Partilha",
-    "App and privacy": "Aplicação e privacidade",
     "Data": "Dados",
     "Save this account, then reopen settings to load its choices.": "Guarda esta conta e volta a abrir as definições para carregar as suas preferências.",
     "Show me on the global leaderboard": "Mostrar-me na classificação global",
@@ -1427,7 +1438,8 @@ SPANISH.update({
     "State": "Estado",
     "Streak freezes off": "Congelaciones de racha desactivadas",
     "Study time": "Tiempo de estudio",
-    "This server does not support this view yet. Open the website or try again later.": "Este servidor aún no admite esta vista. Abre el sitio web o inténtalo más tarde.",
+    # Android's aq_server_outdated (AnkiQuest-Android#408).
+    "Update your AnkiQuest server": "Actualiza tu servidor de AnkiQuest",
     "Value": "Valor",
     "Weekly recap": "Resumen semanal",
     "Year": "Año",
@@ -1466,7 +1478,8 @@ GERMAN.update({
     "State": "Status",
     "Streak freezes off": "Streak-Freezes ausgeschaltet",
     "Study time": "Lernzeit",
-    "This server does not support this view yet. Open the website or try again later.": "Dieser Server unterstützt diese Ansicht noch nicht. Öffne die Website oder versuche es später erneut.",
+    # Android's aq_server_outdated (AnkiQuest-Android#408).
+    "Update your AnkiQuest server": "Aktualisiere deinen AnkiQuest-Server",
     "Value": "Wert",
     "Weekly recap": "Wochenrückblick",
     "Year": "Jahr",
@@ -1505,7 +1518,8 @@ FRENCH.update({
     "State": "État",
     "Streak freezes off": "Gels de série désactivés",
     "Study time": "Temps d’étude",
-    "This server does not support this view yet. Open the website or try again later.": "Ce serveur ne propose pas encore cette vue. Ouvre le site web ou réessaie plus tard.",
+    # Android's aq_server_outdated (AnkiQuest-Android#408).
+    "Update your AnkiQuest server": "Mets à jour ton serveur AnkiQuest",
     "Value": "Valeur",
     "Weekly recap": "Bilan de la semaine",
     "Year": "Année",
@@ -1544,7 +1558,8 @@ PORTUGUESE.update({
     "State": "Estado",
     "Streak freezes off": "Congelamentos de sequência desativados",
     "Study time": "Tempo de estudo",
-    "This server does not support this view yet. Open the website or try again later.": "Este servidor ainda não suporta esta vista. Abre o site ou tenta novamente mais tarde.",
+    # Android's aq_server_outdated (AnkiQuest-Android#408).
+    "Update your AnkiQuest server": "Atualize seu servidor do AnkiQuest",
     "Value": "Valor",
     "Weekly recap": "Resumo semanal",
     "Year": "Ano",
@@ -1617,6 +1632,35 @@ PORTUGUESE.update({
     "Streak minimum reached — syncing": "Mínimo da sequência atingido: a sincronizar",
 })
 
+# Observed study from AnkiQuest Lite, in the website's words (AnkiQuest-Server static/translations-*.json).
+SPANISH.update({
+    "Studied today · time not known": "Estudió hoy · tiempo desconocido",
+    "Time not known": "Tiempo desconocido",
+    "Observed": "Observado",
+    "Includes answers read from AnkiDroid without review times": "Incluye respuestas leídas de AnkiDroid sin tiempos de repaso",
+})
+
+GERMAN.update({
+    "Studied today · time not known": "Heute studiert · Zeit unbekannt",
+    "Time not known": "Zeit unbekannt",
+    "Observed": "Beobachtet",
+    "Includes answers read from AnkiDroid without review times": "Enthält aus AnkiDroid gelesene Antworten ohne Lernzeiten",
+})
+
+FRENCH.update({
+    "Studied today · time not known": "Étudié aujourd'hui · durée inconnue",
+    "Time not known": "Durée inconnue",
+    "Observed": "Observé",
+    "Includes answers read from AnkiDroid without review times": "Inclut des réponses lues dans AnkiDroid sans durée de révision",
+})
+
+PORTUGUESE.update({
+    "Studied today · time not known": "Estudei hoje · tempo desconhecido",
+    "Time not known": "Tempo desconhecido",
+    "Observed": "Observado",
+    "Includes answers read from AnkiDroid without review times": "Inclui respostas lidas do AnkiDroid sem tempos de revisão",
+})
+
 # Scoped boards and private hiding.
 SPANISH.update({
     "Global": "Global", "Leaderboard scope": "Grupo de la clasificación",
@@ -1642,13 +1686,13 @@ GERMAN.update({
 })
 FRENCH.update({
     "Global": "Mondial", "Leaderboard scope": "Groupe du classement",
-    "you, not shown to others": "vous, invisible pour les autres",
+    "you, not shown to others": "toi, invisible pour les autres",
     "Place": "Place", "Level": "Niveau", "Streak": "Série",
     "Hidden players": "Joueurs masqués", "Hide for me": "Masquer pour moi", "Show again": "Afficher à nouveau",
     "Loading leaderboard…": "Chargement du classement…",
     "Could not load the leaderboard (%s).": "Impossible de charger le classement (%s).",
     "No uploaded players on this board yet.": "Aucun joueur n’a encore envoyé de données pour ce classement.",
-    "Hidden only from your Global board. Select a player to show them again.": "Masqués uniquement dans votre classement mondial. Sélectionnez un joueur pour l’afficher à nouveau.",
+    "Hidden only from your Global board. Select a player to show them again.": "Masqués uniquement dans ton classement mondial. Sélectionne un joueur pour l’afficher à nouveau.",
     "Saving…": "Enregistrement…", "Could not save this choice (%s).": "Impossible d’enregistrer ce choix (%s).",
 })
 PORTUGUESE.update({
@@ -1830,8 +1874,8 @@ FRENCH.update({
     "Join group": "Rejoindre le groupe",
     "Invitation link copied.": "Lien d’invitation copié.",
     "%s · %d members": "%s · %d membres",
-    "Use an invitation from this server.": "Utilisez une invitation de ce serveur.",
-    "Enter a group invitation link or code.": "Saisissez un lien ou un code d’invitation au groupe.",
+    "Use an invitation from this server.": "Utilise une invitation de ce serveur.",
+    "Enter a group invitation link or code.": "Saisis un lien ou un code d’invitation au groupe.",
     "Could not complete this action (%s).": "Impossible d’effectuer cette action (%s).",
     "Invite friend": "Inviter un ami",
     "Not this week": "Pas cette semaine",
@@ -1850,7 +1894,7 @@ FRENCH.update({
     "Duration in days": "Durée en jours",
     "Start after everyone accepts": "Commencer quand tout le monde accepte",
     "Invite friends": "Inviter des amis",
-    "Choose between 1 and 30 friends.": "Choisissez entre 1 et 30 amis.",
+    "Choose between 1 and 30 friends.": "Choisis entre 1 et 30 amis.",
     "View friend goal": "Voir l’objectif entre amis",
     "reviews": "révisions",
     "study days": "jours d’étude",
@@ -1947,8 +1991,6 @@ SPANISH.update({
     "%d awaiting action": "%d requieren una acción", "%d unread · %d awaiting action": "%d sin leer · %d requieren una acción",
     "All activity": "Toda la actividad", "Deck completions": "Mazos terminados", "Load more": "Cargar más",
     "Messages": "Mensajes", "Needs action": "Requiere una acción", "Study updates": "Novedades de estudio",
-    "This server provides recent messages without read counts or filters.": "Este servidor ofrece mensajes recientes sin recuentos de lectura ni filtros.",
-    "This server shows all activity without filters.": "Este servidor muestra toda la actividad sin filtros.",
     "Unread only": "Solo sin leer", "View invitation": "Ver invitación",
 })
 GERMAN.update({
@@ -1956,8 +1998,6 @@ GERMAN.update({
     "Could not mark this message read (%s).": "Diese Nachricht konnte nicht als gelesen markiert werden (%s).",
     "All activity": "Alle Aktivitäten", "Deck completions": "Abgeschlossene Stapel", "Load more": "Mehr laden",
     "Messages": "Nachrichten", "Needs action": "Antwort ausstehend", "Study updates": "Lernfortschritte",
-    "This server provides recent messages without read counts or filters.": "Dieser Server liefert aktuelle Nachrichten ohne Lesestatus-Zähler oder Filter.",
-    "This server shows all activity without filters.": "Dieser Server zeigt alle Aktivitäten ohne Filter an.",
     "Unread only": "Nur ungelesene", "View invitation": "Einladung ansehen",
 })
 FRENCH.update({
@@ -1965,8 +2005,6 @@ FRENCH.update({
     "Could not mark this message read (%s).": "Impossible de marquer ce message comme lu (%s).",
     "All activity": "Toute l’activité", "Deck completions": "Paquets terminés", "Load more": "Charger plus",
     "Messages": "Messages", "Needs action": "Réponse attendue", "Study updates": "Progrès d’étude",
-    "This server provides recent messages without read counts or filters.": "Ce serveur fournit les messages récents sans compteurs de lecture ni filtres.",
-    "This server shows all activity without filters.": "Ce serveur affiche toute l’activité sans filtres.",
     "Unread only": "Non lus seulement", "View invitation": "Voir l’invitation",
 })
 PORTUGUESE.update({
@@ -1974,8 +2012,6 @@ PORTUGUESE.update({
     "Could not mark this message read (%s).": "Não foi possível marcar esta mensagem como lida (%s).",
     "All activity": "Toda a atividade", "Deck completions": "Baralhos concluídos", "Load more": "Carregar mais",
     "Messages": "Mensagens", "Needs action": "Precisa de uma ação", "Study updates": "Novidades de estudo",
-    "This server provides recent messages without read counts or filters.": "Este servidor fornece mensagens recentes sem contagens de leitura nem filtros.",
-    "This server shows all activity without filters.": "Este servidor mostra toda a atividade sem filtros.",
     "Unread only": "Apenas por ler", "View invitation": "Ver convite",
 })
 
@@ -2006,7 +2042,7 @@ FRENCH.update({
     "Server reminders are unavailable. You can still use the local streak warning.": "Les rappels du serveur sont indisponibles. Tu peux toujours utiliser l’avertissement local de série.",
     "Open Tools → AnkiQuest → Inbox to catch up.": "Ouvre Outils → AnkiQuest → Boîte de réception pour les lire.",
     "Could not load your current reminders. Please try again.": "Impossible de charger tes rappels actuels. Réessaie.",
-    "Daily reminder time": "Heure du rappel quotidien", "Quiet hours": "Heures silencieuses", "to": "à",
+    "Daily reminder time": "Heure du rappel quotidien", "to": "à",
     "Equal start and end times turn quiet hours off. Quiet hours also hold desktop messages.": "Des heures de début et de fin identiques désactivent le silence. Le silence diffère aussi les messages sur ordinateur.",
     "Show system notifications when Anki is in the background": "Afficher les notifications du système quand Anki est en arrière-plan",
 })
@@ -2021,56 +2057,56 @@ PORTUGUESE.update({
     "Show system notifications when Anki is in the background": "Mostrar notificações do sistema quando o Anki está em segundo plano",
 })
 
-# Packaged versions and AnkiWeb-owned updates.
+# Packaged versions and their update source.
 SPANISH.update({
     "Local copy": "Copia local", "Version: %s": "Versión: %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb gestiona las actualizaciones.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalación se actualiza desde AnkiWeb. Usa Herramientas → Complementos → Comprobar actualizaciones.",
+    "Updates: %s": "Actualizaciones: %s",
 })
 GERMAN.update({
     "Local copy": "Lokale Kopie", "Version: %s": "Version: %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb verwaltet die Updates.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Diese Installation wird über AnkiWeb aktualisiert. Nutze Extras → Erweiterungen → Auf Aktualisierungen prüfen.",
+    "Updates: %s": "Updates: %s",
 })
 FRENCH.update({
     "Local copy": "Copie locale", "Version: %s": "Version : %s",
-    "Updates are managed by AnkiWeb.": "AnkiWeb gère les mises à jour.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Cette installation est mise à jour via AnkiWeb. Utilise Outils → Greffons → Rechercher des mises à jour.",
+    "Updates: %s": "Mises à jour : %s",
 })
 PORTUGUESE.update({
     "Local copy": "Cópia local", "Version: %s": "Versão: %s",
-    "Updates are managed by AnkiWeb.": "O AnkiWeb gere as atualizações.",
-    "This installation updates through AnkiWeb. Use Tools → Add-ons → Check for Updates.": "Esta instalação é atualizada pelo AnkiWeb. Usa Ferramentas → Extras → Procurar atualizações.",
+    "Updates: %s": "Atualizações: %s",
 })
 
 # Native moment recipients; wording matches Android's share sheet.
 SPANISH.update({
     "Search friends and groups": "Buscar amigos y grupos", "All friends": "Todos los amigos",
-    "Retry": "Reintentar",
+    "No friend or group has that name.": "Ningún amigo ni grupo se llama así.",
     "Add a note (optional)": "Añadir una nota (opcional)", "More apps…": "Más aplicaciones…",
     "Add friends in AnkiQuest to send them your moments.": "Añade amigos en AnkiQuest para enviarles tus momentos.",
-    "Invite a friend": "Invitar a un amigo", "Couldn't load friends (%s).": "No se pudieron cargar los amigos (%s).",
+    "Invite a friend": "Invitar a un amigo",
+    "Couldn't load your friends. Check your connection, or share with another app.": "No se pudieron cargar tus amigos. Revisa tu conexión o compártelo con otra aplicación.",
 })
 GERMAN.update({
     "Search friends and groups": "Freunde und Gruppen suchen", "All friends": "Alle Freunde",
-    "Retry": "Erneut versuchen",
+    "No friend or group has that name.": "Kein Freund und keine Gruppe heißt so.",
     "Add a note (optional)": "Nachricht hinzufügen (optional)", "More apps…": "Weitere Apps…",
     "Add friends in AnkiQuest to send them your moments.": "Füge Freunde in AnkiQuest hinzu, um deine Momente mit ihnen zu teilen.",
-    "Invite a friend": "Freund einladen", "Couldn't load friends (%s).": "Freunde konnten nicht geladen werden (%s).",
+    "Invite a friend": "Freund einladen",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Deine Freunde konnten nicht geladen werden. Prüfe deine Verbindung oder teile mit einer anderen App.",
 })
 FRENCH.update({
     "Search friends and groups": "Chercher des amis et des groupes", "All friends": "Tous les amis",
-    "Retry": "Réessayer",
+    "No friend or group has that name.": "Aucun ami ni groupe ne porte ce nom.",
     "Add a note (optional)": "Ajouter un message (facultatif)", "More apps…": "Autres applis…",
     "Add friends in AnkiQuest to send them your moments.": "Ajoute des amis dans AnkiQuest pour leur envoyer tes moments.",
-    "Invite a friend": "Inviter un ami", "Couldn't load friends (%s).": "Impossible de charger les amis (%s).",
+    "Invite a friend": "Inviter un ami",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Impossible de charger tes amis. Vérifie ta connexion ou partage avec une autre appli.",
 })
 PORTUGUESE.update({
     "Search friends and groups": "Procurar amigos e grupos", "All friends": "Todos os amigos",
-    "Retry": "Tentar novamente",
+    "No friend or group has that name.": "Nenhum amigo ou grupo tem esse nome.",
     "Add a note (optional)": "Adicionar uma nota (opcional)", "More apps…": "Mais apps…",
     "Add friends in AnkiQuest to send them your moments.": "Adiciona amigos no AnkiQuest para lhes enviares os teus momentos.",
-    "Invite a friend": "Convidar um amigo", "Couldn't load friends (%s).": "Não foi possível carregar os amigos (%s).",
+    "Invite a friend": "Convidar um amigo",
+    "Couldn't load your friends. Check your connection, or share with another app.": "Não foi possível carregar os teus amigos. Verifica a ligação ou partilha com outra app.",
 })
 
 # Shared settings, moments and sharing wording; see tests/fixtures/desktop-wording.json.
@@ -2104,7 +2140,6 @@ FRENCH.update({
 PORTUGUESE.update({
     "Don’t show this again": "Não voltar a mostrar",
     "Aki is here to help. One card, one small step.": "Aki está aqui para te ajudar. Um cartão, um pequeno passo.",
-    "A small step starts with one card.": "Um pequeno passo começa com um cartão.",
     "Your cards are done for now. Nice work!": "Já terminaste os cartões por agora. Bom trabalho!",
     "You showed up today. That is progress worth keeping.": "Estudaste hoje. Vale a pena preservar esse progresso.",
     "Your streak is protected by a freeze. A fresh start is waiting.": "Uma proteção salvou a tua sequência. Um novo começo espera por ti.",
@@ -2235,9 +2270,182 @@ PORTUGUESE.update({
     "%s no longer shares deck alerts.": "%s já não partilha avisos de baralhos.",
     "Couldn't change deck alerts. Try again.": "Não foi possível alterar os avisos de baralhos. Tenta novamente.",
 })
+# The token-only password card and its form (password_prompt), worded as the app's.
+SPANISH.update({
+    "Set a password": "Crear una contraseña",
+    "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working.":
+        "Solo inicias sesión con un token. Crea una contraseña para poder iniciar sesión en un dispositivo nuevo o si el token deja de funcionar.",
+    "New password": "Contraseña nueva",
+    "New password again": "Repite la contraseña nueva",
+    "Use 10 to 256 characters.": "Usa de 10 a 256 caracteres.",
+    "The two passwords are not the same.": "Las dos contraseñas no coinciden.",
+    "Password saved.": "Contraseña guardada.",
+    "Could not save your password (%s).": "No se pudo guardar tu contraseña (%s).",
+})
+GERMAN.update({
+    "Set a password": "Passwort festlegen",
+    "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working.":
+        "Du meldest dich nur mit einem Token an. Lege ein Passwort fest, damit du dich auch auf einem neuen Gerät anmelden kannst oder wenn das Token nicht mehr funktioniert.",
+    "New password": "Neues Passwort",
+    "New password again": "Neues Passwort wiederholen",
+    "Use 10 to 256 characters.": "Verwende 10 bis 256 Zeichen.",
+    "The two passwords are not the same.": "Die beiden Passwörter stimmen nicht überein.",
+    "Password saved.": "Passwort gespeichert.",
+    "Could not save your password (%s).": "Dein Passwort konnte nicht gespeichert werden (%s).",
+})
+FRENCH.update({
+    "Set a password": "Définir un mot de passe",
+    "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working.":
+        "Tu te connectes uniquement avec un jeton. Définis un mot de passe pour pouvoir te connecter sur un nouvel appareil ou si le jeton ne fonctionne plus.",
+    "New password": "Nouveau mot de passe",
+    "New password again": "Répète le nouveau mot de passe",
+    "Use 10 to 256 characters.": "Utilise de 10 à 256 caractères.",
+    "The two passwords are not the same.": "Les deux mots de passe ne sont pas identiques.",
+    "Password saved.": "Mot de passe enregistré.",
+    "Could not save your password (%s).": "Impossible d’enregistrer ton mot de passe (%s).",
+})
+PORTUGUESE.update({
+    "Set a password": "Definir palavra-passe",
+    "You sign in with a token only. Set a password so you can still sign in on a new device or if the token stops working.":
+        "Só inicias sessão com um token. Define uma palavra-passe para poderes iniciar sessão num dispositivo novo ou se o token deixar de funcionar.",
+    "New password": "Nova palavra-passe",
+    "New password again": "Repete a nova palavra-passe",
+    "Use 10 to 256 characters.": "Usa 10 a 256 caracteres.",
+    "The two passwords are not the same.": "As duas palavras-passe não são iguais.",
+    "Password saved.": "Palavra-passe guardada.",
+    "Could not save your password (%s).": "Não foi possível guardar a tua palavra-passe (%s).",
+})
 
 # Match Android's deck-copy form title and action.
 SPANISH.update({"Share a deck": "Compartir un mazo"})
 GERMAN.update({"Share a deck": "Stapel teilen"})
 FRENCH.update({"Share a deck": "Partager un paquet"})
 PORTUGUESE.update({"Share a deck": "Partilhar um baralho"})
+
+# Countdowns to events and exams; English wording in tests/fixtures/countdowns.json.
+SPANISH.update({
+    "Countdowns": "Cuentas atrás", "Edit countdowns": "Editar cuentas atrás",
+    "Add countdown": "Añadir cuenta atrás", "Edit countdown": "Editar cuenta atrás",
+    "Name": "Nombre", "Date": "Fecha", "Deck (optional)": "Mazo (opcional)", "No deck": "Sin mazo", "Delete": "Eliminar",
+    "Enter a name.": "Escribe un nombre.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Ya tienes el máximo de cuentas atrás. Elimina una para añadir otra.",
+    "This countdown can't be saved. Choose another deck.": "No se puede guardar esta cuenta atrás. Elige otro mazo.",
+    "Only you see your countdowns.": "Solo tú ves tus cuentas atrás.",
+    "Add an exam or event to count down to it.": "Añade un examen o un evento para contar los días que faltan.",
+    "%s in %d days": "%s en %d días", "%s tomorrow": "%s mañana", "%s today": "%s hoy", "%s is over": "%s ya pasó",
+    "~%d card a day to finish %s by then": "~%d tarjeta al día para terminar %s a tiempo",
+    "~%d cards a day to finish %s by then": "~%d tarjetas al día para terminar %s a tiempo",
+    "Nothing left in %s before then": "No queda nada en %s antes de esa fecha",
+    "Add the countdown you made while signed out to %s?": "¿Añadir a %s la cuenta atrás que creaste sin iniciar sesión?",
+    "Add the %d countdowns you made while signed out to %s?": "¿Añadir las %d cuentas atrás que creaste sin iniciar sesión a %s?",
+    "Add to account": "Añadir a la cuenta",
+    "Keep on this device": "Mantener en este dispositivo",
+    "%d countdown did not fit and stays on this device.": "%d cuenta atrás no cabía y se queda en este dispositivo.",
+    "%d countdowns did not fit and stay on this device.": "%d cuentas atrás no cabían y se quedan en este dispositivo.",
+})
+GERMAN.update({
+    "Countdowns": "Countdowns", "Edit countdowns": "Countdowns bearbeiten",
+    "Add countdown": "Countdown hinzufügen", "Edit countdown": "Countdown bearbeiten",
+    "Name": "Name", "Date": "Datum", "Deck (optional)": "Stapel (optional)", "No deck": "Kein Stapel", "Delete": "Löschen",
+    "Enter a name.": "Gib einen Namen ein.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Du hast schon die meisten Countdowns, die du haben kannst. Lösche einen, um einen neuen hinzuzufügen.",
+    "This countdown can't be saved. Choose another deck.": "Dieser Countdown kann nicht gespeichert werden. Wähle einen anderen Stapel.",
+    "Only you see your countdowns.": "Nur du siehst deine Countdowns.",
+    "Add an exam or event to count down to it.": "Füge eine Prüfung oder ein Ereignis hinzu, um die Tage bis dahin zu zählen.",
+    "%s in %d days": "%s in %d Tagen", "%s tomorrow": "%s morgen", "%s today": "%s heute", "%s is over": "%s ist vorbei",
+    "~%d card a day to finish %s by then": "~%d Karte am Tag, um %s bis dahin abzuschließen",
+    "~%d cards a day to finish %s by then": "~%d Karten am Tag, um %s bis dahin abzuschließen",
+    "Nothing left in %s before then": "In %s ist bis dahin nichts mehr offen",
+    "Add the countdown you made while signed out to %s?": "Den Countdown, den du ohne Anmeldung erstellt hast, zu %s hinzufügen?",
+    "Add the %d countdowns you made while signed out to %s?": "Die %d Countdowns, die du ohne Anmeldung erstellt hast, zu %s hinzufügen?",
+    "Add to account": "Zum Konto hinzufügen",
+    "Keep on this device": "Auf diesem Gerät behalten",
+    "%d countdown did not fit and stays on this device.": "%d Countdown passte nicht mehr hinein und bleibt auf diesem Gerät.",
+    "%d countdowns did not fit and stay on this device.": "%d Countdowns passten nicht mehr hinein und bleiben auf diesem Gerät.",
+})
+FRENCH.update({
+    "Countdowns": "Comptes à rebours", "Edit countdowns": "Modifier les comptes à rebours",
+    "Add countdown": "Ajouter un compte à rebours", "Edit countdown": "Modifier le compte à rebours",
+    "Name": "Nom", "Date": "Date", "Deck (optional)": "Paquet (facultatif)", "No deck": "Aucun paquet", "Delete": "Supprimer",
+    "Enter a name.": "Saisis un nom.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Tu as déjà le nombre maximal de comptes à rebours. Supprimes-en un pour en ajouter un autre.",
+    "This countdown can't be saved. Choose another deck.": "Impossible d'enregistrer ce compte à rebours. Choisis un autre paquet.",
+    "Only you see your countdowns.": "Tes comptes à rebours ne sont visibles que par toi.",
+    "Add an exam or event to count down to it.": "Ajoute un examen ou un événement pour compter les jours qui restent.",
+    "%s in %d days": "%s dans %d jours", "%s tomorrow": "%s demain", "%s today": "%s aujourd’hui", "%s is over": "%s : terminé",
+    "~%d card a day to finish %s by then": "~%d carte par jour pour finir %s d’ici là",
+    "~%d cards a day to finish %s by then": "~%d cartes par jour pour finir %s d’ici là",
+    "Nothing left in %s before then": "Plus rien à faire dans %s d’ici là",
+    "Add the countdown you made while signed out to %s?": "Ajouter à %s le compte à rebours créé sans connexion ?",
+    "Add the %d countdowns you made while signed out to %s?": "Ajouter les %d comptes à rebours créés sans connexion à %s ?",
+    "Add to account": "Ajouter au compte",
+    "Keep on this device": "Garder sur cet appareil",
+    "%d countdown did not fit and stays on this device.": "%d compte à rebours ne tenait plus et reste sur cet appareil.",
+    "%d countdowns did not fit and stay on this device.": "%d comptes à rebours ne tenaient plus et restent sur cet appareil.",
+})
+PORTUGUESE.update({
+    "Countdowns": "Contagens decrescentes", "Edit countdowns": "Editar contagens decrescentes",
+    "Add countdown": "Adicionar contagem decrescente", "Edit countdown": "Editar contagem decrescente",
+    "Name": "Nome", "Date": "Data", "Deck (optional)": "Baralho (opcional)", "No deck": "Sem baralho", "Delete": "Eliminar",
+    "Enter a name.": "Escreve um nome.",
+    "You have the most countdowns you can keep. Delete one to add another.": "Já tens o máximo de contagens decrescentes. Elimina uma para adicionar outra.",
+    "This countdown can't be saved. Choose another deck.": "Não é possível guardar esta contagem decrescente. Escolhe outro baralho.",
+    "Only you see your countdowns.": "Só tu vês as tuas contagens decrescentes.",
+    "Add an exam or event to count down to it.": "Adiciona um exame ou evento para contar os dias que faltam.",
+    "%s in %d days": "%s daqui a %d dias", "%s tomorrow": "%s amanhã", "%s today": "%s hoje", "%s is over": "%s já passou",
+    "~%d card a day to finish %s by then": "~%d cartão por dia para terminar %s até lá",
+    "~%d cards a day to finish %s by then": "~%d cartões por dia para terminar %s até lá",
+    "Nothing left in %s before then": "Não falta nada em %s até lá",
+    "Add the countdown you made while signed out to %s?": "Adicionar a %s a contagem decrescente que criaste sem sessão iniciada?",
+    "Add the %d countdowns you made while signed out to %s?": "Adicionar as %d contagens decrescentes que criaste sem sessão iniciada a %s?",
+    "Add to account": "Adicionar à conta",
+    "Keep on this device": "Manter neste dispositivo",
+    "%d countdown did not fit and stays on this device.": "%d contagem decrescente não coube e fica neste dispositivo.",
+    "%d countdowns did not fit and stay on this device.": "%d contagens decrescentes não couberam e ficam neste dispositivo.",
+})
+
+# Progress: study time from the local review log, in Android's wording.
+SPANISH.update({
+    ("Time spent answering cards in this collection, uploaded or not. "
+     "Days start at Anki’s “Next day starts at” hour, weeks on Monday."):
+        "Tiempo dedicado a responder tarjetas en esta colección, se haya subido o no. "
+        "Los días empiezan a la hora de «El día siguiente comienza a las» de Anki y las semanas, el lunes.",
+    "This week": "Esta semana", "This month": "Este mes", "Total": "Total", "Per study day": "Por día de estudio",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "Cargando el tiempo de estudio…",
+    "Could not read study time (%s).": "No se pudo leer el tiempo de estudio (%s).",
+    "No reviews in this collection yet.": "Aún no hay repasos en esta colección.",
+})
+GERMAN.update({
+    ("Time spent answering cards in this collection, uploaded or not. "
+     "Days start at Anki’s “Next day starts at” hour, weeks on Monday."):
+        "Zeit, die du in dieser Sammlung mit dem Beantworten von Karten verbracht hast, hochgeladen oder nicht. "
+        "Tage beginnen zur Stunde von Ankis „Nächster Tag beginnt um“, Wochen am Montag.",
+    "This week": "Diese Woche", "This month": "Diesen Monat", "Total": "Gesamt", "Per study day": "Pro Lerntag",
+    "%d min": "%d Min.", "%d h %d min": "%d Std. %d Min.",
+    "Loading study time…": "Lernzeit wird geladen…",
+    "Could not read study time (%s).": "Lernzeit konnte nicht gelesen werden (%s).",
+    "No reviews in this collection yet.": "Noch keine Wiederholungen in dieser Sammlung.",
+})
+FRENCH.update({
+    ("Time spent answering cards in this collection, uploaded or not. "
+     "Days start at Anki’s “Next day starts at” hour, weeks on Monday."):
+        "Temps passé à répondre aux cartes de cette collection, envoyé ou non. "
+        "Les jours commencent à l’heure « Le jour suivant commence à » d’Anki, les semaines le lundi.",
+    "This week": "Cette semaine", "This month": "Ce mois-ci", "Total": "Total", "Per study day": "Par jour d’étude",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "Chargement du temps d’étude…",
+    "Could not read study time (%s).": "Impossible de lire le temps d’étude (%s).",
+    "No reviews in this collection yet.": "Aucune révision dans cette collection pour le moment.",
+})
+PORTUGUESE.update({
+    ("Time spent answering cards in this collection, uploaded or not. "
+     "Days start at Anki’s “Next day starts at” hour, weeks on Monday."):
+        "Tempo passado a responder a cartões nesta coleção, enviado ou não. "
+        "Os dias começam à hora de «O dia seguinte começa às» do Anki e as semanas à segunda-feira.",
+    "This week": "Esta semana", "This month": "Este mês", "Total": "Total", "Per study day": "Por dia de estudo",
+    "%d min": "%d min", "%d h %d min": "%d h %d min",
+    "Loading study time…": "A carregar o tempo de estudo…",
+    "Could not read study time (%s).": "Não foi possível ler o tempo de estudo (%s).",
+    "No reviews in this collection yet.": "Ainda não há revisões nesta coleção.",
+})

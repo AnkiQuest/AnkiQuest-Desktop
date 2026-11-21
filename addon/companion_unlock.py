@@ -1,32 +1,33 @@
-"""Companions earned at milestones: Ankilope at a level, the cow by hours of study.
+"""Companions earned at milestones: Ankilope at a level, the cow by hours of study, Anki-tan by a
+streak.
 
 The server decides and keeps every unlock; the add-on shows what `GET /api/unlocks/{user}`
 answers. The conditions are defined once in tests/fixtures/companion_unlock.json, which the tests
 check these texts against. A chibi is an Easter egg: tapping its unlocked base's picture by the
-fixture's tap rule (`Egg`) finds it, and the add-on then asks the server for it. Anki-tan and her
-chibi have no art yet, so nothing taps yet."""
+fixture's tap rule (`Egg`) finds it, and the add-on then asks the server for it. Anki-tan's and
+Quest-chan's chibis have no art yet, so tapping their bases finds nothing yet."""
 
 from enum import Enum, auto
 
 from . import moods
 
-FEATURE = "companion_unlocks"
-
 # Companions earned at a milestone, in the picker's order.
-EARNED = (moods.ANKILOPE_ID, moods.COW)
-
-# Earned companions every player could choose before milestones. A server from then lists no
-# progress, so these stay free there; the others stay hidden until unlocked.
-OFFERED_BEFORE = (moods.ANKILOPE_ID,)
+EARNED = (moods.ANKILOPE_ID, moods.COW, moods.ANKI_TAN)
 
 # What each milestone counts, as the fixture names it.
-LEVEL, STUDY_HOURS = "level", "study_hours"
+LEVEL, STUDY_HOURS, STREAK = "level", "study_hours", "streak"
 
 TAPS = 9
 MAX_GAP_MS = 2000
 
 # Each chibi by its base, the companion whose picture is tapped; the fixture's `requires`.
-CHIBIS = {"anki_tan": "anki_tan_chibi"}
+CHIBIS = {"anki_tan": "anki_tan_chibi", "quest_chan": "quest_chan_chibi"}
+
+# Chibis the fixture lists as `planned`: no art yet, so tapping their base finds nothing.
+PLANNED_CHIBIS = frozenset({"anki_tan_chibi", "quest_chan_chibi"})
+
+# The chibis tapping can find now.
+LIVE_CHIBIS = {base: chibi for base, chibi in CHIBIS.items() if chibi not in PLANNED_CHIBIS}
 
 # The tap of a run from which the hint shows how many taps are still needed.
 HINT_FROM = 4
@@ -38,7 +39,7 @@ class Choice(Enum):
     UNLOCKED = auto()
     # Shown greyed with its condition and progress; it cannot be chosen.
     LOCKED = auto()
-    # Secret until earned, or unknown to an older server.
+    # Secret until earned, or not yet answered by the server.
     HIDDEN = auto()
 
 
@@ -79,11 +80,8 @@ def parse(answer):
     return Found(unlocks, progress)
 
 
-def fetch(api, features):
-    """The server's unlocks and progress; nothing unlocked for a server without unlocks. Runs
-    in the background."""
-    if FEATURE not in features:
-        return Found()
+def fetch(api):
+    """The server's unlocks and progress. Runs in the background."""
     return parse(api.unlocks())
 
 
@@ -96,7 +94,7 @@ def choice(companion, found, current):
         return Choice.UNLOCKED
     if found is not None and companion in found.progress:
         return Choice.LOCKED
-    return Choice.FREE if companion in OFFERED_BEFORE and found is not None else Choice.HIDDEN
+    return Choice.HIDDEN
 
 
 def condition(progress, tr):
@@ -106,6 +104,8 @@ def condition(progress, tr):
         return tr("Reach level %d") % progress["goal"]
     if progress["kind"] == STUDY_HOURS:
         return tr("Study for %d hours in total") % progress["goal"]
+    if progress["kind"] == STREAK:
+        return tr("Keep a %d-day streak") % progress["goal"]
     return None
 
 
@@ -116,6 +116,8 @@ def reached(progress, tr):
         return tr("Level %d of %d") % (progress["value"], progress["goal"])
     if progress["kind"] == STUDY_HOURS:
         return tr("%d of %d hours") % (progress["value"], progress["goal"])
+    if progress["kind"] == STREAK:
+        return tr("%d of %d days") % (progress["value"], progress["goal"])
     return None
 
 
@@ -145,9 +147,10 @@ class Taps:
         return True
 
 
-def chibi_of(companion, unlocks):
-    """The chibi tapping `companion` finds; None when it has none or is not in `unlocks`."""
-    chibi = CHIBIS.get(companion)
+def chibi_of(companion, unlocks, chibis=None):
+    """The chibi tapping `companion` finds among `chibis` (base to chibi, the live ones unless
+    given); None when it has none or is not in `unlocks`."""
+    chibi = (LIVE_CHIBIS if chibis is None else chibis).get(companion)
     if chibi is None or companion not in unlocks:
         return None
     return chibi
@@ -174,15 +177,16 @@ class Tapped:
 
 class Egg:
     """Counts taps on companions' pictures toward their chibis, given the server's `unlocks`.
-    Only a base that has a chibi and is unlocked counts; a tap on any other picture starts
-    again."""
+    Only a base that has a chibi in `chibis` (the live ones unless given) and is unlocked counts;
+    a tap on any other picture starts again."""
 
-    def __init__(self, unlocks):
+    def __init__(self, unlocks, chibis=None):
         self._unlocks = frozenset(unlocks)
+        self._chibis = chibis
         self._taps = None
 
     def tap(self, companion, at_ms, tr):
-        chibi = chibi_of(companion, self._unlocks)
+        chibi = chibi_of(companion, self._unlocks, self._chibis)
         if chibi is None:
             self._taps = None
             return Tapped()

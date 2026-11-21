@@ -2,17 +2,19 @@
 
 Two rules live here. `streak_mood` picks the pose, and `flame` the flame beside the streak
 number, from today's streak, as the phone's AnkiquestMood does, pinned by
-tests/fixtures/streak_moods.json. `mood` picks the encouraging line from the collection's due
-cards.
+tests/fixtures/streak_moods.json. `mood` picks the encouraging line from that streak mood
+first, then from the collection's due cards, as the phone's AnkiquestAki.message does.
 """
 
 from enum import Enum, auto
 
 WELCOME, REVIEW, CELEBRATE, STREAK, FREEZE, WINNER = "welcome", "review", "celebrate", "streak", "freeze", "winner"
 
+MOODS = (WELCOME, REVIEW, CELEBRATE, STREAK, FREEZE, WINNER)
+
+# Each mood's line. Cards due (REVIEW) get none: the next-step card below already says what to do.
 MESSAGES = {
     WELCOME: "Aki is here to help. One card, one small step.",
-    REVIEW: "A small step starts with one card.",
     CELEBRATE: "Your cards are done for now. Nice work!",
     STREAK: "You showed up today. That is progress worth keeping.",
     FREEZE: "Your streak is protected by a freeze. A fresh start is waiting.",
@@ -21,11 +23,19 @@ MESSAGES = {
 
 COMPANION_WELCOME = "One card, one small step."
 
+# A streak waiting for today's study (Android's aki_streak_waiting). It has no pose of its own:
+# the sad streak pose shows. The one-day form names its day, so translations can agree with it.
+WAITING = "waiting"
+WAITING_LINES = (
+    "You haven’t studied today. Your 1-day streak is still waiting.",
+    "You haven’t studied today. Your %d-day streak is still waiting.",
+)
+
 # Today's day verdict, as the fixture names it.
 STUDIED, PROTECTED, SHORT, PENDING, UNKNOWN = "studied", "protected", "short", "pending", "unknown"
 
 # The displayed day's `_day_status` (day_verdict._for_display) to its verdict; pending splits by reviews.
-_DAY_STATES = {"met": STUDIED, "syncing": STUDIED, "protected": PROTECTED, "pending": PENDING}
+_DAY_STATES = {"met": STUDIED, "unverified": STUDIED, "syncing": STUDIED, "protected": PROTECTED, "pending": PENDING}
 
 # Aki's streak moods, as the phone names them.
 STREAK_MOODS = ("unknown", "asleep", "sad", "frozen_1", "frozen_2", "frozen_3", "thawing", "hopeful", "almost", "fire")
@@ -33,6 +43,9 @@ STREAK_MOODS = ("unknown", "asleep", "sad", "frozen_1", "frozen_2", "frozen_3", 
 
 MINUTE_MS = 60_000
 _PERCENT = 100
+
+# The moods a freeze kept the streak in.
+_FROZEN = (FROZEN_1, FROZEN_2, FROZEN_3)
 
 # The companion tab's line for each mood, saying why; `%d` is the streak.
 MOOD_LINES = {
@@ -111,8 +124,8 @@ class Stage(Enum):
 
 
 # The companions in the picker's order, and the names it shows; "none" is named by the picker.
-AKI, ANKILOPE_ID, COW, NONE = "aki", "ankilope", "cow", "none"
-NAMES = {AKI: "Aki", ANKILOPE_ID: "Ankilope", COW: "Bluma"}
+AKI, ANKILOPE_ID, COW, ANKI_TAN, NONE = "aki", "ankilope", "cow", "anki_tan", "none"
+NAMES = {AKI: "Aki", ANKILOPE_ID: "Ankilope", COW: "Bluma", ANKI_TAN: "Anki-tan"}
 
 # The Aki poses each picker card previews, in the phone's order: face, fire, sad.
 PREVIEW_POSES = ("aki_face", "aki_streak", "aki_sad")
@@ -130,8 +143,6 @@ POSE_FALLBACKS = {
     "streak_milestone": "streak_legend",
     "frozen_2": "frozen",
     "frozen_3": "frozen_2",
-    "thawing": "frozen",
-    "almost": "hopeful",
     "welcome": "happy",
     "review": "happy",
     "hurt": "sad",
@@ -163,7 +174,8 @@ _AKI_PICTURES = {
     "aki_winner": "winner",
 }
 
-# The pose each streak mood shows; fire burns by heat (`HEAT`).
+# The pose each streak mood shows; fire burns by heat (`HEAT`). thawing and almost are moods with
+# no pose of their own (AnkiQuest-Server#45).
 _MOOD_POSE_NAMES = {
     MOOD_UNKNOWN: "face",
     ASLEEP: "asleep",
@@ -171,9 +183,9 @@ _MOOD_POSE_NAMES = {
     FROZEN_1: "frozen",
     FROZEN_2: "frozen_2",
     FROZEN_3: "frozen_3",
-    THAWING: "thawing",
+    THAWING: "frozen",
     HOPEFUL: "hopeful",
-    ALMOST: "almost",
+    ALMOST: "hopeful",
 }
 
 # Aki's art for each pose she has, as the phone's AnkiquestCompanion maps them. She has no frozen 2
@@ -208,8 +220,32 @@ ANKILOPE = {
     "review": "ankilope_study",
 }
 
-# Ankilope's picture for Aki's scenes she has no art for.
-_ANKILOPE_SCENE = "ankilope_study"
+# Anki-tan's art for each pose she has: Shigeyuki's pack art and the generated masters, as
+# AnkiQuest-Server static/anki-tan/poses.json maps them. Her other extensions fall back until they
+# are drawn (AnkiQuest-Server#57).
+ANKI_TAN_POSES = {
+    "face": "anki_tan_face",
+    "asleep": "anki_tan_asleep",
+    "happy": "anki_tan_happy",
+    "streak": "anki_tan_streak",
+    "streak_legend": "anki_tan_streak_legend",
+    "streak_milestone": "anki_tan_streak_milestone",
+    "sad": "anki_tan_sad",
+    "hopeful": "anki_tan_hopeful",
+    "frozen": "anki_tan_frozen",
+    "neglected": "anki_tan_neglected",
+    "welcome": "anki_tan_welcome",
+    "review": "anki_tan_review",
+    "hurt": "anki_tan_hurt",
+    "dead": "anki_tan_dead",
+}
+
+# Each companion's art by pose, by whose art draws it (`art_owner`).
+_POSES = {AKI: AKI_POSES, ANKILOPE_ID: ANKILOPE, ANKI_TAN: ANKI_TAN_POSES}
+
+# The picture a companion shows for Aki's scenes it has no art for: Ankilope studies, Anki-tan
+# shows her face.
+_SCENES = {ANKILOPE_ID: "ankilope_study", ANKI_TAN: "anki_tan_face"}
 
 
 def current(profile, now_ms):
@@ -224,21 +260,25 @@ def _reviews_today(profile):
     return int(((profile or {}).get("today") or {}).get("reviews") or 0)
 
 
-def mood(decks_due, focus_due, profile, now_ms):
-    """Today's mood; the collection, not the server, says whether cards are still due.
+def mood(chosen, decks_due, focus_due, profile, now_ms):
+    """Today's line for the streak mood `chosen`; the collection, not the server, says whether
+    cards are still due.
 
     `decks_due` lists every deck's due count, `focus_due` is the next deck's.
     """
-    today = current(profile, now_ms)
-    reviews = _reviews_today(today)
-    state = (today or {}).get("streak_state")
-    if state == "protected" and reviews == 0:
+    # A streak waiting for today, or kept by a freeze, comes before anything about the decks.
+    if chosen == SAD:
+        return WAITING
+    if chosen in _FROZEN:
         return FREEZE
+
+    # Otherwise the decks decide: all done after real study, or cards still due.
+    reviews = _reviews_today(current(profile, now_ms))
     if decks_due and all(due == 0 for due in decks_due) and reviews > 0:
         return CELEBRATE
     if focus_due > 0:
         return REVIEW
-    if state == "studied" and reviews > 0:
+    if chosen == FIRE:
         return STREAK
     return WELCOME
 
@@ -358,8 +398,13 @@ def mood_line(chosen, streak):
 
 def art_owner(companion):
     """Whose art draws `companion`. The cow has none yet (#88): it is Ankilope's, turned by
-    `hue_degrees`."""
-    return ANKILOPE_ID if companion == COW else companion
+    `hue_degrees`. A companion this add-on has no art for, such as one a newer server knows, is
+    drawn as Aki."""
+    if companion == COW:
+        return ANKILOPE_ID
+    if companion == NONE or companion in _POSES:
+        return companion
+    return AKI
 
 
 def hue_degrees(companion):
@@ -384,12 +429,13 @@ def companion_pose(companion, aki):
     """`companion`'s version of Aki's picture `aki`, by the pose it shows; None for no companion."""
     if companion == NONE:
         return None
-    if art_owner(companion) != ANKILOPE_ID:
+    owner = art_owner(companion)
+    if owner == AKI:
         return aki
     pose = _AKI_PICTURES.get(aki)
     if pose is None:
-        return _ANKILOPE_SCENE
-    return pose_art(ANKILOPE, pose)
+        return _SCENES[owner]
+    return pose_art(_POSES[owner], pose)
 
 
 def mood_pose(companion, chosen, streak):
@@ -399,8 +445,7 @@ def mood_pose(companion, chosen, streak):
     stands for two poses (welcome for hopeful)."""
     if companion == NONE:
         return None
-    art = ANKILOPE if art_owner(companion) == ANKILOPE_ID else AKI_POSES
-    return pose_art(art, _mood_pose_name(chosen, streak))
+    return pose_art(_POSES[art_owner(companion)], _mood_pose_name(chosen, streak))
 
 
 def preview(companion):
@@ -416,11 +461,18 @@ def preview(companion):
 
 def art(companion, chosen):
     """The file name, without folder or extension, of `companion`'s art for a mood; None for no companion."""
-    return companion_pose(companion, "aki_" + chosen if chosen in MESSAGES else "aki_welcome")
+    return companion_pose(companion, "aki_" + chosen if chosen in MOODS else "aki_welcome")
 
 
-def message(companion, chosen):
-    """The mood line; the welcome names Aki, so other companions get a plainer one."""
+def message(companion, chosen, streak):
+    """The untranslated line (None while reviewing) and its format values. The welcome
+    names Aki, so other companions get a plainer one."""
+    if chosen == REVIEW:
+        return None, ()
+    if chosen == WAITING:
+        # A sad streak is at least one day long, so the one-day form is the only singular.
+        one, other = WAITING_LINES
+        return (one, ()) if streak == 1 else (other, (streak,))
     if chosen == WELCOME and companion != AKI:
-        return COMPANION_WELCOME
-    return MESSAGES.get(chosen, MESSAGES[WELCOME])
+        return COMPANION_WELCOME, ()
+    return MESSAGES.get(chosen, MESSAGES[WELCOME]), ()

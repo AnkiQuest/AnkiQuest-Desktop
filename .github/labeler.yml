@@ -1,30 +1,15 @@
 # Area labels for pull requests, applied by actions/labeler in
-# .github/workflows/ankiquest_pr_labels.yml. A label is removed again when a
+# AnkiQuest-Dev's reusable pr-labels.yml. A label is removed again when a
 # later push no longer touches its paths; labels not listed here are never
-# touched. Each AnkiQuest repository has its own paths; the labels come from
-# .github/labels.json.
-
-server:
-  - changed-files:
-      - any-glob-to-any-file:
-          - src/**
-          - crates/**
-          - build.rs
-          - Cargo.toml
-          - Cargo.lock
-
-web:
-  - changed-files:
-      - any-glob-to-any-file:
-          - web/**
-          - static/**
-          - package.json
-          - package-lock.json
+# touched. Each AnkiQuest repository has its own paths; every label here must
+# be in labels.json in AnkiQuest-Dev.
 
 addon:
   - changed-files:
       - any-glob-to-any-file:
           - addon/**
+          - art-exports.json
+          - assets/retired/**
           - tools/package-addon/**
 
 tests:
@@ -42,5 +27,4 @@ ci:
   - changed-files:
       - any-glob-to-any-file:
           - .github/**
-          - flake.nix
-          - flake.lock
+          - tools/banner/**

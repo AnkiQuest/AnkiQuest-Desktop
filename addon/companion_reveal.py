@@ -10,7 +10,9 @@ from enum import Enum, auto
 from . import moments, moods
 
 # Companions without art yet, as tests/fixtures/companion_unlock.json names them.
-ANKI_TAN, ANKI_TAN_CHIBI, LEECH_TAN = "anki_tan", "anki_tan_chibi", "leech_tan"
+ANKI_TAN_CHIBI = "anki_tan_chibi"
+QUEST_CHAN, QUEST_CHAN_CHIBI = "quest_chan", "quest_chan_chibi"
+LEECH_KUN = "leech_kun"
 
 
 class Motion(Enum):
@@ -52,9 +54,11 @@ BEAMS = {
     moods.AKI: Beam.WHITE,
     moods.ANKILOPE_ID: Beam.BLUE,
     moods.COW: Beam.PURPLE,
-    ANKI_TAN: Beam.GOLD,
-    LEECH_TAN: Beam.GOLD,
+    moods.ANKI_TAN: Beam.GOLD,
     ANKI_TAN_CHIBI: Beam.RAINBOW,
+    QUEST_CHAN: Beam.GOLD,
+    QUEST_CHAN_CHIBI: Beam.RAINBOW,
+    LEECH_KUN: Beam.GOLD,
 }
 
 # How long each animated phase lasts, and the phase after it.
@@ -83,15 +87,6 @@ class Reveal:
 
     def close(self):
         self.phase = Phase.CLOSED
-
-
-def length_ms(motion):
-    """The whole animation's length before the companion shows."""
-    phase, total = _FIRST[motion], 0
-    while phase in _NEXT:
-        total += DURATION_MS[phase]
-        phase = _NEXT[phase]
-    return total
 
 
 def beam(companion):

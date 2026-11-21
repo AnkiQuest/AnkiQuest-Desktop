@@ -46,10 +46,22 @@ QT_QPA_PLATFORM=offscreen python -m unittest discover -s tests
 cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.ankiaddon
 ```
 
-[Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The server code still in this repository moves to AnkiQuest-Server (#306); change it there.
+### Screenshots and banner
+
+`docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/draw_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. The banner tool composes `docs/graphics/banner_readme.png` from those screenshots and the duo art in an [AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server) checkout. CI's "Screenshots and banner" job draws all of them again and fails when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed:
+
+```sh
+ANKIQUEST_SCREENSHOTS=write python tests/draw_screenshots.py
+cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQuest-Server
+cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQuest-Server --social
+```
+
+Another system or Qt draws slightly different text, so CI fails on pictures drawn there. A failing run keeps its drawings as the `screenshots` artifact.
+
+[Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The shared fixtures, API examples and art masters the tests and poses come from are pinned from AnkiQuest-Server ([Server snapshot](docs/desktop.md#server-snapshot)).
 
 ## License
 
-AGPL-3.0-only.
+AGPL-3.0-or-later.
 
-Anki-tan (`addon/art/anki_tan_*`, `static/anki-tan/`) is by [Shigeyuki](https://www.patreon.com/Shigeyuki), from the [Anki-tan asset pack](https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html), licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Derivatives of her art are CC BY-SA 4.0 too.
+Anki-tan (`addon/art/anki_tan_*`, and her masters in AnkiQuest-Server's `static/anki-tan/`) is by [Shigeyuki](https://www.patreon.com/Shigeyuki), from the [Anki-tan asset pack](https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html), licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Derivatives of her art are CC BY-SA 4.0 too.

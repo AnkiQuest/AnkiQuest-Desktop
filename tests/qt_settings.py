@@ -1,18 +1,17 @@
-"""Real Qt checks run in a separate process by test_addon_settings.py."""
+"""Real Qt checks of the settings dialog, run by test_qt_windows.py."""
 
-from concurrent.futures import Future
 from copy import deepcopy
 import re
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from aqt.qt import QApplication, QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QLineEdit, QPushButton, QScrollArea, QTextDocument, QTimer
+from aqt.qt import QCheckBox, QComboBox, QDialog, QGroupBox, QLabel, QLineEdit, QPushButton, QScrollArea, QTextDocument, QTimer
 
 from addon_loader import load_in_package
+from qt_support import app, queue, run_now, stand_in
 
 
-app = QApplication.instance() or QApplication([])
 ui = load_in_package("settings_qt", "ui")
 preferences = load_in_package("settings_qt", "preferences")
 ui.tr = preferences.tr = lambda text: text
@@ -30,7 +29,7 @@ class Settings(unittest.TestCase):
             deck_settings=lambda: deepcopy(self.decks), companion=lambda: "ankilope",
             set_companion=lambda value: self.posts.append(("companion", value)),
         )
-        self.mw = SimpleNamespace(pm=SimpleNamespace(profile={}), taskman=SimpleNamespace(run_in_background=self.run_task))
+        self.mw = stand_in(run_now)
 
     def request(self, path, body=None):
         if body is not None:
@@ -45,14 +44,6 @@ class Settings(unittest.TestCase):
         if "/decks/" in path:
             return deepcopy(self.decks)
         raise AssertionError(path)
-
-    def run_task(self, work, done):
-        future = Future()
-        try:
-            future.set_result(work())
-        except Exception as error:
-            future.set_exception(error)
-        done(future)
 
     def button(self, dialog, text):
         return next(widget for widget in dialog.findChildren(QPushButton) if widget.text() == text)
@@ -114,17 +105,37 @@ class Settings(unittest.TestCase):
                 self.open(inspect)
         self.assertEqual([], self.posts)
 
-    def test_installed_version_is_visible_and_ankiweb_hides_github_channels(self):
+    def test_builds_without_updates_show_no_update_settings(self):
+        self.config["update_channel"] = "nightly"
+
         def inspect(dialog):
             labels = [widget.text() for widget in dialog.findChildren(QLabel)]
             self.assertIn("Version: addon-11", labels)
-            self.assertIn("Updates are managed by AnkiWeb.", labels)
+            self.assertIn("Updates: none", labels)
             self.assertNotIn("Update channel", labels)
-            dialog.reject()
+            self.assertIsNone(dialog.findChild(QComboBox, "ankiquest_update_channel"))
+            dialog.accept()
 
         with patch.object(ui.updates, "installed", return_value={"release": 11, "nightly": 0, "commit": "abc"}), \
-                patch.object(ui.updates, "_source", return_value=ui.updates._Source.ANKIWEB):
-            self.open(inspect)
+                patch.object(ui.updates, "SOURCE", ui.updates.UpdateSource.NONE):
+            values = self.open(inspect)
+        self.assertEqual("nightly", values["update_channel"])
+
+    def test_github_builds_offer_the_update_channel(self):
+        self.config["update_channel"] = "nightly"
+
+        def inspect(dialog):
+            labels = [widget.text() for widget in dialog.findChildren(QLabel)]
+            self.assertIn("Updates: github", labels)
+            self.assertIn("Update channel", labels)
+            channel = dialog.findChild(QComboBox, "ankiquest_update_channel")
+            self.assertEqual("nightly", channel.currentData())
+            channel.setCurrentIndex(0)
+            dialog.accept()
+
+        with patch.object(ui.updates, "SOURCE", ui.updates.UpdateSource.GITHUB):
+            values = self.open(inspect)
+        self.assertEqual("stable", values["update_channel"])
 
     def test_credits_shigeyuki_for_anki_tan(self):
         def inspect(dialog):
@@ -369,12 +380,12 @@ class Settings(unittest.TestCase):
 
     def test_late_reminder_read_does_not_enable_the_staged_accounts_controls(self):
         pending = []
-        self.mw.taskman.run_in_background = lambda work, done: pending.append((work, done))
+        self.mw.taskman.run_in_background = queue(pending)
 
         def edit(dialog):
             self.button(dialog, "Switch account…").click()
             for work, done in pending:
-                self.run_task(work, done)
+                run_now(work, done)
             self.assertFalse(dialog.findChild(QComboBox, "ankiquest_reminder_hour").isEnabled())
             self.button(dialog, "Save").click()
 
@@ -391,11 +402,11 @@ class Settings(unittest.TestCase):
 
     def test_save_before_choices_arrive_keeps_the_server_values(self):
         pending = []
-        self.mw.taskman.run_in_background = lambda work, done: pending.append((work, done))
+        self.mw.taskman.run_in_background = queue(pending)
         self.open(lambda dialog: self.button(dialog, "Save").click())
         self.assertEqual(2, len(pending), "Only the two reads may be scheduled")
         for work, done in pending:
-            self.run_task(work, done)
+            run_now(work, done)
         self.assertEqual([], self.posts)
 
     def test_deck_picker_only_selects_decks_and_people(self):
@@ -416,6 +427,81 @@ class Settings(unittest.TestCase):
         if errors:
             raise errors[0]
         self.assertEqual(([], [], [], None, None), values)
+
+
+class Countdowns(unittest.TestCase):
+    """The countdown list saves every change at once, in the stored order, and shows it by date."""
+
+    def setUp(self):
+        self.countdowns = load_in_package("settings_qt", "countdowns")
+        self.dialog_ui = load_in_package("settings_qt", "countdowns_ui")
+        self.dialog_ui.tr = lambda text: text
+        self.saved = []
+        today = self.countdowns.parse_date("2026-11-19")
+        items = [
+            self.countdowns.Event("Driving theory", "2026-12-01", None),
+            self.countdowns.Event("Spanish exam", "2026-11-25", "Spanish::A1"),
+        ]
+        self.dialog = self.dialog_ui.CountdownsDialog(None, items, ["Spanish::A1"], today, self.saved.append)
+        self.list = self.dialog.findChild(self.dialog_ui.QListWidget, "ankiquest_countdowns")
+
+    def tearDown(self):
+        self.dialog.deleteLater()
+
+    def rows(self):
+        return [self.list.item(row).text() for row in range(self.list.count())]
+
+    def test_rows_are_in_date_order(self):
+        self.assertEqual(
+            ["2026-11-25 · Spanish exam in 6 days · Spanish::A1", "2026-12-01 · Driving theory in 12 days"],
+            self.rows(),
+        )
+
+    def test_add_edit_and_delete_save_the_whole_list(self):
+        new = self.countdowns.Event("Biology test", "2026-11-20", None)
+        with patch.object(self.dialog_ui, "_event_dialog", return_value=new):
+            self.dialog._new()
+        self.assertEqual("2026-11-20 · Biology test tomorrow", self.rows()[0])
+
+        # The first row is the Biology test; editing keeps its place in the stored list.
+        self.list.setCurrentRow(0)
+        renamed = self.countdowns.Event("Biology exam", "2026-11-20", None)
+        with patch.object(self.dialog_ui, "_event_dialog", return_value=renamed):
+            self.dialog._edit()
+        self.list.setCurrentRow(1)
+        self.dialog._remove()
+        self.assertEqual(
+            [
+                [
+                    {"name": "Driving theory", "date": "2026-12-01", "deck": None},
+                    {"name": "Spanish exam", "date": "2026-11-25", "deck": "Spanish::A1"},
+                    {"name": "Biology test", "date": "2026-11-20", "deck": None},
+                ],
+                [
+                    {"name": "Driving theory", "date": "2026-12-01", "deck": None},
+                    {"name": "Spanish exam", "date": "2026-11-25", "deck": "Spanish::A1"},
+                    {"name": "Biology exam", "date": "2026-11-20", "deck": None},
+                ],
+                [
+                    {"name": "Driving theory", "date": "2026-12-01", "deck": None},
+                    {"name": "Biology exam", "date": "2026-11-20", "deck": None},
+                ],
+            ],
+            self.saved,
+        )
+
+    def test_a_cancelled_form_saves_nothing(self):
+        with patch.object(self.dialog_ui, "_event_dialog", return_value=None):
+            self.dialog._new()
+        self.assertEqual([], self.saved)
+
+    def test_a_full_list_offers_no_new_form(self):
+        self.dialog._items = [self.countdowns.Event("Exam %d" % n, "2026-12-01", None) for n in range(self.countdowns.MAX_EVENTS)]
+        with patch.object(self.dialog_ui, "_tell") as tell, patch.object(self.dialog_ui, "_event_dialog") as form:
+            self.dialog._new()
+        form.assert_not_called()
+        tell.assert_called_once()
+        self.assertEqual([], self.saved)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,7 @@
 """The companion tab's mood line and the unlock reveal's states, without Qt."""
 
 import json
-import os
-import subprocess
-import sys
 import unittest
-from pathlib import Path
 
 from addon_loader import ADDON, load_in_package
 
@@ -14,8 +10,9 @@ moments = load_in_package("aq_tab", "moments")
 board = load_in_package("aq_tab", "board")
 reveal = load_in_package("aq_tab", "companion_reveal")
 
+# Shared rules pinned by tests/ankiquest-server.sha.
 UNLOCKS = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
-EXAMPLES = ADDON.parent / "docs/api/examples"
+EXAMPLES = ADDON.parent / "tests/api-examples"
 Phase, Motion, Beam = reveal.Phase, reveal.Motion, reveal.Beam
 
 
@@ -99,15 +96,24 @@ class RevealStates(unittest.TestCase):
         self.assertEqual(Phase.CLOSED, closed.phase)
 
     def test_it_lasts_three_to_five_seconds_and_a_fade_less_than_one(self):
-        self.assertTrue(3000 <= reveal.length_ms(Motion.FULL) <= 5000)
-        self.assertLess(reveal.length_ms(Motion.REDUCED), 1000)
+        def length_ms(motion):
+            # The reveal as the window plays it: each phase's time, then the next phase.
+            shown, total = reveal.Reveal(motion), 0
+            while shown.duration_ms() is not None:
+                total += shown.duration_ms()
+                shown.advance()
+            return total
+
+        self.assertTrue(3000 <= length_ms(Motion.FULL) <= 5000)
+        self.assertLess(length_ms(Motion.REDUCED), 1000)
 
 
 class Beams(unittest.TestCase):
     def test_every_companion_has_its_beam(self):
         expected = {
             "aki": Beam.WHITE, "ankilope": Beam.BLUE, "cow": Beam.PURPLE,
-            "anki_tan": Beam.GOLD, "leech_tan": Beam.GOLD, "anki_tan_chibi": Beam.RAINBOW,
+            "anki_tan": Beam.GOLD, "anki_tan_chibi": Beam.RAINBOW,
+            "quest_chan": Beam.GOLD, "quest_chan_chibi": Beam.RAINBOW, "leech_kun": Beam.GOLD,
         }
         listed = {"aki"} | {rule["companion"] for rule in UNLOCKS["companions"]}
         self.assertEqual(listed, set(expected))
@@ -133,17 +139,6 @@ class Due(unittest.TestCase):
 
         # Moments saved before the reveal existed carry no notice and stay cards.
         self.assertFalse(reveal.due({"key": "companion:cow", "topic": "companion", "at": 1, "title": "", "body": ""}))
-
-
-class RevealWindow(unittest.TestCase):
-    def test_the_tab_and_the_reveal_with_real_qt(self):
-        for script in ("qt_reveal.py",):
-            result = subprocess.run(
-                [sys.executable, str(Path(__file__).with_name(script))],
-                env=dict(os.environ, QT_QPA_PLATFORM="offscreen"),
-                capture_output=True, text=True, timeout=120,
-            )
-            self.assertEqual(0, result.returncode, script + "\n" + result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

@@ -11,5 +11,6 @@
     "goal_celebrations": true,
     "review_heatmap": true,
     "reduce_motion": false,
-    "sync_settings": true
+    "sync_settings": true,
+    "countdowns": []
 }

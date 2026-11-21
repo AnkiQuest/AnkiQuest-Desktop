@@ -133,12 +133,6 @@ def climbed_to(previous, order, me):
     return now + 1 if before > now else None
 
 
-def podium(previous, order, me):
-    """A climb worth sharing: into the top three."""
-    place = climbed_to(previous, order, me)
-    return place if place and place <= 3 else None
-
-
 def sent_text(recipients, translate=lambda value: value):
     if recipients <= 0:
         return translate("Nobody new got it: your friends already have it, or you have no friends in AnkiQuest yet.")
@@ -156,5 +150,4 @@ def face_path(companion):
     """The bundled face for the chosen companion; None means no art."""
     if companion == moods.NONE:
         return None
-    owner = moods.art_owner(companion)
-    return str(Path(__file__).with_name("ankilope_face.png" if owner == moods.ANKILOPE_ID else "aki_face.png"))
+    return str(Path(__file__).with_name("%s_face.png" % moods.art_owner(companion)))

@@ -7,6 +7,8 @@ from .language import tr
 _KEY = "ankiquestAnnouncements"
 _REMINDER_AGE = 3600
 _COPY_KIND = "deck_copy"
+_HOURS = 24
+_HOUR_MS = 3_600_000
 
 
 class _Mode(Enum):
@@ -41,12 +43,21 @@ def _fetch(api, cursor):
     return page, rows
 
 
-def _quiet(settings, now_s, offset):
+def _device_hour(now_s, offset):
+    """The hour on this computer's clock, with Anki's offset west of UTC in minutes."""
+    return int((now_s - offset * 60) // 3600) % _HOURS
+
+
+def _quiet(settings, hour):
+    """Android's Reminders.holds: equal ends switch quiet hours off; an unknown hour (None) holds."""
     start, end = settings.get("quiet_start", 0), settings.get("quiet_end", 0)
-    hour = int((now_s - offset * 60) // 3600) % 24
+    if start == end:
+        return False
+    if hour is None:
+        return True
     if start < end:
         return start <= hour < end
-    return (hour >= start or hour < end) if start > end else False
+    return hour >= start or hour < end
 
 
 def _eligible(entry, now_s, profile, reminders):
@@ -76,6 +87,9 @@ class _Delivery:
         self._addon = addon
         self._owner = self._profile = self._tray = None
         self._destination = None
+        # Milliseconds from UTC to the player's clock, modulo one day; unknown until
+        # this account's profile supplies its hour and exact day boundary.
+        self._shift = None
 
     def _clear(self):
         if self._tray is not None:
@@ -83,6 +97,7 @@ class _Delivery:
             self._tray.deleteLater()
         self._owner = self._profile = self._tray = None
         self._destination = None
+        self._shift = None
 
     def _current(self):
         api = self._addon.client()
@@ -94,6 +109,22 @@ class _Delivery:
         if not api.configured or profile is None:
             return None
         return _record(profile, api)
+
+    def _see_hour(self, profile):
+        """Reads the player's hour from a fresh server profile, as Android does."""
+        if self._current() is None:
+            return
+        hour = profile.get("local_hour") if isinstance(profile, dict) else None
+        end = profile.get("day_ends_at") if isinstance(profile, dict) else None
+        now_ms = int(self._addon.time.time() * 1000)
+        if type(hour) is not int or not 0 <= hour < _HOURS or type(end) is not int or end <= now_ms:
+            self._shift = None
+            return
+
+        # Anki's rollover is a whole local hour. Its UTC boundary therefore tells us
+        # the minute within this hour, including zones with a 30/45-minute offset.
+        within_hour = (now_ms - end) % _HOUR_MS
+        self._shift = (hour * _HOUR_MS + within_hour - now_ms) % (_HOURS * _HOUR_MS)
 
     def _receive(self, rows, mode):
         record = self._current()
@@ -116,11 +147,15 @@ class _Delivery:
         if record is None or addon.mw.state not in ("deckBrowser", "overview", "congrats"):
             return
         now_ms = int(addon.time.time() * 1000)
-        reminders = record.get("reminders") or {}
-        if _quiet(reminders, now_ms // 1000, addon.offset_west_min()):
+        reminders = record.get("reminders")
+
+        # The player's hour on the server; messages fall back to this computer's clock.
+        device = _device_hour(now_ms // 1000, addon.offset_west_min())
+        hour = None if self._shift is None else (now_ms + self._shift) // _HOUR_MS % _HOURS
+        if reminders is not None and _quiet(reminders, device if hour is None else hour):
             return
         profile = addon.home._profile_for_display(addon.state["profile"], now_ms) or {}
-        pending = [row for row in record["pending"] if _eligible(row, now_ms // 1000, profile, reminders)]
+        pending = [row for row in record["pending"] if _eligible(row, now_ms // 1000, profile, reminders or {})]
         record["pending"] = pending
         if pending:
             # One alert at a time; deck offers have their own destination.
@@ -136,6 +171,10 @@ class _Delivery:
                 record["pending"] = [row for row in record["pending"] if row["id"] not in delivered]
                 if any(row.get("kind") == "reminder_urgent" for row in pending):
                     record["warned"] = profile.get("day_ends_at")
+            return
+
+        # As on Android, the streak warning waits while the reminders or the player's hour are unknown.
+        if reminders is None or _quiet(reminders, hour):
             return
         warning = notify.streak_warning(profile, int(addon.config().get("streak_hours", 2) or 0), now_ms, record.get("warned"))
         if warning and self._show(profile["streak_warning"]):

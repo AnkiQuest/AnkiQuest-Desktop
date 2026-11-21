@@ -18,11 +18,14 @@ MINUTE_MS = 60_000
 
 # The server's verdict on a day (DayState in Android).
 MET = "met"
+# Counted on answers observed without the review log (AnkiQuest Lite), so their time is not known.
+UNVERIFIED = "unverified"
 SHORT = "short"
 FROZEN = "frozen"
 SKIPPED = "skipped"
 NONE = "none"
-STATES = (MET, SHORT, FROZEN, SKIPPED, NONE)
+STATES = (MET, UNVERIFIED, SHORT, FROZEN, SKIPPED, NONE)
+COUNTS = (MET, UNVERIFIED)
 KEEPS_STREAK = (FROZEN, SKIPPED)
 
 # Answers per study day, as Anki's day searches count them: 24-hour windows ending at the
@@ -75,6 +78,7 @@ class Heatmap:
     days_studied: int
     first_review_date: date
     daily_average: float
+    days_studied_percent: int = 0
     protected: frozenset = frozenset()
     verdicts: dict = field(default_factory=dict)
 
@@ -178,6 +182,17 @@ def _streaks(today, counted, kept):
     return current, longest
 
 
+def _studied_percent(today, history):
+    """Days studied as a share of the days since the first review, in whole percent rounded
+    down, so 100 means every day. Today counts once it has reviews: the share does not drop
+    each morning before you study."""
+    if not history:
+        return 0
+    first = min(history)
+    last = today if today in history else today - timedelta(days=1)
+    return len(history) * 100 // ((last - first).days + 1)
+
+
 def summarize(today, reviews, scheduled, protected=(), verdicts=None):
     history = {day: count for day, count in sorted(reviews.items()) if day <= today and count > 0}
     forecast_end = today + timedelta(days=FORECAST_DAYS)
@@ -190,8 +205,8 @@ def summarize(today, reviews, scheduled, protected=(), verdicts=None):
     kept = frozenset(day for day in kept_days if day < today)
 
     # Where the server judged a day, only its verdict says whether the day counted.
-    counted = {day for day in history if day not in kept and (day not in judged or judged[day].state == MET)}
-    counted |= {day for day, verdict in judged.items() if verdict.state == MET}
+    counted = {day for day in history if day not in kept and (day not in judged or judged[day].state in COUNTS)}
+    counted |= {day for day, verdict in judged.items() if verdict.state in COUNTS}
 
     current, longest = _streaks(today, counted, kept)
     total = sum(history.values())
@@ -205,6 +220,7 @@ def summarize(today, reviews, scheduled, protected=(), verdicts=None):
         days_studied=len(history),
         first_review_date=next(iter(history), None),
         daily_average=total / len(history) if history else 0.0,
+        days_studied_percent=_studied_percent(today, history),
         protected=kept,
         verdicts=judged,
     )
