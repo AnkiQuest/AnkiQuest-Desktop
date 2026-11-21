@@ -15,9 +15,9 @@ share = load_in_package("aq_cow", "share")
 client = load_in_package("aq_cow", "client")
 moments = load_in_package("aq_cow", "moments")
 
-# The Server copy (tests/server-fixtures/README.md); tests/fixtures holds the server code's older one.
-FIXTURE = json.loads((ADDON.parent / "tests/server-fixtures/companion_unlock.json").read_text("utf-8"))
-EXAMPLES = ADDON.parent / "docs/api/examples"
+# Shared rules pinned by tests/ankiquest-server.sha.
+FIXTURE = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
+EXAMPLES = ADDON.parent / "tests/api-examples"
 LIVE = [rule for rule in FIXTURE["companions"] if rule["status"] == "live"]
 Choice = unlock.Choice
 

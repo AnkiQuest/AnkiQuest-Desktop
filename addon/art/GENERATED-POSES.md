@@ -9,5 +9,5 @@ The five Ankilope additions (sad, hopeful, frozen, asleep and neglected)
 were generated with the same tool.
 
 The tool did not expose its model identifier. The masters, prompts and
-cleanup record are in AnkiQuest/AnkiQuest-Desktop,
+cleanup record are in AnkiQuest/AnkiQuest-Server,
 docs/branding/core-poses-2026-11/.

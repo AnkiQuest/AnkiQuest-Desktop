@@ -40,7 +40,9 @@ smoke installs (`tools/package-addon`, as releases do). Each checks:
   rank/share words, every board shape, notifications, activity, goals, decks,
   capabilities and conquered-card actions. `wins.json` cross-checks the win
   IDs used by notification shares and card-image URLs; desktop does not list
-  `/api/wins` itself. Rust regenerates and verifies these same recordings.
+  `/api/wins` itself. The recordings are copies from AnkiQuest-Server (see
+  [Server snapshot](#server-snapshot)), where the server regenerates and
+  verifies them.
 - Upload/reconcile/refresh regressions in `test_deck_completion.py` and
   `test_addon_uploads.py`; feedback, conquest paths and web navigation in
   `test_desktop_board.py`; clipboard text in `test_addon_sharing.py` and
@@ -60,6 +62,42 @@ matrix together, keeping the oldest job until its support is deliberately
 changed. Verify the release's own Qt extra, both full test jobs and a normal
 interactive study session before claiming support. Add an upper version
 bound only for a reproduced incompatibility.
+
+## Server snapshot
+
+The add-on tests and poses come from one AnkiQuest-Server commit, named in
+`tests/ankiquest-server.sha`:
+
+- `tests/fixtures/*.json`: copies of Server's `tests/fixtures/`, the rules
+  both clients test against.
+- `tests/api-examples/*.json`: copies of the Server `docs/api/examples/`
+  the add-on tests read.
+- `addon/art/`, `addon/*_face.png` and `assets/retired/addon/`: poses
+  Server's `export-addon-art` writes from its `static/` masters, listed with
+  their hashes in `art-exports.json`.
+
+The **Desktop** jobs compare each copied file with the pinned commit. The
+**Companion art exports** workflow runs `export-addon-art --check` from the
+pinned commit when the poses, the manifest or the pin change; when it
+fails it uploads a fresh export as `companion-art-exports`.
+
+The snapshot includes countdowns, observed study and companion unlocks.
+Every shared fixture is in `tests/fixtures/`; there are no separate copies
+from commits ahead of the pin.
+
+Never edit a copy. Change Server first, then bump the pin and every copy
+in one pull request, from a Server checkout next to this one:
+
+```sh
+sha=$(git -C ../AnkiQuest-Server rev-parse <server-commit>)
+git -C ../AnkiQuest-Server checkout "$sha"
+echo "$sha" > tests/ankiquest-server.sha
+for f in tests/fixtures/*.json; do cp "../AnkiQuest-Server/$f" "$f"; done
+for f in tests/api-examples/*.json; do cp "../AnkiQuest-Server/docs/api/examples/${f##*/}" "$f"; done
+cargo run --manifest-path ../AnkiQuest-Server/Cargo.toml -p ankiquest-xtask -- export-addon-art "$PWD"
+```
+
+To read a new fixture or example, copy it from the same commit.
 
 ## API audit
 
@@ -120,8 +158,9 @@ need a complete translation, not isolated switches to `Salvar`.
 `tests/fixtures/desktop-wording.json` records reviewed Android strings for
 the same settings groups, moments and sharing screens, with the source
 commit. The translation test checks these across all four languages.
-Update the fixture and desktop wording together after reviewing Android
-changes; CI does not fetch a moving Android branch. Positional Android
+After reviewing Android changes, update the fixture in AnkiQuest-Server,
+then bump the [Server snapshot](#server-snapshot) and the desktop wording
+together; CI does not fetch a moving Android branch. Positional Android
 placeholders are normalized to Python placeholders. Identical English
 labels in different contexts (such as a noun versus a reply button) are
 not automatically copied.

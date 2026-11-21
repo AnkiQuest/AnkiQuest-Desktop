@@ -10,7 +10,7 @@ from addon_loader import load_module
 import test_deck_completion as fixture
 
 activity = load_module("activity_rules", "activity.py")
-EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
+EXAMPLES = Path(__file__).resolve().parents[1] / "tests/api-examples"
 
 
 class Refused(Exception):

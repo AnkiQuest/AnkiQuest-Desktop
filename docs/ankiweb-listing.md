@@ -35,9 +35,9 @@ for Updates**. Do not also install the GitHub package into the same Anki
 profile; remove the other installation first. Keep a collection backup and
 the same AnkiQuest account when changing installation source.
 
-[Source and support](https://github.com/AnkiQuest/ankiquest) ·
+[Source and support](https://github.com/AnkiQuest/AnkiQuest-Desktop) ·
 [Android companion](https://github.com/AnkiQuest/AnkiQuest-Android) ·
-[Self-hosting guide](https://github.com/AnkiQuest/ankiquest/blob/master/docs/install.md)
+[Self-hosting guide](https://github.com/AnkiQuest/AnkiQuest-Server/blob/master/docs/install.md)
 
 ## Privacy note
 
