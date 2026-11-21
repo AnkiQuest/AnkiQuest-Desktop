@@ -12,7 +12,7 @@ from qt_support import app, finish, main_window, queue
 ui = load_in_package("boards_qt", "board_ui")
 client = load_in_package("boards_qt", "client")
 ui.tr = lambda text: text
-EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
+EXAMPLES = Path(__file__).resolve().parents[1] / "tests/api-examples"
 
 
 class Boards(unittest.TestCase):

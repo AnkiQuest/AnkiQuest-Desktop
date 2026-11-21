@@ -14,7 +14,7 @@ client, verdict, goals, boards, activity, inbox, share, conquests, notify = (
         "client", "day_verdict", "goals", "board_data", "activity", "inbox", "share", "conquests", "notify"
     )
 )
-EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
+EXAMPLES = Path(__file__).resolve().parents[1] / "tests/api-examples"
 moment_share = load_in_package("desktop_contract", "moment_share")
 
 
