@@ -72,9 +72,10 @@ The add-on tests and poses come from one AnkiQuest-Server commit, named in
   both clients test against.
 - `tests/api-examples/*.json`: copies of the Server `docs/api/examples/`
   the add-on tests read.
-- `addon/art/`, `addon/*_face.png` and `assets/retired/addon/`: poses
-  Server's `export-addon-art` writes from its `static/` masters, listed with
-  their hashes in `art-exports.json`.
+- `addon/art/` and `addon/*_face.png`: poses Server's `export-addon-art`
+  writes from its `static/` masters, listed with their hashes in
+  `art-exports.json`. The exporter overwrites a changed pose and deletes
+  one whose master is gone; git history keeps the old bytes.
 
 The **Desktop** jobs compare each copied file with the pinned commit. The
 **Companion art exports** workflow runs `export-addon-art --check` from the
