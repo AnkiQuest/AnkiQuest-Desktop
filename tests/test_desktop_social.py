@@ -8,7 +8,7 @@ from unittest.mock import Mock
 from addon_loader import load_module
 
 data = load_module("social_rules", "social_data.py")
-EXAMPLES = Path(__file__).resolve().parents[1] / "docs/api/examples"
+EXAMPLES = Path(__file__).resolve().parents[1] / "tests/api-examples"
 
 
 class Social(unittest.TestCase):
