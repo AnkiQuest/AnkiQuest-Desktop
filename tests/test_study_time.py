@@ -8,7 +8,7 @@ from pathlib import Path
 from addon_loader import load_in_package
 
 study_time = load_in_package("aq_study_time", "study_time")
-FIXTURE = json.loads((Path(__file__).parent / "server-fixtures/study_time.json").read_text("utf-8"))
+FIXTURE = json.loads((Path(__file__).parent / "fixtures/study_time.json").read_text("utf-8"))
 
 
 class Revlog:

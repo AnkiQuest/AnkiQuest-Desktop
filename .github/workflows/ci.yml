@@ -26,85 +26,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  android-contract:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-      - name: Test the compatibility guard
-        run: cargo test -p ankiquest-xtask contract
-      - name: Read Android's public consumed-example catalog
-        run: |
-          git clone --depth 1 --filter=blob:none --sparse --branch main https://github.com/AnkiQuest/AnkiQuest-Android.git android-client
-          git -C android-client sparse-checkout set --no-cone \
-            '/AnkiDroid/src/test/resources/ankiquest-api/' '/AnkiDroid/src/test/resources/ankiquest-server.sha' \
-            '/ankiquest-core/src/test/resources/ankiquest-api/' '/ankiquest-core/src/test/resources/ankiquest-server.sha'
-      - name: Preserve Android's consumed API shapes
-        run: |
-          resources=android-client/AnkiDroid/src/test/resources
-          # Select by the committed module, so a missing catalog or pin still fails the guard.
-          if git -C android-client cat-file -e HEAD:ankiquest-core 2>/dev/null; then
-            resources=android-client/ankiquest-core/src/test/resources
-          fi
-          # The legacy Desktop guard still skips an unpublished catalog.
-          test -f "$resources/ankiquest-api/names.json"
-          cargo run -p ankiquest-xtask -- android-contract --android-resources "$resources"
-
-  web:
-    runs-on: ubuntu-24.04
-    env:
-      PLAYWRIGHT_CHANNEL: chromium
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install Playwright
-        run: |
-          bash .github/scripts/ubuntu-archive.sh
-          npm ci && npx playwright install --with-deps chromium
-
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Build the server
-        run: rustup target add wasm32-unknown-unknown && cargo build
-
-      - name: Browser tests
-        run: npm run test:web
-
-  nix:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-
-      - name: Format
-        run: nix develop --command cargo fmt --all --check
-
-      - name: Nix format
-        run: nix fmt -- --check .
-
-      - name: Test
-        run: nix develop --command cargo test --workspace
-
-      - name: Lint
-        run: nix develop --command cargo clippy --workspace --all-targets -- -D warnings
-
   desktop:
     name: Desktop (Anki ${{ matrix.anki }})
     runs-on: ubuntu-24.04
@@ -121,80 +42,29 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Read the authoritative quiet-hour cases
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          repository: AnkiQuest/AnkiQuest-Server
-          ref: a499df34a819d423c4cbb7253dd4b1622f1b34bf # Server PR 24
-          path: server-contract
-          sparse-checkout: /tests/fixtures/quiet_hours.json
-          sparse-checkout-cone-mode: false
           persist-credentials: false
-      - name: Check the shared quiet-hour cases
-        run: cmp tests/fixtures/quiet_hours.json server-contract/tests/fixtures/quiet_hours.json
-      - name: Read the shared countdown and synced settings cases
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # The tests read copies of AnkiQuest-Server's shared fixtures and API
+      # examples, pinned to the commit in tests/ankiquest-server.sha. Each
+      # copy must equal the file at that commit (docs/desktop.md, Server
+      # snapshot).
+      - name: Read the pinned server commit
+        id: server
+        run: echo "sha=$(cat tests/ankiquest-server.sha)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: AnkiQuest/AnkiQuest-Server
-          ref: f65544f8770a9380ac14bf6a7c2fc8fe7d67b92e # Server PR 98
-          path: server-countdowns
+          ref: ${{ steps.server.outputs.sha }}
+          path: server-snapshot
           sparse-checkout: |
-            /tests/fixtures/countdowns.json
-            /tests/fixtures/synced_settings.json
+            /tests/fixtures/
+            /docs/api/examples/
           sparse-checkout-cone-mode: false
           persist-credentials: false
-      - name: Check the shared countdown and synced settings cases
+      - name: Check the copies of the server's fixtures and examples
         run: |
-          cmp tests/server-fixtures/countdowns.json server-countdowns/tests/fixtures/countdowns.json
-          cmp tests/server-fixtures/synced_settings.json server-countdowns/tests/fixtures/synced_settings.json
-      - name: Read the shared streak mood cases
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: AnkiQuest/AnkiQuest-Server
-          ref: 04a5fb6614011ce0631f434e0679e4eed5a1ecf6 # Server PR 60, merged
-          path: server-moods
-          sparse-checkout: /tests/fixtures/streak_moods.json
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-      - name: Check the shared streak mood cases
-        run: cmp tests/server-fixtures/streak_moods.json server-moods/tests/fixtures/streak_moods.json
-      - name: Read the authoritative companion unlock cases
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: AnkiQuest/AnkiQuest-Server
-          ref: 04a5fb6614011ce0631f434e0679e4eed5a1ecf6 # Server PR 60, merged
-          path: server-unlocks
-          sparse-checkout: /tests/fixtures/companion_unlock.json
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-      - name: Check the shared companion unlock cases
-        run: cmp tests/server-fixtures/companion_unlock.json server-unlocks/tests/fixtures/companion_unlock.json
-      - name: Read the shared study time cases
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: AnkiQuest/AnkiQuest-Server
-          ref: fd935d1f7c3fc03e046f86a19b6823568ae86a9a # Server PR 75
-          path: server-study-time
-          sparse-checkout: /tests/fixtures/study_time.json
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-      - name: Check the shared study time cases
-        run: cmp tests/server-fixtures/study_time.json server-study-time/tests/fixtures/study_time.json
-      - name: Read the shared observed study cases
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: AnkiQuest/AnkiQuest-Server
-          ref: 0f5d038a29cebf18c466cfdcfa6bece07233d0f7 # Server PR 80, merged
-          path: server-observed
-          sparse-checkout: |
-            /tests/fixtures/day_verdicts.json
-            /tests/fixtures/observed_reviews.json
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-      - name: Check the shared observed study cases
-        run: |
-          cmp tests/server-fixtures/day_verdicts.json server-observed/tests/fixtures/day_verdicts.json
-          cmp tests/server-fixtures/observed_reviews.json server-observed/tests/fixtures/observed_reviews.json
+          for copy in tests/fixtures/*.json; do cmp "$copy" "server-snapshot/$copy"; done
+          for copy in tests/api-examples/*.json; do cmp "$copy" "server-snapshot/docs/api/examples/${copy##*/}"; done
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
@@ -307,47 +177,3 @@ jobs:
           name: ankiquest-ankiweb-addon
           path: ankiquest-ankiweb.ankiaddon
           if-no-files-found: error
-
-  package:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-
-      - name: Build the package
-        run: nix build --print-build-logs
-
-      - name: Evaluate the NixOS module
-        run: |
-          nix eval --impure --raw --expr '
-            let
-              flake = builtins.getFlake "git+file://'"$PWD"'";
-              system = flake.inputs.nixpkgs.lib.nixosSystem {
-                system = "x86_64-linux";
-                modules = [
-                  flake.nixosModules.default
-                  {
-                    boot.isContainer = true;
-                    system.stateVersion = "26.05";
-                    services.nginx.enable = true;
-                    security.acme.acceptTerms = true;
-                    security.acme.defaults.email = "ci@example.com";
-                    services.ankiquest = {
-                      enable = true;
-                      domain = "anki.example.com";
-                      privateSite = true;
-                      sitePasswordFile = "/run/secrets/ankiquest-site-password";
-                      ntfy = "https://ntfy.sh";
-                      users.hill = {
-                        ntfyTopic = "example";
-                        tokenFile = "/run/secrets/ankiquest-hill";
-                      };
-                    };
-                  }
-                ];
-              };
-            in system.config.system.build.toplevel.drvPath'

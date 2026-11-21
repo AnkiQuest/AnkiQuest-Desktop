@@ -9,7 +9,7 @@ import test_deck_completion as addon_fixture
 from addon_loader import ADDON, FakeApi, load_in_package
 
 settings_sync = load_in_package("aq_settings_sync", "settings_sync")
-FIXTURE = json.loads((ADDON.parent / "tests/server-fixtures/synced_settings.json").read_text("utf-8"))
+FIXTURE = json.loads((ADDON.parent / "tests/fixtures/synced_settings.json").read_text("utf-8"))
 DEFAULTS = json.loads((ADDON / "config.json").read_text("utf-8"))
 NOW_MS = 1793183400000
 
