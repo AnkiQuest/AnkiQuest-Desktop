@@ -50,7 +50,7 @@ jobs:
         run: |
           cargo run --locked --manifest-path server/Cargo.toml -p ankiquest-xtask -- export-addon-art "$GITHUB_WORKSPACE/desktop"
           mkdir -p art-exports
-          git -C desktop add -A addon art-exports.json assets/retired
+          git -C desktop add -A addon art-exports.json
           git -C desktop diff --cached --binary > art-exports/changes.patch
       - name: Store the export
         if: failure()
