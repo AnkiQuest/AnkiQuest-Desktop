@@ -9,7 +9,9 @@ from addon_loader import ADDON, load_module
 
 moods = load_module("aq_streak_moods", "moods.py")
 
-FIXTURE = Path(__file__).resolve().parent / "fixtures" / "streak_moods.json"
+TESTS = Path(__file__).resolve().parent
+FIXTURE = TESTS / "fixtures" / "streak_moods.json"
+POSES = TESTS / "fixtures" / "companion_poses.json"
 
 # Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows
 # frozen and almost shows hopeful; she has no frozen_2 or frozen_3 art, so those show her frozen.
@@ -44,26 +46,15 @@ class StreakMoods(unittest.TestCase):
                 self.assertEqual(pose, moods.streak_pose(found, today["streak"]))
                 self.assertEqual(pose, moods.mood_pose(moods.AKI, found, today["streak"]))
 
-    def test_every_shared_mood_picks_the_today_message(self):
-        # As Android's Home card (AnkiquestAki.message): a waiting or frozen streak comes
-        # before the decks, which decide only after that (#301).
-        frozen = (moods.FROZEN_1, moods.FROZEN_2, moods.FROZEN_3)
-        for case in self.fixture["moods"]:
+    def test_every_shared_message_case(self):
+        # The Today line for each mood, as Android's Home card (AnkiquestAki.message) picks it.
+        cases = self.fixture["messages"]
+        self.assertTrue(cases)
+        for case in cases:
             with self.subTest(case=case["name"]):
-                today = case["today"]
-                chosen = case["expected"]["mood"]
-                profile = {"today": {"reviews": today["reviews"]}}
-                due = moods.mood(chosen, [4, 0], 4, profile, 0)
-                done = moods.mood(chosen, [0, 0], 0, profile, 0)
-                if chosen == moods.SAD:
-                    self.assertEqual((moods.WAITING, moods.WAITING), (due, done))
-                elif chosen in frozen:
-                    self.assertEqual((moods.FREEZE, moods.FREEZE), (due, done))
-                else:
-                    self.assertEqual(moods.REVIEW, due)
-                    studied = moods.CELEBRATE if today["reviews"] > 0 else None
-                    fallback = moods.STREAK if chosen == moods.FIRE else moods.WELCOME
-                    self.assertEqual(studied or fallback, done)
+                profile = {"today": {"reviews": case["reviews"]}}
+                found = moods.mood(case["mood"], case["decks_due"], case["focus_due"], profile, 0)
+                self.assertEqual(case["expected"], found)
 
     def test_a_waiting_streak_names_its_days(self):
         self.assertEqual(("You haven’t studied today. Your %d-day streak is still waiting.", (64,)),
@@ -250,7 +241,7 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview(moods.ANKILOPE_ID))
 
     def test_the_poses_are_the_shared_ones(self):
-        fixture = json.loads((FIXTURE.parent / "companion_poses.json").read_text("utf-8"))
+        fixture = json.loads(POSES.read_text("utf-8"))
         self.assertEqual(fixture["core"], list(moods.CORE_POSES))
         self.assertEqual(fixture["extensions"], moods.POSE_FALLBACKS)
 

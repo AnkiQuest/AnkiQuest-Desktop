@@ -58,10 +58,10 @@ cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQ
 
 Another system or Qt draws slightly different text, so CI fails on pictures drawn there. A failing run keeps its drawings as the `screenshots` artifact.
 
-[Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The server code still in this repository moves to AnkiQuest-Server (#306); change it there.
+[Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The shared fixtures, API examples and art masters the tests and poses come from are pinned from AnkiQuest-Server ([Server snapshot](docs/desktop.md#server-snapshot)).
 
 ## License
 
-AGPL-3.0-only.
+AGPL-3.0-or-later.
 
-Anki-tan (`addon/art/anki_tan_*`, `static/anki-tan/`) is by [Shigeyuki](https://www.patreon.com/Shigeyuki), from the [Anki-tan asset pack](https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html), licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Derivatives of her art are CC BY-SA 4.0 too.
+Anki-tan (`addon/art/anki_tan_*`, and her masters in AnkiQuest-Server's `static/anki-tan/`) is by [Shigeyuki](https://www.patreon.com/Shigeyuki), from the [Anki-tan asset pack](https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html), licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Derivatives of her art are CC BY-SA 4.0 too.

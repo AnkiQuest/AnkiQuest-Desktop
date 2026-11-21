@@ -3,18 +3,18 @@
 import time
 import json
 from dataclasses import dataclass, replace
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from enum import Enum, auto
 from http import HTTPStatus
 from html import escape
 
 from aqt import gui_hooks, mw
 
-from . import address, day_verdict, deck_moments, goal_ui, goals, heatmap_ui, moods, today
+from . import address, countdowns, day_verdict, deck_moments, deck_names, goal_ui, goals, heatmap_ui, moods, today
 from .board import _day_label
 from .client import Client, offset_west_min
 from .deck_completion import deck_snapshots, study_day
-from .language import tr
+from .language import plural, tr
 from . import board_data, board_pictures, progress_ui
 
 GOAL_KEY = "ankiquestDayGoal"
@@ -418,6 +418,35 @@ def focus_view(day):
     }
 
 
+def _day_start_hour():
+    # Anki's "next day starts at" hour; 4 is Anki's default.
+    hour = mw.col.get_config("rollover", 4)
+    return hour if type(hour) is int and 0 <= hour <= 23 else 4
+
+
+def _cards_left(deck, left):
+    """Cards `deck` still has before an event `left` days away, or None without such a deck."""
+    if not deck or left < 1 or mw.col.decks.by_name(deck) is None:
+        return None
+    return len(mw.col.find_cards(countdowns.search(deck, left)))
+
+
+def countdown_view():
+    """The nearest countdown for Today: its line and pace line, or None."""
+    items = countdowns.events(addon().config().get(countdowns.CONFIG_KEY))
+    today_date = countdowns.anki_today(datetime.now(), _day_start_hour())
+    event = countdowns.nearest(items, today_date)
+    if event is None:
+        return None
+    found = countdowns.days(today_date, countdowns.parse_date(event.date))
+    pace = countdowns.pace(found.days, _cards_left(event.deck, found.days))
+    label = deck_names._name(event.deck) or event.deck if event.deck else None
+    return {
+        "headline": countdowns.headline(event, found, tr),
+        "pace": countdowns.pace_text(pace, label, plural, tr),
+    }
+
+
 def board_view(api, profile=None):
     query = board_data._chosen(mw.pm.profile, api)
     if local["board_account"] != account(api) or local["board"] is not None and local["board"].query != query:
@@ -493,7 +522,8 @@ def _session_day(summary):
 
 
 def _streak_title(summary):
-    return tr("Streak secured! 🔥") if _session_day(summary)["state"] == "met" else tr("Streak minimum reached — syncing")
+    counted = _session_day(summary)["state"] in ("met", day_verdict.UNVERIFIED)
+    return tr("Streak secured! 🔥") if counted else tr("Streak minimum reached — syncing")
 
 
 def today_view(deck_browser, chosen_companion):
@@ -529,8 +559,18 @@ def today_view(deck_browser, chosen_companion):
         "session_day": _session_day(mw.pm.profile[SESSION_KEY]) if session else None,
         "moments": addon()._moments._count(),
         "weekly": _weekly_recap(),
+        "countdown": _countdown_or_none(),
         "password": addon().state.get("password_prompt") == account(api),
     }
+
+
+def _countdown_or_none():
+    # A broken countdown never hides the rest of Today.
+    try:
+        return countdown_view()
+    except Exception as e:
+        print("ankiquest countdown:", e)
+        return None
 
 
 def _weekly_recap():
@@ -547,7 +587,9 @@ def _toolbar_values():
         return "AnkiQuest", tr("Sign in to AnkiQuest")
     profile = _profile_for_display(addon().state["profile"]) or {}
     status = profile.get("_day_status", "unknown")
-    label = tr({"met": "Secured", "syncing": "Syncing", "protected": "Protected", "pending": "Not yet"}.get(status, "Streak unknown"))
+    # An unverified day counts too; the Today panel says its time is not known.
+    label = tr({"met": "Secured", day_verdict.UNVERIFIED: "Secured", "syncing": "Syncing", "protected": "Protected",
+                "pending": "Not yet"}.get(status, "Streak unknown"))
     streak = profile.get("streak")
     return "AnkiQuest · " + ("%d · " % streak if streak is not None else "") + label, tr("Open Today")
 
@@ -669,6 +711,9 @@ def on_js_message(handled, message, context):
         return (True, None)
     if message == "ankiquest:goal":
         open_goal_dialog()
+        return (True, None)
+    if message == "ankiquest:countdowns":
+        addon().open_countdowns()
         return (True, None)
     if message == "ankiquest:retry-board":
         refresh_board(_BoardFetch.MANUAL)

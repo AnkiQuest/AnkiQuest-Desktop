@@ -393,7 +393,7 @@ class _Card:
             day = self._addon.home._session_day(self._summary)
             self._day.setText(day["label"])
             colours = {
-                "met": "background:#dff1c9;color:#254a12;",
+                **{state: "background:#dff1c9;color:#254a12;" for state in ("met", "unverified")},
                 "short": "background:#e9d8a6;color:#534619;",
                 **{state: "background:#def0ff;color:#16527b;" for state in ("syncing", "protected", "frozen", "skipped")},
             }

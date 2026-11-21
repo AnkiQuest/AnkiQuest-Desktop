@@ -22,7 +22,7 @@ class _Access(Enum):
     LOCAL = auto()
 
 
-_COLOURS = {"met": ("#dff1c9", "#254a12"), "short": ("#e9d8a6", "#534619"),
+_COLOURS = {"met": ("#dff1c9", "#254a12"), "unverified": ("#dff1c9", "#254a12"), "short": ("#e9d8a6", "#534619"),
             "frozen": ("#def0ff", "#16527b"), "skipped": ("#def0ff", "#16527b")}
 _RECORD_NAMES = {"hour": "Best hour", "day": "Best day", "week": "Best week", "month": "Best month",
                  "year": "Best year", "streak": "Longest streak", "days": "Days studied"}
