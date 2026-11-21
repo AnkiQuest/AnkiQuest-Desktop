@@ -1,0 +1,55 @@
+# Inputs of the README banner and the social preview. AnkiQuest-Dev's
+# ankiquest-banner draws both from them; see the README.
+
+title = "AnkiQuest"
+tagline = "Study together, keep your streak"
+
+# Regenerates docs/screenshots/desktop-*.png (Ubuntu 24.04, Anki 26.9.4).
+record = ["env", "ANKIQUEST_SCREENSHOTS=write", "python", "tests/draw_screenshots.py"]
+
+readme = "docs/graphics/banner_readme.png"
+social = "docs/graphics/social_preview.png"
+
+# The pose master, in the AnkiQuest-Server checkout.
+[companion]
+pose = "static/duo/friends.png"
+height = 138
+
+# Back to front, so nearer windows cover the ones behind them: Progress and
+# Today high at the sides, Friends and Inbox lower in the middle, and Today,
+# the add-on's main window, in front.
+[[screen]]
+frame = "window"
+shot = "docs/screenshots/desktop-progress.png"
+title = "Progress"
+x = 24
+y = 178
+width = 440
+max_height = 600
+
+[[screen]]
+frame = "window"
+shot = "docs/screenshots/desktop-friends.png"
+title = "Friends"
+x = 168
+y = 318
+width = 440
+max_height = 600
+
+[[screen]]
+frame = "window"
+shot = "docs/screenshots/desktop-inbox.png"
+title = "Inbox"
+x = 620
+y = 318
+width = 440
+max_height = 600
+
+[[screen]]
+frame = "window"
+shot = "docs/screenshots/desktop-today-light.png"
+title = "Today"
+x = 870
+y = 150
+width = 386
+max_height = 600

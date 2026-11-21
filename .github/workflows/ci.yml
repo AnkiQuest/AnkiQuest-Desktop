@@ -86,7 +86,7 @@ jobs:
         run: python -m unittest discover -s tests -v
 
   screenshots:
-    name: Screenshots and banner
+    name: Screenshots
     # The committed pictures are drawn by this Ubuntu and the Qt of the 26.9.4 requirements.
     runs-on: ubuntu-24.04
     env:
@@ -94,19 +94,6 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # The banner's duo is a companion art master, which lives in AnkiQuest-Server.
-      - name: Read the duo art master
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: AnkiQuest/AnkiQuest-Server
-          ref: 11c9444b18ae1024934042b790888fbd8f0b3b6f # Server PR 43
-          path: server-art
-          sparse-checkout: /static/duo/friends.png
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-        with:
-          workspaces: tools/banner
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
@@ -121,17 +108,6 @@ jobs:
         env:
           ANKIQUEST_SCREENSHOTS_OUT: ${{ runner.temp }}/screenshots
         run: python tests/draw_screenshots.py -v
-      # The root workspace's rust job does not cover this separate workspace.
-      - name: Lint and test the banner tool
-        working-directory: tools/banner
-        run: |
-          cargo fmt --all --check
-          cargo clippy --all-targets -- -D warnings
-          cargo test
-      - name: Compare the banner and social preview with a fresh drawing
-        run: |
-          cargo run --release --manifest-path tools/banner/Cargo.toml -- --server server-art --check
-          cargo run --release --manifest-path tools/banner/Cargo.toml -- --server server-art --social --check
       - name: Keep the screenshots that differ
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -139,6 +115,14 @@ jobs:
           name: screenshots
           path: ${{ runner.temp }}/screenshots
           if-no-files-found: ignore
+
+  # The README banner and social preview, drawn from the committed
+  # screenshots and the duo master at the pinned server commit by
+  # AnkiQuest-Dev's shared tool (docs/graphics/banner.toml).
+  banner:
+    uses: AnkiQuest/AnkiQuest-Dev/.github/workflows/banner.yml@master
+    with:
+      server-sha-file: tests/ankiquest-server.sha
 
   addon-package:
     name: Add-on archive
