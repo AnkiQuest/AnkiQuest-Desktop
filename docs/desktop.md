@@ -1,8 +1,8 @@
 # Desktop compatibility and packages
 
-AnkiQuest supports Anki 23.10 and newer with Qt 6. CI pins the oldest supported
-release (23.10, Python 3.9) and the current release (26.09.4, Python 3.12).
-The manifest keeps `min_point_version: 231000`; there is no known incompatible
+AnkiQuest supports Anki 24.11 and newer with Qt 6. CI pins the oldest supported
+release (24.11, Python 3.9) and the current release (26.09.4, Python 3.12).
+The manifest keeps `min_point_version: 241100`; there is no known incompatible
 newer release that needs a maximum version.
 
 ## Run the checks
@@ -20,7 +20,7 @@ cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.a
 
 On Windows, activate `.venv\Scripts\Activate.ps1` and set
 `$env:QT_QPA_PLATFORM = "offscreen"` before running the tests. For the oldest
-version, create another environment with `tests/requirements-anki-23.10.txt`.
+version, create another environment with `tests/requirements-anki-24.11.txt`.
 The current `aqt[qt]` extra pins its matching Qt, WebEngine and SIP packages;
 the older requirements explicitly pin those packages. Do not install an
 unbounded PyQt/WebEngine combination on top of these environments.
@@ -101,7 +101,7 @@ To read a new fixture or example, copy it from the same commit.
 
 ## API audit
 
-Checked against the installed 23.10 and 26.09.4 APIs:
+Checked against the installed 24.11 and 26.09.4 APIs:
 
 | API | Finding |
 | --- | --- |
