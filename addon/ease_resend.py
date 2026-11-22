@@ -1,5 +1,5 @@
 """One resend of the whole review history with the answer button (`ease`), so a server that
-counts a lapse by the button corrects the reviews it stored without one (hill, 2026-11-19).
+counts a lapse by the button corrects the reviews it stored without one.
 
 The resend goes only to a server that names FEATURE at /api/capabilities: an older server
 drops the button, and resending to it would use up the one resend. The state is kept per
