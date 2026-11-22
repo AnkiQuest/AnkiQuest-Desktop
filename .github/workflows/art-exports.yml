@@ -19,6 +19,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request cancels its older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   export:
     name: Check companion art exports
