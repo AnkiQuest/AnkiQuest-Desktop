@@ -7,7 +7,9 @@ from enum import Enum
 from http import HTTPStatus
 from ipaddress import ip_address, ip_network
 
-DEFAULT_SERVER = "https://ankiquest.rationality-munich.com"
+DEFAULT_SERVER = "https://ankiquest.org"
+# ankiquest.org refuses urllib's default agent (Python-urllib/3.x) with 403.
+USER_AGENT = "AnkiQuest-Desktop"
 
 _LOCAL_NETWORKS = tuple(
     ip_network(cidr)
@@ -115,7 +117,7 @@ def _error_body(error):
 
 def open_url(url, data=None, headers=None, method=None, timeout=20):
     """Opens `url`, turning an error status into a ServerError that carries the server's `{"error": ...}` text."""
-    request = urllib.request.Request(url, data=data, headers=headers or {}, method=method)
+    request = urllib.request.Request(url, data=data, headers={"User-Agent": USER_AGENT, **(headers or {})}, method=method)
     try:
         return urllib.request.urlopen(request, timeout=timeout)
     except urllib.error.HTTPError as error:
