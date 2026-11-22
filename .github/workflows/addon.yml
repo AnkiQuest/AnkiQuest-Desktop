@@ -4,7 +4,7 @@ on:
   push:
     tags: ["addon-*"]
     branches: [master]
-    paths: ["addon/**", "art", ".github/workflows/addon.yml", "tools/package-addon/**"]
+    paths: ["addon/**", "ankiquest-art.json", ".github/workflows/addon.yml", "tools/package-addon/**"]
   workflow_dispatch:
 
 permissions:
@@ -21,8 +21,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          # The packager exports the pictures from AnkiQuest-Art.
-          submodules: true
 
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:

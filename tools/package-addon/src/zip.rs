@@ -180,3 +180,94 @@ fn put16(out: &mut Vec<u8>, value: u16) {
 fn put32(out: &mut Vec<u8>, value: u32) {
     out.extend_from_slice(&value.to_le_bytes());
 }
+
+/// Compression method: stored, as AnkiQuest-Art's release archives are.
+const STORED: u16 = 0;
+
+/// Length of the end of central directory record without its comment.
+const END_LEN: usize = 22;
+
+/// The longest comment an end of central directory record can carry.
+const MAX_COMMENT: usize = u16::MAX as usize;
+
+/// Length of a central directory header before its name.
+const CENTRAL_LEN: usize = 46;
+
+/// Length of a local file header before its name.
+const LOCAL_LEN: usize = 30;
+
+/// Every entry of a stored (uncompressed) archive, as (name, contents),
+/// each checked against its CRC-32. Folders are left out.
+pub(super) fn entries(bytes: &[u8]) -> Result<Vec<(String, Vec<u8>)>, String> {
+    let end = find_end(bytes)?;
+    let count = usize::from(u16_at(bytes, end + 10)?);
+    let mut at = u32_at(bytes, end + 16)? as usize;
+    let mut out = Vec::with_capacity(count);
+    for _ in 0..count {
+        if u32_at(bytes, at)? != CENTRAL {
+            return Err("broken central directory".to_owned());
+        }
+        let method = u16_at(bytes, at + 10)?;
+        let crc = u32_at(bytes, at + 16)?;
+        let compressed = u32_at(bytes, at + 20)? as usize;
+        let size = u32_at(bytes, at + 24)? as usize;
+        let name_len = usize::from(u16_at(bytes, at + 28)?);
+        let extra_len = usize::from(u16_at(bytes, at + 30)?);
+        let comment_len = usize::from(u16_at(bytes, at + 32)?);
+        let offset = u32_at(bytes, at + 42)? as usize;
+        let name = slice(bytes, at + CENTRAL_LEN, name_len)?;
+        let name = String::from_utf8(name.to_vec()).map_err(|_| "a name is not UTF-8")?;
+        at += CENTRAL_LEN + name_len + extra_len + comment_len;
+
+        // Release archives store their pictures as they are.
+        if method != STORED || compressed != size {
+            return Err(format!("{name} is compressed; expected stored entries"));
+        }
+        if name.ends_with('/') {
+            continue;
+        }
+        if u32_at(bytes, offset)? != LOCAL {
+            return Err(format!("{name}: broken local header"));
+        }
+        let local_name = usize::from(u16_at(bytes, offset + 26)?);
+        let local_extra = usize::from(u16_at(bytes, offset + 28)?);
+        let data = slice(bytes, offset + LOCAL_LEN + local_name + local_extra, size)?;
+        if crc32fast::hash(data) != crc {
+            return Err(format!("{name}: CRC-32 mismatch"));
+        }
+        out.push((name, data.to_vec()));
+    }
+    Ok(out)
+}
+
+/// Where the end of central directory record starts.
+fn find_end(bytes: &[u8]) -> Result<usize, String> {
+    let last = bytes
+        .len()
+        .checked_sub(END_LEN)
+        .ok_or("not a ZIP archive")?;
+    let first = last.saturating_sub(MAX_COMMENT);
+    (first..=last)
+        .rev()
+        .find(|&at| u32_at(bytes, at) == Ok(END))
+        .ok_or_else(|| "not a ZIP archive".to_owned())
+}
+
+/// `len` bytes of `bytes` from `at`.
+fn slice(bytes: &[u8], at: usize, len: usize) -> Result<&[u8], String> {
+    at.checked_add(len)
+        .and_then(|end| bytes.get(at..end))
+        .ok_or_else(|| "truncated ZIP archive".to_owned())
+}
+
+/// The little-endian u16 at `at`.
+fn u16_at(bytes: &[u8], at: usize) -> Result<u16, String> {
+    let b = slice(bytes, at, 2)?;
+    Ok(u16::from_le_bytes([b[0], b[1]]))
+}
+
+/// The little-endian u32 at `at`.
+fn u32_at(bytes: &[u8], at: usize) -> Result<u32, String> {
+    let b = slice(bytes, at, 4)?;
+    Ok(u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+}

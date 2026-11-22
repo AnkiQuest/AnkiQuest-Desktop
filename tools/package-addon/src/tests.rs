@@ -207,20 +207,6 @@ fn symlinks_are_refused() {
 }
 
 #[test]
-fn a_new_export_replaces_the_old_pictures() {
-    let folder = TempDir::new().unwrap();
-    let addon = source(
-        &folder,
-        &["art/aki_old.png", "aki_face.png", "share.py", "icon.png"],
-    );
-    clear_art(&addon).unwrap();
-    assert!(!addon.join("art").exists());
-    assert!(!addon.join("aki_face.png").exists());
-    assert!(addon.join("share.py").is_file());
-    assert!(addon.join("icon.png").is_file());
-}
-
-#[test]
 fn release_tags_are_numbered() {
     assert_eq!(Ok(14), release("addon-14"));
     for tag in [

@@ -1,0 +1,12 @@
+{
+  "_about": "The AnkiQuest-Art release this repository uses. AnkiQuest-Sync updates it when Art publishes a release; don't edit it by hand.",
+  "tag": "art-1",
+  "commit": "09e5cbd1698bf8a8357639882396ce6d821a1af8",
+  "assets": {
+    "android-drawables.zip": "c8dd3567e86a6b19d1bd61528418241fd935df582f2b19d545f973a4456b4546",
+    "addon-art.zip": "e1cb7877a9318bf763df010296a3daff6ea2f9a494c999bda12c69aadf650ee1",
+    "masters.zip": "afde841d4fef7b720ce9aefbaa51ee5242bc3c68ddffedbf177681f816a18103",
+    "archive.zip": "8a21c58b64840560f0139b9e0f41561569f5344e46e6df9938a30887dcd1caad",
+    "manifest.json": "f121d51b72ce4b4d531257db1ad67996d21bc892c6104a4bad579bac834c51ba"
+  }
+}

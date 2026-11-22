@@ -1,27 +1,27 @@
 //! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb:
 //! `cargo run --manifest-path tools/package-addon/Cargo.toml --
 //! --output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-//! [--metadata <file>]`.
+//! [--metadata <file>]`, or `-- art` for the pictures alone.
 //!
 //! The archive is reproducible: the same commit and channel always give
 //! the same bytes. The GitHub and AnkiWeb builds differ only in the
 //! manifest's package ID and conflicts and in `build.json`, which names
 //! where the add-on looks for updates.
 //!
-//! Before packaging, it writes the add-on's companion pictures into
-//! `addon/` with AnkiQuest-Art's `art-export`, from the `art` submodule.
-//! Linux builds are canonical: another platform may encode a few pixels
-//! of a picture differently.
+//! Before packaging, it unpacks the add-on's companion pictures into
+//! `addon/` from the AnkiQuest-Art release `ankiquest-art.json` pins
+//! (see `art`). `package-addon art` does only that, for a checkout.
 
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitCode, Stdio};
+use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 
+mod art;
 mod json;
 mod zip;
 
@@ -60,21 +60,6 @@ const ENTRY: &str = "__init__.py";
 
 /// The build settings the add-on reads, written as `build.json`.
 const BUILD: &str = "build.json";
-
-/// The AnkiQuest-Art submodule, relative to the repository root.
-const ART: &str = "art";
-
-/// AnkiQuest-Art's exporter, relative to the submodule.
-const EXPORTER: &str = "tools/art-export/Cargo.toml";
-
-/// The folder of the add-on's poses, which the exporter writes.
-const POSES: &str = "art";
-
-/// The exporter writes each face beside the code as `<companion>_face.png`.
-const FACE_SUFFIX: &str = "_face.png";
-
-/// Anki-tan's licence in the submodule, and where the archive carries it.
-const ANKI_TAN_LICENCE: (&str, &str) = ("anki-tan/LICENSE", "art/LICENSE-Anki-tan.md");
 
 /// Where the archive is published.
 #[derive(Clone, Copy)]
@@ -118,11 +103,21 @@ struct Args {
     metadata: Option<PathBuf>,
 }
 
+/// The subcommand that only unpacks the pictures into `addon/`.
+const ART_COMMAND: &str = "art";
+
 /// Runs `--output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-/// [--metadata <file>]`.
+/// [--metadata <file>]`, or `art`.
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
-    match package(&args) {
+    let result = match args.as_slice() {
+        [command] if command == ART_COMMAND => {
+            let repo = root();
+            art::fetch(&repo, &repo.join(ADDON))
+        }
+        _ => package(&args),
+    };
+    match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("package-addon: {error}");
@@ -136,7 +131,7 @@ fn package(args: &[String]) -> Result<(), String> {
     let args = parse(args)?;
     let repo = root();
     let version = version(&repo, &args.source)?;
-    export_art(&repo)?;
+    art::fetch(&repo, &repo.join(ADDON))?;
     build(&repo.join(ADDON), &args.output, &version, args.channel)?;
 
     // The nightly release publishes this for the add-on's update check.
@@ -317,56 +312,6 @@ fn git(repo: &Path, args: &[&str]) -> Result<String, String> {
         return Err(format!("git {}: {}", args.join(" "), stderr.trim()));
     }
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
-}
-
-/// Writes the add-on's pictures from the AnkiQuest-Art submodule into
-/// `addon/`, replacing what an earlier run left there, so the archive
-/// never carries a picture the exporter no longer writes.
-fn export_art(repo: &Path) -> Result<(), String> {
-    let art = repo.join(ART);
-    if !art.join("manifest.json").is_file() {
-        return Err("art/ is empty: run git submodule update --init".to_owned());
-    }
-    let addon = repo.join(ADDON);
-    clear_art(&addon)?;
-
-    // CARGO is set when this runs under cargo; the exporter builds with it.
-    let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let status = Command::new(cargo)
-        .args(["run", "--locked", "--release", "--quiet", "--manifest-path"])
-        .arg(art.join(EXPORTER))
-        .args(["--", "addon"])
-        .arg(&addon)
-        .stdout(Stdio::null())
-        .status()
-        .map_err(|e| format!("art-export: {e}"))?;
-    if !status.success() {
-        return Err(format!("art-export: {status}"));
-    }
-
-    // Anki-tan's pictures are CC BY-SA 4.0 and travel with her licence.
-    let (licence, copy) = ANKI_TAN_LICENCE;
-    let bytes = fs::read(art.join(licence)).map_err(|e| format!("{licence}: {e}"))?;
-    write(&addon.join(copy), &bytes)
-}
-
-/// Removes the pictures an earlier export wrote into `addon`.
-fn clear_art(addon: &Path) -> Result<(), String> {
-    let poses = addon.join(POSES);
-    if poses.is_dir() {
-        fs::remove_dir_all(&poses).map_err(|e| format!("{}: {e}", poses.display()))?;
-    }
-    let entries = fs::read_dir(addon).map_err(|e| format!("{}: {e}", addon.display()))?;
-    for entry in entries {
-        let path = entry.map_err(|e| e.to_string())?.path();
-        let face = path
-            .file_name()
-            .is_some_and(|name| name.to_string_lossy().ends_with(FACE_SUFFIX));
-        if face {
-            fs::remove_file(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-        }
-    }
-    Ok(())
 }
 
 /// Writes the archive of `source` for `channel` to `output`.

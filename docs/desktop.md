@@ -95,23 +95,31 @@ To read a new fixture or example, copy it from the same commit.
 ## Companion pictures
 
 The add-on's pictures (`addon/art/<name>.png` and the faces
-`addon/<companion>_face.png`) are not committed. They are generated from
-the masters in [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art),
-the `art` submodule, by its `art-export` tool. The packager runs it before
-every build. To run the add-on or its tests from a checkout, generate them
-once, and again after the submodule moves:
+`addon/<companion>_face.png`) are not committed. They come from the
+`addon-art.zip` asset of the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art)
+release that `ankiquest-art.json` pins, with its SHA-256. AnkiQuest-Sync
+updates the pin when Art publishes a release; don't edit it by hand.
+
+The packager unpacks the pictures into `addon/` before every build,
+replacing those of an earlier run. To run the add-on or its tests from a
+checkout, fetch them once, and again after the pin changes:
 
 ```sh
-git submodule update --init
-cargo run --locked --release --manifest-path art/tools/art-export/Cargo.toml -- addon addon
+cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
 ```
 
-Linux output is canonical; another platform may encode a few pixels
-differently. A new or changed master lands in AnkiQuest-Art first; this
-repository picks it up by moving the submodule. Where a companion has no
-master for a pose, the add-on shows the fallback
+The asset is downloaded with `curl` into `ANKIQUEST_ART_CACHE`, by default
+`ankiquest-art` in the user's cache folder, under its SHA-256, so later
+builds work offline. Every use checks the hash against the pin. To try a
+release that is not published yet, set `ANKIQUEST_ART_DIR` to a folder
+holding its assets (from AnkiQuest-Art's `tools/release/build.sh`); they
+are checked against the pin the same way.
+
+Where a companion has no master for a pose, the add-on shows the fallback
 `tests/fixtures/companion_poses.json` names; a core pose not drawn yet
-shows the companion's face.
+shows the core pose `CORE_FALLBACKS` in `addon/moods.py` names, as
+AnkiQuest-Art's `poses.json` does. Anki-tan's licence for her pictures is
+`addon/LICENSE-Anki-tan.md`.
 
 ## API audit
 

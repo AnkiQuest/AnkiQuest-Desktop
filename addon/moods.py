@@ -133,9 +133,6 @@ PREVIEW_POSES = ("aki_face", "aki_streak", "aki_sad")
 # How far the cow's art is hue-rotated, as CSS hue-rotate() turns it; see `art_owner`.
 COW_HUE_DEGREES = 250
 
-# The pose every companion has drawn, shown for a core pose that is not drawn yet.
-FACE_POSE = "face"
-
 # The poses tests/fixtures/companion_poses.json names: the core poses every companion has, and
 # the pose each extension falls back to where a companion has no art for it.
 CORE_POSES = ("face", "asleep", "happy", "streak", "sad", "hopeful", "frozen", "neglected")
@@ -154,6 +151,10 @@ POSE_FALLBACKS = {
     "leech_defeated": "happy",
     "winner": "happy",
 }
+
+# The core pose a companion shows for a core pose it has no master for yet, as AnkiQuest-Art's
+# poses.json `core_fallbacks` says.
+CORE_FALLBACKS = {"happy": "hopeful", "streak": "hopeful"}
 
 # The pose each of Aki's pictures shows, so that other companions show theirs.
 _AKI_PICTURES = {
@@ -224,8 +225,8 @@ ANKILOPE = {
 }
 
 # Anki-tan's art for each pose she has a master for in AnkiQuest-Art. Her happy and streak poses
-# are not drawn yet (AnkiQuest-Server#57): like any missing core pose they show her face, and the
-# extensions that end in them (welcome, review, winner and the streak tiers) do too.
+# are not drawn yet (AnkiQuest-Server#57): they show hopeful (`CORE_FALLBACKS`), and so do the
+# extensions that end in them (welcome, review, winner and the streak tiers).
 ANKI_TAN_POSES = {
     "face": "anki_tan_face",
     "asleep": "anki_tan_asleep",
@@ -414,10 +415,10 @@ def css_filter(companion):
 
 
 def pose_art(art, pose):
-    """The picture in `art` (pose to picture) for `pose`, or for its nearest fallback. An extension
-    falls back as companion_poses.json says; a core pose not drawn yet shows the face."""
+    """The picture in `art` (pose to picture) for `pose`, or for its nearest fallback: an extension's
+    (`POSE_FALLBACKS`), then a core pose's while it is not drawn (`CORE_FALLBACKS`)."""
     while pose not in art:
-        pose = POSE_FALLBACKS.get(pose, FACE_POSE)
+        pose = POSE_FALLBACKS[pose] if pose in POSE_FALLBACKS else CORE_FALLBACKS[pose]
     return art[pose]
 
 
