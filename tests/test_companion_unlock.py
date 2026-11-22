@@ -259,7 +259,7 @@ class CowArt(unittest.TestCase):
         self.assertEqual(["aki_face", "aki_streak", "aki_sad"], moods.preview("aki"))
         self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview("ankilope"))
         self.assertEqual(moods.preview("ankilope"), moods.preview("cow"))
-        self.assertEqual(["anki_tan_face", "anki_tan_streak", "anki_tan_sad"], moods.preview("anki_tan"))
+        self.assertEqual(["anki_tan_face", "anki_tan_sad"], moods.preview("anki_tan"))
         self.assertEqual([], moods.preview("none"))
         for companion in ("aki", "ankilope", "cow", "anki_tan"):
             for pose in moods.preview(companion):

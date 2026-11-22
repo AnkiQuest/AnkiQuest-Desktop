@@ -133,6 +133,9 @@ PREVIEW_POSES = ("aki_face", "aki_streak", "aki_sad")
 # How far the cow's art is hue-rotated, as CSS hue-rotate() turns it; see `art_owner`.
 COW_HUE_DEGREES = 250
 
+# The pose every companion has drawn, shown for a core pose that is not drawn yet.
+FACE_POSE = "face"
+
 # The poses tests/fixtures/companion_poses.json names: the core poses every companion has, and
 # the pose each extension falls back to where a companion has no art for it.
 CORE_POSES = ("face", "asleep", "happy", "streak", "sad", "hopeful", "frozen", "neglected")
@@ -220,24 +223,16 @@ ANKILOPE = {
     "review": "ankilope_study",
 }
 
-# Anki-tan's art for each pose she has: Shigeyuki's pack art and the generated masters, as
-# AnkiQuest-Server static/anki-tan/poses.json maps them. Her other extensions fall back until they
-# are drawn (AnkiQuest-Server#57).
+# Anki-tan's art for each pose she has a master for in AnkiQuest-Art. Her happy and streak poses
+# are not drawn yet (AnkiQuest-Server#57): like any missing core pose they show her face, and the
+# extensions that end in them (welcome, review, winner and the streak tiers) do too.
 ANKI_TAN_POSES = {
     "face": "anki_tan_face",
     "asleep": "anki_tan_asleep",
-    "happy": "anki_tan_happy",
-    "streak": "anki_tan_streak",
-    "streak_legend": "anki_tan_streak_legend",
-    "streak_milestone": "anki_tan_streak_milestone",
     "sad": "anki_tan_sad",
     "hopeful": "anki_tan_hopeful",
     "frozen": "anki_tan_frozen",
     "neglected": "anki_tan_neglected",
-    "welcome": "anki_tan_welcome",
-    "review": "anki_tan_review",
-    "hurt": "anki_tan_hurt",
-    "dead": "anki_tan_dead",
 }
 
 # Each companion's art by pose, by whose art draws it (`art_owner`).
@@ -419,9 +414,10 @@ def css_filter(companion):
 
 
 def pose_art(art, pose):
-    """The picture in `art` (pose to picture) for `pose`, or for its nearest fallback."""
+    """The picture in `art` (pose to picture) for `pose`, or for its nearest fallback. An extension
+    falls back as companion_poses.json says; a core pose not drawn yet shows the face."""
     while pose not in art:
-        pose = POSE_FALLBACKS[pose]
+        pose = POSE_FALLBACKS.get(pose, FACE_POSE)
     return art[pose]
 
 

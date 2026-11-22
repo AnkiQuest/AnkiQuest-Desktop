@@ -65,21 +65,15 @@ bound only for a reproduced incompatibility.
 
 ## Server snapshot
 
-The add-on tests and poses come from one AnkiQuest-Server commit, named in
+The add-on tests come from one AnkiQuest-Server commit, named in
 `tests/ankiquest-server.sha`:
 
 - `tests/fixtures/*.json`: copies of Server's `tests/fixtures/`, the rules
   both clients test against.
 - `tests/api-examples/*.json`: copies of the Server `docs/api/examples/`
   the add-on tests read.
-- `addon/art/`, `addon/*_face.png` and `assets/retired/addon/`: poses
-  Server's `export-addon-art` writes from its `static/` masters, listed with
-  their hashes in `art-exports.json`.
 
-The **Desktop** jobs compare each copied file with the pinned commit. The
-**Companion art exports** workflow runs `export-addon-art --check` from the
-pinned commit when the poses, the manifest or the pin change; when it
-fails it uploads a fresh export as `companion-art-exports`.
+The **Desktop** jobs compare each copied file with the pinned commit.
 
 The snapshot includes countdowns, observed study and companion unlocks.
 Every shared fixture is in `tests/fixtures/`; there are no separate copies
@@ -94,10 +88,30 @@ git -C ../AnkiQuest-Server checkout "$sha"
 echo "$sha" > tests/ankiquest-server.sha
 for f in tests/fixtures/*.json; do cp "../AnkiQuest-Server/$f" "$f"; done
 for f in tests/api-examples/*.json; do cp "../AnkiQuest-Server/docs/api/examples/${f##*/}" "$f"; done
-cargo run --manifest-path ../AnkiQuest-Server/Cargo.toml -p ankiquest-xtask -- export-addon-art "$PWD"
 ```
 
 To read a new fixture or example, copy it from the same commit.
+
+## Companion pictures
+
+The add-on's pictures (`addon/art/<name>.png` and the faces
+`addon/<companion>_face.png`) are not committed. They are generated from
+the masters in [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art),
+the `art` submodule, by its `art-export` tool. The packager runs it before
+every build. To run the add-on or its tests from a checkout, generate them
+once, and again after the submodule moves:
+
+```sh
+git submodule update --init
+cargo run --locked --release --manifest-path art/tools/art-export/Cargo.toml -- addon addon
+```
+
+Linux output is canonical; another platform may encode a few pixels
+differently. A new or changed master lands in AnkiQuest-Art first; this
+repository picks it up by moving the submodule. Where a companion has no
+master for a pose, the add-on shows the fallback
+`tests/fixtures/companion_poses.json` names; a core pose not drawn yet
+shows the companion's face.
 
 ## API audit
 

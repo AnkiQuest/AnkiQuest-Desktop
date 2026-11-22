@@ -43,6 +43,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          submodules: true
       # The tests read copies of AnkiQuest-Server's shared fixtures and API
       # examples, pinned to the commit in tests/ankiquest-server.sha. Each
       # copy must equal the file at that commit (docs/desktop.md, Server
@@ -80,6 +81,9 @@ jobs:
           python -m pip install -r tests/requirements-anki-${{ matrix.anki }}.txt
       - name: Build the add-on packager
         run: cargo build --locked --manifest-path tools/package-addon/Cargo.toml
+      # The tests read the add-on's pictures, which AnkiQuest-Art's exporter writes.
+      - name: Export the companion pictures
+        run: cargo run --locked --release --manifest-path art/tools/art-export/Cargo.toml -- addon addon
       - name: Lint the add-on
         run: python -m pyflakes addon
       - name: Test the add-on and its real Anki APIs
@@ -94,6 +98,8 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: true
       # The banner's duo is a companion art master, which lives in AnkiQuest-Server.
       - name: Read the duo art master
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -117,6 +123,8 @@ jobs:
           bash .github/scripts/ubuntu-archive.sh
           sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
           python -m pip install -r tests/requirements-anki-26.9.4.txt
+      - name: Export the companion pictures
+        run: cargo run --locked --release --manifest-path art/tools/art-export/Cargo.toml -- addon addon
       - name: Compare the screenshots with a fresh drawing
         env:
           ANKIQUEST_SCREENSHOTS_OUT: ${{ runner.temp }}/screenshots
@@ -149,6 +157,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
+          submodules: true
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: tools/package-addon
