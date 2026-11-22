@@ -95,13 +95,15 @@ To read a new fixture or example, copy it from the same commit.
 ## Companion pictures
 
 The add-on's pictures (`addon/art/<name>.png` and the faces
-`addon/<companion>_face.png`) are not committed. They come from the
+`addon/<companion>_face.png`) and Anki-tan's licence for hers
+(`addon/art/LICENSE-Anki-tan.md`) are not committed. They come from the
 `addon-art.zip` asset of the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art)
 release that `ankiquest-art.json` pins, with its SHA-256. AnkiQuest-Sync
 updates the pin when Art publishes a release; don't edit it by hand.
 
-The packager unpacks the pictures into `addon/` before every build,
-replacing those of an earlier run. To run the add-on or its tests from a
+The packager unpacks the pictures and the licence into `addon/` before
+every build, replacing those of an earlier run, and fails if the licence
+is missing. To run the add-on or its tests from a
 checkout, fetch them once, and again after the pin changes:
 
 ```sh
@@ -118,8 +120,7 @@ are checked against the pin the same way.
 Where a companion has no master for a pose, the add-on shows the fallback
 `tests/fixtures/companion_poses.json` names; a core pose not drawn yet
 shows the core pose `CORE_FALLBACKS` in `addon/moods.py` names, as
-AnkiQuest-Art's `poses.json` does. Anki-tan's licence for her pictures is
-`addon/LICENSE-Anki-tan.md`.
+AnkiQuest-Art's `poses.json` does.
 
 ## API audit
 

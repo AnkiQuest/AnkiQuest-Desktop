@@ -1,9 +1,9 @@
 //! The add-on's companion pictures, from the AnkiQuest-Art release that
 //! `ankiquest-art.json` pins.
 //!
-//! `addon-art.zip` holds `art/<name>.png` and `<companion>_face.png`,
-//! which are unpacked into `addon/` after the pictures of an earlier run
-//! are removed. The asset is downloaded once into a cache named by its
+//! `addon-art.zip` holds `art/<name>.png`, `<companion>_face.png` and
+//! Anki-tan's licence, `art/LICENSE-Anki-tan.md`, which are unpacked into
+//! `addon/` after the pictures of an earlier run are removed. The asset is downloaded once into a cache named by its
 //! SHA-256 and checked against the pin before every use, so a build works
 //! offline after the first. `ANKIQUEST_ART_DIR` names a folder holding the
 //! release assets to use instead of downloading them, for a release not
@@ -46,6 +46,9 @@ const FACE_SUFFIX: &str = "_face.png";
 /// The pictures' file extension.
 const PNG: &str = ".png";
 
+/// Anki-tan's licence, which her pictures (CC BY-SA 4.0) travel with.
+const LICENCE: &str = "art/LICENSE-Anki-tan.md";
+
 /// Where the assets come from.
 #[derive(Debug, PartialEq)]
 enum Origin {
@@ -76,8 +79,14 @@ fn unpack(bytes: &[u8], addon: &Path) -> Result<(), String> {
     let entries = zip::entries(bytes).map_err(|e| format!("{PICTURES}: {e}"))?;
 
     // Every entry is checked before anything in the add-on changes.
-    if let Some((name, _)) = entries.iter().find(|(name, _)| !picture(name)) {
+    if let Some((name, _)) = entries
+        .iter()
+        .find(|(name, _)| name != LICENCE && !picture(name))
+    {
         return Err(format!("{PICTURES}: unexpected entry {name}"));
+    }
+    if !entries.iter().any(|(name, _)| name == LICENCE) {
+        return Err(format!("{PICTURES}: no {LICENCE}"));
     }
     clear(addon)?;
     for (name, data) in entries {
@@ -370,7 +379,11 @@ mod tests {
     #[test]
     fn pictures_replace_the_previous_ones() {
         let assets = TempDir::new().unwrap();
-        let zip = release(&[("aki_face.png", b"face"), ("art/aki_sad.png", b"sad")]);
+        let zip = release(&[
+            ("aki_face.png", b"face"),
+            ("art/aki_sad.png", b"sad"),
+            (LICENCE, b"CC BY-SA 4.0"),
+        ]);
         fs::write(assets.path().join(PICTURES), &zip).unwrap();
         let addon = TempDir::new().unwrap();
         fs::create_dir(addon.path().join("art")).unwrap();
@@ -386,12 +399,24 @@ mod tests {
         let expected: BTreeMap<String, Vec<u8>> = [
             ("aki_face.png", &b"face"[..]),
             ("art/aki_sad.png", b"sad"),
+            (LICENCE, b"CC BY-SA 4.0"),
             ("share.py", b"code"),
         ]
         .into_iter()
         .map(|(name, bytes)| (name.to_owned(), bytes.to_vec()))
         .collect();
         assert_eq!(expected, tree(addon.path()));
+    }
+
+    #[test]
+    fn an_archive_without_the_licence_is_refused() {
+        let zip = release(&[("art/aki_sad.png", b"sad")]);
+        let addon = TempDir::new().unwrap();
+        fs::create_dir(addon.path().join("art")).unwrap();
+        fs::write(addon.path().join("art/aki_old.png"), b"old").unwrap();
+        let error = unpack(&zip, addon.path()).unwrap_err();
+        assert!(error.contains(LICENCE), "{error}");
+        assert!(addon.path().join("art/aki_old.png").is_file());
     }
 
     #[test]
@@ -414,6 +439,10 @@ mod tests {
         assert!(!picture("aki.png"));
         assert!(!picture("/aki_face.png"));
         assert!(!picture("art/Aki.png"));
+        assert!(
+            !picture(LICENCE),
+            "only the licence itself, by its exact name"
+        );
     }
 
     #[test]
