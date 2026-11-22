@@ -206,7 +206,7 @@ AKI_POSES = {
 }
 
 # Ankilope's art for each pose she has, as the phone's AnkiquestCompanion maps them. On fire she
-# studies until her on-fire art exists (hill, 2026-11-18).
+# studies until her on-fire art exists.
 ANKILOPE = {
     "face": "ankilope_face",
     "asleep": "ankilope_asleep",
