@@ -8,6 +8,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 from . import moods
+from .client import USER_AGENT
 from .language import plural
 
 MAX_IMAGE = 4 * 1024 * 1024
@@ -101,7 +102,7 @@ def download_image(url, limit=MAX_IMAGE, timeout=IMAGE_TIMEOUT, opener=urllib.re
     is fetched with `token`, which callers only pass for their own server's address."""
     if not _web_url(url):
         raise ValueError("not a web address")
-    headers = {"Accept": "image/png"}
+    headers = {"Accept": "image/png", "User-Agent": USER_AGENT}
     if token:
         headers["Authorization"] = "Bearer " + token
     with opener(urllib.request.Request(url, headers=headers), timeout=timeout) as response:
