@@ -75,7 +75,7 @@ class StreakMoods(unittest.TestCase):
                 self.assertEqual(case["expected"], moods.Stage.of(case["time_ms"], case["streak_minutes"]).value)
 
     def test_a_review_after_a_freeze_keeps_aki_frozen(self):
-        # hill's report: one review after a freeze made Aki hopeful at once.
+        # Regression: one review after a freeze made Aki hopeful at once.
         stage = moods.Stage.of(30_000, 20)
         self.assertEqual(moods.FROZEN_1, moods.streak_mood(moods.PROTECTED, 1, stage, 10, 1, moods.Goal.OPEN))
 
@@ -177,7 +177,7 @@ class StreakMoods(unittest.TestCase):
             self.assertTrue((ADDON / "art" / ("%s.png" % name)).is_file(), name)
 
     def test_ankilope_shows_her_pose_for_every_mood(self):
-        # hill's report: a freeze used yesterday showed Ankilope studying, although her frozen art exists.
+        # Regression: a freeze used yesterday showed Ankilope studying, although her frozen art exists.
         # On fire she studies until her on-fire art exists.
         expected = {
             moods.MOOD_UNKNOWN: "ankilope_face",
@@ -199,7 +199,7 @@ class StreakMoods(unittest.TestCase):
                         self.assertEqual(pose, moods.mood_pose(companion, chosen, streak))
 
     def test_anki_tan_shows_her_pose_for_every_mood(self):
-        # hill (2026-11-18): Anki-tan goes live with the poses her masters have; frozen 2 and 3 fall
+        # Anki-tan goes live with the poses her masters have; frozen 2 and 3 fall
         # back to frozen until they are drawn (AnkiQuest-Server#57).
         expected = {
             moods.MOOD_UNKNOWN: "anki_tan_face",

@@ -11,8 +11,40 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request cancels its older run; default branch
+# pushes and merge queue groups always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # Whether anything besides documentation changed (the same docs globs
+  # as ci.yml). The check runs in merge groups, so it skips its job
+  # instead of filtering paths.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.changed.outputs.code }}
+    steps:
+      - id: changed
+        uses: AnkiQuest/AnkiQuest-Dev/.github/actions/code-changed@5ab685e7013b865630f96530ca8c654344738fa8
+        with:
+          docs: |
+            *.md
+            docs/*.md
+            docs/desktop-share/**
+            docs/qa/**
+            LICENSE*
+            LICENSES/**
+            .github/ISSUE_TEMPLATE/**
+            .github/pull_request_template.md
+
   mirrors:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
