@@ -60,7 +60,7 @@ jobs:
           # Copies older than the bridge release read only ankiquest.ankiaddon and addon-nightly.json.
           # Keep both on the last Anki 23.10 release: the highest addon-<n> release that has
           # ankiquest.ankiaddon, since later releases publish only the 24.11 names.
-          bridge=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[]
+          bridge=$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" | jq -r '[.[][]
             | select((.tag_name | test("^addon-[1-9][0-9]*$")) and (.draft | not) and (.prerelease | not))
             | select(any(.assets[]; .name == "ankiquest.ankiaddon"))
             | .tag_name | ltrimstr("addon-") | tonumber] | max // empty')
