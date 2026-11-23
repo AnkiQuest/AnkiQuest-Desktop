@@ -25,8 +25,34 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Whether anything besides documentation changed. Docs here are the
+  # top-level and docs/ Markdown and the pictures nothing checks: the .md
+  # files in addon/ are packaged and tested, and docs/screenshots and
+  # docs/graphics are compared by the screenshot test and the banner check.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.changed.outputs.code }}
+    steps:
+      - id: changed
+        uses: AnkiQuest/AnkiQuest-Dev/.github/actions/code-changed@5ab685e7013b865630f96530ca8c654344738fa8
+        with:
+          docs: |
+            *.md
+            docs/*.md
+            docs/desktop-share/**
+            docs/qa/**
+            LICENSE*
+            LICENSES/**
+            .github/ISSUE_TEMPLATE/**
+            .github/pull_request_template.md
+
   desktop:
     name: Desktop (Anki ${{ matrix.anki }})
+    needs: changes
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -40,7 +66,14 @@ jobs:
       QT_QPA_PLATFORM: offscreen
       PYTHONIOENCODING: utf-8
     steps:
+      # The matrix names are required checks, and a skipped matrix job
+      # reports under its unexpanded name, so the job runs and skips its
+      # steps when only documentation changed.
+      - name: Skip, only documentation changed
+        if: needs.changes.outputs.code != 'true'
+        run: echo "Only documentation changed; the add-on checks are skipped."
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: needs.changes.outputs.code == 'true'
         with:
           persist-credentials: false
       # The tests read copies of AnkiQuest-Server's shared fixtures and API
@@ -48,9 +81,11 @@ jobs:
       # copy must equal the file at that commit (docs/desktop.md, Server
       # snapshot).
       - name: Read the pinned server commit
+        if: needs.changes.outputs.code == 'true'
         id: server
         run: echo "sha=$(cat tests/ankiquest-server.sha)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: needs.changes.outputs.code == 'true'
         with:
           repository: AnkiQuest/AnkiQuest-Server
           ref: ${{ steps.server.outputs.sha }}
@@ -61,32 +96,41 @@ jobs:
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - name: Check the copies of the server's fixtures and examples
+        if: needs.changes.outputs.code == 'true'
         run: |
           for copy in tests/fixtures/*.json; do cmp "$copy" "server-snapshot/$copy"; done
           for copy in tests/api-examples/*.json; do cmp "$copy" "server-snapshot/docs/api/examples/${copy##*/}"; done
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        if: needs.changes.outputs.code == 'true'
         with:
           workspaces: tools/package-addon
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: needs.changes.outputs.code == 'true'
         with:
           python-version: ${{ matrix.python }}
           cache: pip
           cache-dependency-path: tests/requirements-anki-${{ matrix.anki }}.txt
       - name: Install Anki and Qt
+        if: needs.changes.outputs.code == 'true'
         run: |
           bash .github/scripts/ubuntu-archive.sh
           sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
           python -m pip install -r tests/requirements-anki-${{ matrix.anki }}.txt
       - name: Build the add-on packager
+        if: needs.changes.outputs.code == 'true'
         run: cargo build --locked --manifest-path tools/package-addon/Cargo.toml
       - name: Lint the add-on
+        if: needs.changes.outputs.code == 'true'
         run: python -m pyflakes addon
       - name: Test the add-on and its real Anki APIs
+        if: needs.changes.outputs.code == 'true'
         run: python -m unittest discover -s tests -v
 
   screenshots:
-    name: Screenshots and banner
+    name: Screenshots
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # The committed pictures are drawn by this Ubuntu and the Qt of the 26.9.4 requirements.
     runs-on: ubuntu-24.04
     env:
@@ -94,19 +138,6 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # The banner's duo is a companion art master, which lives in AnkiQuest-Server.
-      - name: Read the duo art master
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: AnkiQuest/AnkiQuest-Server
-          ref: 11c9444b18ae1024934042b790888fbd8f0b3b6f # Server PR 43
-          path: server-art
-          sparse-checkout: /static/duo/friends.png
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-        with:
-          workspaces: tools/banner
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
@@ -121,17 +152,6 @@ jobs:
         env:
           ANKIQUEST_SCREENSHOTS_OUT: ${{ runner.temp }}/screenshots
         run: python tests/draw_screenshots.py -v
-      # The root workspace's rust job does not cover this separate workspace.
-      - name: Lint and test the banner tool
-        working-directory: tools/banner
-        run: |
-          cargo fmt --all --check
-          cargo clippy --all-targets -- -D warnings
-          cargo test
-      - name: Compare the banner and social preview with a fresh drawing
-        run: |
-          cargo run --release --manifest-path tools/banner/Cargo.toml -- --server server-art --check
-          cargo run --release --manifest-path tools/banner/Cargo.toml -- --server server-art --social --check
       - name: Keep the screenshots that differ
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -140,8 +160,20 @@ jobs:
           path: ${{ runner.temp }}/screenshots
           if-no-files-found: ignore
 
+  # The README banner and social preview, drawn from the committed
+  # screenshots and the duo master at the pinned server commit by
+  # AnkiQuest-Dev's shared tool (docs/graphics/banner.toml).
+  banner:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    uses: AnkiQuest/AnkiQuest-Dev/.github/workflows/banner.yml@master
+    with:
+      server-sha-file: tests/ankiquest-server.sha
+
   addon-package:
     name: Add-on archive
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     env:
       PACKAGER: tools/package-addon/Cargo.toml

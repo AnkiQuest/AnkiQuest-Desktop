@@ -48,15 +48,13 @@ cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.a
 
 ### Screenshots and banner
 
-`docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/draw_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. The banner tool composes `docs/graphics/banner_readme.png` from those screenshots and the duo art in an [AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server) checkout. CI's "Screenshots and banner" job draws all of them again and fails when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed:
+`docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/draw_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. `ankiquest-banner`, the banner tool every AnkiQuest repository shares ([AnkiQuest-Dev](https://github.com/AnkiQuest/AnkiQuest-Dev#readme-banner-and-social-preview)), draws `docs/graphics/banner_readme.png` and `social_preview.png` from those screenshots and the duo master in an [AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server) checkout; `docs/graphics/banner.toml` lists its inputs. CI's "Screenshots" and "banner" jobs draw all of them again and fail when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed (`--record` runs `tests/draw_screenshots.py` first):
 
 ```sh
-ANKIQUEST_SCREENSHOTS=write python tests/draw_screenshots.py
-cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQuest-Server
-cargo run --release --manifest-path tools/banner/Cargo.toml -- --server ../AnkiQuest-Server --social
+cargo run --release --manifest-path ../AnkiQuest-Dev/tools/banner/Cargo.toml -- --server ../AnkiQuest-Server --record
 ```
 
-Another system or Qt draws slightly different text, so CI fails on pictures drawn there. A failing run keeps its drawings as the `screenshots` artifact.
+Another system or Qt draws slightly different text, so CI fails on pictures drawn there. A failing run keeps its drawings as the `screenshots` and `banner` artifacts.
 
 [Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The shared fixtures, API examples and art masters the tests and poses come from are pinned from AnkiQuest-Server ([Server snapshot](docs/desktop.md#server-snapshot)).
 
