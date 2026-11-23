@@ -37,6 +37,9 @@ const CACHE_DIR: &str = "ANKIQUEST_ART_CACHE";
 /// The cache's folder name inside the user's cache folder.
 const CACHE_NAME: &str = "ankiquest-art";
 
+/// Length of a SHA-256 digest in hexadecimal.
+const SHA256_HEX_LEN: usize = 64;
+
 /// The folder of the poses, inside the add-on and the asset.
 const POSES: &str = "art";
 
@@ -113,11 +116,15 @@ impl Pin {
 
     /// The pinned SHA-256 of `name`, in lower-case hex.
     fn sha256(&self, name: &str) -> Result<String, String> {
-        self.assets
+        let hash = self
+            .assets
             .get(name)
             .and_then(Value::as_str)
-            .map(str::to_ascii_lowercase)
-            .ok_or_else(|| format!("{PIN} pins no {name}"))
+            .ok_or_else(|| format!("{PIN} pins no {name}"))?;
+        if hash.len() != SHA256_HEX_LEN || !hash.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            return Err(format!("{PIN} pins an invalid SHA-256 for {name}"));
+        }
+        Ok(hash.to_ascii_lowercase())
     }
 }
 
@@ -366,6 +373,16 @@ mod tests {
 
         let error = asset(&pin(None, &[]), &local, PICTURES).unwrap_err();
         assert!(error.contains("pins no"), "{error}");
+    }
+
+    #[test]
+    fn a_cache_key_must_be_a_hex_digest() {
+        let mut pinned = pin(None, &[(PICTURES, b"new")]);
+        for value in ["1234".to_owned(), "g".repeat(SHA256_HEX_LEN)] {
+            pinned.assets[PICTURES] = json!(value);
+            let error = pinned.sha256(PICTURES).unwrap_err();
+            assert!(error.contains("invalid SHA-256"), "{error}");
+        }
     }
 
     #[test]
