@@ -120,6 +120,10 @@ jobs:
       - name: Build the add-on packager
         if: needs.changes.outputs.code == 'true'
         run: cargo build --locked --manifest-path tools/package-addon/Cargo.toml
+      # The tests read the companion pictures of the pinned AnkiQuest-Art release.
+      - name: Fetch the companion pictures
+        if: needs.changes.outputs.code == 'true'
+        run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
       - name: Lint the add-on
         if: needs.changes.outputs.code == 'true'
         run: python -m pyflakes addon
@@ -148,6 +152,8 @@ jobs:
           bash .github/scripts/ubuntu-archive.sh
           sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
           python -m pip install -r tests/requirements-anki-26.9.4.txt
+      - name: Fetch the companion pictures
+        run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
       - name: Compare the screenshots with a fresh drawing
         env:
           ANKIQUEST_SCREENSHOTS_OUT: ${{ runner.temp }}/screenshots

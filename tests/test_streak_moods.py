@@ -13,6 +13,9 @@ TESTS = Path(__file__).resolve().parent
 FIXTURE = TESTS / "fixtures" / "streak_moods.json"
 POSES = TESTS / "fixtures" / "companion_poses.json"
 
+# How a checkout fetches the add-on's pictures from the pinned AnkiQuest-Art release.
+FETCH = "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+
 # Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows
 # frozen and almost shows hopeful; she has no frozen_2 or frozen_3 art, so those show her frozen.
 AKI_MOOD_POSES = {
@@ -143,6 +146,29 @@ class StreakMoods(unittest.TestCase):
                 self.assertTrue(re.fullmatch(pattern, name), name)
         self.assertIsNone(moods.companion_pose("none", "aki_at_risk"))
 
+    def test_every_picture_asked_for_is_exported_or_falls_back(self):
+        # The pictures come from the pinned AnkiQuest-Art release (docs/desktop.md, Companion pictures).
+        # Every pose the fixture names resolves, for every companion, to an exported picture or
+        # to the exported picture of its fallback, and so does every picture named directly.
+        self.assertTrue((ADDON / "art").is_dir(), "Fetch the pictures first: " + FETCH)
+        poses = [*moods.CORE_POSES, *moods.POSE_FALLBACKS]
+
+        asked = set()
+        for art in (moods.AKI_POSES, moods.ANKILOPE, moods.ANKI_TAN_POSES, moods._SCENES):
+            asked.update(art.values())
+        for companion in ("aki", "ankilope", "cow", "anki_tan"):
+            owner = moods._POSES[moods.art_owner(companion)]
+            asked.update(moods.pose_art(owner, pose) for pose in poses)
+            asked.update(moods.companion_pose(companion, aki) for aki in moods._AKI_PICTURES)
+            asked.update(moods.preview(companion))
+        for name in sorted(asked):
+            with self.subTest(picture=name):
+                self.assertTrue((ADDON / "art" / (name + ".png")).is_file(), name)
+
+        # The share card and toolbar faces sit beside the code.
+        for owner in moods._POSES:
+            self.assertTrue((ADDON / ("%s_face.png" % owner)).is_file(), owner)
+
     def test_asleep_art_uses_the_pose_name(self):
         # AnkiQuest-Server#32: every companion's asleep picture is `<companion>_asleep`.
         for poses in (moods.AKI_POSES, moods.ANKILOPE, moods.ANKI_TAN_POSES):
@@ -192,31 +218,30 @@ class StreakMoods(unittest.TestCase):
                 with self.subTest(mood=chosen, streak=streak):
                     self.assertEqual(pose, moods.mood_pose(moods.ANKI_TAN, chosen, streak))
 
-        # On fire she shows her streak pose until her hot and blazing art is drawn, then her crown.
-        for streak in (1, 7, 30, 99):
-            self.assertEqual("anki_tan_streak", moods.mood_pose(moods.ANKI_TAN, moods.FIRE, streak))
-        self.assertEqual("anki_tan_streak_legend", moods.mood_pose(moods.ANKI_TAN, moods.FIRE, 100))
+        # Her streak pose is not drawn yet, so on fire she shows hopeful at every streak.
+        for streak in (1, 7, 30, 99, 100, 365):
+            self.assertEqual("anki_tan_hopeful", moods.mood_pose(moods.ANKI_TAN, moods.FIRE, streak))
 
     def test_anki_tan_shows_her_pose_for_aki_pictures(self):
         pose = lambda aki: moods.companion_pose(moods.ANKI_TAN, aki)
-        self.assertEqual("anki_tan_welcome", pose("aki_welcome"))
-        self.assertEqual("anki_tan_review", pose("aki_review"))
-        self.assertEqual("anki_tan_happy", pose("aki_celebrate"))
-        self.assertEqual("anki_tan_happy", pose("aki_winner"), "winner falls back to happy")
         self.assertEqual("anki_tan_frozen", pose("aki_freeze"))
-        self.assertEqual("anki_tan_streak_milestone", pose("aki_streak_milestone"))
         self.assertEqual("anki_tan_face", pose("aki_nudge"), "she has no scene art: her face, never Aki's")
-        self.assertEqual(["anki_tan_face", "anki_tan_streak", "anki_tan_sad"], moods.preview(moods.ANKI_TAN))
+        self.assertEqual(["anki_tan_face", "anki_tan_hopeful", "anki_tan_sad"], moods.preview(moods.ANKI_TAN))
 
-        # Her seven extensions still to draw show their fallbacks.
+        # Happy and streak are core poses with no master yet: they and the extensions that end in
+        # them show hopeful. Her other extensions fall back as companion_poses.json says.
         fallbacks = {
-            "streak_hot": "anki_tan_streak", "streak_blazing": "anki_tan_streak",
-            "frozen_2": "anki_tan_frozen", "frozen_3": "anki_tan_frozen", "abandoned": "anki_tan_neglected",
-            "leech_defeated": "anki_tan_happy", "winner": "anki_tan_happy",
+            "happy": "anki_tan_hopeful", "streak": "anki_tan_hopeful",
+            "welcome": "anki_tan_hopeful", "review": "anki_tan_hopeful", "winner": "anki_tan_hopeful",
+            "leech_defeated": "anki_tan_hopeful", "streak_hot": "anki_tan_hopeful",
+            "streak_blazing": "anki_tan_hopeful", "streak_legend": "anki_tan_hopeful",
+            "streak_milestone": "anki_tan_hopeful",
+            "frozen_2": "anki_tan_frozen", "frozen_3": "anki_tan_frozen",
+            "hurt": "anki_tan_sad", "abandoned": "anki_tan_neglected", "dead": "anki_tan_neglected",
         }
-        for extension, art in fallbacks.items():
-            self.assertNotIn(extension, moods.ANKI_TAN_POSES)
-            self.assertEqual(art, moods.pose_art(moods.ANKI_TAN_POSES, extension), extension)
+        for pose_name, art in fallbacks.items():
+            self.assertNotIn(pose_name, moods.ANKI_TAN_POSES)
+            self.assertEqual(art, moods.pose_art(moods.ANKI_TAN_POSES, pose_name), pose_name)
 
     def test_a_companion_without_art_is_drawn_as_aki(self):
         self.assertEqual("aki", moods.art_owner("leech_kun"))
@@ -245,11 +270,13 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual(fixture["core"], list(moods.CORE_POSES))
         self.assertEqual(fixture["extensions"], moods.POSE_FALLBACKS)
 
-        # Every companion has every core pose, and every extension reaches one of them.
-        for art in (moods.AKI_POSES, moods.ANKILOPE, moods.ANKI_TAN_POSES):
+        # Aki and Ankilope have every core pose; Anki-tan's happy and streak are not drawn yet.
+        for art in (moods.AKI_POSES, moods.ANKILOPE):
             self.assertTrue(set(moods.CORE_POSES) <= set(art))
-            for pose in moods.POSE_FALLBACKS:
-                self.assertTrue((ADDON / "art" / ("%s.png" % moods.pose_art(art, pose))).is_file(), pose)
+        missing = set(moods.CORE_POSES) - set(moods.ANKI_TAN_POSES)
+        self.assertEqual({"happy", "streak"}, missing)
+        self.assertLessEqual(missing, set(moods.CORE_FALLBACKS))
+        self.assertLessEqual(set(moods.CORE_FALLBACKS.values()), set(moods.CORE_POSES) - missing)
         self.assertEqual("ankilope_frozen", moods.pose_art(moods.ANKILOPE, "frozen_3"))
 
     def test_the_displayed_day_sets_the_state(self):

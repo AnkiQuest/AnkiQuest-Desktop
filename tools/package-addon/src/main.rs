@@ -1,12 +1,16 @@
 //! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb:
 //! `cargo run --manifest-path tools/package-addon/Cargo.toml --
 //! --output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-//! [--metadata <file>]`.
+//! [--metadata <file>]`, or `-- art` for the pictures alone.
 //!
 //! The archive is reproducible: the same commit and channel always give
 //! the same bytes. The GitHub and AnkiWeb builds differ only in the
 //! manifest's package ID and conflicts and in `build.json`, which names
 //! where the add-on looks for updates.
+//!
+//! Before packaging, it unpacks the add-on's companion pictures into
+//! `addon/` from the AnkiQuest-Art release `ankiquest-art.json` pins
+//! (see `art`). `package-addon art` does only that, for a checkout.
 
 use std::collections::BTreeMap;
 use std::env;
@@ -17,6 +21,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 
+mod art;
 mod json;
 mod zip;
 
@@ -98,11 +103,21 @@ struct Args {
     metadata: Option<PathBuf>,
 }
 
+/// The subcommand that only unpacks the pictures into `addon/`.
+const ART_COMMAND: &str = "art";
+
 /// Runs `--output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-/// [--metadata <file>]`.
+/// [--metadata <file>]`, or `art`.
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
-    match package(&args) {
+    let result = match args.as_slice() {
+        [command] if command == ART_COMMAND => {
+            let repo = root();
+            art::fetch(&repo, &repo.join(ADDON))
+        }
+        _ => package(&args),
+    };
+    match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("package-addon: {error}");
@@ -116,6 +131,7 @@ fn package(args: &[String]) -> Result<(), String> {
     let args = parse(args)?;
     let repo = root();
     let version = version(&repo, &args.source)?;
+    art::fetch(&repo, &repo.join(ADDON))?;
     build(&repo.join(ADDON), &args.output, &version, args.channel)?;
 
     // The nightly release publishes this for the add-on's update check.

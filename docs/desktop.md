@@ -65,21 +65,15 @@ bound only for a reproduced incompatibility.
 
 ## Server snapshot
 
-The add-on tests and poses come from one AnkiQuest-Server commit, named in
+The add-on tests come from one AnkiQuest-Server commit, named in
 `tests/ankiquest-server.sha`:
 
 - `tests/fixtures/*.json`: copies of Server's `tests/fixtures/`, the rules
   both clients test against.
 - `tests/api-examples/*.json`: copies of the Server `docs/api/examples/`
   the add-on tests read.
-- `addon/art/`, `addon/*_face.png` and `assets/retired/addon/`: poses
-  Server's `export-addon-art` writes from its `static/` masters, listed with
-  their hashes in `art-exports.json`.
 
-The **Desktop** jobs compare each copied file with the pinned commit. The
-**Companion art exports** workflow runs `export-addon-art --check` from the
-pinned commit when the poses, the manifest or the pin change; when it
-fails it uploads a fresh export as `companion-art-exports`.
+The **Desktop** jobs compare each copied file with the pinned commit.
 
 The snapshot includes countdowns, observed study and companion unlocks.
 Every shared fixture is in `tests/fixtures/`; there are no separate copies
@@ -94,10 +88,39 @@ git -C ../AnkiQuest-Server checkout "$sha"
 echo "$sha" > tests/ankiquest-server.sha
 for f in tests/fixtures/*.json; do cp "../AnkiQuest-Server/$f" "$f"; done
 for f in tests/api-examples/*.json; do cp "../AnkiQuest-Server/docs/api/examples/${f##*/}" "$f"; done
-cargo run --manifest-path ../AnkiQuest-Server/Cargo.toml -p ankiquest-xtask -- export-addon-art "$PWD"
 ```
 
 To read a new fixture or example, copy it from the same commit.
+
+## Companion pictures
+
+The add-on's pictures (`addon/art/<name>.png` and the faces
+`addon/<companion>_face.png`) and Anki-tan's licence for hers
+(`addon/art/LICENSE-Anki-tan.md`) are not committed. They come from the
+`addon-art.zip` asset of the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art)
+release that `ankiquest-art.json` pins, with its SHA-256. AnkiQuest-Sync
+updates the pin when Art publishes a release; don't edit it by hand.
+
+The packager unpacks the pictures and the licence into `addon/` before
+every build, replacing those of an earlier run, and fails if the licence
+is missing. To run the add-on or its tests from a
+checkout, fetch them once, and again after the pin changes:
+
+```sh
+cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
+```
+
+The asset is downloaded with `curl` into `ANKIQUEST_ART_CACHE`, by default
+`ankiquest-art` in the user's cache folder, under its SHA-256, so later
+builds work offline. Every use checks the hash against the pin. To try a
+release that is not published yet, set `ANKIQUEST_ART_DIR` to a folder
+holding its assets (from AnkiQuest-Art's `tools/release/build.sh`); they
+are checked against the pin the same way.
+
+Where a companion has no master for a pose, the add-on shows the fallback
+`tests/fixtures/companion_poses.json` names; a core pose not drawn yet
+shows the core pose `CORE_FALLBACKS` in `addon/moods.py` names, as
+AnkiQuest-Art's `poses.json` does.
 
 ## API audit
 
