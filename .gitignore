@@ -5,6 +5,7 @@ addon/version.json
 /tools/banner/target
 /addon/art/
 /addon/*_face.png
+/art/
 # AnkiQuest-Server master's fixtures and examples, copied by
 # `package-addon server-data` before the tests run.
 /tests/fixtures/
