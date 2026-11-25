@@ -21,7 +21,7 @@ class Override(unittest.TestCase):
         kind, value = debug.Override.read({"debug_override": "mood:frozen_2"})
         self.assertIs(kind, debug.Override.MOOD)
         self.assertEqual("frozen_2", debug.mood("fire", kind, value))
-        self.assertEqual("Set by the debug menu.", debug.marker(kind))
+        self.assertEqual("Debug override", debug.marker(kind))
         # Clearing goes back to following today.
         kind, value = debug.Override.read({"debug_override": debug.stored(kind, "")})
         self.assertIs(kind, debug.Override.AUTO)
@@ -34,7 +34,7 @@ class Override(unittest.TestCase):
         self.assertEqual("fire", debug.mood("fire", kind, value))
         self.assertEqual("aki_sad", debug.pose("aki", "fire", 5, kind, value))
         self.assertEqual("ankilope_sad", debug.pose("ankilope", "fire", 5, kind, value))
-        self.assertEqual("Set by the debug menu.", debug.marker(kind))
+        self.assertEqual("Debug override", debug.marker(kind))
 
     def test_a_mood_choice_picks_its_own_pose(self):
         kind, value = debug.Override.read({"debug_override": "mood:asleep"})
@@ -60,6 +60,19 @@ class Override(unittest.TestCase):
 
 
 class Thresholds(unittest.TestCase):
+    def test_the_limits_must_stay_ordered(self):
+        self.assertTrue(debug.ordered(debug.thresholds({})))
+        for broken in (
+            {"hot_days": 5, "blazing_days": 5},
+            {"blazing_days": 40, "legend_days": 40},
+            {"frozen_2_days": 4, "frozen_3_days": 4},
+            {"hot_days": 30, "blazing_days": 7},
+        ):
+            with self.subTest(broken=broken):
+                limits = debug.thresholds({})
+                limits.update(broken)
+                self.assertFalse(debug.ordered(limits), broken)
+
     def test_without_edits_every_limit_keeps_its_rule_value(self):
         self.assertEqual(debug.DEFAULT_THRESHOLDS, debug.thresholds({}))
         self.assertEqual({"hot_days": 7, "blazing_days": 30, "legend_days": 100}, {

@@ -86,8 +86,16 @@ def flame(computed_mood, kind, value):
 
 
 def marker(kind):
-    """The line marking an override on the surfaces it changes; None without one."""
-    return "Set by the debug menu." if kind is not Override.AUTO else None
+    """The line marking an override on the surfaces it changes; None without one.
+    The wording matches the Android app's debug marker."""
+    return "Debug override" if kind is not Override.AUTO else None
+
+
+def ordered(limits):
+    """Whether the day limits keep the order the moods need, as the Android menu checks:
+    each streak pose after the one before it, and frozen 3 past frozen 2."""
+    return (limits["hot_days"] < limits["blazing_days"] < limits["legend_days"]
+            and limits["frozen_2_days"] < limits["frozen_3_days"])
 
 
 def thresholds(config):

@@ -68,21 +68,39 @@ def dialog(parent, config, on_save):
     note.setWordWrap(True)
     layout.addWidget(note)
 
+    error = QLabel(tr("Not saved: each day limit must be above the one before it."))
+    error.setObjectName("ankiquest_debug_limits_error")
+    error.setWordWrap(True)
+    error.hide()
+    layout.addWidget(error)
+
+    def wanted_limits():
+        stored = {name: field.text().strip() for name, field in fields.items()}
+        limits = {}
+        for name, text in stored.items():
+            limits[name] = int(text) if text.isdigit() else mood_debug.DEFAULT_THRESHOLDS[name]
+        return limits
+
+    def accept_or_complain():
+        if mood_debug.ordered(wanted_limits()):
+            window.accept()
+        else:
+            error.show()
+
     buttons = QHBoxLayout()
     buttons.addStretch(1)
     cancel = QPushButton(tr("Cancel"))
     cancel.clicked.connect(window.reject)
     save = QPushButton(tr("Save"))
     save.setDefault(True)
-    save.clicked.connect(window.accept)
+    save.clicked.connect(accept_or_complain)
     buttons.addWidget(cancel)
     buttons.addWidget(save)
     layout.addLayout(buttons)
 
     if not window.exec():
         return None
-    stored = {name: field.text().strip() for name, field in fields.items()}
-    wanted = {}
-    for name, text in stored.items():
-        wanted[name] = int(text) if text.isdigit() else mood_debug.DEFAULT_THRESHOLDS[name]
-    return {"debug_override": override.currentData(), "debug_thresholds": mood_debug.thresholds_stored(wanted)}
+    limits = wanted_limits()
+    if not mood_debug.ordered(limits):
+        return None
+    return {"debug_override": override.currentData(), "debug_thresholds": mood_debug.thresholds_stored(limits)}
