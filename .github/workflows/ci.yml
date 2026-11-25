@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: read # code-changed lists the pull request's files
     outputs:
       code: ${{ steps.changed.outputs.code }}
     steps:
@@ -72,10 +72,34 @@ jobs:
       - name: Skip, only documentation changed
         if: needs.changes.outputs.code != 'true'
         run: echo "Only documentation changed; the add-on checks are skipped."
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: needs.changes.outputs.code == 'true'
         with:
           persist-credentials: false
+      # The tests read copies of AnkiQuest-Server's shared fixtures and API
+      # examples, pinned to the commit in tests/ankiquest-server.sha. Each
+      # copy must equal the file at that commit (docs/desktop.md, Server
+      # snapshot).
+      - name: Read the pinned server commit
+        if: needs.changes.outputs.code == 'true'
+        id: server
+        run: echo "sha=$(cat tests/ankiquest-server.sha)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.changes.outputs.code == 'true'
+        with:
+          repository: AnkiQuest/AnkiQuest-Server
+          ref: ${{ steps.server.outputs.sha }}
+          path: server-snapshot
+          sparse-checkout: |
+            /tests/fixtures/
+            /docs/api/examples/
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check the copies of the server's fixtures and examples
+        if: needs.changes.outputs.code == 'true'
+        run: |
+          for copy in tests/fixtures/*.json; do cmp "$copy" "server-snapshot/$copy"; done
+          for copy in tests/api-examples/*.json; do cmp "$copy" "server-snapshot/docs/api/examples/${copy##*/}"; done
       # The real-Anki smoke installs archives from the Rust packager.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         if: needs.changes.outputs.code == 'true'
@@ -89,10 +113,12 @@ jobs:
           cache-dependency-path: tests/requirements-anki-${{ matrix.anki }}.txt
       - name: Install Anki and Qt
         if: needs.changes.outputs.code == 'true'
+        env:
+          ANKI_VERSION: ${{ matrix.anki }}
         run: |
           bash .github/scripts/ubuntu-archive.sh
           sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
-          python -m pip install -r tests/requirements-anki-${{ matrix.anki }}.txt
+          python -m pip install -r "tests/requirements-anki-$ANKI_VERSION.txt"
       - name: Build the add-on packager
         if: needs.changes.outputs.code == 'true'
         run: cargo build --locked --manifest-path tools/package-addon/Cargo.toml
@@ -122,7 +148,9 @@ jobs:
       QT_QPA_PLATFORM: offscreen
       PYTHONIOENCODING: utf-8
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
@@ -163,8 +191,9 @@ jobs:
     env:
       PACKAGER: tools/package-addon/Cargo.toml
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
