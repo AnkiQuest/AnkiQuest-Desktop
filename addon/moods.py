@@ -152,6 +152,10 @@ POSE_FALLBACKS = {
     "winner": "happy",
 }
 
+# The core pose a companion shows for a core pose it has no master for yet, as AnkiQuest-Art's
+# poses.json `core_fallbacks` says.
+CORE_FALLBACKS = {"happy": "hopeful", "streak": "hopeful"}
+
 # The pose each of Aki's pictures shows, so that other companions show theirs.
 _AKI_PICTURES = {
     "aki_face": "face",
@@ -220,24 +224,16 @@ ANKILOPE = {
     "review": "ankilope_study",
 }
 
-# Anki-tan's art for each pose she has: Shigeyuki's pack art and the generated masters, as
-# AnkiQuest-Server static/anki-tan/poses.json maps them. Her other extensions fall back until they
-# are drawn (AnkiQuest-Server#57).
+# Anki-tan's art for each pose she has a master for in AnkiQuest-Art. Her happy and streak poses
+# are not drawn yet (AnkiQuest-Server#57): they show hopeful (`CORE_FALLBACKS`), and so do the
+# extensions that end in them (welcome, review, winner and the streak tiers).
 ANKI_TAN_POSES = {
     "face": "anki_tan_face",
     "asleep": "anki_tan_asleep",
-    "happy": "anki_tan_happy",
-    "streak": "anki_tan_streak",
-    "streak_legend": "anki_tan_streak_legend",
-    "streak_milestone": "anki_tan_streak_milestone",
     "sad": "anki_tan_sad",
     "hopeful": "anki_tan_hopeful",
     "frozen": "anki_tan_frozen",
     "neglected": "anki_tan_neglected",
-    "welcome": "anki_tan_welcome",
-    "review": "anki_tan_review",
-    "hurt": "anki_tan_hurt",
-    "dead": "anki_tan_dead",
 }
 
 # Each companion's art by pose, by whose art draws it (`art_owner`).
@@ -419,9 +415,10 @@ def css_filter(companion):
 
 
 def pose_art(art, pose):
-    """The picture in `art` (pose to picture) for `pose`, or for its nearest fallback."""
+    """The picture in `art` (pose to picture) for `pose`, or for its nearest fallback: an extension's
+    (`POSE_FALLBACKS`), then a core pose's while it is not drawn (`CORE_FALLBACKS`)."""
     while pose not in art:
-        pose = POSE_FALLBACKS[pose]
+        pose = POSE_FALLBACKS[pose] if pose in POSE_FALLBACKS else CORE_FALLBACKS[pose]
     return art[pose]
 
 

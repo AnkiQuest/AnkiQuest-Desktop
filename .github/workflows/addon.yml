@@ -4,7 +4,7 @@ on:
   push:
     tags: ["addon-*"]
     branches: [master]
-    paths: ["addon/**", ".github/workflows/addon.yml", "tools/package-addon/**"]
+    paths: ["addon/**", "ankiquest-art.json", ".github/workflows/addon.yml", "tools/package-addon/**"]
   workflow_dispatch:
 
 permissions:
