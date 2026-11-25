@@ -167,14 +167,12 @@ jobs:
           if-no-files-found: ignore
 
   # The README banner and social preview, drawn from the committed
-  # screenshots and the duo master at the pinned server commit by
+  # screenshots and the duo master of the pinned AnkiQuest-Art release by
   # AnkiQuest-Dev's shared tool (docs/graphics/banner.toml).
   banner:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     uses: AnkiQuest/AnkiQuest-Dev/.github/workflows/banner.yml@master
-    with:
-      server-sha-file: tests/ankiquest-server.sha
 
   addon-package:
     name: Add-on archive
