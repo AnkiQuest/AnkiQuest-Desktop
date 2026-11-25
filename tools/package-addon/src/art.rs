@@ -3,7 +3,8 @@
 //!
 //! `addon-art.zip` holds `art/<name>.png`, `<companion>_face.png` and
 //! Anki-tan's licence, `art/LICENSE-Anki-tan.md`, which are unpacked into
-//! `addon/` after the pictures of an earlier run are removed. The asset is downloaded once into a cache named by its
+//! `addon/` after the pictures of an earlier run are removed, and the
+//! release's `poses.json` is copied there for `moods` to read. The asset is downloaded once into a cache named by its
 //! SHA-256 and checked against the pin before every use, so a build works
 //! offline after the first. `ANKIQUEST_ART_DIR` names a folder holding the
 //! release assets to use instead of downloading them, for a release not
@@ -27,6 +28,10 @@ const RELEASES: &str = "https://github.com/AnkiQuest/AnkiQuest-Art/releases/down
 
 /// The release asset with the add-on's pictures.
 const PICTURES: &str = "addon-art.zip";
+
+/// The release asset naming the poses and their fallbacks, copied beside the
+/// code for the add-on to read.
+const POSES_JSON: &str = "poses.json";
 
 /// A folder of release assets to use instead of downloading them.
 const LOCAL_DIR: &str = "ANKIQUEST_ART_DIR";
@@ -73,7 +78,9 @@ pub(super) fn fetch(repo: &Path, addon: &Path) -> Result<(), String> {
     let local = env::var_os(LOCAL_DIR).map(PathBuf::from);
     let origin = origin(&pin, local)?;
     let bytes = asset(&pin, &origin, PICTURES)?;
-    unpack(&bytes, addon)
+    unpack(&bytes, addon)?;
+    let poses = asset(&pin, &origin, POSES_JSON)?;
+    copy_poses(&poses, addon)
 }
 
 /// Unpacks the pictures in `bytes`, an `addon-art.zip`, into `addon`,
@@ -239,6 +246,17 @@ fn picture(name: &str) -> bool {
         Some((folder, file)) => folder == POSES && plain(file),
         None => name.ends_with(FACE_SUFFIX) && plain(name),
     }
+}
+
+/// Writes the release's `poses.json` beside the code, where the add-on's
+/// `moods.py` reads the poses and their fallbacks from. Only a file that is
+/// JSON is written.
+fn copy_poses(bytes: &[u8], addon: &Path) -> Result<(), String> {
+    if let Err(e) = serde_json::from_slice::<Value>(bytes) {
+        return Err(format!("{POSES_JSON}: {e}"));
+    }
+    let path = addon.join(POSES_JSON);
+    fs::write(&path, bytes).map_err(|e| format!("{}: {e}", path.display()))
 }
 
 /// Removes the pictures an earlier run unpacked into `addon`.
@@ -460,6 +478,22 @@ mod tests {
             !picture(LICENCE),
             "only the licence itself, by its exact name"
         );
+    }
+
+    #[test]
+    fn poses_json_is_copied_beside_the_code() {
+        let addon = TempDir::new().unwrap();
+        let poses = b"{\"core\": [\"face\", \"asleep\"]}";
+        copy_poses(poses, addon.path()).unwrap();
+        assert_eq!(poses.to_vec(), fs::read(addon.path().join(POSES_JSON)).unwrap());
+    }
+
+    #[test]
+    fn a_poses_json_that_is_not_json_is_refused() {
+        let addon = TempDir::new().unwrap();
+        let error = copy_poses(b"face", addon.path()).unwrap_err();
+        assert!(error.contains(POSES_JSON), "{error}");
+        assert!(!addon.path().join(POSES_JSON).exists());
     }
 
     #[test]
