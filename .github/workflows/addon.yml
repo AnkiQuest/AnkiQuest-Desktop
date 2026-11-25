@@ -50,14 +50,15 @@ jobs:
             --title "Desktop add-on ${GITHUB_REF_NAME#addon-}" \
             --notes-file release-notes.md
 
+      # Updates the release in place and retries the release API; see the action.
       - name: Publish nightly
         if: github.ref == 'refs/heads/master'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE: ${{ steps.version.outputs.release }}
-        run: |
-          gh release delete addon-nightly --yes --cleanup-tag || true
-          gh release create addon-nightly ankiquest.ankiaddon ankiquest-ankiweb.ankiaddon addon-nightly.json \
-            --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "Desktop add-on nightly" \
-            --notes "Built from $GITHUB_SHA after addon-$RELEASE. Untested: choose the nightly update channel in ankiquest settings to get these."
+        uses: AnkiQuest/AnkiQuest-Dev/.github/actions/nightly-release@master
+        with:
+          tag: addon-nightly
+          title: Desktop add-on nightly
+          notes: "Built from ${{ github.sha }} after addon-${{ steps.version.outputs.release }}. Untested: choose the nightly update channel in ankiquest settings to get these."
+          files: |
+            ankiquest.ankiaddon
+            ankiquest-ankiweb.ankiaddon
+            addon-nightly.json
