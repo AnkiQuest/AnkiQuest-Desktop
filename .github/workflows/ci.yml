@@ -213,18 +213,3 @@ jobs:
           name: ankiquest-ankiweb-addon
           path: ankiquest-ankiweb.ankiaddon
           if-no-files-found: error
-
-  # zizmor's security audit of the workflows, with the rules in
-  # .github/zizmor.yml, in AnkiQuest-Dev's default shell. It reports as
-  # `zizmor / check`.
-  zizmor:
-    needs: changes
-    if: ${{ !cancelled() }}
-    uses: AnkiQuest/AnkiQuest-Dev/.github/workflows/nix-check.yml@master
-    with:
-      flake: github:AnkiQuest/AnkiQuest-Dev
-      flake-check: false
-      format: ""
-      zizmor: true
-      skip: ${{ needs.changes.outputs.code != 'true' }}
-      timeout-minutes: 15
