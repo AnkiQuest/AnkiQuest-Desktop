@@ -1,8 +1,8 @@
 """The shared rules for the add-on's pages: AnkiQuest-Server's crates/rules built as one
 WebAssembly module, the same Rust the server runs and the Android app links.
 
-The packager writes the module to rules/ankiquest_rules.wasm from the release
-ankiquest-rules.json pins. A page gets it inline and compiles it in Anki's Qt WebEngine, so it
+The packager writes the module to rules/ankiquest_rules.wasm from the newest rules release,
+and the release's tag to rules/release.json. A page gets it inline and compiles it in Anki's Qt WebEngine, so it
 needs no web export, request or per-OS library:
 
     rules/ankiquest_rules.wasm ──base64──▶ promise() in the page ──▶ exports

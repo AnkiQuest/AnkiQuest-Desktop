@@ -131,18 +131,23 @@ AnkiQuest-Server). `addon/rules.py` inlines it into a page, which compiles
 it and calls its exports; every Anki the add-on supports has a WebEngine
 that runs WebAssembly, so there is no Python copy of those rules.
 
-The module is not committed. It comes from the AnkiQuest-Server
-`rules-<N>` release that `ankiquest-rules.json` pins, with its SHA-256,
-and is fetched and checked like the pictures (`ANKIQUEST_RULES_CACHE`,
-`ANKIQUEST_RULES_DIR`). The packager writes it before every build; for a
-checkout:
+The module is not committed. The add-on uses AnkiQuest-Server `master`,
+so the packager takes the newest `rules-<N>` release at every build: it
+lists AnkiQuest-Server's releases (with `GITHUB_TOKEN` when set, for the
+API's rate limit), downloads the release's `SHA256SUMS` and the module,
+checks the module against it, and writes the tag and hash to
+`addon/rules/release.json`, which the archive carries. Downloads are
+cached by SHA-256 in `ANKIQUEST_RULES_CACHE`, by default `ankiquest-rules`
+in the user's cache folder. For a checkout:
 
 ```sh
 cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules
 ```
 
-To try a release that is not published yet, point `ANKIQUEST_RULES_DIR` at
-a folder with its assets; they are checked against the pin the same way.
+To rebuild an archive with the rules it shipped, set `ANKIQUEST_RULES_TAG`
+to the tag in its `rules/release.json`. To try a release that is not
+published yet, set `ANKIQUEST_RULES_DIR` to a folder with its assets and
+`SHA256SUMS` (from AnkiQuest-Server's `crates/rules-wasm/build.sh`).
 
 `tests/qt_heatmap_rules.py` runs the fixture's `intensity_cases` through
 the module in WebEngine, with the loader the pages use.
@@ -151,12 +156,14 @@ Rules Python needs synchronously, outside a page, use the same crate as a
 UniFFI library: today's day verdict (`addon/day_verdict.py`), with deck
 names to follow. The release carries the library of each platform Anki
 24.11 and newer run on (Linux x86_64 and aarch64, Windows x86_64, macOS
-arm64 and x86_64) and its Python bindings; the packager writes each to
-`addon/rules/<platform>/` with a copy of the bindings, and
-`addon/native_rules.py` loads the one for the running platform. The
-bindings load the library with `ctypes`, so one library serves every
-Python version. On another platform the day verdict is unknown.
-`tests/test_day_verdicts.py` runs `day_verdicts.json` through the library.
+arm64 and x86_64) and its Python bindings; the packager takes them from
+the same release as the module, checks them against its `SHA256SUMS`,
+writes each library to `addon/rules/<platform>/` with a copy of the
+bindings, and lists them in `release.json`. `addon/native_rules.py` loads
+the one for the running platform. The bindings load the library with
+`ctypes`, so one library serves every Python version. On another platform
+the day verdict is unknown. `tests/test_day_verdicts.py` runs
+`day_verdicts.json` through the library.
 
 ## API audit
 

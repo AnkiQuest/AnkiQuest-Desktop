@@ -1,10 +1,10 @@
-//! Assets of a pinned GitHub release: AnkiQuest-Art's pictures
-//! (`ankiquest-art.json`) and AnkiQuest-Server's shared rules
-//! (`ankiquest-rules.json`).
+//! Assets of GitHub releases: AnkiQuest-Art's pictures, from the release
+//! `ankiquest-art.json` pins, and the downloads `rules` makes from
+//! AnkiQuest-Server's newest rules release.
 //!
 //! A pin file names the release's tag and the SHA-256 of each asset. An
 //! asset is downloaded once into a cache named by its SHA-256 and checked
-//! against the pin before every use, so a build works offline after the
+//! against its hash before every use, so a build works offline after the
 //! first. A folder named by the source's local variable holds the assets to
 //! use instead of downloading them, for a release not published yet; they
 //! are checked against the pin the same way.
@@ -22,7 +22,8 @@ const SHA256_HEX_LEN: usize = 64;
 
 /// Where a kind of asset comes from and where it is kept.
 pub(super) struct Source {
-    /// The pin file, at the repository root.
+    /// The pin file at the repository root, or what else holds the hashes
+    /// assets are checked against (a release's `SHA256SUMS`).
     pub(super) pin: &'static str,
     /// The repository that publishes the releases, for messages.
     pub(super) repository: &'static str,
@@ -118,12 +119,53 @@ fn asset(source: &Source, pin: &Pin, origin: &Origin, name: &str) -> Result<Vec<
     Ok(bytes)
 }
 
+/// Asset `name` of release `tag`, from the cache or downloaded, checked
+/// against `sha256`.
+pub(super) fn checked(
+    source: &Source,
+    tag: &str,
+    name: &str,
+    sha256: &str,
+) -> Result<Vec<u8>, String> {
+    let cache = cache(source)?;
+    download(source, tag, name, sha256, &cache)?;
+    let path = cache.join(sha256);
+    let bytes = fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    verify(source, name, &bytes, sha256)?;
+    Ok(bytes)
+}
+
+/// The body of `url`, through curl. `GITHUB_TOKEN`, when set, goes along
+/// as a bearer token, for the API's rate limit.
+pub(super) fn get(url: &str) -> Result<Vec<u8>, String> {
+    let mut command = Command::new("curl");
+    command.args(["--fail", "--location", "--silent", "--show-error"]);
+    if let Some(token) = env::var_os("GITHUB_TOKEN").filter(|token| !token.is_empty()) {
+        let mut header = std::ffi::OsString::from("Authorization: Bearer ");
+        header.push(token);
+        command.arg("--header").arg(header);
+    }
+    let output = command
+        .arg(url)
+        .output()
+        .map_err(|e| format!("curl: {e}"))?;
+    if !output.status.success() {
+        return Err(format!("{url}: download failed ({})", output.status));
+    }
+    Ok(output.stdout)
+}
+
 /// Fails unless `bytes` have the SHA-256 `expected`.
-fn verify(source: &Source, name: &str, bytes: &[u8], expected: &str) -> Result<(), String> {
+pub(super) fn verify(
+    source: &Source,
+    name: &str,
+    bytes: &[u8],
+    expected: &str,
+) -> Result<(), String> {
     let actual = hex(&Sha256::digest(bytes));
     if actual != expected {
         return Err(format!(
-            "{name}: SHA-256 {actual}, but {} pins {expected}",
+            "{name}: SHA-256 {actual}, but {} says {expected}",
             source.pin
         ));
     }

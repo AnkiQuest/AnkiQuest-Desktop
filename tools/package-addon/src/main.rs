@@ -12,8 +12,8 @@
 //! Before packaging, it unpacks the add-on's companion pictures into
 //! `addon/` from the AnkiQuest-Art release `ankiquest-art.json` pins
 //! (see `art`), and writes the shared rules' WebAssembly module into
-//! `addon/rules/` from the AnkiQuest-Server release `ankiquest-rules.json`
-//! pins (see `rules`). `package-addon art` and `package-addon rules` each
+//! `addon/rules/` from AnkiQuest-Server's newest rules release, recording its
+//! tag (see `rules`). `package-addon art` and `package-addon rules` each
 //! do only their part, for a checkout.
 
 use std::collections::BTreeMap;

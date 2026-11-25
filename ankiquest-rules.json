@@ -1,8 +1,0 @@
-{
-  "_about": "The AnkiQuest-Server rules release this repository uses (docs/shared-rules.md in AnkiQuest-Server). Do not edit it by hand. A null tag means the release is not published yet: CI builds the module from the commit.",
-  "tag": null,
-  "commit": "644cecb0b046d1e588dc68face5b8b2fdcc6761a",
-  "assets": {
-    "ankiquest_rules.wasm": "63da9c063ef3fc5b1431d70e224a4249081f2b0a72b2743ac359efc15029bff6"
-  }
-}
