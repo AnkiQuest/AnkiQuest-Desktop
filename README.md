@@ -51,7 +51,21 @@ cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.a
 `docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/draw_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. `ankiquest-banner`, the banner tool every AnkiQuest repository shares ([AnkiQuest-Dev](https://github.com/AnkiQuest/AnkiQuest-Dev#readme-banner-and-social-preview)), draws `docs/graphics/banner_readme.png` and `social_preview.png` from those screenshots and the duo master of the AnkiQuest-Art release pinned in `ankiquest-art.json`, unzipped from its `masters.zip` into `art/`; `docs/graphics/banner.toml` lists its inputs. CI's "Screenshots" and "banner" jobs draw all of them again and fail when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed (`--record` runs `tests/draw_screenshots.py` first):
 
 ```sh
-cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
+(
+  set -eu
+  art_stage=$(mktemp -d)
+  art_tag=$(node -p 'require("./ankiquest-art.json").tag')
+  for art_asset in masters.zip manifest.json; do
+    curl -fsSL -o "$art_stage/$art_asset" \
+      "https://github.com/AnkiQuest/AnkiQuest-Art/releases/download/$art_tag/$art_asset"
+    art_hash=$(node -p 'require("./ankiquest-art.json").assets[process.argv[1]]' "$art_asset")
+    printf '%s  %s\n' "$art_hash" "$art_stage/$art_asset" | sha256sum --check
+  done
+  mkdir -p art
+  unzip -qo "$art_stage/masters.zip" -d art
+  cp "$art_stage/manifest.json" art/manifest.json
+) &&
+cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art &&
 cargo run --release --manifest-path ../AnkiQuest-Dev/tools/banner/Cargo.toml -- --server . --record
 ```
 
