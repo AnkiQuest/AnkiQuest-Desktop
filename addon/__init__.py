@@ -313,13 +313,6 @@ def _offer_countdowns():
     redraw()
 
 
-def drop_config(keys):
-    """Removes settings an older version kept, once they live elsewhere."""
-    current = config()
-    if any(key in current for key in keys):
-        mw.addonManager.writeConfig(__name__, {key: value for key, value in current.items() if key not in keys})
-
-
 def client():
     settings = config()
     return Client(settings.get("url", ""), settings.get("user", ""), settings.get("token", ""), anki.lang.current_lang)

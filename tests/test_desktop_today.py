@@ -194,15 +194,6 @@ class GoalTests(unittest.TestCase):
         self.assertFalse(goals.to_report(done._replace(reached=True), self.me, 1000, None))
         self.assertFalse(goals.to_report(done._replace(mode="cards"), self.me, 1000, None))
 
-    def test_an_older_add_ons_goal_moves_to_the_server(self):
-        self.assertIsNone(goals.legacy_goal({}))
-        self.assertIsNone(goals.legacy_goal({"goal_mode": "backlog", "goal_backlog_percent": 10}))
-        for percent, days in ((5, 60), (20, 14), (34, 7), (100, 1)):
-            self.assertEqual({"mode": "backlog", "value": days}, goals.legacy_goal({"goal_mode": "backlog", "goal_backlog_percent": percent}))
-        self.assertEqual({"mode": "cards", "value": 5000}, goals.legacy_goal({"goal_mode": "cards", "goal_cards": 9000}))
-        self.assertEqual({"mode": "minutes", "value": 15}, goals.legacy_goal({"goal_mode": "minutes", "goal_minutes": 15}))
-        self.assertEqual({"mode": "off"}, goals.legacy_goal({"goal_mode": "off"}))
-
     def test_streak_minimum_is_remembered_per_account(self):
         me, other = self.me, ["https://quest.example", "cerro"]
         minutes, stored = goals.remembered_streak_minutes({"today": {"streak_minutes": 7}}, None, me)
@@ -967,17 +958,6 @@ class HomeTests(unittest.TestCase):
         self.api._request = request
         self.home.goal_ui = SimpleNamespace(goal_dialog=Mock(return_value=None))
         return calls
-
-    def test_an_older_goal_moves_to_the_server_once_and_needs_no_setup(self):
-        self.settings.update(goal_mode="cards", goal_cards=80, goal_backlog_percent=10, goal_minutes=20)
-        calls = self.serve({"mode": "backlog", "value": 30, "since": 20000, "chosen": False})
-        self.home.sync_goal(prompt=True)
-        self.assertEqual(("/api/goal/hill", {"mode": "cards", "value": 80}, "PUT"), calls[-1])
-        self.assertFalse(set(self.settings) & set(self.home.goals.LEGACY_KEYS))
-        self.home.goal_ui.goal_dialog.assert_not_called()
-        self.assertEqual("cards", self.mw.pm.profile[self.home.PLAN_KEY]["mode"])
-        self.home.sync_goal(prompt=True)
-        self.assertEqual(1, sum(1 for call in calls if call[2] == "PUT"))
 
     def test_the_goal_dialog_opens_by_itself_once_per_account_while_no_goal_is_chosen(self):
         calls = self.serve({"mode": "backlog", "value": 30, "since": 20000, "chosen": False})
