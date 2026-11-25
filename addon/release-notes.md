@@ -1,8 +1,10 @@
 The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on the same account as [AnkiQuest for Android](https://github.com/AnkiQuest/AnkiQuest-Android).
 
-**Study companion.** Choose your study companion under Settings → Account. Ankilope joins you when you reach a level, with a short reveal; "Reduce motion" under App and privacy shows a fade instead. Aki greets you once after you install or update the add-on. Your companion's pose follows your streak: asleep, happy, on fire, sad, hopeful, frozen or neglected.
+**Study companion.** Choose your study companion under Settings → Account. Ankilope joins you when you reach a level, with a short reveal; "Reduce motion" under App and privacy shows a fade instead. Anki-tan joins the companions, earned with a 66-day streak. Aki greets you once after you install or update the add-on. Your companion's pose follows your streak: asleep, happy, on fire, sad, hopeful, frozen or neglected.
 
-**Today.** The streak flame stays unlit until today counts. Friends' study stays hidden until you upload your first reviews.
+**Today.** The streak flame stays unlit until today counts. Friends' study stays hidden until you upload your first reviews. Between Monday and the weekly board's switch, the XP already counting for next week is shown.
+
+**Countdowns.** Tools → AnkiQuest → Countdowns lists your events and exams by date, each with an optional deck, and Today counts down to the nearest one.
 
 **AnkiQuest Lite.** A day counted on answers that AnkiQuest Lite read from AnkiDroid without review times shows as studied, with "time not known", on Today, the heatmap and History. Leaderboard rows and your level mark such XP "Observed".
 
@@ -18,8 +20,18 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Conquered cards.** Conquest details count learning days, as on Android. A lapse counts only when you pressed Again: the add-on sends your review history once more, with the button pressed, to a server that stores it.
 
+**Sign-in.** Accounts with two-factor authentication ask for the authenticator or recovery code after the password; set it up on the website. Players signed in with a token from the server's configuration are asked to set a password. New accounts use ankiquest.org; saved accounts on the old address move there by themselves.
+
+**Notifications.** Streak warnings wait until your quiet hours end, with the same checks as on Android.
+
 **Rate and report.** Tools → AnkiQuest ends with Rate AnkiQuest (on AnkiWeb or GitHub), AnkiQuest changelog, which shows these notes, and Report a bug. Settings credits Shigeyuki for Anki-tan.
 
 **Updates.** The next add-on versions need Anki 24.11 or newer. On an older Anki, the GitHub download keeps this version and stops offering newer ones, instead of installing one that would not load.
+
+**Fixes.** A review on a freeze-protected day counts toward today instead of reading "not studied yet".
+
+**Server.** This version needs a current AnkiQuest server. On an older one, the inbox, leaderboard, progress, companion unlocks and sharing say "Update your AnkiQuest server".
+
+Companion pictures come from AnkiQuest-Art art-9.
 
 Study uploads contain review history (card id, timestamp, previous and new interval, time taken, review type and the button pressed) and deck progress, never card content.
