@@ -12,6 +12,18 @@ REVIEW_NOW, LEARNING_LATER, DONE, NOTHING = "review_now", "learning_later", "don
 PERIODS = ("hour", "day", "week", "month", "year", "all")
 DEFAULT_PERIOD = "week"
 MAX_SESSION_MS = 24 * 3_600_000
+DAY_MS = 86_400_000
+HOUR_MS = 3_600_000
+MINUTE_MS = 60_000
+
+# How far back the night rule looks for first reviews; more than its 14 studied days.
+FIRST_REVIEWS_WINDOW_MS = 60 * DAY_MS
+
+# The first review of each study day: the day is counted from the rollover in local time.
+FIRST_REVIEWS_SQL = (
+    "select min(id) from revlog where id > ? and ease > 0 and type < 4 "
+    "group by (id - ?) / %d order by 1" % DAY_MS
+)
 
 NEXT_LEARNING_SQL = (
     "select case when odid != 0 then odid else did end, count(*), min(due) from cards "
@@ -205,3 +217,13 @@ def session_body(summary, translate=lambda value: value):
     return translate("%d reviews · %s\n%d cards still available in this deck.") % (
         summary["reviews"], duration(summary["minutes"], translate), summary["remaining"],
     )
+
+
+def first_reviews(col, now_ms, offset_west_min, rollover_hour, days, local_time):
+    """The local times (HH:MM, by `local_time`) of the first review on each of the last `days`
+    studied days before today, oldest first, for the night rule (moods.Night)."""
+    shift = offset_west_min * MINUTE_MS + rollover_hour * HOUR_MS
+    today_starts = (now_ms - shift) // DAY_MS * DAY_MS + shift
+    ids = col.db.list(FIRST_REVIEWS_SQL, now_ms - FIRST_REVIEWS_WINDOW_MS, shift)
+    earlier = [review_id for review_id in ids if review_id < today_starts]
+    return tuple(local_time(review_id) for review_id in earlier[-days:])

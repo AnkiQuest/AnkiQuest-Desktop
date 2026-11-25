@@ -155,12 +155,30 @@ def _served_goal(profile):
     return moods.Goal.REACHED if served is True else moods.Goal.OPEN
 
 
+def _local_time(ms):
+    return datetime.fromtimestamp(ms / 1000).strftime("%H:%M")
+
+
+def night_inputs(view):
+    """The night rule's inputs for a displayed profile (moods.Night); None when the collection
+    cannot be read, which leaves the night rule out."""
+    try:
+        rollover = int(mw.col.get_config("rollover", 4))
+        now = now_ms()
+        first = today.first_reviews(mw.col, now, offset_west_min(), rollover, moods.RECENT_DAYS, _local_time)
+    except Exception as e:
+        print("ankiquest night:", e)
+        return None
+    return moods.Night(_local_time(now), rollover, first, moods.yesterday((view or {}).get("heatmap")))
+
+
 def today_mood():
     """Today's streak mood and streak, by the one rule (moods.today_mood). The goal is the
     server's word; the Today panel also counts reviews it has not uploaded yet."""
     profile = addon().state["profile"]
     view = _profile_for_display(profile)
-    return moods.today_mood(view, _served_goal(profile)), int((view or {}).get("streak") or 0)
+    mood = moods.today_mood(view, _served_goal(profile), night_inputs(view), now_ms())
+    return mood, int((view or {}).get("streak") or 0)
 
 
 def pose_url(chosen_companion):
@@ -171,7 +189,7 @@ def pose_url(chosen_companion):
 def streak_flame(view):
     """The flame beside the streak length of a displayed profile, with the server's goal, for
     when the collection cannot be read; the Today panel's comes with today_view."""
-    return moods.today_flame(view, _served_goal(addon().state["profile"]))
+    return moods.today_flame(view, _served_goal(addon().state["profile"]), night_inputs(view), now_ms())
 
 
 def days_for(deck_browser=None):
@@ -541,7 +559,8 @@ def today_view(deck_browser, chosen_companion):
     streak = int((profile or {}).get("streak") or 0)
 
     # One streak mood picks the pose and, before the decks do, the line (as Android's Home card).
-    streak_mood = moods.today_mood(profile, goal)
+    night = night_inputs(profile)
+    streak_mood = moods.today_mood(profile, goal, night, now_ms())
     pose = moods.mood_pose(chosen_companion, streak_mood, streak)
     mood = moods.mood(streak_mood, [day.due for day in days], focus.due if focus else 0, profile, now_ms())
     line, values = moods.message(chosen_companion, mood, streak)
@@ -549,7 +568,7 @@ def today_view(deck_browser, chosen_companion):
     return {
         "profile": profile,
         "art": _pose_url(pose),
-        "flame": moods.today_flame(profile, goal),
+        "flame": moods.today_flame(profile, goal, night, now_ms()),
         "mood": tr(line) % values if line and chosen_companion != "none" else None,
         "winner": art_url(chosen_companion, moods.WINNER),
         "focus": focus_view(focus),

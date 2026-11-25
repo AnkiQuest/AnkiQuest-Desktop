@@ -44,6 +44,7 @@ def collection(db, tree, today_number=100, cutoff=1_000_000):
             all=lambda sql, *args: db.execute(sql, args).fetchall(),
             first=lambda sql, *args: db.execute(sql, args).fetchone(),
             scalar=lambda sql, *args: db.execute(sql, args).fetchone()[0],
+            list=lambda sql, *args: [row[0] for row in db.execute(sql, args).fetchall()],
         ),
     )
 
@@ -463,6 +464,27 @@ class SessionTests(unittest.TestCase):
         self.assertEqual("2 reviews · 2 minutes · 12 ready at session end", today.session_text(summary))
         self.assertEqual("less than a minute", today.duration(0))
         self.assertEqual("1 minute", today.duration(1))
+
+
+class FirstReviewTests(unittest.TestCase):
+    def test_the_first_review_of_each_earlier_study_day(self):
+        # Study days start at the rollover (4 h, UTC here): a review at 03:00 belongs to the day
+        # before. Today's own reviews and answers without an ease are left out, and only the
+        # last `days` days count.
+        day, hour = today.DAY_MS, today.HOUR_MS
+        base = 400 * day
+        db = database()
+        db.executemany("insert into revlog values (?, ?, ?, ?, ?)", [
+            (base + 9 * hour, 1, 3, 1, 1), (base + 10 * hour, 1, 3, 1, 1),
+            (base + day + 2 * hour, 1, 0, 1, 1), (base + day + 7 * hour, 1, 3, 1, 1),
+            (base + 2 * day + 3 * hour, 1, 3, 1, 1),
+            (base + 3 * day + 6 * hour, 1, 3, 1, 1),
+        ])
+        col = collection(db, node(0))
+        now = base + 3 * day + 12 * hour
+        local = lambda ms: "%02d:%02d" % (ms % day // hour, ms % hour // 60_000)
+        self.assertEqual(("09:00", "07:00"), today.first_reviews(col, now, 0, 4, 14, local))
+        self.assertEqual(("07:00",), today.first_reviews(col, now, 0, 4, 1, local))
 
 
 class PanelTests(unittest.TestCase):
