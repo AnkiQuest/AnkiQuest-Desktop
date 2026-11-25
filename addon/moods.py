@@ -288,13 +288,16 @@ _STREAK_MOODS = {Stage.STARTED: SAD, Stage.QUARTER: SAD, Stage.HALF: HOPEFUL, St
 def streak_mood(state, reviews, stage, streak, frozen_days, goal, thresholds=None):
     """Today's streak mood for a day verdict `state` with `reviews` so far at `stage` toward the
     minimum, a `streak` of that many days and `frozen_days` frozen days in a row ending yesterday.
-    `thresholds` (the debug menu's, `mood_debug.thresholds`) only move the frozen moods; the
-    rest of the rule is pinned by tests/fixtures/streak_moods.json."""
+    `thresholds` (the debug menu's, `mood_debug.thresholds`) move the hopeful boundary and the
+    frozen moods; the rest of the rule is pinned by tests/fixtures/streak_moods.json."""
     # Today counts, or the goal says the player did what they planned.
     if state == STUDIED or goal == Goal.REACHED:
         return FIRE
     if state == UNKNOWN:
         return MOOD_UNKNOWN
+
+    # A moved review threshold moves the hopeful boundary without changing the shared stages.
+    stage = _hopeful_stage(reviews, stage, thresholds)
 
     # A protected day means a freeze kept at least yesterday, even without the heatmap.
     frozen = max(frozen_days, 1 if state == PROTECTED else 0)
@@ -303,10 +306,23 @@ def streak_mood(state, reviews, stage, streak, frozen_days, goal, thresholds=Non
 
     # Without a streak there is nothing to lose: any study is hopeful.
     if streak == 0:
-        if reviews == 0:
+        if reviews < (thresholds or {}).get("hopeful_reviews", 1):
             return ASLEEP
         return ALMOST if stage == Stage.THREE_QUARTERS else HOPEFUL
     return _STREAK_MOODS[stage]
+
+
+def _hopeful_stage(reviews, stage, thresholds):
+    """The stage a day counts as when a moved review threshold decides where hopeful starts, as
+    the phone's mood rule does: reaching it is at least half way, falling short keeps the day
+    before the halfway stage. An unmoved threshold leaves the stage alone, so the pinned
+    streak-mood fixtures keep passing."""
+    hopeful = (thresholds or {}).get("hopeful_reviews", 1)
+    if hopeful == 1:
+        return stage
+    if reviews >= hopeful:
+        return stage if stage.percent >= Stage.HALF.percent else Stage.HALF
+    return stage if stage.percent <= Stage.QUARTER.percent else Stage.QUARTER
 
 
 def _frozen(days, thresholds=None):
