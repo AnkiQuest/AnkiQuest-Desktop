@@ -2,7 +2,8 @@
 Python bindings, for rules the add-on needs synchronously, outside a page (day verdicts).
 
 The packager writes the library of each desktop platform, with a copy of the bindings, to
-rules/<platform>/ from the release ankiquest-rules.json pins. The bindings load the library
+rules/<platform>/ from the newest rules-<N> release, recorded in rules/release.json. The
+bindings load the library
 next to them with ctypes, so one library serves every Python version:
 
     rules/<platform>/ankiquest_rules.py ──ctypes──▶ rules/<platform>/libankiquest_rules.so
