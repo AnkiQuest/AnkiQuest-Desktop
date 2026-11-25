@@ -15,7 +15,7 @@ share = load_in_package("aq_cow", "share")
 client = load_in_package("aq_cow", "client")
 moments = load_in_package("aq_cow", "moments")
 
-# Shared rules pinned by tests/ankiquest-server.sha.
+# Shared rules from AnkiQuest-Server master (docs/desktop.md, Server data).
 FIXTURE = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
 EXAMPLES = ADDON.parent / "tests/api-examples"
 LIVE = [rule for rule in FIXTURE["companions"] if rule["status"] == "live"]
