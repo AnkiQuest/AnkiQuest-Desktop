@@ -9,6 +9,7 @@ addon:
       - any-glob-to-any-file:
           - addon/**
           - ankiquest-art.json
+          - ankiquest-rules.json
           - tools/package-addon/**
 
 tests:

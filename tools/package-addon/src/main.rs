@@ -1,7 +1,8 @@
 //! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb:
 //! `cargo run --manifest-path tools/package-addon/Cargo.toml --
 //! --output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-//! [--metadata <file>]`, or `-- art` for the pictures alone.
+//! [--metadata <file>]`, `-- art` for the pictures alone, or `-- rules`
+//! for the shared rules' module alone.
 //!
 //! The archive is reproducible: the same commit and channel always give
 //! the same bytes. The GitHub and AnkiWeb builds differ only in the
@@ -10,7 +11,10 @@
 //!
 //! Before packaging, it unpacks the add-on's companion pictures into
 //! `addon/` from the AnkiQuest-Art release `ankiquest-art.json` pins
-//! (see `art`). `package-addon art` does only that, for a checkout.
+//! (see `art`), and writes the shared rules' WebAssembly module into
+//! `addon/rules/` from the AnkiQuest-Server release `ankiquest-rules.json`
+//! pins (see `rules`). `package-addon art` and `package-addon rules` each
+//! do only their part, for a checkout.
 
 use std::collections::BTreeMap;
 use std::env;
@@ -23,6 +27,8 @@ use serde_json::{Value, json};
 
 mod art;
 mod json;
+mod release;
+mod rules;
 mod zip;
 
 use json::Object;
@@ -106,15 +112,17 @@ struct Args {
 /// The subcommand that only unpacks the pictures into `addon/`.
 const ART_COMMAND: &str = "art";
 
+/// The subcommand that only writes the rules module into `addon/rules/`.
+const RULES_COMMAND: &str = "rules";
+
 /// Runs `--output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-/// [--metadata <file>]`, or `art`.
+/// [--metadata <file>]`, `art` or `rules`.
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
+    let repo = root();
     let result = match args.as_slice() {
-        [command] if command == ART_COMMAND => {
-            let repo = root();
-            art::fetch(&repo, &repo.join(ADDON))
-        }
+        [command] if command == ART_COMMAND => art::fetch(&repo, &repo.join(ADDON)),
+        [command] if command == RULES_COMMAND => rules::fetch(&repo, &repo.join(ADDON)),
         _ => package(&args),
     };
     match result {
@@ -132,6 +140,7 @@ fn package(args: &[String]) -> Result<(), String> {
     let repo = root();
     let version = version(&repo, &args.source)?;
     art::fetch(&repo, &repo.join(ADDON))?;
+    rules::fetch(&repo, &repo.join(ADDON))?;
     build(&repo.join(ADDON), &args.output, &version, args.channel)?;
 
     // The nightly release publishes this for the add-on's update check.

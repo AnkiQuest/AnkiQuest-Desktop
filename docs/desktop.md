@@ -122,6 +122,34 @@ Where a companion has no master for a pose, the add-on shows the fallback
 shows the core pose `CORE_FALLBACKS` in `addon/moods.py` names, as
 AnkiQuest-Art's `poses.json` does.
 
+## Shared rules module
+
+The heatmap's colour levels come from the shared rules' WebAssembly module
+(`addon/rules/ankiquest_rules.wasm`), AnkiQuest-Server's `crates/rules`
+built for the pages Anki shows in Qt WebEngine (`docs/shared-rules.md` in
+AnkiQuest-Server). `addon/rules.py` inlines it into a page, which compiles
+it and calls its exports; every Anki the add-on supports has a WebEngine
+that runs WebAssembly, so there is no Python copy of those rules.
+
+The module is not committed. It comes from the AnkiQuest-Server
+`rules-<N>` release that `ankiquest-rules.json` pins, with its SHA-256,
+and is fetched and checked like the pictures (`ANKIQUEST_RULES_CACHE`,
+`ANKIQUEST_RULES_DIR`). The packager writes it before every build; for a
+checkout:
+
+```sh
+cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules
+```
+
+While the pin names no release (`"tag": null`), CI builds the module from
+the pinned commit with AnkiQuest-Server's `crates/rules-wasm/build.sh`
+(`.github/scripts/rules-module.sh`) and checks it against the pin. To do
+the same locally, run that script with `RUNNER_TEMP` and `GITHUB_ENV` set,
+or point `ANKIQUEST_RULES_DIR` at the output of `build.sh`.
+
+`tests/qt_heatmap_rules.py` runs the fixture's `intensity_cases` through
+the module in WebEngine, with the loader the pages use.
+
 ## API audit
 
 Checked against the installed 23.10 and 26.09.4 APIs:

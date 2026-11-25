@@ -124,6 +124,14 @@ jobs:
       - name: Fetch the companion pictures
         if: needs.changes.outputs.code == 'true'
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
+      # The heatmap and its tests run the shared rules' module that
+      # ankiquest-rules.json pins.
+      - name: Build the rules module while the pin names no release
+        if: needs.changes.outputs.code == 'true'
+        run: bash .github/scripts/rules-module.sh
+      - name: Fetch the rules module
+        if: needs.changes.outputs.code == 'true'
+        run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules
       - name: Lint the add-on
         if: needs.changes.outputs.code == 'true'
         run: python -m pyflakes addon
@@ -154,6 +162,10 @@ jobs:
           python -m pip install -r tests/requirements-anki-26.9.4.txt
       - name: Fetch the companion pictures
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
+      - name: Build the rules module while the pin names no release
+        run: bash .github/scripts/rules-module.sh
+      - name: Fetch the rules module
+        run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules
       - name: Compare the screenshots with a fresh drawing
         env:
           ANKIQUEST_SCREENSHOTS_OUT: ${{ runner.temp }}/screenshots
@@ -190,6 +202,8 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: tools/package-addon
+      - name: Build the rules module while the pin names no release
+        run: bash .github/scripts/rules-module.sh
       - name: Check the packager
         run: |
           cargo fmt --all --manifest-path "$PACKAGER" --check

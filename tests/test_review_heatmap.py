@@ -76,16 +76,6 @@ class StudiedShare(unittest.TestCase):
         self.assertEqual(7, self.share("2024-03-01", "2024-01-21", "2024-02-28", "2024-02-29"))
 
 
-class Levels(unittest.TestCase):
-    def test_shared_color_levels(self):
-        cases = json.loads(FIXTURE.read_text("utf-8"))["intensity_cases"]
-        self.assertTrue(cases)
-        for case in cases:
-            average = case["daily_average"]
-            with self.subTest(average=average):
-                self.assertEqual(case["levels"], [heatmap.intensity(count, average) for count in case["counts"]])
-
-
 class StudyDate(unittest.TestCase):
     def test_follows_the_rollover_through_dst_and_midnight(self):
         berlin = ZoneInfo("Europe/Berlin")

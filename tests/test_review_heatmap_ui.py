@@ -30,11 +30,12 @@ def page_data(block):
 class Colours(unittest.TestCase):
     def test_reviews_and_forecast_by_level(self):
         data = heatmap.summarize(TODAY, {day(0): 10, day(-1): 30}, {day(1): 4, day(2): 50})
-        self.assertEqual("l1", ui.colour(data, day(0)))
-        self.assertEqual("l3", ui.colour(data, day(-1)))
-        self.assertEqual("l0", ui.colour(data, day(-2)))
-        self.assertEqual("f1", ui.colour(data, day(1)))
-        self.assertEqual("f4", ui.colour(data, day(2)))
+        # The page adds each count's level from the rules module (qt_heatmap_rules.py).
+        self.assertEqual(("l", 10, 0), ui.colour(data, day(0)))
+        self.assertEqual(("l", 30, 0), ui.colour(data, day(-1)))
+        self.assertEqual(("l", 0, 0), ui.colour(data, day(-2)))
+        self.assertEqual(("f", 4, 0), ui.colour(data, day(1)))
+        self.assertEqual(("f", 50, 0), ui.colour(data, day(2)))
 
     def test_the_verdict_colours_the_days_ankiquest_judged(self):
         verdicts = {
@@ -46,11 +47,11 @@ class Colours(unittest.TestCase):
         }
         reviews = {day(-1): 50, day(-2): 50, day(-3): 50, day(-4): 50}
         data = heatmap.summarize(TODAY, reviews, {}, {day(-2)}, verdicts)
-        self.assertEqual("s", ui.colour(data, day(-1)))
-        self.assertEqual("z k", ui.colour(data, day(-2)))
-        self.assertEqual("l0", ui.colour(data, day(-3)))
-        self.assertEqual("l2", ui.colour(data, day(-4)))
-        self.assertEqual("z k", ui.colour(data, day(-5)))
+        self.assertEqual(("s", None, 0), ui.colour(data, day(-1)))
+        self.assertEqual(("z", None, 1), ui.colour(data, day(-2)))
+        self.assertEqual(("l0", None, 0), ui.colour(data, day(-3)))
+        self.assertEqual(("l", 50, 0), ui.colour(data, day(-4)))
+        self.assertEqual(("z", None, 1), ui.colour(data, day(-5)))
 
 
 class Texts(unittest.TestCase):
@@ -82,7 +83,8 @@ class Block(unittest.TestCase):
         page = page_data(ui.html(data, english, "de_DE"))
         self.assertEqual("de-DE", page["lang"])
         self.assertEqual(("2024-03-01", "2024-05-30", 2024, 2024), (page["today"], page["end"], page["firstYear"], page["lastYear"]))
-        self.assertEqual({"2024-02-29": ["l2", "2 reviews", 1], "2024-03-04": ["f1", "1 review card due (estimate)", 1]}, page["days"])
+        self.assertEqual(2.0, page["average"])
+        self.assertEqual({"2024-02-29": ["l", "2 reviews", 1, 2, 0], "2024-03-04": ["f", "1 review card due (estimate)", 1, 1, 0]}, page["days"])
 
     def test_a_label_cannot_end_the_script(self):
         block = ui.html(heatmap.summarize(TODAY, {}, {}), lambda text: text + "</script><b>")

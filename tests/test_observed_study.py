@@ -61,7 +61,7 @@ class MergedDays(unittest.TestCase):
                 data = heatmap.summarize(day, server.reviews, {}, server.protected, server.verdicts)
                 counts = cell["state"] in ("met", "unverified")
                 self.assertEqual(1 if counts else 0, data.current_streak)
-                self.assertEqual(not counts, heatmap_ui.colour(data, day) in ("s", "l0"))
+                self.assertEqual(not counts, heatmap_ui.colour(data, day)[0] in ("s", "l0"))
                 if cell["state"] == "unverified":
                     self.assertTrue(heatmap_ui.describe(data, day, english).endswith(" · Time not known"))
 

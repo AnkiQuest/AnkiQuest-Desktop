@@ -4,7 +4,7 @@ on:
   push:
     tags: ["addon-*"]
     branches: [master]
-    paths: ["addon/**", "ankiquest-art.json", ".github/workflows/addon.yml", "tools/package-addon/**"]
+    paths: ["addon/**", "ankiquest-art.json", "ankiquest-rules.json", ".github/workflows/addon.yml", "tools/package-addon/**"]
   workflow_dispatch:
 
 permissions:
@@ -25,6 +25,9 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: tools/package-addon
+
+      - name: Build the rules module while the pin names no release
+        run: bash .github/scripts/rules-module.sh
 
       - name: Version
         id: version
