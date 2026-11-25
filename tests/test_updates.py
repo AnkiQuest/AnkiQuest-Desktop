@@ -171,6 +171,7 @@ class UpdateOwnership(unittest.TestCase):
     run_task = fixture.RefreshTests.run_task
     read_rows = fixture.RefreshTests.read_rows
     write_config = fixture.RefreshTests.write_config
+    write_config = fixture.RefreshTests.write_config
 
     def installed(self, folder):
         (Path(folder) / "version.json").write_text(json.dumps({"release": 11, "nightly": 0}), "utf-8")
@@ -202,3 +203,72 @@ class UpdateOwnership(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RefusedUpdates(unittest.TestCase):
+    """A build found incompatible is remembered: not downloaded and not offered again."""
+
+    def test_an_incompatible_build_is_remembered_until_another_appears(self):
+        profile = {}
+        refused = {"release": 16, "nightly": 0, "commit": "abc"}
+        updates.remember_refused(profile, refused)
+        self.assertTrue(updates.refused(profile, refused))
+        # Another candidate is still offered: only the build that failed is remembered.
+        self.assertFalse(updates.refused(profile, {"release": 17, "nightly": 0, "commit": "abc"}))
+        self.assertFalse(updates.refused(profile, {"release": 16, "nightly": 1, "commit": "abc"}))
+        updates.remember_refused(profile, {"release": 17, "nightly": 0, "commit": "abc"})
+        self.assertFalse(updates.refused(profile, refused))
+
+    def test_without_a_remembered_build_nothing_is_refused(self):
+        self.assertFalse(updates.refused({}, {"release": 16, "nightly": 0, "commit": ""}))
+        self.assertFalse(updates.refused({"ankiquestUpdateRefused": (16, 1, "abc")}, {"release": 16, "nightly": 0, "commit": ""}))
+        self.assertFalse(updates.refused({}, None))
+
+
+class RefusedOffering(unittest.TestCase):
+    setUp = fixture.RefreshTests.setUp
+    run_task = fixture.RefreshTests.run_task
+    read_rows = fixture.RefreshTests.read_rows
+    write_config = fixture.RefreshTests.write_config
+
+    def installed(self, folder, tag):
+        (Path(folder) / "version.json").write_text(json.dumps({"release": 11, "nightly": 0}), "utf-8")
+        self.addon.ADDON_DIR = Path(folder)
+        candidate = {"release": tag, "nightly": 0, "commit": "abc", "url": "u"}
+        self.addon.updates.available = Mock(return_value=candidate)
+        self.addon.updates.download = Mock()
+        self.addon.offer_update = Mock()
+        return candidate
+
+    def confirm_incompatible(self, candidate):
+        # Anki's installer would find the package needs a newer Anki: the shipped guard shows its
+        # tooltip and keeps the installed add-on.
+        self.addon.mw.addonManager.readManifestFile = Mock(return_value={
+            "package": "ankiquest", "min_point_version": 99,
+        })
+        self.addon.mw.addonManager.install = Mock()
+        self.addon.install_update("nowhere.ankiaddon", candidate)
+        self.addon.tooltip.assert_called_once()
+        self.addon.mw.addonManager.install.assert_not_called()
+
+    def test_an_incompatible_build_is_downloaded_and_complained_about_once(self):
+        with tempfile.TemporaryDirectory() as folder:
+            candidate = self.installed(folder, 16)
+            self.addon.updates.SOURCE = self.addon.updates.UpdateSource.GITHUB
+            self.addon.maybe_check_updates()
+            self.addon.offer_update.assert_called_once()
+            self.confirm_incompatible(candidate)
+
+            # The next day's check finds the same candidate and skips it entirely.
+            self.addon.mw.pm.profile[self.addon.UPDATE_CHECK_KEY] = 0
+            self.addon.offer_update.reset_mock()
+            self.addon.tooltip.reset_mock()
+            self.addon.maybe_check_updates()
+            self.addon.offer_update.assert_not_called()
+            self.assertTrue(updates.refused(self.addon.mw.pm.profile, candidate))
+
+            # A newer build is offered again.
+            newer = dict(candidate, release=17)
+            self.addon.updates.available = Mock(return_value=newer)
+            self.addon.maybe_check_updates()
+            self.addon.offer_update.assert_called_once()
