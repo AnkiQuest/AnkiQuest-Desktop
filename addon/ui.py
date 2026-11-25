@@ -27,7 +27,7 @@ from .decks import label, ordered
 from .language import tr
 from .share import face_path
 from .today_ui import settings_section
-from . import companion_art, help_ui, reminders_ui, settings_sync, updates
+from . import companion_art, help_ui, mood_debug_ui, reminders_ui, settings_sync, updates
 
 # Anki-tan's CC BY-SA 4.0 licence asks for this credit; Android shows the same on its About screen.
 ANKI_TAN_URL = "https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html"
@@ -220,6 +220,7 @@ def _folded(title, layout):
 def settings_dialog(
     parent, config, on_test, on_upload_all, companion="aki", on_account=None, *,
     extra=None, on_manage=None, on_decks=None, on_privacy=None, on_two_factor=None, on_countdowns=None,
+    on_debug=None,
 ):
     """One scrollable dialog. Server sections save only for the account they loaded."""
     dialog = QDialog(parent)
@@ -316,7 +317,10 @@ def settings_dialog(
     reminders = reminders_ui._Controls(groups["notify"], config)
     hours = reminders._hours
 
-    groups["app"].addWidget(QLabel(tr("Version: %s") % help_ui.installed_label(Path(__file__).parent)))
+    # Control-click opens the hidden mood debug menu (mood_debug_ui); a plain click is nothing.
+    version = mood_debug_ui.VersionLabel(tr("Version: %s") % help_ui.installed_label(Path(__file__).parent), on_debug)
+    version.setObjectName("ankiquest_version_label")
+    groups["app"].addWidget(version)
     groups["app"].addWidget(QLabel(tr("Updates: %s") % updates.SOURCE.value))
     groups["app"].addWidget(_credit())
 
