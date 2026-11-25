@@ -752,9 +752,9 @@ class HomeTests(unittest.TestCase):
         self.mw.col.decks.select.assert_called_once_with(5)
         self.mw.onOverview.assert_called_once_with()
         handle(False, "ankiquest:period:month", self.mw.deckBrowser)
-        self.assertEqual("month", self.mw.pm.profile[self.home.board_data._OLD_PERIOD])
+        self.assertEqual("month", self.home.board_data._chosen(self.mw.pm.profile, self.api).period)
         self.assertFalse(handle(False, "ankiquest:period:day", object()))
-        self.assertEqual("month", self.mw.pm.profile[self.home.board_data._OLD_PERIOD])
+        self.assertEqual("month", self.home.board_data._chosen(self.mw.pm.profile, self.api).period)
 
     def session(self, reviews):
         self.mw.state = "review"
