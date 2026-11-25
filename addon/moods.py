@@ -357,9 +357,12 @@ def _streak(view):
 
 
 def _stage(view):
-    """The displayed day's stage toward its minimum."""
+    """The displayed day's stage toward its minimum; older servers send whole minutes only."""
     today = (view or {}).get("today") or {}
-    return Stage.of(int(today.get("time_ms") or 0), int(today.get("streak_minutes") or 0))
+    time_ms = today.get("time_ms")
+    if time_ms is None:
+        time_ms = int(today.get("minutes") or 0) * MINUTE_MS
+    return Stage.of(int(time_ms or 0), int(today.get("streak_minutes") or 0))
 
 
 def today_mood(view, goal):

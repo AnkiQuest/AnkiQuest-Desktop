@@ -90,6 +90,11 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual(moods.HOPEFUL, moods.today_mood(view(600_000), moods.Goal.OPEN))
         self.assertEqual(moods.ALMOST, moods.today_mood(view(900_000), moods.Goal.OPEN))
 
+        # Older servers send whole minutes only.
+        older = view(0)
+        older["today"] = {"reviews": 4, "minutes": 10, "streak_minutes": 20}
+        self.assertEqual(moods.HOPEFUL, moods.today_mood(older, moods.Goal.OPEN))
+
     def test_every_shared_frozen_run(self):
         for case in self.fixture["frozen_run"]:
             with self.subTest(case=case["name"]):
