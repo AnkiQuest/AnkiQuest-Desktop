@@ -1634,7 +1634,7 @@ PORTUGUESE.update({
 
 # Observed study from AnkiQuest Lite, in the website's words (AnkiQuest-Server static/translations-*.json).
 SPANISH.update({
-    "Studied today · time not known": "Estudió hoy · tiempo desconocido",
+    "Studied today · time not known": "Estudiado hoy · tiempo desconocido",
     "Time not known": "Tiempo desconocido",
     "Observed": "Observado",
     "Includes answers read from AnkiDroid without review times": "Incluye respuestas leídas de AnkiDroid sin tiempos de repaso",
@@ -1655,7 +1655,7 @@ FRENCH.update({
 })
 
 PORTUGUESE.update({
-    "Studied today · time not known": "Estudei hoje · tempo desconhecido",
+    "Studied today · time not known": "Estudado hoje · tempo desconhecido",
     "Time not known": "Tempo desconhecido",
     "Observed": "Observado",
     "Includes answers read from AnkiDroid without review times": "Inclui respostas lidas do AnkiDroid sem tempos de revisão",
