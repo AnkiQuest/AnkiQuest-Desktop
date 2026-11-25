@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: addon-${{ github.ref }}
@@ -17,15 +17,16 @@ concurrency:
 jobs:
   package:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # creates the release and replaces the nightly one
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
 
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-        with:
-          workspaces: tools/package-addon
-
+      # No Rust cache: a release is built from a clean registry and target,
+      # so a cache a pull request wrote can't reach the published archive.
       - name: Version
         id: version
         run: |
