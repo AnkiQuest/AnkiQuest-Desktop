@@ -930,7 +930,7 @@ def submit_account(values, finish):
 
     def work():
         if values["new"]:
-            return sign_up(values["url"], values["user"], values["password"], values["display"], device)
+            return sign_up(values["url"], values["user"], values["password"], values["display"], device, values.get("public"))
         return sign_in(values["url"], values["user"], values["password"], device, values.get("code"))
 
     def done(future):
