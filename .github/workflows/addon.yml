@@ -4,7 +4,7 @@ on:
   push:
     tags: ["addon-*"]
     branches: [master]
-    paths: ["addon/**", "ankiquest-art.json", "ankiquest-rules.json", ".github/workflows/addon.yml", "tools/package-addon/**"]
+    paths: ["addon/**", "ankiquest-art.json", ".github/workflows/addon.yml", "tools/package-addon/**"]
   workflow_dispatch:
 
 permissions:
@@ -26,11 +26,11 @@ jobs:
         with:
           workspaces: tools/package-addon
 
-      - name: Build the rules module while the pin names no release
-        run: bash .github/scripts/rules-module.sh
-
+      # The archives take the newest AnkiQuest-Server rules release and record its tag.
       - name: Version
         id: version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           # The GitHub release updates itself from GitHub releases.
           cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- --updates github --output ankiquest.ankiaddon \
