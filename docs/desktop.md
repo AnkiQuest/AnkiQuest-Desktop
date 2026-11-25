@@ -141,14 +141,22 @@ checkout:
 cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules
 ```
 
-While the pin names no release (`"tag": null`), CI builds the module from
-the pinned commit with AnkiQuest-Server's `crates/rules-wasm/build.sh`
-(`.github/scripts/rules-module.sh`) and checks it against the pin. To do
-the same locally, run that script with `RUNNER_TEMP` and `GITHUB_ENV` set,
-or point `ANKIQUEST_RULES_DIR` at the output of `build.sh`.
+To try a release that is not published yet, point `ANKIQUEST_RULES_DIR` at
+a folder with its assets; they are checked against the pin the same way.
 
 `tests/qt_heatmap_rules.py` runs the fixture's `intensity_cases` through
 the module in WebEngine, with the loader the pages use.
+
+Rules Python needs synchronously, outside a page, use the same crate as a
+UniFFI library: today's day verdict (`addon/day_verdict.py`), with deck
+names to follow. The release carries the library of each platform Anki
+24.11 and newer run on (Linux x86_64 and aarch64, Windows x86_64, macOS
+arm64 and x86_64) and its Python bindings; the packager writes each to
+`addon/rules/<platform>/` with a copy of the bindings, and
+`addon/native_rules.py` loads the one for the running platform. The
+bindings load the library with `ctypes`, so one library serves every
+Python version. On another platform the day verdict is unknown.
+`tests/test_day_verdicts.py` runs `day_verdicts.json` through the library.
 
 ## API audit
 

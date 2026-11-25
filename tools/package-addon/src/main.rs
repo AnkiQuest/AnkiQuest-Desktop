@@ -59,6 +59,8 @@ const EXCLUDED: &[&str] = &[
 /// File extensions that are packaged.
 const FORMATS: &[&str] = &[
     "py", "json", "png", "md", "js", "html", "css", "svg", "wasm",
+    // The shared rules' libraries (addon/native_rules.py).
+    "so", "dll", "dylib",
 ];
 
 /// The add-on's entry point, which Anki imports.

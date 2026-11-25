@@ -1,12 +1,14 @@
-"""The add-on's verdict on today agrees with the server's golden cases."""
+"""The add-on's verdict on today agrees with the server's golden cases, through the shared rules
+library (needs package-addon rules)."""
 
 import json
 import unittest
 from pathlib import Path
 
-from addon_loader import load_module
+from addon_loader import load_in_package
 
-day_verdict = load_module("aq_day_verdict", "day_verdict.py")
+day_verdict = load_in_package("aq_day_verdict", "day_verdict")
+native_rules = load_in_package("aq_day_verdict", "native_rules")
 
 # Shared rules, including observed study, pinned by tests/ankiquest-server.sha.
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "day_verdicts.json"
@@ -24,10 +26,12 @@ class DayVerdicts(unittest.TestCase):
                     self.assertIsNone(found)
                     continue
                 waiting = found.pop("waiting")
+                found_label = found.pop("label")
+                self.assertEqual(found_label, day_verdict.label(dict(found, label=found_label)))
                 # Copies from before the server pinned the day's words have no label.
                 if "label" in expected:
                     expected = dict(expected)
-                    self.assertEqual(expected.pop("label"), day_verdict.label(found))
+                    self.assertEqual(expected.pop("label"), found_label)
                 self.assertEqual(expected, found)
                 # Waiting: today counts, but the server says so only once the unsent reviews arrive.
                 self.assertEqual(expected["met"] and expected["streak_state"] != case["server"]["streak_state"], waiting)
@@ -79,6 +83,28 @@ class DayVerdicts(unittest.TestCase):
         self.assertIn("ease > 0 and type < 4", seen[0][0])
         self.assertEqual((5,), seen[0][1])
         self.assertEqual([], day_verdict.unsent(Col(), {}))
+
+
+class Library(unittest.TestCase):
+    def test_this_platform_has_a_library(self):
+        # The tests run on a platform the release builds for; a missing library is a failure.
+        self.assertIsNotNone(native_rules.load())
+
+    def test_platform_folders(self):
+        self.assertEqual("linux-x86_64", native_rules.platform_folder("linux", "x86_64"))
+        self.assertEqual("linux-aarch64", native_rules.platform_folder("linux", "aarch64"))
+        self.assertEqual("windows-x86_64", native_rules.platform_folder("win32", "AMD64"))
+        self.assertEqual("macos-arm64", native_rules.platform_folder("darwin", "arm64"))
+        self.assertEqual("macos-x86_64", native_rules.platform_folder("darwin", "x86_64"))
+        self.assertIsNone(native_rules.platform_folder("win32", "ARM64"))
+        self.assertIsNone(native_rules.platform_folder("freebsd14", "amd64"))
+
+    def test_an_unknown_streak_state_has_no_verdict(self):
+        server = {
+            "streak": 3, "streak_state": "dormant", "day_ends_at": 2_000, "last_review_id": 100,
+            "today": {"reviews": 1, "minutes": 4, "streak_minutes": 5, "starts_at": 0, "time_ms": 240_000},
+        }
+        self.assertIsNone(day_verdict.verdict(server, [], 1_000))
 
 
 if __name__ == "__main__":

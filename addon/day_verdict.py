@@ -1,11 +1,13 @@
 """Today's streak verdict, the server's way, with reviews not uploaded yet.
 
 The server judges every day. The one thing the add-on works out itself is today, right after
-answering cards it has not uploaded: it adds their review time to what the last profile said,
-by the rule in AnkiQuest-Server's docs/mobile-api.md ("day verdicts"), pinned by tests/fixtures/day_verdicts.json.
-
-Plain Python, so the tests load it without Anki.
+answering cards it has not uploaded: it adds their review time to what the last profile said.
+The rule is AnkiQuest-Server's crates/rules (today_verdict), called through the shared rules
+library (native_rules.py), pinned by tests/fixtures/day_verdicts.json. This module reads the
+profile into the library's types and the answer back into the dicts the add-on uses.
 """
+
+from . import native_rules
 
 MINUTE_MS = 60_000
 _UNKNOWN, _SYNCING, _MET, _PROTECTED, _PENDING = "unknown", "syncing", "met", "protected", "pending"
@@ -14,12 +16,14 @@ _UNKNOWN, _SYNCING, _MET, _PROTECTED, _PENDING = "unknown", "syncing", "met", "p
 # the minimum: the server's `streak_state` and the fixture's label, and a displayed day status.
 UNVERIFIED = "unverified"
 
-# The server's states of a day that already counts toward the streak.
-_STUDIED_STATE = "studied"
-_COUNTED = (_STUDIED_STATE, UNVERIFIED)
-
 # The day's words, as the fixture's `label` names them.
 STUDIED, SHORT = "studied", "short"
+
+# The server's `streak_state` names, which the library's StreakState spells in capitals.
+_STATES = ("studied", UNVERIFIED, _PENDING, _PROTECTED)
+
+# A bound the profile leaves out: no end to today, or no review uploaded yet.
+_NO_BOUND = 2 ** 63 - 1
 
 # The reviews the uploader sends (client.PENDING_SQL), with only what the verdict needs.
 UNSENT_SQL = "select id, time from revlog where id > ? and ease > 0 and type < 4 order by id"
@@ -34,87 +38,98 @@ def _int(value, default=None):
         return default
 
 
+def _count(value):
+    """A count the library takes: a whole number from 0."""
+    return max(0, _int(value, 0))
+
+
+def _server(rules, server):
+    """The profile as the library's ServerDay, or None when it lacks what the rule needs: today's
+    `starts_at` and `time_ms` (a server older than this add-on), or names a `streak_state` the
+    rule does not know. A profile without `streak_state` has counted nothing today: pending."""
+    today = server.get("today") if isinstance(server.get("today"), dict) else {}
+    starts, time_ms = _int(today.get("starts_at")), _int(today.get("time_ms"))
+    state = server.get("streak_state") or _PENDING
+    if starts is None or time_ms is None or state not in _STATES:
+        return None
+    ends = _int(server.get("day_ends_at"))
+    last = _int(server.get("last_review_id"))
+    return rules.ServerDay(
+        streak=_count(server.get("streak")),
+        streak_state=rules.StreakState[state.upper()],
+        day_ends_at=ends if ends else _NO_BOUND,
+        last_review_id=_NO_BOUND if last is None else last,
+        today=rules.ServerToday(
+            starts_at=starts,
+            reviews=_count(today.get("reviews")),
+            observed=_count(today.get("observed")),
+            time_ms=time_ms,
+            minutes=_count(today.get("minutes")),
+            streak_minutes=_count(today.get("streak_minutes")),
+        ),
+    )
+
+
+def _name(value):
+    """A library enum as the server and fixture name it, or None."""
+    return None if value is None else value.name.lower()
+
+
 def verdict(server, pending, now_ms):
     """Today's verdict from `server` (the last profile) and `pending`, reviews the collection
-    holds as dicts with `id` and `time_ms`; None when there is no profile, its day has ended or it
-    lacks today's `starts_at` and `time_ms` (a server older than this add-on).
+    holds as dicts with `id` and `time_ms`; None when there is no profile, its day has ended, it
+    lacks today's `starts_at` and `time_ms` (a server older than this add-on), names an unknown
+    streak state, or the rules library cannot be loaded.
 
     A pending review without `time_ms` is an observed answer (AnkiQuest Lite); the add-on's own
     reviews always have one.
 
     The answer has `met`, `streak_state`, `streak`, `reviews`, `observed`, `time_ms`, `minutes`,
-    `streak_minutes` and `unsent` (the reviews counted that the server does not have yet), as in
-    the fixture, plus `waiting`: met, but in that state only once the unsent reviews arrive.
-    `streak` and, while not met, `streak_state` are None when an unsent review belongs to an
-    earlier day.
+    `streak_minutes`, `unsent` (the reviews counted that the server does not have yet) and
+    `label`, as in the fixture, plus `waiting`: met, but in that state only once the unsent
+    reviews arrive. `streak` and, while not met, `streak_state` are None when an unsent review
+    belongs to an earlier day.
     """
     if not isinstance(server, dict):
         return None
-    ends = _int(server.get("day_ends_at"))
-    if ends is not None and ends and now_ms >= ends:
+    rules = native_rules.load()
+    if rules is None:
         return None
-    today = server.get("today") if isinstance(server.get("today"), dict) else {}
-    starts, time_ms = _int(today.get("starts_at")), _int(today.get("time_ms"))
-    if starts is None or time_ms is None:
+    day = _server(rules, server)
+    if day is None:
         return None
 
-    # Reviews after the last uploaded one count toward today once they fall inside it.
-    # Observed answers (no `time_ms`) are never in the review log, so each one is unsent.
-    last = _int(server.get("last_review_id"))
-    unsent = [
-        r for r in pending or ()
-        if "time_ms" not in r or (last is not None and (_int(r.get("id"), 0) or 0) > last)
+    # Observed answers have no time_ms; the add-on's own reviews always do.
+    reviews = [
+        rules.PendingReview(id=_int(r.get("id"), 0) or 0, time_ms=_int(r.get("time_ms"), 0) if "time_ms" in r else None)
+        for r in pending or ()
     ]
-    counted = [
-        r for r in unsent
-        if starts <= r["id"] and (ends is None or not ends or r["id"] < ends)
-    ]
-    earlier = any(r["id"] < starts for r in unsent)
-    reviews = max(0, _int(today.get("reviews"), 0)) + len(counted)
-    observed = max(0, _int(today.get("observed"), 0)) + sum(1 for r in counted if "time_ms" not in r)
-    time_ms += sum(_int(r.get("time_ms"), 0) or 0 for r in counted)
-    needed = max(0, _int(today.get("streak_minutes"), 0))
-
-    # Exact minutes meet the minimum; observed answers keep the day counting without them.
-    was = server.get("streak_state")
-    exact = was == _STUDIED_STATE or (reviews > 0 and time_ms >= needed * MINUTE_MS)
-    met = exact or was == UNVERIFIED or observed > 0
-    streak = max(0, _int(server.get("streak"), 0)) + (1 if met and was not in _COUNTED else 0)
-    if exact:
-        state = _STUDIED_STATE
-    elif met:
-        state = UNVERIFIED
-    else:
-        state = None if earlier else was
+    found = rules.today_verdict(day, reviews, now_ms)
+    if found.is_ended():
+        return None
+    today = found.verdict
+    state = _name(today.streak_state)
     return {
-        "met": met,
+        "met": today.met,
         "streak_state": state,
-        "streak": None if earlier else streak,
-        "reviews": reviews,
-        "observed": observed,
-        "time_ms": time_ms,
-        "minutes": max(0, time_ms) // MINUTE_MS,
-        "streak_minutes": needed,
-        "unsent": len(counted),
-        "waiting": met and state != was,
+        "streak": today.streak,
+        "reviews": today.reviews,
+        "observed": today.observed,
+        "time_ms": today.time_ms,
+        "minutes": today.minutes,
+        "streak_minutes": today.streak_minutes,
+        "unsent": today.unsent,
+        "label": _name(today.label),
+        "waiting": today.met and state != (server.get("streak_state") or _PENDING),
     }
 
 
 def label(found):
     """The words for a `verdict`: studied, unverified (counted on observed answers short of the
-    minimum), unknown, short (reviews under the minimum), protected or pending. Reviews today
-    outrank a protected streak, which says nothing was studied yet."""
+    minimum), unknown, short (reviews under the minimum), protected or pending."""
     if found is None:
         return _UNKNOWN
-    if found["met"]:
-        return UNVERIFIED if found["streak_state"] == UNVERIFIED else STUDIED
-    if found["streak_state"] is None:
-        return _UNKNOWN
-    if found["reviews"] > 0:
-        return SHORT
-    if found["streak_state"] == _PROTECTED:
-        return _PROTECTED
-    return _PENDING
+    return found.get("label", _UNKNOWN)
 
 
 def unsent(col, server):

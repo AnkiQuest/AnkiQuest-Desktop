@@ -26,9 +26,6 @@ jobs:
         with:
           workspaces: tools/package-addon
 
-      - name: Build the rules module while the pin names no release
-        run: bash .github/scripts/rules-module.sh
-
       - name: Version
         id: version
         run: |

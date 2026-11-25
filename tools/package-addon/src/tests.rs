@@ -123,6 +123,11 @@ fn local_state_is_excluded() {
         ".hidden.json",
         "debug.log",
         "build.json",
+        "rules/ankiquest_rules.wasm",
+        "rules/linux-x86_64/ankiquest_rules.py",
+        "rules/linux-x86_64/libankiquest_rules.so",
+        "rules/macos-arm64/libankiquest_rules.dylib",
+        "rules/windows-x86_64/ankiquest_rules.dll",
     ];
     let source = source(&folder, &files);
     let output = folder.path().join("addon.ankiaddon");
@@ -143,6 +148,11 @@ fn local_state_is_excluded() {
         "build.json",
         "config.md",
         "manifest.json",
+        "rules/ankiquest_rules.wasm",
+        "rules/linux-x86_64/ankiquest_rules.py",
+        "rules/linux-x86_64/libankiquest_rules.so",
+        "rules/macos-arm64/libankiquest_rules.dylib",
+        "rules/windows-x86_64/ankiquest_rules.dll",
         "version.json",
     ];
     assert_eq!(expected.as_slice(), names.as_slice());
