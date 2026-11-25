@@ -26,7 +26,7 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Rate and report.** Tools → AnkiQuest ends with Rate AnkiQuest (on AnkiWeb or GitHub), AnkiQuest changelog, which shows these notes, and Report a bug. Settings credits Shigeyuki for Anki-tan.
 
-**Updates.** The next add-on versions need Anki 24.11 or newer. On an older Anki, the GitHub download keeps this version and stops offering newer ones, instead of installing one that would not load.
+**Updates.** The next add-on versions need Anki 24.11 or newer. On an older Anki, the GitHub download keeps this version and stops offering newer ones, instead of installing one that would not load. An update your Anki cannot load also keeps the add-ons you have installed.
 
 **Fixes.** A review on a freeze-protected day counts toward today instead of reading "not studied yet".
 
