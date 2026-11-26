@@ -43,7 +43,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, rwkv_stats, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -844,6 +844,10 @@ def on_deck_browser(deck_browser, content):
     content.stats += board.html(profile, state["place"], waiting, tr, mascot, today, actions=actions, flame=flame)
     content.stats += board._connection_note(state["profile"], state["poll_failure"], tr)
     content.stats += '<p style="text-align:center;font-size:12px">%s</p>' % html.escape(_upload_status(api))
+    try:
+        content.stats += rwkv_stats.block(mw.col, tr)
+    except Exception as e:
+        print("ankiquest rwkv stats:", e)
 
 
 def on_js_message(handled, message, context):
