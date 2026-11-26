@@ -12,11 +12,10 @@ moods = load_module("aq_streak_moods", "moods.py")
 TESTS = Path(__file__).resolve().parent
 FIXTURE = TESTS / "fixtures" / "streak_moods.json"
 
-# Art's poses.json, copied beside the code from the pinned release by the fetch below.
+# Art's poses.json, copied beside the code from the pinned release.
 ART_POSES = ADDON / "poses.json"
 
-# How a checkout fetches the add-on's pictures from the pinned AnkiQuest-Art release.
-FETCH = "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+# moods.FETCH says how a checkout fetches the add-on's pictures from the pinned release.
 
 # Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows
 # frozen and almost shows hopeful; she has no frozen_2 or frozen_3 art, so those show her frozen.
@@ -152,7 +151,7 @@ class StreakMoods(unittest.TestCase):
         # The pictures come from the pinned AnkiQuest-Art release (docs/desktop.md, Companion pictures).
         # Every pose Art's poses.json names resolves, for every companion, to an exported picture or
         # to the exported picture of its fallback, and so does every picture named directly.
-        self.assertTrue((ADDON / "art").is_dir(), "Fetch the pictures first: " + FETCH)
+        self.assertTrue((ADDON / "art").is_dir(), "Fetch the pictures first: " + moods.FETCH)
         poses = [*moods.CORE_POSES, *moods.POSE_FALLBACKS]
 
         asked = set()
@@ -271,7 +270,7 @@ class StreakMoods(unittest.TestCase):
         # The pose list is Art's: the release's poses.json, unpacked beside the code, not a copy
         # on the server. Its core poses, extension fallbacks and core fallbacks are what moods
         # works with, with nothing of its own on top.
-        self.assertTrue(ART_POSES.is_file(), "Fetch the pictures first: " + FETCH)
+        self.assertTrue(ART_POSES.is_file(), "Fetch the pictures first: " + moods.FETCH)
         art = json.loads(ART_POSES.read_text("utf-8"))
         self.assertEqual(art["core"], list(moods.CORE_POSES))
         self.assertEqual(art["extensions"], moods.POSE_FALLBACKS)
@@ -303,6 +302,16 @@ class StreakMoods(unittest.TestCase):
                 stripped = {key: value for key, value in json.loads(art).items() if key != missing}
                 with self.assertRaises(ValueError):
                     moods.read_poses(json.dumps(stripped))
+        for name, wrong in (
+            ("core poses that are not strings", {"core": ["face", 7]}),
+            ("core that is not a list", {"core": "face"}),
+            ("fallbacks that are not strings", {"extensions": {"winner": 7}}),
+            ("core fallbacks that are not strings", {"core_fallbacks": {"happy": 7}}),
+        ):
+            with self.subTest(wrong=name):
+                broken = dict(json.loads(art), **wrong)
+                with self.assertRaises(ValueError):
+                    moods.read_poses(json.dumps(broken))
 
     def test_the_displayed_day_sets_the_state(self):
         def view(status, reviews=0):

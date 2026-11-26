@@ -95,6 +95,23 @@ fn source(folder: &TempDir, files: &[&str]) -> PathBuf {
 }
 
 #[test]
+fn the_archive_carries_art_poses_json() {
+    // moods.py fails to import without Art's poses.json, so the archive must carry it: a
+    // future EXCLUDED or FORMATS change that drops it cannot ship a loadable add-on.
+    let folder = TempDir::new().unwrap();
+    let output = folder.path().join("addon.ankiaddon");
+    build(
+        &root().join(ADDON),
+        &output,
+        &release_13(),
+        Channel::GitHub(Updates::GitHub),
+    )
+    .unwrap();
+    let members = members(&fs::read(&output).unwrap());
+    assert!(!member(&members, "poses.json").is_empty());
+}
+
+#[test]
 fn github_conflicts_with_ankiweb() {
     let manifest = real_manifest(Channel::GitHub(Updates::GitHub));
     assert_eq!(json!(["414948448"]), manifest["conflicts"]);

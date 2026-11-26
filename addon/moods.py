@@ -7,7 +7,6 @@ first, then from the collection's due cards, as the phone's AnkiquestAki.message
 """
 
 from enum import Enum, auto
-
 import json
 from pathlib import Path
 
@@ -144,12 +143,19 @@ COW_HUE_DEGREES = 250
 
 def read_poses(art):
     """The core poses, the extension fallbacks and the core fallbacks, as Art's `poses.json`
-    (`core`, `extensions`, `core_fallbacks`) names them."""
+    (`core`, `extensions`, `core_fallbacks`) names them. Only pose names and name-to-name
+    maps parse: anything else Art might write raises."""
     poses = json.loads(art)
-    try:
-        return (tuple(poses["core"]), poses["extensions"], poses["core_fallbacks"])
-    except (KeyError, TypeError) as error:
-        raise ValueError("Art's poses.json names no %s" % error.args[0]) from error
+    core = poses.get("core")
+    if not isinstance(core, list) or not all(isinstance(pose, str) for pose in core):
+        raise ValueError("Art's poses.json names no core poses")
+    for field in ("extensions", "core_fallbacks"):
+        names = poses.get(field)
+        if not isinstance(names, dict) or not all(
+            isinstance(pose, str) and isinstance(shown, str) for pose, shown in names.items()
+        ):
+            raise ValueError("Art's poses.json names no %s" % field)
+    return (tuple(core), poses["extensions"], poses["core_fallbacks"])
 
 
 # How a checkout unpacks the pictures and poses.json from the pinned AnkiQuest-Art release.

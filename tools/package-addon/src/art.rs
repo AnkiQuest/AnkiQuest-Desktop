@@ -249,8 +249,9 @@ fn picture(name: &str) -> bool {
 }
 
 /// Writes the release's `poses.json` beside the code, where the add-on's
-/// `moods.py` reads the poses and their fallbacks from. Only a file that is
-/// JSON is written.
+/// `moods.py` reads the poses and their fallbacks from. The parse guards a
+/// wrongly pinned asset: `asset()` checks the SHA-256, not that it is JSON.
+/// Only a file that is JSON is written.
 fn copy_poses(bytes: &[u8], addon: &Path) -> Result<(), String> {
     if let Err(e) = serde_json::from_slice::<Value>(bytes) {
         return Err(format!("{POSES_JSON}: {e}"));
@@ -485,7 +486,10 @@ mod tests {
         let addon = TempDir::new().unwrap();
         let poses = b"{\"core\": [\"face\", \"asleep\"]}";
         copy_poses(poses, addon.path()).unwrap();
-        assert_eq!(poses.to_vec(), fs::read(addon.path().join(POSES_JSON)).unwrap());
+        assert_eq!(
+            poses.to_vec(),
+            fs::read(addon.path().join(POSES_JSON)).unwrap()
+        );
     }
 
     #[test]
