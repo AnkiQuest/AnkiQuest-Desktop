@@ -844,10 +844,45 @@ def on_deck_browser(deck_browser, content):
     content.stats += board.html(profile, state["place"], waiting, tr, mascot, today, actions=actions, flame=flame)
     content.stats += board._connection_note(state["profile"], state["poll_failure"], tr)
     content.stats += '<p style="text-align:center;font-size:12px">%s</p>' % html.escape(_upload_status(api))
+    content.stats += _rwkv_block(tr)
+
+
+# The RWKV block for the deck browser, computed off the main thread and cached by the
+# collection's state (col.mod): the block appears when the answer arrives.
+_RWKV_BLOCK = {}
+_RWKV_PENDING = set()
+
+
+def _rwkv_block(tr):
+    from .language import percent, plural
+
     try:
-        content.stats += rwkv_stats.block(mw.col, tr)
+        if rwkv_stats.too_large(mw.col.db.scalar("select count() from cards where type = 2")):
+            return ""
     except Exception as e:
         print("ankiquest rwkv stats:", e)
+        return ""
+    mod = mw.col.mod
+    if mod in _RWKV_BLOCK:
+        return _RWKV_BLOCK[mod]
+    if mod in _RWKV_PENDING:
+        return ""
+
+    def done(future):
+        _RWKV_PENDING.discard(mod)
+        try:
+            rows = future.result()
+            block = "" if rows is None else '<div id="aq-rwkv">%s</div>' % rwkv_stats.html_rows(rows, tr, plural, percent)
+        except Exception as e:
+            print("ankiquest rwkv stats:", e)
+            block = ""
+        if _RWKV_BLOCK.get(mod, None) != block:
+            _RWKV_BLOCK[mod] = block
+            mw.deckBrowser.refresh()
+
+    _RWKV_PENDING.add(mod)
+    mw.taskman.run_in_background(lambda: rwkv_stats.recalls(mw.col), done)
+    return ""
 
 
 def on_js_message(handled, message, context):

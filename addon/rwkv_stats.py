@@ -2,13 +2,15 @@
 
 The definitions are Pedrubik2000's desktop add-on anki-rwkv-forecast, kept in
 AnkiquestRwkvForecast on Android: every number means "if you stop reviewing now". The block
-appears only while the backend can forecast: its RwkvOfflineFront call exists on the
+appears only while the backend can forecast: its RwkvOfflineForecast call exists on the
 RWKV Anki forks, and answers `available` once a model is loaded. Without it — plain Anki,
 no model — nothing is shown, exactly as the phone app hides its panel.
 """
 
+import enum
 import math
 from html import escape
+from typing import NamedTuple
 
 # The add-on's `near_margin`: "near" is recall from the target up to this far above it.
 NEAR_MARGIN = 0.03
@@ -26,6 +28,14 @@ ROLLOVER = -1
 # The deck-browser block holds the collection while it forecasts; on Android the deck list
 # skips the forecast above this many review cards.
 MAX_CARDS = 3000
+
+class Band(enum.Enum):
+    """The chart's three stacks, and the forecast's three counts."""
+
+    DUE = "due"
+    NEAR = "near"
+    SAFE = "safe"
+
 
 # The times the backend projects recall to: now, in 1 h, in 3 h, at the next rollover.
 OFFSETS = (0, 3600, 3 * 3600, ROLLOVER)
@@ -56,36 +66,47 @@ class Recall:
 def band(recall, target):
     """Due below the target, near within NEAR_MARGIN above it, safe beyond."""
     if recall < target:
-        return "due"
+        return Band.DUE
     if recall < target + NEAR_MARGIN:
-        return "near"
-    return "safe"
+        return Band.NEAR
+    return Band.SAFE
+
+
+Forecast = NamedTuple("Forecast", [
+    (name, int) for name in ("due", "near", "safe", "in_1h", "in_3h", "by_tomorrow")
+])
 
 
 def forecast(cards):
-    """Due, near and safe now, and the due cards later, as the forecast line prints them."""
-    now = {}
+    """Due, near and safe now, and the due cards later, as the forecast's two lines print them."""
+    now = {band: 0 for band in Band}
     for card in cards:
-        now[card.band(NOW)] = now.get(card.band(NOW), 0) + 1
-    later = [card for card in cards if card.band(NOW) != "due"]
+        now[card.band(NOW)] += 1
+    later = [card for card in cards if card.band(NOW) is not Band.DUE]
 
     def due_at(offset, rows):
-        return sum(1 for card in rows if card.band(offset) == "due")
+        return sum(1 for card in rows if card.band(offset) is Band.DUE)
 
-    return {
-        "due": now.get("due", 0),
-        "near": now.get("near", 0),
-        "safe": now.get("safe", 0),
-        "in_1h": due_at(IN_1H, later),
-        "in_3h": due_at(IN_3H, later),
+    return Forecast(
+        now[Band.DUE], now[Band.NEAR], now[Band.SAFE],
+        due_at(IN_1H, later), due_at(IN_3H, later),
         # "by tomorrow" counts every card due then, those due now included.
-        "by_tomorrow": due_at(TOMORROW, cards),
-    }
+        due_at(TOMORROW, cards),
+    )
 
 
 def percent(recall):
     """The bucket percent of `recall`: its floor in whole percent, clamped to the chart."""
     return min(HIGHEST, max(LOWEST, int(math.floor(recall * 100 + ROUNDING))))
+
+
+class Chart(NamedTuple):
+    """The recall chart: its buckets stacked by band, the cards below target, and the targets."""
+
+    buckets: list
+    below: int
+    total: int
+    targets: set
 
 
 def chart(cards):
@@ -97,13 +118,13 @@ def chart(cards):
         if card.at(NOW) < card.target:
             below += 1
         targets.add(card.target)
-        row = by_percent.setdefault(percent(card.at(NOW)), [0, 0, 0])
-        row["due near safe".split().index(card.band(NOW))] += 1
+        row = by_percent.setdefault(percent(card.at(NOW)), {band: 0 for band in Band})
+        row[card.band(NOW)] += 1
     buckets = []
     for value in range(LOWEST, HIGHEST + 1):
-        due, near, safe = by_percent.get(value, (0, 0, 0))
-        buckets.append((value, due, near, safe))
-    return buckets, below, len(cards), targets
+        row = by_percent.get(value, {band: 0 for band in Band})
+        buckets.append((value, row[Band.DUE], row[Band.NEAR], row[Band.SAFE]))
+    return Chart(buckets, below, len(cards), targets)
 
 
 def below_share(below, total):
@@ -111,31 +132,25 @@ def below_share(below, total):
     return below / total if total else 0.0
 
 
-def _whole_percent(value):
-    """A share from 0 to 1 as a percent, at most one decimal: 0.5 → "50%", 0.629 → "62.9%"."""
-    return ("%.1f" % (value * 100)).rstrip("0").rstrip(".") + "%"
-
-
-def forecast_text(forecast):
-    """The two forecast lines, worded as the add-on's."""
-    return (
-        "due %(due)d | near %(near)d | safe %(safe)d" % forecast + "\n"
-        + "due %(due)d · +%(in_1h)d in 1 h · +%(in_3h)d in 3 h · %(by_tomorrow)d by tomorrow" % forecast
+def forecast_lines(counts, tr):
+    """The forecast's two lines, translated before their numbers fill them."""
+    now = tr("due %d | near %d | safe %d") % (counts.due, counts.near, counts.safe)
+    later = tr("due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow") % (
+        counts.due, counts.in_1h, counts.in_3h, counts.by_tomorrow
     )
+    return now, later
 
 
-def below_line(below, total, targets, plural=None):
+def below_line(below, total, targets, plural, percent_format):
     """The chart's caption: "X of Y cards (Z%) below 90%", or "...below their desired
     retention" where the cards carry more than one target. The target arrives as a value, so
     the plural choice stays a translation key."""
-    if plural is None:
-        from .language import plural as plural
-    share = _whole_percent(below_share(below, total))
+    share = percent_format(below_share(below, total))
     if len(targets) == 1:
         one, other = "%d of %d card (%s) below %s", "%d of %d cards (%s) below %s"
-        values = (below, total, share, _whole_percent(next(iter(targets))))
+        values = (below, total, share, percent_format(next(iter(targets))))
     else:
-        one, other = "%d of %d card (%s) below their desired retention", "%d of %d cards (%s) below their desired retention"
+        one, other = "%d of %d card (%s) below its desired retention", "%d of %d cards (%s) below their desired retention"
         values = (below, total, share)
     return plural(one, other, total) % values
 
@@ -185,17 +200,17 @@ def too_large(count):
 
 def recalls(col):
     """Every review card's RWKV recall, or None while the backend cannot forecast."""
+    # Plain Anki has no RWKV backend call; a failing call is a real error again.
     try:
         response = col._backend.rwkv_offline_forecast(search="", offsets_secs=list(OFFSETS))
-        rows = _recalls_from(response)
-    except Exception:
+    except AttributeError:
         return None
-    return rows or None
+    return _recalls_from(response) or None
 
 
 STYLE = """<style>
 #aq-rwkv{--rwkv-due:#D32F2F;--rwkv-near:#EF6C00;--rwkv-safe:#2E7D32;--rwkv-axis:#666666;
---rwkv-line:#e5e5e5;--rwkv-bg:#fff;--rwkv-text:#3c3c3c;--rwkv-muted:#777;
+--rwkv-line:#e5e5e5;--rwkv-bg:#fff;--rwkv-text:#3c3c3c;--rwkv-muted:#6a6a6a;
 max-width:680px;margin:1em auto 0;text-align:left;color:var(--rwkv-text);background:var(--rwkv-bg);
 border:2px solid var(--rwkv-line);border-bottom-width:5px;border-radius:12px;padding:8px 12px;
 font:600 13px/1.35 "Nunito","Varela Round","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif}
@@ -207,8 +222,10 @@ font:600 13px/1.35 "Nunito","Varela Round","Segoe UI Variable Display","Segoe UI
 #aq-rwkv .rwkv-bar{display:flex;align-items:flex-end;gap:1px;margin:8px 0 2px 0;height:96px;border-bottom:1px solid var(--rwkv-axis)}
 #aq-rwkv .rwkv-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;min-width:0}
 #aq-rwkv .rwkv-col span{display:block}
-#aq-rwkv .rwkv-axis{display:flex;margin-top:2px;color:var(--rwkv-axis);font-size:10px}
-#aq-rwkv .rwkv-axis span{flex:1;text-align:right;transform:translateX(50%)}
+#aq-rwkv .rwkv-bar{position:relative}
+#aq-rwkv .rwkv-target{position:absolute;top:0;bottom:0;width:1px;background:var(--rwkv-due)}
+#aq-rwkv .rwkv-axis{position:relative;height:14px;margin-top:2px;color:var(--rwkv-axis);font-size:10px}
+#aq-rwkv .rwkv-axis span{position:absolute;transform:translateX(-50%)}
 </style>"""
 
 
@@ -216,36 +233,59 @@ def _scaled(count, top):
     return 96 * count / top if top else 0
 
 
-def html_rows(cards, tr):
-    """The block for the deck browser: the forecast line and the recall chart."""
-    from .language import plural
+# The axis labels every bucket that ends in 0 as "p%", the first reading "50%".
+AXIS_STEP = 10
 
-    buckets, below, total, targets = chart(cards)
-    top = max(row[1] + row[2] + row[3] for row in buckets) or 1
+
+def _at_bucket(value):
+    """Where `value` sits across the chart's width, as a percent of its span."""
+    return (value - LOWEST) / (HIGHEST - LOWEST) * 100
+
+
+def html_rows(cards, tr, plural, percent_format):
+    """The block for the deck browser: the two forecast lines and the recall chart."""
+    marks = chart(cards)
+    top = max(sum(row[1:]) for row in marks.buckets) or 1
     bars = []
-    for _value, due, near, safe in buckets:
+    for _value, *counts in marks.buckets:
         parts = "".join(
-            '<span style="display:block;height:%dpx;background:var(--rwkv-%s)"></span>' % (_scaled(count, top), name)
-            for name, count in (("safe", safe), ("near", near), ("due", due))
+            '<span style="display:block;height:%dpx;background:var(--rwkv-%s)"></span>'
+            % (_scaled(count, top), band.value)
+            for band, count in zip((Band.SAFE, Band.NEAR, Band.DUE), reversed(counts))
         )
         bars.append('<div class="rwkv-col">%s</div>' % parts)
+
+    # A vertical line at each desired retention, as Android's chart draws them.
+    targets = "".join(
+        '<div class="rwkv-target" style="left:%.1f%%"></div>' % (_at_bucket(percent(value) - 0.5))
+        for value in sorted(marks.targets)
+    )
 
     def line(text):
         return "<div>%s</div>" % text
 
-    axis = "".join("<span>%d%%</span>" % value for value in range(LOWEST, HIGHEST + 1, 25))
+    axis = "".join(
+        '<span style="left:%.1f%%%s">%s</span>'
+        % (_at_bucket(value), ";transform:translateX(-100%)" if value == HIGHEST else "",
+           ("≤%d%%" % LOWEST) if value == LOWEST else "%d%%" % value)
+        for value in range(LOWEST, HIGHEST + 1, AXIS_STEP)
+    )
+    caption = below_line(marks.below, marks.total, marks.targets, plural, percent_format)
+    now, later = forecast_lines(forecast(cards), tr)
     return (
         '<div class="rwkv-head">%s <span class="rwkv-note">%s</span></div>'
         % (escape(tr("RWKV forecast")), escape(tr("if you stop reviewing now")))
-        + line(escape(forecast_text(forecast(cards))))
+        + line(escape(now))
+        + line(escape(later))
         + '<div class="rwkv-head">%s</div>' % escape(tr("RWKV recall now"))
-        + '<div class="rwkv-bar">%s</div>' % "".join(bars)
+        + '<div class="rwkv-bar" role="img" aria-label="%s">%s%s</div>'
+        % (escape(caption), "".join(bars), targets)
         + '<div class="rwkv-axis">%s</div>' % axis
-        + line(escape(below_line(below, total, targets, plural)))
+        + line(escape(caption))
     )
 
 
-def block(col, tr):
+def block(col, tr, plural, percent_format):
     """The whole RWKV block, or empty when the backend cannot forecast or the collection is
     too large for the deck browser's render."""
     try:
@@ -256,4 +296,4 @@ def block(col, tr):
     cards = recalls(col)
     if cards is None:
         return ""
-    return '<div id="aq-rwkv">%s</div>' % html_rows(cards, tr)
+    return '<div id="aq-rwkv">%s</div>' % html_rows(cards, tr, plural, percent_format)

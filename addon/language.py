@@ -21,13 +21,13 @@ SPANISH = {
     "I conquered a card!": "¡He conquistado una tarjeta!",
     "Your study companion.": "Tu compañero de estudio.",
     "Study companion": "Compañero de estudio",
-    "RWKV forecast": "Pronóstico RWKV",
+    "RWKV forecast": "Previsión RWKV",
     "if you stop reviewing now": "si dejas de repasar ahora",
-    "due %d | near %d | safe %d": "vencidas %d | casi %d | seguras %d",
+    "due %d | near %d | safe %d": "vencidas %d | cerca %d | seguras %d",
     "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "vencidas %d · +%d en 1 h · +%d en 3 h · %d para mañana",
     "RWKV recall now": "Recuerdo RWKV ahora",
     "%d of %d card (%s) below %s": "%d de %d tarjeta (%s) por debajo de %s", "%d of %d cards (%s) below %s": "%d de %d tarjetas (%s) por debajo de %s",
-    "%d of %d card (%s) below their desired retention": "%d de %d tarjeta (%s) por debajo de su retención deseada", "%d of %d cards (%s) below their desired retention": "%d de %d tarjetas (%s) por debajo de su retención deseada",
+    "%d of %d card (%s) below its desired retention": "%d de %d tarjeta (%s) por debajo de su retención deseada", "%d of %d cards (%s) below their desired retention": "%d de %d tarjetas (%s) por debajo de su retención deseada",
     "Today's companion (debug)": "Compañero de estudio (depuración)",
     "Follow today's streak": "Seguir la racha de hoy",
     "Shown mood and pose:": "Ánimo y pose mostrados:",
@@ -188,13 +188,13 @@ GERMAN = {
     "Check for picture": "Nach Bild suchen", "Could not load the card (%s).": "Die Karte konnte nicht geladen werden (%s).",
     "Could not update the card (%s).": "Die Karte konnte nicht aktualisiert werden (%s).",
     "It is too late to undo this share.": "Das Teilen lässt sich nicht mehr rückgängig machen.",
-    "RWKV forecast": "RWKV-Vorhersage",
-    "if you stop reviewing now": "wenn du jetzt mit dem Lernen aufhörst",
+    "RWKV forecast": "RWKV-Prognose",
+    "if you stop reviewing now": "wenn du jetzt aufhörst zu wiederholen",
     "due %d | near %d | safe %d": "fällig %d | knapp %d | sicher %d",
-    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "fällig %d · +%d in 1 h · +%d in 3 h · %d bis morgen",
-    "RWKV recall now": "RWKV-Abruf jetzt",
+    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "fällig %d · +%d in 1 Std. · +%d in 3 Std. · %d bis morgen",
+    "RWKV recall now": "RWKV-Erinnerung jetzt",
     "%d of %d card (%s) below %s": "%d von %d Karte (%s) unter %s", "%d of %d cards (%s) below %s": "%d von %d Karten (%s) unter %s",
-    "%d of %d card (%s) below their desired retention": "%d von %d Karte (%s) unter ihrer gewünschten Behaltenrate", "%d of %d cards (%s) below their desired retention": "%d von %d Karten (%s) unter ihrer gewünschten Behaltenrate",
+    "%d of %d card (%s) below its desired retention": "%d von %d Karte (%s) unter ihrer gewünschten Merkquote", "%d of %d cards (%s) below their desired retention": "%d von %d Karten (%s) unter ihrer gewünschten Merkquote",
     "Label saved.": "Bezeichnung gespeichert.", "Label removed.": "Bezeichnung entfernt.",
     "Share taken back where possible.": "Das Teilen wurde soweit möglich rückgängig gemacht.",
     "I conquered a card!": "Ich habe eine Karte gemeistert!",
@@ -331,11 +331,11 @@ FRENCH = {
     "It is too late to undo this share.": "Il est trop tard pour annuler ce partage.",
     "RWKV forecast": "Prévision RWKV",
     "if you stop reviewing now": "si tu arrêtes de réviser maintenant",
-    "due %d | near %d | safe %d": "à réviser %d | proches %d | sûres %d",
-    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "à réviser %d · +%d dans 1 h · +%d dans 3 h · %d d’ici demain",
+    "due %d | near %d | safe %d": "dues %d | proches %d | sûres %d",
+    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "dues %d · +%d dans 1 h · +%d dans 3 h · %d d’ici demain",
     "RWKV recall now": "Rappel RWKV maintenant",
-    "%d of %d card (%s) below %s": "%d sur %d carte (%s) sous %s", "%d of %d cards (%s) below %s": "%d sur %d cartes (%s) sous %s",
-    "%d of %d card (%s) below their desired retention": "%d sur %d carte (%s) sous leur rétention désirée", "%d of %d cards (%s) below their desired retention": "%d sur %d cartes (%s) sous leur rétention désirée",
+    "%d of %d card (%s) below %s": "%d carte sur %d (%s) sous %s", "%d of %d cards (%s) below %s": "%d cartes sur %d (%s) sous %s",
+    "%d of %d card (%s) below its desired retention": "%d carte sur %d (%s) sous sa rétention souhaitée", "%d of %d cards (%s) below their desired retention": "%d cartes sur %d (%s) sous leur rétention souhaitée",
     "Label saved.": "Nom enregistré.", "Label removed.": "Nom supprimé.",
     "Share taken back where possible.": "Le partage a été annulé dans la mesure du possible.",
     "I conquered a card!": "J’ai maîtrisé une carte !",
@@ -471,12 +471,12 @@ PORTUGUESE = {
     "Could not update the card (%s).": "Não foi possível atualizar o cartão (%s).",
     "It is too late to undo this share.": "Já é tarde para anular esta partilha.",
     "RWKV forecast": "Previsão RWKV",
-    "if you stop reviewing now": "se parares de estudar agora",
-    "due %d | near %d | safe %d": "a vencer %d | quase %d | seguras %d",
-    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "a vencer %d · +%d em 1 h · +%d em 3 h · %d até amanhã",
+    "if you stop reviewing now": "se parares de rever agora",
+    "due %d | near %d | safe %d": "vencidos %d | perto %d | seguros %d",
+    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "vencidos %d · +%d em 1 h · +%d em 3 h · %d até amanhã",
     "RWKV recall now": "Recordação RWKV agora",
     "%d of %d card (%s) below %s": "%d de %d cartão (%s) abaixo de %s", "%d of %d cards (%s) below %s": "%d de %d cartões (%s) abaixo de %s",
-    "%d of %d card (%s) below their desired retention": "%d de %d cartão (%s) abaixo da sua retenção desejada", "%d of %d cards (%s) below their desired retention": "%d de %d cartões (%s) abaixo da sua retenção desejada",
+    "%d of %d card (%s) below its desired retention": "%d de %d cartão (%s) abaixo da retenção desejada", "%d of %d cards (%s) below their desired retention": "%d de %d cartões (%s) abaixo da retenção desejada",
     "Label saved.": "Nome guardado.", "Label removed.": "Nome removido.",
     "Share taken back where possible.": "A partilha foi anulada onde foi possível.",
     "I conquered a card!": "Conquistei um cartão!",
@@ -620,8 +620,20 @@ def plural(one, other, count, translate=tr):
     return translate(one if singular else other)
 
 
+# The locales whose percent format writes a space before the sign, as Android's
+# NumberFormat.getPercentInstance renders them: de "62,9 %", fr "62,9 %", es/pt "62,9%".
+PERCENT_SPACE = frozenset(("de", "fr"))
+
+
+def percent(share):
+    """A share from 0 to 1 as the locale's percent, at most one decimal: 0.629 is "62,9 %" in
+    German and "62,9%" in Spanish; 0.9 is "90%" everywhere."""
+    shown = _locale().toString(share * 100, "f", 1).rstrip("0").rstrip(",.")
+    return shown + (" %" if language_code(_current()) in PERCENT_SPACE else "%")
+
+
 def _locale():
-    from aqt.qt import QLocale
+    from aqt.qt import QLocale  # noqa: F401
     return QLocale(_current().replace("-", "_"))
 
 
