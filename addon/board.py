@@ -103,12 +103,12 @@ border-left:2px solid var(--aq-line);border-bottom:2px solid var(--aq-line);tran
 #ankiquest .aq-pills{display:flex;flex-wrap:wrap;gap:6px}
 #ankiquest .aq-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;
 font-weight:800;font-size:13px;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
-#ankiquest .aq-pill.aq-streak{background:var(--aq-orange)}
+#ankiquest .aq-pill.aq-streak{background:var(--aq-orange);color:#5c3000}
 #ankiquest .aq-pill.aq-streak-none,#ankiquest .aq-pill.aq-streak-unlit,#ankiquest .aq-pill.aq-streak-icy{
 background:var(--aq-bg);color:var(--aq-text);box-shadow:inset 0 0 0 2px var(--aq-line)}
-#ankiquest .aq-pill.aq-level{background:var(--aq-purple)}
+#ankiquest .aq-pill.aq-level{background:var(--aq-purple);color:#23272e}
 #ankiquest .aq-pill.aq-rank{background:var(--aq-gold);color:#5c4400}
-#ankiquest .aq-pill.aq-risk{background:var(--aq-red)}
+#ankiquest .aq-pill.aq-risk{background:var(--aq-red);color:#23272e}
 #ankiquest .aq-pill.aq-met,#ankiquest .aq-pill.aq-unverified{background:#dff1c9;color:#254a12}
 #ankiquest .aq-pill.aq-syncing,#ankiquest .aq-pill.aq-protected,#ankiquest .aq-pill.aq-frozen,#ankiquest .aq-pill.aq-skipped{background:#def0ff;color:#16527b}
 #ankiquest .aq-pill.aq-short{background:#e9d8a6;color:#534619}

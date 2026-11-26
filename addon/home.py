@@ -668,7 +668,8 @@ def on_deck_browser(deck_browser, content):
         return
     try:
         _, days = days_for(deck_browser)
-        content.tree = today.decorate(content.tree, days, tr)
+        # The badges' inks come with them, so the pair never splits across settings.
+        content.tree = today.BADGE_INKS + today.decorate(content.tree, days, tr)
     except Exception as e:
         print("ankiquest deck status:", e)
 

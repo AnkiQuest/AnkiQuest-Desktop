@@ -95,6 +95,49 @@ class WebAccessibility(unittest.TestCase):
                 with self.subTest(mode=mode, colour=foreground, on=background):
                     self.assertGreaterEqual(contrast(palette[foreground], palette[background]), 4.5)
 
+    def test_bright_pill_badges_carry_their_own_ink(self):
+        # The bright pill badges keep their fills; their text is the fill's own ink, like the
+        # avatar initials, so every pill reads (WCAG AA, 4.5:1) in day mode; night keeps the fills.
+        day, night = palettes(board.STYLE)
+        for kind, fill, ink in (
+            ("streak", "--aq-orange", "#5c3000"),
+            ("level", "--aq-purple", "#23272e"),
+            ("risk", "--aq-red", "#23272e"),
+            ("rank", "--aq-gold", "#5c4400"),
+        ):
+            with self.subTest(pill=kind):
+                rule = re.search(r"\.aq-pill\.aq-%s\{[^}]*\}" % kind, board.STYLE)
+                self.assertIsNotNone(rule, kind)
+                colours = dict(re.findall(r"(background|color):([^;}]*)", rule.group(0)))
+                self.assertEqual(fill, colours["background"].strip().replace("var(", "").rstrip(")"), kind)
+                self.assertEqual(ink, colours["color"].strip(), kind)
+                for mode, palette in (("day", day), ("night", night)):
+                    with self.subTest(mode=mode):
+                        self.assertGreaterEqual(contrast(ink, palette[fill]), 4.5)
+
+    def test_deck_row_day_badges_carry_their_own_ink(self):
+        # A deck row's day badge tints the row with its colour and writes its text in
+        # the colour's own ink: dark in day mode, lighter at night, both on the badge's tint.
+        today = load_in_package("ankiquest_a11y_test", "today")
+        day, night = today.BADGE_INKS.split(".nightMode", 1)
+        ink = lambda block, name: re.search(
+            "(?:^|[,}> ])\\.ankiquest-day\\.ankiquest-%s\\{color:(#[0-9a-f]{6})\\}" % name, block).group(1)
+        day_inks = {status.replace("_", "-"): ink(day, status.replace("_", "-")) for status in today.BADGE_STYLE}
+        night_inks = {status.replace("_", "-"): ink(".night" + night, status.replace("_", "-")) for status in today.BADGE_STYLE}
+
+        alpha = 0x22 / 255
+
+        def tint(fill, row):
+            return "#" + "".join(
+                "%02x" % round((1 - alpha) * int(row[index:index + 2], 16) + alpha * int(fill[index:index + 2], 16))
+                for index in (1, 3, 5)
+            )
+
+        for status, (_icon, colour) in today.BADGE_STYLE.items():
+            for mode, inks, row in (("day", day_inks, "#ffffff"), ("night", night_inks, "#1e1f22")):
+                with self.subTest(status=status, mode=mode):
+                    self.assertGreaterEqual(contrast(inks[status.replace("_", "-")], tint(colour, row)), 4.5)
+
     def test_avatar_initials_read_on_every_avatar_colour(self):
         for colour, ink in zip(board.AVATAR_COLOURS, board.AVATAR_INKS):
             with self.subTest(colour=colour):

@@ -140,7 +140,9 @@ BADGE_STYLE = {
 
 
 def badge(day, translate=lambda value: value, show_time=clock):
-    """A small mark for a deck row; empty when nothing is scheduled."""
+    """A small mark for a deck row; empty when nothing is scheduled. The badge's colour tints
+    its background; the text is the badge colour's own ink, set by `BADGE_INKS` (added to the
+    tree with the badges), so it reads in day and night mode alike (WCAG AA, 4.5:1)."""
     if day.status not in BADGE_STYLE:
         return ""
     icon, color = BADGE_STYLE[day.status]
@@ -152,12 +154,29 @@ def badge(day, translate=lambda value: value, show_time=clock):
         text = translate("ready")
     return (
         "<span class='ankiquest-day ankiquest-%s' title='%s' style='margin-left:.5em;font-size:11px;font-weight:800;"
-        "color:%s;background:%s22;border-radius:999px;padding:1px 8px;white-space:nowrap'>%s %s</span>"
-        % (day.status.replace("_", "-"), escape(label(day, translate, show_time), True), color, color, icon, escape(text))
+        "background:%s22;border-radius:999px;padding:1px 8px;white-space:nowrap'>%s %s</span>"
+        % (day.status.replace("_", "-"), escape(label(day, translate, show_time), True), color, icon, escape(text))
     )
 
 
 DECK_LINK = re.compile(r"(<a\b[^>]*?pycmd\('open:(\d+)'\)[^>]*>.*?</a>)", re.S)
+
+
+# The deck-row day badges' inks: the badge colours tint the row; the text is the same colour's
+# own ink, dark in day mode and lighter at night, as the palette inks are (WCAG AA, 4.5:1).
+BADGE_INKS = (
+    "<style>"
+    ".ankiquest-day.ankiquest-done{color:#276b00}"
+    ".ankiquest-day.ankiquest-learning-later{color:#5c3000}"
+    ".ankiquest-day.ankiquest-review-now{color:#0e5a87}"
+    ".nightMode .ankiquest-day.ankiquest-done,.night-mode .ankiquest-day.ankiquest-done,"
+    ".night_mode .ankiquest-day.ankiquest-done{color:#7ac70c}"
+    ".nightMode .ankiquest-day.ankiquest-learning-later,.night-mode .ankiquest-day.ankiquest-learning-later,"
+    ".night_mode .ankiquest-day.ankiquest-learning-later{color:#ffb257}"
+    ".nightMode .ankiquest-day.ankiquest-review-now,.night-mode .ankiquest-day.ankiquest-review-now,"
+    ".night_mode .ankiquest-day.ankiquest-review-now{color:#6ab7e8}"
+    "</style>"
+)
 
 
 def decorate(tree_html, days, translate=lambda value: value, show_time=clock):
