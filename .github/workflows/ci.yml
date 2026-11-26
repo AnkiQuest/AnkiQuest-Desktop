@@ -26,9 +26,8 @@ concurrency:
 
 jobs:
   # Whether anything besides documentation changed. Docs here are the
-  # top-level and docs/ Markdown and the pictures nothing checks: the .md
-  # files in addon/ are packaged and tested, and docs/screenshots and
-  # docs/graphics are compared by the screenshot test and the banner check.
+  # top-level and docs/ Markdown: the .md files in addon/ are packaged and
+  # tested, and docs/graphics is compared by the banner check.
   changes:
     runs-on: ubuntu-latest
     permissions:
@@ -43,8 +42,6 @@ jobs:
           docs: |
             *.md
             docs/*.md
-            docs/desktop-share/**
-            docs/qa/**
             LICENSE*
             LICENSES/**
             .github/ISSUE_TEMPLATE/**
@@ -124,12 +121,23 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: python -m unittest discover -s tests -v
 
+  # The screenshots are not committed. screenshot_store.yml stores each
+  # master commit's drawing as the screenshot-baseline artifact; this job
+  # draws the screens again and compares them with the baseline of the
+  # commit the change is based on, waiting while that is still being
+  # stored. A screen change fails here by design: its diff is the
+  # screenshots artifact. Not a required check.
   screenshots:
     name: Screenshots
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    # The committed pictures are drawn by this Ubuntu and the Qt of the 26.9.4 requirements.
+    # The pictures are drawn by this Ubuntu and the Qt of the 26.9.4 requirements.
     runs-on: ubuntu-24.04
+    # A master push waits for its own baseline, stored by a run that starts with it.
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read # the store runs and their baseline artifact
     env:
       QT_QPA_PLATFORM: offscreen
       PYTHONIOENCODING: utf-8
@@ -138,6 +146,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Find the base commit's screenshot baseline
+        id: baseline
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const baseline = require('./.github/screenshot_baseline.cjs');
+            return await baseline({ github, context, core, dir: `${process.env.RUNNER_TEMP}/baseline` });
+      - name: Download the screenshot baseline
+        if: steps.baseline.outputs.run-id != ''
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: screenshot-baseline
+          run-id: ${{ steps.baseline.outputs.run-id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/baseline
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
@@ -155,25 +178,52 @@ jobs:
           key: ankiquest-art-${{ hashFiles('ankiquest-art.json') }}
       - name: Fetch the companion pictures
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
-      - name: Compare the screenshots with a fresh drawing
+      - name: Compare the screenshots with the baseline
         env:
-          ANKIQUEST_SCREENSHOTS_OUT: ${{ runner.temp }}/screenshots
-        run: python tests/draw_screenshots.py -v
-      - name: Keep the screenshots that differ
-        if: failure()
+          ANKIQUEST_SCREENSHOTS_BASELINE: ${{ runner.temp }}/baseline
+          BASE: ${{ steps.baseline.outputs.base }}
+        run: |
+          echo "Comparing with the screenshot baseline of $BASE" >> "$GITHUB_STEP_SUMMARY"
+          python tests/draw_screenshots.py -v
+      # This commit's drawings: the banner job draws from them, and after a
+      # failure they are the new screens to review.
+      - name: Keep the screenshots
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: screenshots
-          path: ${{ runner.temp }}/screenshots
+          path: build/screenshots/
+          retention-days: 30
           if-no-files-found: ignore
 
-  # The README banner and social preview, drawn from the committed
+  # The README banner and social preview, drawn from this commit's
   # screenshots and the duo master of the pinned AnkiQuest-Art release by
-  # AnkiQuest-Dev's shared tool (docs/graphics/banner.toml).
+  # AnkiQuest-Dev's shared tool (docs/graphics/banner.toml). It runs when
+  # the screenshots differ from the baseline too: the banner follows the
+  # drawing, not the baseline.
   banner:
+    needs: [changes, screenshots]
+    if: ${{ !cancelled() && needs.changes.outputs.code == 'true' && needs.screenshots.result != 'skipped' }}
+    uses: AnkiQuest/AnkiQuest-Dev/.github/workflows/banner.yml@master
+    with:
+      screens-artifact: screenshots
+      screens-path: build/screenshots
+
+  # The workflows' own scripts (.github/tests).
+  workflow-tests:
+    name: Workflow tests
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    uses: AnkiQuest/AnkiQuest-Dev/.github/workflows/banner.yml@master
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+      - name: Test the workflow scripts
+        run: node --test '.github/tests/*.test.cjs'
 
   addon-package:
     name: Add-on archive
