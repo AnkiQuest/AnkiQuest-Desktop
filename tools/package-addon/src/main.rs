@@ -1,7 +1,7 @@
 //! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb:
 //! `cargo run --manifest-path tools/package-addon/Cargo.toml --
 //! --output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-//! [--metadata <file>]`, `-- art` for the pictures alone, or
+//! [--metadata <file>]`, `-- art` for the pictures and `poses.json` alone, or
 //! `-- server-data [--from <AnkiQuest-Server checkout>]` for the server
 //! data the tests read (see `server`).
 //!

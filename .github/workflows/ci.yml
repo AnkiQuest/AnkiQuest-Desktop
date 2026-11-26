@@ -224,6 +224,9 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: tools/package-addon
+      # The archive test checks the built .ankiaddon carries Art's poses.json.
+      - name: Fetch the companion pictures
+        run: cargo run --locked --manifest-path "$PACKAGER" -- art
       - name: Check the packager
         run: |
           cargo fmt --all --manifest-path "$PACKAGER" --check

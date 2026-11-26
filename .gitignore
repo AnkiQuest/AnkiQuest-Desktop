@@ -4,6 +4,7 @@ __pycache__
 addon/version.json
 /tools/banner/target
 /addon/art/
+/addon/poses.json
 /addon/*_face.png
 /art/
 # AnkiQuest-Server master's fixtures and examples, copied by

@@ -163,6 +163,34 @@ def due(last_checked_ms, now_ms):
     return not last_checked_ms or now_ms - last_checked_ms >= DAY_MS
 
 
+# The profile key of the build Anki found incompatible, as (release, nightly, commit).
+REFUSED_KEY = "ankiquestUpdateRefused"
+
+
+def _identity(candidate):
+    """The part of a build that says which one it is. Releases always carry an empty
+    commit and nightly 0, so for a release the number alone says which build it is."""
+    return (candidate.get("release"), candidate.get("nightly", 0), candidate.get("commit", ""))
+
+
+def refused(profile, candidate, point):
+    """Whether `profile` remembers `candidate` as incompatible under Anki `point`, so it
+    is not offered again until a different build or Anki version appears. None is never
+    refused."""
+    if not candidate:
+        return False
+    remembered = profile.get(REFUSED_KEY)
+    if not isinstance(remembered, (tuple, list)) or len(remembered) != 4:
+        return False
+    return tuple(remembered) == _identity(candidate) + (point,)
+
+
+def remember_refused(profile, candidate, point):
+    """Records `candidate` as the build Anki refused to install under `point`; upgrading
+    Anki makes it eligible again."""
+    profile[REFUSED_KEY] = _identity(candidate) + (point,)
+
+
 def download(url, target, get=fetch):
     data = get(url, timeout=120)
     if not data.startswith(b"PK"):

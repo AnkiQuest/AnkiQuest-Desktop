@@ -115,9 +115,9 @@ holding its assets (from AnkiQuest-Art's `tools/release/build.sh`); they
 are checked against the pin the same way.
 
 Where a companion has no master for a pose, the add-on shows the fallback
-`tests/fixtures/companion_poses.json` names; a core pose not drawn yet
-shows the core pose `CORE_FALLBACKS` in `addon/moods.py` names, as
-AnkiQuest-Art's `poses.json` does.
+the pinned AnkiQuest-Art release's `poses.json` (copied beside the code by
+`-- art`) names; a core pose not drawn yet shows the core pose its
+`core_fallbacks` name, read by `addon/moods.py`.
 
 ## API audit
 
