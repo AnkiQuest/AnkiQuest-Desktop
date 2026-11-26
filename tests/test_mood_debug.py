@@ -63,6 +63,9 @@ class Thresholds(unittest.TestCase):
     def test_the_limits_must_stay_ordered(self):
         self.assertTrue(debug.ordered(debug.thresholds({})))
         for broken in (
+            {"hopeful_reviews": 0},
+            {"frozen_2_days": 1, "frozen_3_days": 2},
+            {"hot_days": 1, "blazing_days": 30},
             {"hot_days": 5, "blazing_days": 5},
             {"blazing_days": 40, "legend_days": 40},
             {"frozen_2_days": 4, "frozen_3_days": 4},
@@ -75,9 +78,35 @@ class Thresholds(unittest.TestCase):
 
     def test_without_edits_every_limit_keeps_its_rule_value(self):
         self.assertEqual(debug.DEFAULT_THRESHOLDS, debug.thresholds({}))
-        self.assertEqual({"hot_days": 7, "blazing_days": 30, "legend_days": 100}, {
-            name: debug.thresholds({})[name] for name in ("hot_days", "blazing_days", "legend_days")
+        self.assertEqual({"hopeful_reviews": 1, "hot_days": 7, "blazing_days": 30, "legend_days": 100}, {
+            name: debug.thresholds({})[name] for name in ("hopeful_reviews", "hot_days", "blazing_days", "legend_days")
         })
+
+    def test_an_edited_count_moves_the_hopeful_boundary_with_every_state(self):
+        limits = debug.thresholds({"debug_thresholds": {"hopeful_reviews": 3}})
+        self.assertEqual(3, limits["hopeful_reviews"])
+        # Below the moved count the day stays before hopeful, in every state.
+        self.assertEqual(moods.ASLEEP, moods.streak_mood(moods.SHORT, 2, moods.Stage.STARTED, 0, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.SAD, moods.streak_mood(moods.SHORT, 2, moods.Stage.HALF, 2, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.ASLEEP, moods.streak_mood(moods.SHORT, 2, moods.Stage.THREE_QUARTERS, 0, 0, moods.Goal.OPEN, limits))
+        # Reaching it counts as half way to the minimum, whatever the clock says.
+        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.STARTED, 0, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.QUARTER, 2, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.ALMOST, moods.streak_mood(moods.SHORT, 3, moods.Stage.THREE_QUARTERS, 2, 0, moods.Goal.OPEN, limits))
+        # A frozen day falls back to the frozen mood below the count, and thaws at it.
+        self.assertEqual(moods.FROZEN_1, moods.streak_mood(moods.SHORT, 2, moods.Stage.STARTED, 2, 1, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.THAWING, moods.streak_mood(moods.SHORT, 2, moods.Stage.HALF, 2, 1, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.STARTED, 2, 1, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.ALMOST, moods.streak_mood(moods.SHORT, 3, moods.Stage.THREE_QUARTERS, 2, 1, moods.Goal.OPEN, limits))
+        # A counted day or a reached goal stays fire, whatever the count says.
+        self.assertEqual(moods.FIRE, moods.streak_mood(moods.STUDIED, 0, moods.Stage.STARTED, 2, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.FIRE, moods.streak_mood(moods.SHORT, 0, moods.Stage.STARTED, 2, 0, moods.Goal.REACHED, limits))
+
+    def test_an_unmoved_count_leaves_the_rule_stages_alone(self):
+        # One shared review still means hopeful, so the pinned streak-mood fixtures keep passing.
+        limits = debug.thresholds({})
+        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 1, moods.Stage.HALF, 2, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.SAD, moods.streak_mood(moods.SHORT, 0, moods.Stage.QUARTER, 2, 0, moods.Goal.OPEN, limits))
 
     def test_edited_limits_change_where_the_hotter_poses_start(self):
         limits = debug.thresholds({"debug_thresholds": {"hot_days": 2, "blazing_days": 3, "legend_days": 4}})
@@ -96,6 +125,8 @@ class Thresholds(unittest.TestCase):
             with self.subTest(wrong=wrong):
                 limits = debug.thresholds({"debug_thresholds": {"hot_days": wrong}})
                 self.assertEqual(7, limits["hot_days"])
+                again = debug.thresholds({"debug_thresholds": {"hopeful_reviews": wrong}})
+                self.assertEqual(1, again["hopeful_reviews"])
 
     def test_rule_values_stay_untouched_without_an_edit(self):
         # The pinned streak-mood fixtures keep passing with the thresholds at their defaults.
@@ -106,7 +137,27 @@ class Thresholds(unittest.TestCase):
 
     def test_storing_drops_limits_left_at_their_rule(self):
         self.assertEqual({}, debug.thresholds_stored({"hot_days": 7, "blazing_days": 30}))
-        self.assertEqual({"hot_days": 4}, debug.thresholds_stored({"hot_days": 4}))
+        self.assertEqual({"hopeful_reviews": 4}, debug.thresholds_stored({"hopeful_reviews": 4}))
+
+
+class ThresholdsInEveryLanguage(unittest.TestCase):
+    def test_the_menu_labels_are_translated_in_every_language(self):
+        language = load_in_package("aq_language_tables", "language")
+        labels = (
+            "Mood thresholds",
+            "Reviews for hopeful (1 or more)",
+            "Frozen days for frozen 2 (2 or more)",
+            "Frozen days for frozen 3 (more than frozen 2)",
+            "Streak days for hot (2 or more)",
+            "Streak days for blazing (more than hot)",
+            "Streak days for legend (more than blazing)",
+            "Not saved: each threshold must be in range and above the one before it.",
+        )
+        self.assertEqual(sorted(("de", "es", "fr", "pt")), sorted(language.TABLES))
+        for label in labels:
+            for code in language.TABLES:
+                with self.subTest(label=label, language=code):
+                    self.assertNotEqual(label, language.tr(label, code))
 
 
 class NeverSentToTheServer(unittest.TestCase):
