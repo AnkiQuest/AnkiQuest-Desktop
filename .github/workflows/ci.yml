@@ -197,6 +197,9 @@ jobs:
         with:
           path: ${{ env.ANKIQUEST_ART_CACHE }}
           key: ankiquest-art-${{ hashFiles('ankiquest-art.json') }}
+      # The archive test checks the built .ankiaddon carries Art's poses.json.
+      - name: Fetch the companion pictures
+        run: cargo run --locked --manifest-path "$PACKAGER" -- art
       - name: Check the packager
         run: |
           cargo fmt --all --manifest-path "$PACKAGER" --check

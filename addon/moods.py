@@ -7,6 +7,8 @@ first, then from the collection's due cards, as the phone's AnkiquestAki.message
 """
 
 from enum import Enum, auto
+import json
+from pathlib import Path
 
 WELCOME, REVIEW, CELEBRATE, STREAK, FREEZE, WINNER = "welcome", "review", "celebrate", "streak", "freeze", "winner"
 
@@ -133,28 +135,37 @@ PREVIEW_POSES = ("aki_face", "aki_streak", "aki_sad")
 # How far the cow's art is hue-rotated, as CSS hue-rotate() turns it; see `art_owner`.
 COW_HUE_DEGREES = 250
 
-# The poses tests/fixtures/companion_poses.json names: the core poses every companion has, and
-# the pose each extension falls back to where a companion has no art for it.
-CORE_POSES = ("face", "asleep", "happy", "streak", "sad", "hopeful", "frozen", "neglected")
-POSE_FALLBACKS = {
-    "streak_hot": "streak",
-    "streak_blazing": "streak_hot",
-    "streak_legend": "streak_blazing",
-    "streak_milestone": "streak_legend",
-    "frozen_2": "frozen",
-    "frozen_3": "frozen_2",
-    "welcome": "happy",
-    "review": "happy",
-    "hurt": "sad",
-    "abandoned": "neglected",
-    "dead": "neglected",
-    "leech_defeated": "happy",
-    "winner": "happy",
-}
+# The poses AnkiQuest-Art's poses.json names, unpacked beside the code from the pinned release
+# by the `-- art` step (tools/package-addon, `art`): the core poses every companion has, the pose
+# each extension falls back to where a companion has no art for it, and the core pose a companion
+# shows for a core pose it has no master for yet.
 
-# The core pose a companion shows for a core pose it has no master for yet, as AnkiQuest-Art's
-# poses.json `core_fallbacks` says.
-CORE_FALLBACKS = {"happy": "hopeful", "streak": "hopeful"}
+
+def read_poses(art):
+    """The core poses, the extension fallbacks and the core fallbacks, as Art's `poses.json`
+    (`core`, `extensions`, `core_fallbacks`) names them. Only pose names and name-to-name
+    maps parse: anything else Art might write raises."""
+    poses = json.loads(art)
+    core = poses.get("core")
+    if not isinstance(core, list) or not all(isinstance(pose, str) for pose in core):
+        raise ValueError("Art's poses.json names no core poses")
+    for field in ("extensions", "core_fallbacks"):
+        names = poses.get(field)
+        if not isinstance(names, dict) or not all(
+            isinstance(pose, str) and isinstance(shown, str) for pose, shown in names.items()
+        ):
+            raise ValueError("Art's poses.json names no %s" % field)
+    return (tuple(core), poses["extensions"], poses["core_fallbacks"])
+
+
+# How a checkout unpacks the pictures and poses.json from the pinned AnkiQuest-Art release.
+FETCH = "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+
+try:
+    _POSES_TEXT = Path(__file__).with_name("poses.json").read_text("utf-8")
+except FileNotFoundError as error:
+    raise RuntimeError("Fetch the companion pictures first: " + FETCH) from error
+CORE_POSES, POSE_FALLBACKS, CORE_FALLBACKS = read_poses(_POSES_TEXT)
 
 # The pose each of Aki's pictures shows, so that other companions show theirs.
 _AKI_PICTURES = {
