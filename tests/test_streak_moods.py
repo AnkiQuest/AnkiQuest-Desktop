@@ -11,10 +11,11 @@ moods = load_module("aq_streak_moods", "moods.py")
 
 TESTS = Path(__file__).resolve().parent
 FIXTURE = TESTS / "fixtures" / "streak_moods.json"
-POSES = TESTS / "fixtures" / "companion_poses.json"
 
-# How a checkout fetches the add-on's pictures from the pinned AnkiQuest-Art release.
+# How a checkout fetches the add-on's pictures, and the pose list, from the pinned
+# AnkiQuest-Art release.
 FETCH = "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+POSES = ADDON / "art" / "poses.json"
 
 # Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows
 # frozen and almost shows hopeful; she has no frozen_2 or frozen_3 art, so those show her frozen.
@@ -229,7 +230,7 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual(["anki_tan_face", "anki_tan_hopeful", "anki_tan_sad"], moods.preview(moods.ANKI_TAN))
 
         # Happy and streak are core poses with no master yet: they and the extensions that end in
-        # them show hopeful. Her other extensions fall back as companion_poses.json says.
+        # them show hopeful. Her other extensions fall back as the Art release's poses.json says.
         fallbacks = {
             "happy": "anki_tan_hopeful", "streak": "anki_tan_hopeful",
             "welcome": "anki_tan_hopeful", "review": "anki_tan_hopeful", "winner": "anki_tan_hopeful",
@@ -246,6 +247,15 @@ class StreakMoods(unittest.TestCase):
     def test_a_companion_without_art_is_drawn_as_aki(self):
         self.assertEqual("aki", moods.art_owner("leech_kun"))
         self.assertEqual("aki_sad", moods.mood_pose("leech_kun", moods.SAD, 3))
+
+    def test_the_pose_list_comes_from_the_art_release(self):
+        # The pinned AnkiQuest-Art release names the poses (its poses.json), not
+        # AnkiQuest-Server's companion_poses.json fixture.
+        self.assertTrue(POSES.is_file(), "Fetch the pinned release first: " + FETCH)
+        data = json.loads(POSES.read_text("utf-8"))
+        self.assertEqual(tuple(data["core"]), moods.CORE_POSES)
+        self.assertEqual(data["extensions"], moods.POSE_FALLBACKS)
+        self.assertEqual(data["core_fallbacks"], moods.CORE_FALLBACKS)
 
     def test_aki_shows_her_core_pose_for_every_mood(self):
         # Her sad, hopeful and frozen art shipped, but the moods showed older pictures. Frozen 2 and 3
