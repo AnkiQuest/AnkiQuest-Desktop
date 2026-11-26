@@ -43,7 +43,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, rwkv_stats, settings_sync
+from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, optimize_reminder_ui, preferences, preview, review_offsets, rwkv_stats, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -1064,8 +1064,8 @@ def _save_account_config(values):
 
 
 def _welcome():
-    """Profile open: Aki's greeting once per computer, else one sign-in offer for this profile,
-    once no dialog of Anki's or review is in front."""
+    """Profile open: Aki's greeting once per computer, else one sign-in offer for this profile
+    and the optimize reminder, once no dialog of Anki's or review is in front."""
     profile = mw.pm.profile
     if profile is None:
         return
@@ -1093,6 +1093,15 @@ def _try_welcome(waiting):
     if greeting.state(mw.pm.meta) is greeting.State.PENDING:
         _greet(profile)
         return
+    _offer_sign_in(profile)
+
+    # The optimize reminder waits for a profile open without the greeting, as on Android.
+    if mw.pm.profile is profile:
+        optimize_reminder_ui.offer(mw, config(), save_config)
+
+
+def _offer_sign_in(profile):
+    """This profile's one sign-in offer, while no account is set."""
     settings = config()
     if profile.get(SIGN_IN_OFFER_KEY) or settings.get("user"):
         return

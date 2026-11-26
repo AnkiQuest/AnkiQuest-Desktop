@@ -27,7 +27,7 @@ from .decks import label, ordered
 from .language import tr
 from .share import face_path
 from .today_ui import settings_section
-from . import companion_art, help_ui, mood_debug_ui, reminders_ui, settings_sync, updates
+from . import companion_art, help_ui, mood_debug_ui, optimize_reminder_ui, reminders_ui, settings_sync, updates
 
 # Anki-tan's CC BY-SA 4.0 licence asks for this credit; Android shows the same on its About screen.
 ANKI_TAN_URL = "https://shigeyukey.github.io/shige-addons-wiki/Anki-tan.html"
@@ -341,6 +341,9 @@ def settings_dialog(
         countdown_button.clicked.connect(on_countdowns)
         groups["app"].addWidget(countdown_button)
 
+    # Kept on this computer, like the reminder's snooze and dismissal.
+    optimize_values = optimize_reminder_ui.settings_switch(groups["app"], config)
+
     # This device's switch for the settings above that follow the account.
     sync = QCheckBox(tr("Sync settings"))
     sync.setObjectName("ankiquest_sync_settings")
@@ -394,7 +397,7 @@ def settings_dialog(
     if finish and original == tuple(field.text().strip() for field in (url, user, token)):
         finish()
     return dict(
-        _values(url, user, token, rank, hours, channel, config), **today_values(), **reminders._values(),
+        _values(url, user, token, rank, hours, channel, config), **today_values(), **reminders._values(), **optimize_values(),
         **{settings_sync.SWITCH: sync.isChecked()},
     )
 

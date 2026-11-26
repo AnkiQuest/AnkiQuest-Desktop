@@ -86,6 +86,45 @@ class RealAnki(unittest.TestCase):
             finally:
                 col.close()
 
+    def test_optimize_reminder_reads_a_real_collection(self):
+        # lastFsrsOptimize, the FSRS switch, RWKV keys synced from Android and the day cutoff,
+        # as this Anki stores them; deck options open by deck id.
+        from aqt import deckoptions
+        from addon_loader import load_in_package
+        rule = load_in_package("aq_optimize_smoke", "optimize_reminder")
+        self.assertTrue(callable(deckoptions.display_options_for_deck_id))
+        with tempfile.TemporaryDirectory(prefix="ankiquest-optimize-") as folder:
+            # Ten days old, since Anki reads lastFsrsOptimize 0, the first day, as never.
+            path = str(Path(folder) / "collection.anki2")
+            col = Collection(path)
+            col.db.execute("update col set crt = crt - 10 * 86400")
+            col.close()
+            col = Collection(path)
+            try:
+                self.assertEqual(10, col.sched.today)
+                found = rule.inputs(col)
+                self.assertEqual((None, 0, [rule.Scheduler.SM2]), (found.last_optimized_day, found.reviews_since, found.presets))
+                self.assertEqual(col.decks.get_current_id(), found.deck)
+
+                config = col.decks.all_config()[0]
+                config["rwkvReviewEnabled"] = True
+                col.decks.update_config(config)
+                col.set_config("fsrs", True)
+                col.set_config("lastFsrsOptimize", col.sched.today)
+                col.db.execute(
+                    "insert into revlog (id,cid,usn,ease,ivl,lastIvl,factor,time,type) values (?,1,0,3,1,1,2500,1000,1)",
+                    (col.sched.day_cutoff - 1) * 1000,
+                )
+                found = rule.inputs(col)
+                self.assertEqual(
+                    (col.sched.today, 0, [rule.Scheduler.RWKV_CURVE]),
+                    (found.last_optimized_day, found.reviews_since, found.presets),
+                )
+                col.set_config("lastFsrsOptimize", col.sched.today - 1)
+                self.assertEqual(1, rule.inputs(col).reviews_since)
+            finally:
+                col.close()
+
     def test_deck_copy_exports_and_imports(self):
         # copies.export_deck picks the exporter by Anki version; the package must import with its note.
         from anki.import_export_pb2 import ImportAnkiPackageRequest

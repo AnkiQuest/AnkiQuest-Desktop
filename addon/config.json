@@ -12,5 +12,6 @@
     "review_heatmap": true,
     "reduce_motion": false,
     "sync_settings": true,
-    "countdowns": []
+    "countdowns": [],
+    "optimize_reminder": {"kind": "on"}
 }
