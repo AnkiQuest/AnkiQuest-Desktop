@@ -2,9 +2,11 @@
 as AnkiQuest-Android's AnkiquestRwkvForecast and Pedrubik2000's anki-rwkv-forecast define them."""
 
 import unittest
+from concurrent.futures import Future
 from types import SimpleNamespace
+from unittest.mock import Mock
 
-from addon_loader import load_in_package
+from addon_loader import fake_anki, load_in_package, load_module
 
 rwkv = load_in_package("aq_rwkv_stats", "rwkv_stats")
 
@@ -150,6 +152,63 @@ class BlockRendering(unittest.TestCase):
         col = Space(db=Space(scalar=lambda query: 2), _backend=Space())
         self.assertEqual("", rwkv.block(col, lambda text: text, plain_plural, english_percent))
 
+
+
+class DeckBrowserForecast(unittest.TestCase):
+    def setUp(self):
+        self.background = Mock()
+        self.refresh = Mock()
+        self.mw = SimpleNamespace(
+            col=self.collection(0.6),
+            addonManager=Mock(),
+            form=SimpleNamespace(menuTools=Mock()),
+            taskman=SimpleNamespace(run_in_background=self.background),
+            deckBrowser=SimpleNamespace(refresh=self.refresh),
+        )
+        fake_anki(self, self.mw)
+        self.addon = load_module("ankiquest_rwkv_forecast_test", "__init__.py", package=True)
+        language = load_in_package(self.addon.__name__, "language")
+        language.percent = english_percent
+        language.plural = plain_plural
+
+    def collection(self, recall):
+        response = {
+            "available": True,
+            "cards": [{"card_id": 1, "target_retention": 0.9, "recall": [recall] * 4}],
+        }
+        return SimpleNamespace(
+            mod=100,
+            db=SimpleNamespace(scalar=lambda query: 1),
+            _backend=SimpleNamespace(rwkv_offline_forecast=Mock(return_value=response)),
+        )
+
+    def block(self):
+        return self.addon._rwkv_block(lambda text: text)
+
+    def complete(self, call):
+        work, done = call.args
+        result = Future()
+        result.set_result(work())
+        done(result)
+
+    def test_a_profile_with_the_same_revision_does_not_reuse_the_previous_chart(self):
+        self.assertEqual("", self.block())
+        self.complete(self.background.call_args)
+        self.assertIn("due 1 | near 0 | safe 0", self.block())
+        self.mw.col = self.collection(0.95)
+        self.assertEqual("", self.block())
+        self.complete(self.background.call_args)
+        self.assertIn("due 0 | near 0 | safe 1", self.block())
+
+    def test_a_pending_forecast_does_not_read_or_refresh_the_next_profile(self):
+        self.block()
+        first = self.background.call_args
+        self.mw.col = self.collection(0.95)
+        self.block()
+        self.assertEqual(2, self.background.call_count)
+        self.complete(first)
+        self.mw.col._backend.rwkv_offline_forecast.assert_not_called()
+        self.refresh.assert_not_called()
 
 
 class Lines(unittest.TestCase):

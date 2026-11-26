@@ -847,41 +847,53 @@ def on_deck_browser(deck_browser, content):
     content.stats += _rwkv_block(tr)
 
 
-# The RWKV block for the deck browser, computed off the main thread and cached by the
-# collection's state (col.mod): the block appears when the answer arrives.
-_RWKV_BLOCK = {}
-_RWKV_PENDING = set()
+# One cached forecast for the current collection and revision. While it loads, it draws nothing.
+@dataclass
+class _RwkvBlock:
+    collection: object
+    revision: int
+    html: str = ""
+
+
+_RWKV_BLOCK = None
 
 
 def _rwkv_block(tr):
+    global _RWKV_BLOCK
     from .language import percent, plural
 
-    try:
-        if rwkv_stats.too_large(mw.col.db.scalar("select count() from cards where type = 2")):
-            return ""
-    except Exception as e:
-        print("ankiquest rwkv stats:", e)
+    collection = mw.col
+    backend = getattr(collection, "_backend", None)
+    if getattr(backend, "rwkv_offline_forecast", None) is None:
+        _RWKV_BLOCK = None
         return ""
-    mod = mw.col.mod
-    if mod in _RWKV_BLOCK:
-        return _RWKV_BLOCK[mod]
-    if mod in _RWKV_PENDING:
-        return ""
+    revision = collection.mod
+    if _RWKV_BLOCK is not None and _RWKV_BLOCK.collection is collection and _RWKV_BLOCK.revision == revision:
+        return _RWKV_BLOCK.html
+
+    request = _RwkvBlock(collection, revision)
+    _RWKV_BLOCK = request
+
+    def work():
+        if mw.col is not collection:
+            return None
+        if rwkv_stats.too_large(collection.db.scalar("select count() from cards where type = 2")):
+            return None
+        return rwkv_stats.recalls(collection)
 
     def done(future):
-        _RWKV_PENDING.discard(mod)
+        if _RWKV_BLOCK is not request or mw.col is not collection or collection.mod != revision:
+            return
         try:
             rows = future.result()
-            block = "" if rows is None else '<div id="aq-rwkv">%s</div>' % rwkv_stats.html_rows(rows, tr, plural, percent)
+            if rows is not None:
+                request.html = '<div id="aq-rwkv">%s</div>' % rwkv_stats.html_rows(rows, tr, plural, percent)
         except Exception as e:
             print("ankiquest rwkv stats:", e)
-            block = ""
-        if _RWKV_BLOCK.get(mod, None) != block:
-            _RWKV_BLOCK[mod] = block
+        if request.html:
             mw.deckBrowser.refresh()
 
-    _RWKV_PENDING.add(mod)
-    mw.taskman.run_in_background(lambda: rwkv_stats.recalls(mw.col), done)
+    mw.taskman.run_in_background(work, done, uses_collection=True)
     return ""
 
 
