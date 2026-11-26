@@ -1303,7 +1303,7 @@ def check_updates(quiet=True):
             if not quiet:
                 failed(tr("AnkiQuest: could not check for updates (%s)"), e)
             return
-        if updates.newer(candidate, current):
+        if updates.newer(candidate, current) and not updates.refused(mw.pm.profile, candidate):
             offer_update(candidate)
         elif not quiet:
             tooltip(tr("AnkiQuest is up to date (%s).") % updates.label(current))
@@ -1336,12 +1336,12 @@ def offer_update(candidate):
         except Exception as e:
             failed(tr("AnkiQuest: could not download the update (%s)"), e)
             return
-        install_update(path)
+        install_update(path, candidate)
 
     mw.taskman.run_in_background(lambda: updates.download(candidate["url"], target), done)
 
 
-def install_update(path):
+def install_update(path, candidate):
     from aqt.addons import AddonMeta, InstallError
     from aqt.utils import showInfo
     from zipfile import BadZipFile, ZipFile
@@ -1354,6 +1354,8 @@ def install_update(path):
     except (BadZipFile, OSError):
         manifest = {}
     if manifest and not AddonMeta.from_json_meta(manifest["package"], manifest).compatible():
+        # Remember it, so the check stops offering this build until a newer one appears.
+        updates.remember_refused(mw.pm.profile, candidate)
         tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
         return
 

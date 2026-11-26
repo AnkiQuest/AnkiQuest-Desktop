@@ -171,7 +171,6 @@ class UpdateOwnership(unittest.TestCase):
     run_task = fixture.RefreshTests.run_task
     read_rows = fixture.RefreshTests.read_rows
     write_config = fixture.RefreshTests.write_config
-    write_config = fixture.RefreshTests.write_config
 
     def installed(self, folder):
         (Path(folder) / "version.json").write_text(json.dumps({"release": 11, "nightly": 0}), "utf-8")
