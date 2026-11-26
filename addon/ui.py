@@ -341,7 +341,7 @@ def settings_dialog(
         countdown_button.clicked.connect(on_countdowns)
         groups["app"].addWidget(countdown_button)
 
-    # Kept on this computer, like the reminder's snooze and dismissal.
+    # A synced setting, together with the reminder's snooze and dismissal.
     optimize_values = optimize_reminder_ui.settings_switch(groups["app"], config)
 
     # This device's switch for the settings above that follow the account.

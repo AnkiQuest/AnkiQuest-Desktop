@@ -1,12 +1,13 @@
 """When to remind the player to run Anki's Optimize All Presets, and what the reminder says.
 
     collection (config, deck config, revlog) ──inputs──▶ Inputs ──verdict──▶ Silent | Remind
-    state (add-on config) ──next_state──▶ state
+    state (synced setting) ──next_state──▶ state
 
-AnkiQuest-Server's tests/fixtures/optimize_reminder.json pins the rule for this and the Android
-app (AnkiquestOptimizeReminder.kt). Everything is read from the collection; the reminder's state
-stays on this computer and never reaches the server. Plain Python, so the tests load it without
-Anki.
+The rule is AnkiQuest-Server's crates/rules (optimize_verdict, optimize_next), tested against
+tests/fixtures/optimize_reminder.json. This is a copy tested against the same cases, as Android's
+AnkiquestOptimizeReminder.kt is; it goes once the add-on uses the crate's bindings. The inputs
+come from the collection. The state is the synced setting `optimize_reminder`, one for all the
+player's devices (settings_sync). Plain Python, so the tests load it without Anki.
 """
 
 from dataclasses import dataclass
@@ -17,11 +18,14 @@ DAYS = 30
 REVIEWS = 1000
 SNOOZE_DAYS = 7
 
-# The add-on config key that holds the state.
+# The add-on config key that holds the state; settings_sync syncs it as the key of the same name.
 CONFIG_KEY = "optimize_reminder"
+DEFAULT = {"kind": "on"}
 # The collection config key Optimize All Presets sets to the day it ran; 0 or missing is never.
 LAST_OPTIMIZE_KEY = "lastFsrsOptimize"
 DAY_SECONDS = 86_400
+# Day numbers fit the 32-bit integers the rule uses.
+MAX_DAY = 2**31 - 1
 SECOND_MS = 1_000
 
 # Answers only: manual (type 4) and rescheduled (type 5) entries are not reviews.
@@ -217,21 +221,38 @@ def inputs(col):
 
 
 def decode(stored):
-    """The stored form the fixture's states use; an unknown or missing one is on."""
-    if not isinstance(stored, dict):
+    """The state in its stored form; one that is not exactly a state reads as on."""
+    if not valid(stored):
         return On()
-    kind = stored.get("kind")
-    try:
-        if kind == "off":
-            return Off()
-        if kind == "snoozed":
-            return Snoozed(int(stored["until_day"]))
-        if kind == "dismissed":
-            day = stored["optimized_day"]
-            return Dismissed(None if day is None else int(day))
-    except (KeyError, TypeError, ValueError):
-        return On()
+    kind = stored["kind"]
+    if kind == "off":
+        return Off()
+    if kind == "snoozed":
+        return Snoozed(stored["until_day"])
+    if kind == "dismissed":
+        return Dismissed(stored["optimized_day"])
     return On()
+
+
+def _day(value, first):
+    return type(value) is int and first <= value <= MAX_DAY
+
+
+def valid(stored):
+    """Whether `stored` is a state exactly as encode writes it, with days a collection has: the
+    form the server accepts for the synced setting."""
+    if not isinstance(stored, dict):
+        return False
+    kind = stored.get("kind")
+    fields = set(stored) - {"kind"}
+    if kind in ("on", "off"):
+        return not fields
+    if kind == "snoozed":
+        return fields == {"until_day"} and _day(stored["until_day"], 0)
+    if kind == "dismissed":
+        day = stored.get("optimized_day", 0)
+        return fields == {"optimized_day"} and (day is None or _day(day, 1))
+    return False
 
 
 def encode(state):

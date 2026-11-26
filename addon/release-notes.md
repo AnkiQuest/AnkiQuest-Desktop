@@ -10,7 +10,7 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Study time.** Progress has a Study time tab: today, this week, this month, total and per study day, from this collection's review history, uploaded or not.
 
-**Optimize reminder.** When Optimize All Presets in deck options last ran at least 30 days and 1,000 reviews ago, a reminder offers Open deck options, Remind me in a week and Dismiss. For RWKV-Curve and RWKV-Instant presets it says that only their FSRS fallback is optimized and RWKV itself isn't trained. Turn it off with Settings → App and privacy → Remind me to optimize presets.
+**Optimize reminder.** When Optimize All Presets in deck options last ran at least 30 days and 1,000 reviews ago, a reminder offers Open deck options, Remind me in a week and Dismiss. For RWKV-Curve and RWKV-Instant presets it says that only their FSRS fallback is optimized and RWKV itself isn't trained. Turn it off with Settings → App and privacy → Remind me to optimize presets. A snooze, a dismissal and the switch apply on all your devices.
 
 **Sharing.** Choose who gets each moment you share, including older moments, completed decks and your weekly place. Share pictures are drawn on your computer, so they work offline, and streak pictures change with the length of the streak. When Undo of a share fails, the add-on says so.
 

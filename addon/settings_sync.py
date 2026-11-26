@@ -4,7 +4,7 @@ The shared keys are defined in tests/fixtures/synced_settings.json; tests keep `
 its desktop names. Each synced setting remembers when it last changed on this computer, and the
 newer side wins, key by key."""
 
-from . import countdowns
+from . import countdowns, optimize_reminder
 
 FEATURE = "settings_sync"
 
@@ -15,8 +15,8 @@ SWITCH = "sync_settings"
 # before sync existed.
 CHANGED_KEY = "synced_settings_changed_at"
 
-# Shared key -> (config key, default, allowed range for numbers). A list default is never
-# changed in place.
+# Shared key -> (config key, default, allowed range for numbers). A list or dict default is
+# never changed in place.
 KEYS = {
     "notify_rank": ("notify_rank", True, None),
     "streak_warning_hours": ("streak_hours", 2, (0, 12)),
@@ -25,6 +25,7 @@ KEYS = {
     "deck_status": ("deck_status", True, None),
     "review_heatmap": ("review_heatmap", True, None),
     "countdowns": (countdowns.CONFIG_KEY, [], None),
+    "optimize_reminder": (optimize_reminder.CONFIG_KEY, optimize_reminder.DEFAULT, None),
 }
 
 # Keys only a server with this feature can keep: an older one refuses an unknown value over
@@ -113,6 +114,8 @@ def usable(key, value):
     _, default, bounds = KEYS[key]
     if key == "countdowns":
         return countdowns.valid(value)
+    if key == "optimize_reminder":
+        return optimize_reminder.valid(value)
     if type(value) is not type(default):
         return False
     return bounds is None or bounds[0] <= value <= bounds[1]

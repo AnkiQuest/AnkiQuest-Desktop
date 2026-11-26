@@ -8,8 +8,10 @@ from pathlib import Path
 from addon_loader import load_in_package, load_module
 
 rule = load_in_package("aq_optimize_reminder", "optimize_reminder")
+settings_sync = load_in_package("aq_optimize_settings_sync", "settings_sync")
 language = load_module("aq_optimize_language", "language.py")
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/optimize_reminder.json").read_text("utf-8"))
+SETTINGS = json.loads((Path(__file__).parent / "fixtures/synced_settings.json").read_text("utf-8"))
 
 
 class Revlog:
@@ -83,9 +85,47 @@ class SharedCases(unittest.TestCase):
                 self.assertEqual(found, rule.decode(rule.encode(found)))
 
     def test_a_missing_or_broken_state_is_on(self):
-        for stored in (None, "on", {}, {"kind": "snoozed"}, {"kind": "dismissed"}, {"kind": "snoozed", "until_day": "x"}):
+        broken = (None, "on", {}, {"kind": "snoozed"}, {"kind": "dismissed"}, {"kind": "snoozed", "until_day": "x"},
+                  {"kind": "off", "until_day": 3}, {"kind": "dismissed", "optimized_day": 0})
+        for stored in broken:
             with self.subTest(stored=stored):
                 self.assertEqual(rule.On(), rule.decode(stored))
+
+
+class SyncedState(unittest.TestCase):
+    """The state is the synced setting optimize_reminder, one for all the player's devices."""
+
+    def test_the_state_is_the_synced_setting(self):
+        row = next(row for row in SETTINGS["keys"] if row["key"] == "optimize_reminder")
+        self.assertEqual((row["desktop"], row["default"]), (rule.CONFIG_KEY, rule.DEFAULT))
+        self.assertEqual((rule.CONFIG_KEY, rule.DEFAULT, None), settings_sync.KEYS["optimize_reminder"])
+        self.assertEqual(rule.On(), rule.decode(rule.DEFAULT))
+
+    def test_a_snooze_here_is_a_change_to_send(self):
+        snoozed = {"kind": "snoozed", "until_day": 507}
+        self.assertEqual({"optimize_reminder": 5}, settings_sync.stamped({}, {rule.CONFIG_KEY: snoozed}, 5))
+        self.assertIsNone(settings_sync.stamped({}, {rule.CONFIG_KEY: rule.encode(rule.On())}, 5))
+
+        # A snooze from another device replaces the state here.
+        updates, changed, push = settings_sync.plan({}, {"optimize_reminder": {"value": snoozed, "updated_at": 9}})
+        self.assertEqual(({rule.CONFIG_KEY: snoozed}, 9, {}), (updates, changed["optimize_reminder"], push))
+
+    def test_every_state_the_cases_name_is_usable(self):
+        states = [case["state"] for case in FIXTURE["cases"]] + [case["expected"] for case in FIXTURE["transitions"]]
+        for stored in states:
+            with self.subTest(stored=stored):
+                self.assertTrue(settings_sync.usable("optimize_reminder", stored))
+                self.assertEqual(stored, rule.encode(rule.decode(stored)))
+
+    def test_only_what_the_server_stores_is_usable(self):
+        cases = [case for case in SETTINGS["server_merge"] if "optimize_reminder" in case["incoming"]]
+        self.assertTrue(cases)
+        for case in cases:
+            with self.subTest(case["name"]):
+                value = case["incoming"]["optimize_reminder"]["value"]
+                self.assertEqual(not case.get("refused", False), settings_sync.usable("optimize_reminder", value))
+        self.assertFalse(rule.valid({"kind": "snoozed", "until_day": True}))
+        self.assertFalse(rule.valid({"kind": "snoozed", "until_day": 2**31}))
 
 
 class Wording(unittest.TestCase):
