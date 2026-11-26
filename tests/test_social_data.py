@@ -50,17 +50,18 @@ class GoalActions(unittest.TestCase):
         self.assertEqual((social._GoalAction.LEAVE,), social._actions(goal, "hill", 1000))
         self.assertEqual((social._GoalAction.CANCEL,), social._actions(dict(goal, creator="hill"), "hill", 1000))
 
-    def test_an_ended_goal_member_of_any_kind_has_no_action(self):
+    def test_a_closed_or_unknown_goal_has_no_action_for_an_invited_member(self):
         for status in ("ended", "cancelled", "declined", "unknown"):
             with self.subTest(status=status):
-                goal = {"status": status, "end_at": 2000, "members": [], "creator": "hill"}
+                goal = {"status": status, "end_at": 2000, "members": [{"user": "hill", "status": "invited"}]}
                 self.assertEqual((), social._actions(goal, "hill", 1000))
-        self.assertEqual((), social._actions({"status": "active", "members": []}, "hill", 1000))
+        self.assertEqual((), social._actions({"status": "active", "end_at": 2000, "members": []}, "hill", 1000))
 
-    def test_a_past_goal_end_has_no_action_even_while_active(self):
-        goal = {"status": "active", "members": [{"user": "hill", "status": "accepted"}], "end_at": 999}
-        self.assertEqual((), social._actions(goal, "hill", 1000))
-        self.assertIsNotNone(social._actions(dict(goal, end_at=1000), "hill", 1000))
+    def test_an_active_goal_stops_offering_actions_at_its_end(self):
+        goal = {"status": "active", "members": [{"user": "hill", "status": "accepted"}]}
+        self.assertEqual((social._GoalAction.LEAVE,), social._actions(dict(goal, end_at=1001), "hill", 1000))
+        self.assertEqual((), social._actions(dict(goal, end_at=1000), "hill", 1000))
+        self.assertEqual((), social._actions(dict(goal, end_at=999), "hill", 1000))
 
 
 class WeeklySuggestion(unittest.TestCase):
