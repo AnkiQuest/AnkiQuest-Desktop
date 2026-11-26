@@ -516,7 +516,7 @@ class RefreshTests(unittest.TestCase):
         self.mw.col.db.scalar = Mock(return_value=answered)
         self.pending = [[(answered, 1, 1, 3, 1000, 1, 3)]]
         self.addon.refresh(False, answered=((7, int(time.time() * 1000)),))
-        stamped, _synced = self.api.upload.call_args.args[0]
+        stamped = self.api.upload.call_args.args[0][0]
         self.assertEqual(stamped["offset_west_min"], self.addon.review_offsets.offset_at(answered))
 
 if __name__ == "__main__":
