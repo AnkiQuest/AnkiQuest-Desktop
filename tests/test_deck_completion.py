@@ -493,5 +493,31 @@ class RefreshTests(unittest.TestCase):
         )
         self.api.upload.assert_called_once()
 
+    def test_answering_defers_the_revlog_lookup_to_the_upload_worker(self):
+        answered = int(time.time() * 1000)
+        self.mw.col.db.scalar = Mock(return_value=answered)
+        queued = []
+        self.mw.taskman.run_in_background = lambda work, done, uses_collection=False: queued.append((work, done))
+        self.addon.on_answer(None, SimpleNamespace(id=7), 3)
+        self.mw.col.db.scalar.assert_not_called()
+        self.assertNotIn("ankiquestReviewOffsets", self.mw.pm.profile)
+        work, done = queued.pop(0)
+        future = Future()
+        future.set_result(work())
+        done(future)
+        self.mw.col.db.scalar.assert_called_once_with("select max(id) from revlog where cid = ?", 7)
+        self.assertEqual(
+            self.mw.pm.profile["ankiquestReviewOffsets"],
+            {answered: self.addon.review_offsets.offset_at(answered)},
+        )
+
+    def test_the_answer_offset_is_recorded_before_the_upload_reads_the_journal(self):
+        answered = int(time.time() * 1000)
+        self.mw.col.db.scalar = Mock(return_value=answered)
+        self.pending = [[(answered, 1, 1, 3, 1000, 1, 3)]]
+        self.addon.refresh(False, answered=((7, int(time.time() * 1000)),))
+        stamped = self.api.upload.call_args.args[0][0]
+        self.assertEqual(stamped["offset_west_min"], self.addon.review_offsets.offset_at(answered))
+
 if __name__ == "__main__":
     unittest.main()

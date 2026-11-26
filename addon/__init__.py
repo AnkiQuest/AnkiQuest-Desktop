@@ -82,11 +82,16 @@ class Refresh:
 
     show_feedback: bool
     mode: UploadMode
+    # The answers this upload must stamp, as (card id, answered at) pairs answered while
+    # another upload ran. Their revlog lookup happens on the upload thread, before the
+    # worker reads the journal, so the stamp reaches the review it belongs to.
+    answered: tuple = ()
 
     def merged(self, other):
         if other is None:
             return self
-        return Refresh(self.show_feedback or other.show_feedback, max(self.mode, other.mode))
+        answered = self.answered + tuple(a for a in other.answered if a not in self.answered)
+        return Refresh(self.show_feedback or other.show_feedback, max(self.mode, other.mode), answered)
 
 
 @dataclass(frozen=True)
@@ -325,8 +330,8 @@ def client():
     return Client(settings.get("url", ""), settings.get("user", ""), settings.get("token", ""), anki.lang.current_lang)
 
 
-def refresh(show_feedback, resync=False):
-    _request_upload(Refresh(show_feedback, UploadMode.RESYNC if resync else UploadMode.PENDING))
+def refresh(show_feedback, resync=False, answered=()):
+    _request_upload(Refresh(show_feedback, UploadMode.RESYNC if resync else UploadMode.PENDING, answered))
 
 
 def _upload_prefs(api):
@@ -488,7 +493,6 @@ def _request_upload(request, *, attempts=0):
     window_start = now_ms - UNDO_WINDOW_MS
     recent = {i for i in saved.get("recent", []) if i > window_start}
     shared = set(saved.get("shared", [])) if not history else set()
-    stamps = review_offsets.journal(prefs)
     known_decks = dict(deck_names._state(prefs, api).get("conquests", {}))
 
     def progress(sent, total):
@@ -505,6 +509,15 @@ def _request_upload(request, *, attempts=0):
 
     def work():
         check_target()
+        # The answers queued with this upload are stamped on this thread, before the
+        # journal below reads them, so a review never uploads without its offset.
+        for card_id, answered_at in request.answered:
+            try:
+                answered = col.db.scalar("select max(id) from revlog where cid = ?", card_id)
+                review_offsets.record(prefs, answered, answered_at)
+            except Exception as e:
+                print("ankiquest review offset:", e)
+        stamps = review_offsets.journal(prefs)
         window = col.db.all(WINDOW_SQL, window_start)
         present, candidates, restored = reconcile(window, recent, start, mark)
         deleted = check_deletes(col.db, present, candidates)
@@ -553,18 +566,18 @@ def _request_upload(request, *, attempts=0):
             if history and sent:
                 mw.taskman.run_on_main(lambda count=sent_count: progress(count, max(count, total)))
             if not full:
-                check = resend_history(start) if resend_due else None
+                check = resend_history(start, stamps) if resend_due else None
                 return max(known, mark), sorted(present), profile, sent_count, conquest_decks, check
 
-    def resend_history(start):
+    def resend_history(start, stamps):
         # A failed resend must not undo the upload before it; it is tried on a later upload.
         try:
-            return resend_rows(start)
+            return resend_rows(start, stamps)
         except Exception as error:
             print("ankiquest ease resend:", error)
             return ease_resend.Check.FAILED
 
-    def resend_rows(start):
+    def resend_rows(start, stamps):
         # An older server drops the button, so the resend waits until it names the feature.
         check_target()
         if ease_resend.FEATURE not in api.server_info()[0]:
@@ -1365,13 +1378,8 @@ def install_update(path):
 
 
 def on_answer(_reviewer, card, _ease):
-    """Remembers the time zone the answer was made in, then uploads it."""
-    try:
-        answered = mw.col.db.scalar("select max(id) from revlog where cid = ?", card.id)
-        review_offsets.record(mw.pm.profile, answered, int(time.time() * 1000))
-    except Exception as e:
-        print("ankiquest review offset:", e)
-    refresh(True)
+    """Uploads the answer; its time-zone offset is read on the upload thread."""
+    refresh(True, answered=((card.id, int(time.time() * 1000)),))
 
 
 def on_sync():
