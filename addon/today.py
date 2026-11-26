@@ -164,11 +164,12 @@ DECK_LINK = re.compile(r"(<a\b[^>]*?pycmd\('open:(\d+)'\)[^>]*>.*?</a>)", re.S)
 
 # The deck-row day badges' inks: the badge colours tint the row; the text is the same colour's
 # own ink, dark in day mode and lighter at night, as the palette inks are (WCAG AA, 4.5:1).
-# Done matches Android's aq_deck_green; the brighter ambers and blues keep the palette's inks,
-# which pass where Android's amber does not (4.43:1 on the tint).
+# Done matches Android's aq_deck_green and later matches its aq_deck_amber, one step darker
+# so the shared amber clears 4.5:1 on this tint (Android's was 4.43:1); the brighter blues
+# keep the palette's inks.
 _BADGE_INK = {
     DONE: ("#247743", "#8cd79e"),
-    LEARNING_LATER: ("#5c3000", "#ffb257"),
+    LEARNING_LATER: ("#855b00", "#f0bc57"),
     REVIEW_NOW: ("#0e5a87", "#6ab7e8"),
 }
 _NIGHT_PREFIXES = (".nightMode ", ".night-mode ", ".night_mode ")
