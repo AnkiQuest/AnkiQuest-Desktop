@@ -29,7 +29,7 @@ EXPANDED = MESSAGE + "expanded:"
 STYLE = """<style>
 #aq-heatmap{--hm-empty:#e7ece9;--hm-l1:#bae1c4;--hm-l2:#77c58f;--hm-l3:#369d5b;--hm-l4:#136c37;
 --hm-f1:#d4d9df;--hm-f2:#abb3be;--hm-f3:#7d8998;--hm-f4:#546171;--hm-kept:#2f80c9;--hm-frozen:#bfdcf5;
---hm-short:#e9d8a6;--hm-line:#e5e5e5;--hm-bg:#fff;--hm-text:#3c3c3c;--hm-muted:#777;--hm-select:#1cb0f6;
+--hm-short:#e9d8a6;--hm-line:#e5e5e5;--hm-bg:#fff;--hm-text:#3c3c3c;--hm-muted:#6a6a6a;--hm-select:#1cb0f6;
 max-width:680px;margin:1.5em auto 0;text-align:left;color:var(--hm-text);background:var(--hm-bg);
 border:2px solid var(--hm-line);border-bottom-width:5px;border-radius:18px;padding:14px 16px;
 font:600 13px/1.35 "Nunito","Varela Round","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif}
@@ -68,7 +68,7 @@ font:600 13px/1.35 "Nunito","Varela Round","Segoe UI Variable Display","Segoe UI
 #aq-heatmap .hm-grid .sel{box-shadow:0 0 0 2px var(--hm-select)}
 #aq-heatmap .hm-day{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
 #aq-heatmap .hm-day span{flex:1}
-#aq-heatmap .hm-view{background:var(--hm-select);color:#fff;border:0;border-radius:999px;padding:4px 12px;font-weight:800}
+#aq-heatmap .hm-view{background:var(--hm-select);color:#23272e;border:0;border-radius:999px;padding:4px 12px;font-weight:800}
 </style>"""
 
 # Lays out one year; every colour, text and search was decided in Python.

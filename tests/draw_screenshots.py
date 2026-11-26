@@ -1,17 +1,22 @@
-"""The add-on screenshots in docs/screenshots, rendered from fake data and compared with the committed files.
+"""The add-on screenshots, rendered from fake data and compared with a baseline drawing.
 
 Each test draws one screen offscreen with the real add-on code: the Today panel in a web view as
 Anki's deck list shows it, and the native windows as Qt widgets. Players, server replies, the clock
 (2026-11-11 14:26 UTC), fonts (tests/screenshots/fonts only), window sizes and the device pixel
-ratio (1) are fixed, so the same Qt build draws the same pixels. A test fails when its picture
-differs from the committed one in any pixel.
+ratio (1) are fixed, so the same Qt build draws the same pixels.
 
-    QT_QPA_PLATFORM=offscreen python tests/draw_screenshots.py    # compare
-    ANKIQUEST_SCREENSHOTS=write python tests/draw_screenshots.py    # write docs/screenshots
+Every drawing is saved as desktop-<name>.png in ANKIQUEST_SCREENSHOTS_DIR (build/screenshots by
+default). With ANKIQUEST_SCREENSHOTS_BASELINE naming a folder of earlier drawings, a test also
+fails when its picture differs from the baseline's in any pixel. The screenshots are not committed:
+CI stores each master commit's drawing as the `screenshot-baseline` artifact
+(.github/workflows/screenshot_store.yml) and compares pull requests with their base commit's.
+
+    QT_QPA_PLATFORM=offscreen python tests/draw_screenshots.py    # draw
+    ANKIQUEST_SCREENSHOTS_BASELINE=<folder> python tests/draw_screenshots.py    # draw and compare
 
 The pictures are pinned to the Qt of tests/requirements-anki-26.9.4.txt on Ubuntu 24.04, as CI's
-screenshots job runs them. ANKIQUEST_SCREENSHOTS_OUT names a folder for the pictures that differ.
-The file is not named qt_*.py, so the general Qt test runs on other Anki versions don't pick it up.
+screenshots job runs them. The file is not named qt_*.py, so the general Qt test runs on other
+Anki versions don't pick it up.
 """
 
 import atexit
@@ -23,7 +28,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HERE = ROOT / "tests" / "screenshots"
-SHOTS = ROOT / "docs" / "screenshots"
+SHOTS = Path(os.environ.get("ANKIQUEST_SCREENSHOTS_DIR") or ROOT / "build" / "screenshots")
 FONTS = HERE / "fonts"
 
 # Fontconfig sees only the bundled fonts, so no font on the machine changes a glyph.
@@ -438,7 +443,7 @@ def settings_screen(size, language):
     return draw
 
 
-# Name, theme, drawing. Names are the files in docs/screenshots without "desktop-" and ".png".
+# Name, theme, drawing. Names are the saved files without "desktop-" and ".png".
 SCREENS = {
     "today-light": (Theme.LIGHT, today_screen("today", Theme.LIGHT, 480)),
     "today-dark": (Theme.DARK, today_screen("today", Theme.DARK, 360)),
@@ -464,12 +469,13 @@ SCREENS = {
 
 
 class Mode(Enum):
+    """Whether the drawings are only saved, or also compared with a baseline."""
+    DRAW = "draw"
     COMPARE = "compare"
-    WRITE = "write"
 
 
-MODE = Mode(os.environ.get("ANKIQUEST_SCREENSHOTS", Mode.COMPARE.value))
-OUT = os.environ.get("ANKIQUEST_SCREENSHOTS_OUT")
+BASELINE = os.environ.get("ANKIQUEST_SCREENSHOTS_BASELINE")
+MODE = Mode.COMPARE if BASELINE else Mode.DRAW
 
 
 def draw(name):
@@ -483,14 +489,14 @@ def draw(name):
     return image.convertToFormat(QImage.Format.Format_RGB32)
 
 
-def differences(image, committed):
+def differences(image, before):
     """How many pixels differ, and the largest channel difference."""
-    if image.size() != committed.size():
+    if image.size() != before.size():
         return image.width() * image.height(), 255
     count, worst = 0, 0
     for y in range(image.height()):
         for x in range(image.width()):
-            a, b = image.pixel(x, y), committed.pixel(x, y)
+            a, b = image.pixel(x, y), before.pixel(x, y)
             if a != b:
                 count += 1
                 worst = max(worst, *(abs(((a >> s) & 255) - ((b >> s) & 255)) for s in (0, 8, 16)))
@@ -499,20 +505,22 @@ def differences(image, committed):
 
 class Screenshots(unittest.TestCase):
     def check(self, name):
+        # Every drawing is saved, so CI can store it as a baseline or hand it to the banner.
         image = draw(name)
-        path = SHOTS / ("desktop-%s.png" % name)
-        if MODE is Mode.WRITE:
-            self.assertTrue(image.save(str(path), "PNG", 0), path)
+        file = "desktop-%s.png" % name
+        SHOTS.mkdir(parents=True, exist_ok=True)
+        self.assertTrue(image.save(str(SHOTS / file), "PNG", 0), SHOTS / file)
+        if MODE is Mode.DRAW:
             return
-        committed = QImage(str(path)).convertToFormat(QImage.Format.Format_RGB32)
-        if image == committed:
+
+        # A screen the baseline lacks is new: it differs everywhere.
+        path = Path(BASELINE) / file
+        self.assertTrue(path.is_file(), "%s is not in the baseline %s: a new screen" % (file, BASELINE))
+        before = QImage(str(path)).convertToFormat(QImage.Format.Format_RGB32)
+        if image == before:
             return
-        if OUT:
-            Path(OUT).mkdir(parents=True, exist_ok=True)
-            image.save(str(Path(OUT) / path.name), "PNG", 0)
-        count, worst = differences(image, committed)
-        self.fail("%s differs from the drawing in %d pixels (largest channel difference %d): "
-                  "run ANKIQUEST_SCREENSHOTS=write python tests/draw_screenshots.py" % (path.name, count, worst))
+        count, worst = differences(image, before)
+        self.fail("%s differs from the baseline in %d pixels (largest channel difference %d)" % (file, count, worst))
 
 
 def _test(name):

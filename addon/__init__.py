@@ -43,7 +43,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, rwkv_stats, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -843,6 +843,53 @@ def on_deck_browser(deck_browser, content):
     content.stats += board.html(profile, state["place"], waiting, tr, mascot, today, actions=actions, flame=flame)
     content.stats += board._connection_note(state["profile"], state["poll_failure"], tr)
     content.stats += '<p style="text-align:center;font-size:12px">%s</p>' % html.escape(_upload_status(api))
+    content.stats += _rwkv_block(tr)
+
+
+# One cached forecast for the current collection and revision. While it loads, it draws nothing.
+@dataclass
+class _RwkvBlock:
+    collection: object
+    revision: int
+    html: str = ""
+
+
+_RWKV_BLOCK = None
+
+
+def _rwkv_block(tr):
+    global _RWKV_BLOCK
+    from .language import percent, plural
+
+    collection = mw.col
+    backend = getattr(collection, "_backend", None)
+    if getattr(backend, "rwkv_offline_forecast", None) is None:
+        _RWKV_BLOCK = None
+        return ""
+    revision = collection.mod
+    if _RWKV_BLOCK is not None and _RWKV_BLOCK.collection is collection and _RWKV_BLOCK.revision == revision:
+        return _RWKV_BLOCK.html
+
+    request = _RwkvBlock(collection, revision)
+    _RWKV_BLOCK = request
+
+    def work():
+        if mw.col is not collection:
+            return ""
+        return rwkv_stats.block(collection, tr, plural, percent)
+
+    def done(future):
+        if _RWKV_BLOCK is not request or mw.col is not collection or collection.mod != revision:
+            return
+        try:
+            request.html = future.result()
+        except Exception as e:
+            print("ankiquest rwkv stats:", e)
+        if request.html:
+            mw.deckBrowser.refresh()
+
+    mw.taskman.run_in_background(work, done, uses_collection=True)
+    return ""
 
 
 def on_js_message(handled, message, context):
@@ -1295,6 +1342,10 @@ def check_updates(quiet=True):
         return
     channel = config().get("update_channel", "stable")
 
+    from anki.utils import int_version
+
+    point = int_version()
+
     def done(future):
         try:
             candidate = future.result()
@@ -1302,14 +1353,19 @@ def check_updates(quiet=True):
             if not quiet:
                 failed(tr("AnkiQuest: could not check for updates (%s)"), e)
             return
-        if updates.newer(candidate, current):
-            offer_update(candidate)
-        elif not quiet:
-            tooltip(tr("AnkiQuest is up to date (%s).") % updates.label(current))
+        if not updates.newer(candidate, current):
+            if not quiet:
+                tooltip(tr("AnkiQuest is up to date (%s).") % updates.label(current))
+            return
+        if updates.refused(mw.pm.profile, candidate, point):
+            # A remembered refusal keeps quiet checks silent, but a manual check says
+            # why nothing is offered instead of claiming to be up to date.
+            if not quiet:
+                tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
+            return
+        offer_update(candidate, point)
 
-    from anki.utils import int_version
-
-    mw.taskman.run_in_background(lambda: updates.available(channel, int_version()), done)
+    mw.taskman.run_in_background(lambda: updates.available(channel, point), done)
 
 
 def maybe_check_updates():
@@ -1322,7 +1378,7 @@ def maybe_check_updates():
     check_updates(quiet=True)
 
 
-def offer_update(candidate):
+def offer_update(candidate, point):
     from aqt.utils import askUser
 
     if not askUser(tr("%s is available. Install it now? Anki needs a restart afterwards.") % updates.label(candidate)):
@@ -1335,12 +1391,12 @@ def offer_update(candidate):
         except Exception as e:
             failed(tr("AnkiQuest: could not download the update (%s)"), e)
             return
-        install_update(path)
+        install_update(path, candidate, point)
 
     mw.taskman.run_in_background(lambda: updates.download(candidate["url"], target), done)
 
 
-def install_update(path):
+def install_update(path, candidate, point):
     from aqt.addons import AddonMeta, InstallError
     from aqt.utils import showInfo
     from zipfile import BadZipFile, ZipFile
@@ -1353,6 +1409,8 @@ def install_update(path):
     except (BadZipFile, OSError):
         manifest = {}
     if manifest and not AddonMeta.from_json_meta(manifest["package"], manifest).compatible():
+        # Remember it, so the check stops offering this build until a newer one appears.
+        updates.remember_refused(mw.pm.profile, candidate, point)
         tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
         return
 
