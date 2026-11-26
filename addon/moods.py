@@ -7,6 +7,9 @@ first, then from the collection's due cards, as the phone's AnkiquestAki.message
 """
 
 from enum import Enum, auto
+from pathlib import Path
+
+import json
 
 WELCOME, REVIEW, CELEBRATE, STREAK, FREEZE, WINNER = "welcome", "review", "celebrate", "streak", "freeze", "winner"
 
@@ -133,28 +136,22 @@ PREVIEW_POSES = ("aki_face", "aki_streak", "aki_sad")
 # How far the cow's art is hue-rotated, as CSS hue-rotate() turns it; see `art_owner`.
 COW_HUE_DEGREES = 250
 
-# The poses tests/fixtures/companion_poses.json names: the core poses every companion has, and
-# the pose each extension falls back to where a companion has no art for it.
-CORE_POSES = ("face", "asleep", "happy", "streak", "sad", "hopeful", "frozen", "neglected")
-POSE_FALLBACKS = {
-    "streak_hot": "streak",
-    "streak_blazing": "streak_hot",
-    "streak_legend": "streak_blazing",
-    "streak_milestone": "streak_legend",
-    "frozen_2": "frozen",
-    "frozen_3": "frozen_2",
-    "welcome": "happy",
-    "review": "happy",
-    "hurt": "sad",
-    "abandoned": "neglected",
-    "dead": "neglected",
-    "leech_defeated": "happy",
-    "winner": "happy",
-}
+# The poses the pinned AnkiQuest-Art release names: the core poses every companion has, the pose
+# each extension falls back to where a companion has no art for it, and the core pose shown for a
+# core pose with no master yet. tools/package-addon fetches the release's poses.json beside the
+# pictures (`-- art`), the package ships it, and Server's companion_poses.json no longer names them.
+try:
+    with open(Path(__file__).with_name("art") / "poses.json", encoding="utf-8") as _poses:
+        _ART_POSES = json.load(_poses)
+except OSError as _error:
+    raise RuntimeError(
+        "Fetch the pinned AnkiQuest-Art release first: "
+        "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+    ) from _error
 
-# The core pose a companion shows for a core pose it has no master for yet, as AnkiQuest-Art's
-# poses.json `core_fallbacks` says.
-CORE_FALLBACKS = {"happy": "hopeful", "streak": "hopeful"}
+CORE_POSES = tuple(_ART_POSES["core"])
+POSE_FALLBACKS = dict(_ART_POSES["extensions"])
+CORE_FALLBACKS = dict(_ART_POSES["core_fallbacks"])
 
 # The pose each of Aki's pictures shows, so that other companions show theirs.
 _AKI_PICTURES = {

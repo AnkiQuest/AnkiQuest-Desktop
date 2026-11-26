@@ -28,6 +28,9 @@ const RELEASES: &str = "https://github.com/AnkiQuest/AnkiQuest-Art/releases/down
 /// The release asset with the add-on's pictures.
 const PICTURES: &str = "addon-art.zip";
 
+/// The release asset naming the poses, written beside the pictures for `moods` to read.
+const POSE_LIST: &str = "poses.json";
+
 /// A folder of release assets to use instead of downloading them.
 const LOCAL_DIR: &str = "ANKIQUEST_ART_DIR";
 
@@ -67,13 +70,44 @@ struct Pin {
     assets: Value,
 }
 
-/// Unpacks the pinned pictures into `addon`.
+/// Unpacks the pinned pictures into `addon`, with the release's pose list beside them.
 pub(super) fn fetch(repo: &Path, addon: &Path) -> Result<(), String> {
     let pin = Pin::read(&repo.join(PIN))?;
     let local = env::var_os(LOCAL_DIR).map(PathBuf::from);
     let origin = origin(&pin, local)?;
     let bytes = asset(&pin, &origin, PICTURES)?;
-    unpack(&bytes, addon)
+    unpack(&bytes, addon)?;
+    let poses = asset(&pin, &origin, POSE_LIST)?;
+    check_pose_list(&poses)?;
+    fs::create_dir_all(addon.join(POSES)).map_err(|e| format!("{}: {e}", addon.join(POSES).display()))?;
+    fs::write(addon.join(POSES).join(POSE_LIST), poses)
+        .map_err(|e| format!("{}: {e}", addon.join(POSES).join(POSE_LIST).display()))
+}
+
+/// Fails unless `bytes` are the pose list the add-on reads: core poses and the fallbacks.
+fn check_pose_list(bytes: &[u8]) -> Result<(), String> {
+    let value: Value = serde_json::from_slice(bytes).map_err(|e| format!("{POSE_LIST}: {e}"))?;
+    let entries = |name: &str| {
+        value
+            .get(name)
+            .and_then(Value::as_object)
+            .ok_or_else(|| format!("{POSE_LIST}: no {name} object"))
+            .map(|found| found.len())
+    };
+    let core = value
+        .get("core")
+        .and_then(Value::as_array)
+        .ok_or_else(|| format!("{POSE_LIST}: no core list"))?
+        .len();
+    if core == 0 {
+        return Err(format!("{POSE_LIST}: no core poses"));
+    }
+    for name in ["extensions", "core_fallbacks"] {
+        if entries(name)? == 0 {
+            return Err(format!("{POSE_LIST}: empty {name}"));
+        }
+    }
+    Ok(())
 }
 
 /// Unpacks the pictures in `bytes`, an `addon-art.zip`, into `addon`,
