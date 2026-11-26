@@ -32,6 +32,6 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Server.** This version needs a current AnkiQuest server. On an older one, the inbox, leaderboard, progress, companion unlocks and sharing say "Update your AnkiQuest server".
 
-Companion pictures come from AnkiQuest-Art art-9.
+Companion pictures come from AnkiQuest-Art art-11.
 
 Study uploads contain review history (card id, timestamp, previous and new interval, time taken, review type and the button pressed) and deck progress, never card content.
