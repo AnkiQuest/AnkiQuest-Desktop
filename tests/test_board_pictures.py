@@ -19,12 +19,12 @@ class PicturesTests(unittest.TestCase):
         fake_anki(self, SimpleNamespace())
         self.pictures = load_in_package("ankiquest_pictures_test", "board_pictures")
 
-    def test_an_avatar_url_quotes_the_player_s_name(self):
-        downloads = []
-        with patch.object(self.pictures.share, "download_image", side_effect=lambda url, **kw: downloads.append(url) or PNG):
-            data = self.pictures._avatar(api(token="secret"), "AldanaBRZ")
+    def test_an_avatar_url_quotes_the_player_name_and_passes_its_token(self):
+        with patch.object(self.pictures.share, "download_image", return_value=PNG) as download:
+            data = self.pictures._avatar(api(token="test-token"), "Demo / player")
         self.assertEqual(PNG, data)
-        self.assertEqual("https://ankiquest.example/api/avatar/AldanaBRZ", downloads[0])
+        self.assertEqual("https://ankiquest.example/api/avatar/Demo%20%2F%20player", download.call_args.args[0])
+        self.assertEqual("test-token", download.call_args.kwargs["token"])
 
     def test_the_picture_endpoint_may_not_redirect(self):
         request = SimpleNamespace(full_url="https://ankiquest.example/avatar")

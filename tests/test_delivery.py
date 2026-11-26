@@ -32,7 +32,7 @@ class Records(unittest.TestCase):
         self.assertEqual(["old"], record["copies"])
         self.assertEqual("2026-01-01", record["warned"])
         self.assertIs(record, delivery._record(profile, account()))
-        self.assertEqual([], profile.setdefault("x", []))
+        self.assertEqual([], record["pending"])
 
     def test_a_second_account_starts_from_nothing(self):
         profile = {"ankiquestInboxCursor": 42, "ankiquestSeenDeckCopies": ["old"], "ankiquestStreakDay": "2026-01-01"}
