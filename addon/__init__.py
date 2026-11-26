@@ -1365,13 +1365,20 @@ def install_update(path):
 
 
 def on_answer(_reviewer, card, _ease):
-    """Remembers the time zone the answer was made in, then uploads it."""
-    try:
-        answered = mw.col.db.scalar("select max(id) from revlog where cid = ?", card.id)
-        review_offsets.record(mw.pm.profile, answered, int(time.time() * 1000))
-    except Exception as e:
-        print("ankiquest review offset:", e)
-    refresh(True)
+    """Remembers the time zone the answer was made in, then uploads it. The revlog read
+    leaves the main thread, and the upload leaves only after the offset is journalled, so
+    the row ships stamped."""
+    profile = mw.pm.profile
+    card_id = card.id
+
+    def work():
+        try:
+            answered = mw.col.db.scalar("select max(id) from revlog where cid = ?", card_id)
+            review_offsets.record(profile, answered, int(time.time() * 1000))
+        except Exception as e:
+            print("ankiquest review offset:", e)
+
+    mw.taskman.run_in_background(work, lambda _future: refresh(True))
 
 
 def on_sync():
