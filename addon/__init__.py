@@ -43,7 +43,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, rwkv_stats, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -844,6 +844,53 @@ def on_deck_browser(deck_browser, content):
     content.stats += board.html(profile, state["place"], waiting, tr, mascot, today, actions=actions, flame=flame)
     content.stats += board._connection_note(state["profile"], state["poll_failure"], tr)
     content.stats += '<p style="text-align:center;font-size:12px">%s</p>' % html.escape(_upload_status(api))
+    content.stats += _rwkv_block(tr)
+
+
+# One cached forecast for the current collection and revision. While it loads, it draws nothing.
+@dataclass
+class _RwkvBlock:
+    collection: object
+    revision: int
+    html: str = ""
+
+
+_RWKV_BLOCK = None
+
+
+def _rwkv_block(tr):
+    global _RWKV_BLOCK
+    from .language import percent, plural
+
+    collection = mw.col
+    backend = getattr(collection, "_backend", None)
+    if getattr(backend, "rwkv_offline_forecast", None) is None:
+        _RWKV_BLOCK = None
+        return ""
+    revision = collection.mod
+    if _RWKV_BLOCK is not None and _RWKV_BLOCK.collection is collection and _RWKV_BLOCK.revision == revision:
+        return _RWKV_BLOCK.html
+
+    request = _RwkvBlock(collection, revision)
+    _RWKV_BLOCK = request
+
+    def work():
+        if mw.col is not collection:
+            return ""
+        return rwkv_stats.block(collection, tr, plural, percent)
+
+    def done(future):
+        if _RWKV_BLOCK is not request or mw.col is not collection or collection.mod != revision:
+            return
+        try:
+            request.html = future.result()
+        except Exception as e:
+            print("ankiquest rwkv stats:", e)
+        if request.html:
+            mw.deckBrowser.refresh()
+
+    mw.taskman.run_in_background(work, done, uses_collection=True)
+    return ""
 
 
 def on_js_message(handled, message, context):
