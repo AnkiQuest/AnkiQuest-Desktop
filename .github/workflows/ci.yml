@@ -65,6 +65,8 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
       PYTHONIOENCODING: utf-8
+      # The packager keeps the pinned Art release's assets here (docs/desktop.md).
+      ANKIQUEST_ART_CACHE: ${{ github.workspace }}/../ankiquest-art
     steps:
       # The matrix names are required checks, and a skipped matrix job
       # reports under its unexpanded name, so the job runs and skips its
@@ -103,7 +105,15 @@ jobs:
       - name: Fetch the server's fixtures and examples
         if: needs.changes.outputs.code == 'true'
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- server-data
-      # The tests read the companion pictures of the pinned AnkiQuest-Art release.
+      # The tests read the companion pictures of the pinned AnkiQuest-Art release,
+      # downloaded once per pin: the packager checks each asset's SHA-256
+      # against the pin before use, so a cached file can't change a picture.
+      - name: Restore the Art release download
+        if: needs.changes.outputs.code == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.ANKIQUEST_ART_CACHE }}
+          key: ankiquest-art-${{ hashFiles('ankiquest-art.json') }}
       - name: Fetch the companion pictures
         if: needs.changes.outputs.code == 'true'
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
@@ -123,6 +133,7 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
       PYTHONIOENCODING: utf-8
+      ANKIQUEST_ART_CACHE: ${{ github.workspace }}/../ankiquest-art
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -137,6 +148,11 @@ jobs:
           bash .github/scripts/ubuntu-archive.sh
           sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
           python -m pip install -r tests/requirements-anki-26.9.4.txt
+      - name: Restore the Art release download
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.ANKIQUEST_ART_CACHE }}
+          key: ankiquest-art-${{ hashFiles('ankiquest-art.json') }}
       - name: Fetch the companion pictures
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
       - name: Compare the screenshots with a fresh drawing
@@ -166,6 +182,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       PACKAGER: tools/package-addon/Cargo.toml
+      ANKIQUEST_ART_CACHE: ${{ github.workspace }}/../ankiquest-art
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -174,6 +191,12 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: tools/package-addon
+      - name: Restore the Art release download
+        id: art-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.ANKIQUEST_ART_CACHE }}
+          key: ankiquest-art-${{ hashFiles('ankiquest-art.json') }}
       - name: Check the packager
         run: |
           cargo fmt --all --manifest-path "$PACKAGER" --check
@@ -183,6 +206,14 @@ jobs:
         run: |
           cargo run --locked --manifest-path "$PACKAGER" -- --updates github --output ankiquest-24.11.ankiaddon
           cargo run --locked --manifest-path "$PACKAGER" -- --ankiweb --output ankiquest-ankiweb.ankiaddon
+      # Only master writes the download cache; pull requests and merge
+      # groups read it, so no branch can seed what master's jobs restore.
+      - name: Save the Art release download
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.art-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.ANKIQUEST_ART_CACHE }}
+          key: ankiquest-art-${{ hashFiles('ankiquest-art.json') }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ankiquest-addon
