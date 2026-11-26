@@ -140,7 +140,9 @@ BADGE_STYLE = {
 
 
 def badge(day, translate=lambda value: value, show_time=clock):
-    """A small mark for a deck row; empty when nothing is scheduled."""
+    """A small mark for a deck row; empty when nothing is scheduled. The badge's colour tints
+    its background; the text is the badge colour's own ink, set by `BADGE_INKS` (added to the
+    tree with the badges), so it reads in day and night mode alike (WCAG AA, 4.5:1)."""
     if day.status not in BADGE_STYLE:
         return ""
     icon, color = BADGE_STYLE[day.status]
@@ -152,12 +154,41 @@ def badge(day, translate=lambda value: value, show_time=clock):
         text = translate("ready")
     return (
         "<span class='ankiquest-day ankiquest-%s' title='%s' style='margin-left:.5em;font-size:11px;font-weight:800;"
-        "color:%s;background:%s22;border-radius:999px;padding:1px 8px;white-space:nowrap'>%s %s</span>"
-        % (day.status.replace("_", "-"), escape(label(day, translate, show_time), True), color, color, icon, escape(text))
+        "background:%s22;border-radius:999px;padding:1px 8px;white-space:nowrap'>%s %s</span>"
+        % (day.status.replace("_", "-"), escape(label(day, translate, show_time), True), color, icon, escape(text))
     )
 
 
 DECK_LINK = re.compile(r"(<a\b[^>]*?pycmd\('open:(\d+)'\)[^>]*>.*?</a>)", re.S)
+
+
+# The deck-row day badges' inks: the badge colours tint the row; the text is the same colour's
+# own ink, dark in day mode and lighter at night, as the palette inks are (WCAG AA, 4.5:1).
+# Done matches Android's aq_deck_green and later matches its aq_deck_amber, one step darker
+# so the shared amber clears 4.5:1 on this tint (Android's was 4.43:1); the brighter blues
+# keep the palette's inks.
+_BADGE_INK = {
+    DONE: ("#247743", "#8cd79e"),
+    LEARNING_LATER: ("#855b00", "#f0bc57"),
+    REVIEW_NOW: ("#0e5a87", "#6ab7e8"),
+}
+_NIGHT_PREFIXES = (".nightMode ", ".night-mode ", ".night_mode ")
+
+
+def _badge_inks():
+    """One day rule and one night rule per status, so a status of `BADGE_STYLE` can never
+    ship without its ink: the colours come from `_BADGE_INK`."""
+    day_rules = []
+    night_rules = []
+    for status, (day, night) in _BADGE_INK.items():
+        state = status.replace("_", "-")
+        day_rules.append(".ankiquest-day.ankiquest-%s{color:%s}" % (state, day))
+        selectors = ", ".join("%s.ankiquest-day.ankiquest-%s" % (prefix, state) for prefix in _NIGHT_PREFIXES)
+        night_rules.append("%s{color:%s}" % (selectors, night))
+    return "<style>%s%s</style>" % ("".join(day_rules), "".join(night_rules))
+
+
+BADGE_INKS = _badge_inks()
 
 
 def decorate(tree_html, days, translate=lambda value: value, show_time=clock):

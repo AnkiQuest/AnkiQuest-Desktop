@@ -61,7 +61,18 @@ PERIOD_LABELS = (
 )
 MEDALS = {1: "👑", 2: "🥈", 3: "🥉"}
 STATUS_CLASS = {"done": "aq-done-today", "learning_later": "aq-learning-later"}
-AVATAR_COLOURS = ("#58cc02", "#1cb0f6", "#ff9600", "#ce82ff", "#ff4b4b", "#2b70c9", "#ffc800")
+# Each avatar colour with the ink its initial reads in: white on the dark blue, ink on the
+# rest (#207).
+AVATAR_COLOURS = (
+    ("#58cc02", "#23272e"), ("#1cb0f6", "#23272e"), ("#ff9600", "#23272e"), ("#ce82ff", "#23272e"),
+    ("#ff4b4b", "#23272e"), ("#2b70c9", "#ffffff"), ("#ffc800", "#23272e"),
+)
+
+
+def avatar_colours(name):
+    """The colour and ink of `name`'s avatar: the name's characters pick them, so a name
+    always shows the same pair."""
+    return AVATAR_COLOURS[sum(map(ord, name)) % len(AVATAR_COLOURS)]
 _FRIENDS, _GLOBAL = "friends", "global"
 
 # The flame colours before today counts, as the phone's ankiquest_streak_flames_unlit.xml: at
@@ -81,14 +92,16 @@ _STREAK_PILLS = {
 }
 
 STYLE = """<style>
-#ankiquest.aq-today{--aq-bg:#fff;--aq-line:#e5e5e5;--aq-text:#3c3c3c;--aq-muted:#777;--aq-soft:#f7f7f7;
+#ankiquest.aq-today{--aq-bg:#fff;--aq-line:#e5e5e5;--aq-text:#3c3c3c;--aq-muted:#6a6a6a;--aq-soft:#f7f7f7;
 --aq-green:#58cc02;--aq-green-dark:#46a302;--aq-blue:#1cb0f6;--aq-blue-dark:#1899d6;--aq-orange:#ff9600;
 --aq-purple:#ce82ff;--aq-gold:#ffc800;--aq-red:#ff4b4b;--aq-track:#e5e5e5;--aq-me:#ddf4ff;
+--aq-blue-ink:#1173a3;--aq-green-ink:#2e7d00;--aq-red-ink:#d32f2f;--aq-orange-ink:#8f4a00;
 max-width:680px;margin:2em auto 0;text-align:left;color:var(--aq-text);
 font:600 14px/1.35 "Nunito","Varela Round","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif}
 .nightMode #ankiquest.aq-today,.night-mode #ankiquest.aq-today,.night_mode #ankiquest.aq-today{
 --aq-bg:#2b2d31;--aq-line:#1e1f22;--aq-text:#f2f3f5;--aq-muted:#b5bac1;--aq-soft:#313338;
---aq-track:#404249;--aq-me:#3b4a6b}
+--aq-track:#404249;--aq-me:#3b4a6b;--aq-blue-ink:#6ab7e8;--aq-green-ink:#7ac70c;
+--aq-red-ink:#ff7a7a;--aq-orange-ink:#ffb257}
 #ankiquest .aq-hero{display:flex;align-items:center;gap:14px;margin-bottom:14px}
 #ankiquest .aq-hero img{width:96px;height:96px;object-fit:contain;flex:none;filter:drop-shadow(0 4px 0 rgba(0,0,0,.08))}
 #ankiquest .aq-bubble{position:relative;background:var(--aq-bg);border:2px solid var(--aq-line);border-radius:16px;
@@ -98,12 +111,12 @@ border-left:2px solid var(--aq-line);border-bottom:2px solid var(--aq-line);tran
 #ankiquest .aq-pills{display:flex;flex-wrap:wrap;gap:6px}
 #ankiquest .aq-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;
 font-weight:800;font-size:13px;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
-#ankiquest .aq-pill.aq-streak{background:var(--aq-orange)}
+#ankiquest .aq-pill.aq-streak{background:var(--aq-orange);color:#5c3000}
 #ankiquest .aq-pill.aq-streak-none,#ankiquest .aq-pill.aq-streak-unlit,#ankiquest .aq-pill.aq-streak-icy{
 background:var(--aq-bg);color:var(--aq-text);box-shadow:inset 0 0 0 2px var(--aq-line)}
-#ankiquest .aq-pill.aq-level{background:var(--aq-purple)}
+#ankiquest .aq-pill.aq-level{background:var(--aq-purple);color:#23272e}
 #ankiquest .aq-pill.aq-rank{background:var(--aq-gold);color:#5c4400}
-#ankiquest .aq-pill.aq-risk{background:var(--aq-red)}
+#ankiquest .aq-pill.aq-risk{background:var(--aq-red);color:#23272e}
 #ankiquest .aq-pill.aq-met,#ankiquest .aq-pill.aq-unverified{background:#dff1c9;color:#254a12}
 #ankiquest .aq-pill.aq-syncing,#ankiquest .aq-pill.aq-protected,#ankiquest .aq-pill.aq-frozen,#ankiquest .aq-pill.aq-skipped{background:#def0ff;color:#16527b}
 #ankiquest .aq-pill.aq-short{background:#e9d8a6;color:#534619}
@@ -115,18 +128,18 @@ background:var(--aq-bg);color:var(--aq-text);box-shadow:inset 0 0 0 2px var(--aq
 #ankiquest .aq-deck{font-size:19px;font-weight:800;word-break:break-word;margin-bottom:8px}
 #ankiquest .aq-counts{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
 #ankiquest .aq-count{padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800;background:var(--aq-soft)}
-#ankiquest .aq-count.aq-review{color:var(--aq-blue)}
-#ankiquest .aq-count.aq-learn{color:var(--aq-red)}
-#ankiquest .aq-count.aq-new{color:var(--aq-green-dark)}
+#ankiquest .aq-count.aq-review{color:var(--aq-blue-ink)}
+#ankiquest .aq-count.aq-learn{color:var(--aq-red-ink)}
+#ankiquest .aq-count.aq-new{color:var(--aq-green-ink)}
 #ankiquest .aq-note{font-size:13px;color:var(--aq-muted);margin:4px 0}
-#ankiquest .aq-done-today{color:var(--aq-green-dark)}
-#ankiquest .aq-learning-later{color:var(--aq-orange)}
+#ankiquest .aq-done-today{color:var(--aq-green-ink)}
+#ankiquest .aq-learning-later{color:var(--aq-orange-ink)}
 #ankiquest .aq-button{display:block;box-sizing:border-box;width:100%;margin:10px 0 0;padding:12px 16px;border:0;border-radius:14px;cursor:pointer;
-background:var(--aq-green);color:#fff;font-family:inherit;font-weight:800;font-size:15px;line-height:1;text-transform:uppercase;letter-spacing:.06em;
+background:var(--aq-green);color:#23272e;font-family:inherit;font-weight:800;font-size:15px;line-height:1;text-transform:uppercase;letter-spacing:.06em;
 box-shadow:0 4px 0 var(--aq-green-dark)}
 #ankiquest .aq-button:hover{filter:brightness(1.05)}
 #ankiquest .aq-button:active{transform:translateY(4px);box-shadow:none}
-#ankiquest .aq-goal-edit{margin-top:8px;padding:4px 12px;border:2px solid var(--aq-track);border-radius:999px;cursor:pointer;background:transparent;color:var(--aq-blue);font-family:inherit;font-weight:800;font-size:12px}
+#ankiquest .aq-goal-edit{margin-top:8px;padding:4px 12px;border:2px solid var(--aq-track);border-radius:999px;cursor:pointer;background:transparent;color:var(--aq-blue-ink);font-family:inherit;font-weight:800;font-size:12px}
 #ankiquest .aq-goal-edit:hover{background:var(--aq-soft)}
 #ankiquest .aq-goal{margin-bottom:12px}
 #ankiquest .aq-goal:last-child{margin-bottom:0}
@@ -155,15 +168,15 @@ border-radius:999px;padding:3px 8px}
 #ankiquest .aq-avatar{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;
 font-size:13px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);object-fit:cover}
 #ankiquest .aq-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
-#ankiquest .aq-xp{font-weight:800;color:var(--aq-orange);white-space:nowrap}
+#ankiquest .aq-xp{font-weight:800;color:var(--aq-orange-ink);white-space:nowrap}
 #ankiquest .aq-empty-note{color:var(--aq-muted);padding:6px 8px}
-#ankiquest .aq-empty-note a{color:var(--aq-blue)}
+#ankiquest .aq-empty-note a{color:var(--aq-blue-ink)}
 #ankiquest .aq-session{margin-top:12px;text-align:center}
 #ankiquest .aq-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
-#ankiquest .aq-links a{text-decoration:none;font-weight:800;font-size:13px;color:var(--aq-blue);background:var(--aq-bg);
+#ankiquest .aq-links a{text-decoration:none;font-weight:800;font-size:13px;color:var(--aq-blue-ink);background:var(--aq-bg);
 border:2px solid var(--aq-line);border-bottom-width:4px;border-radius:12px;padding:6px 12px}
 #ankiquest .aq-links a:hover{background:var(--aq-soft)}
-#ankiquest .aq-links a.aq-unread{background:var(--aq-blue);border-color:var(--aq-blue-dark);color:#fff}
+#ankiquest .aq-links a.aq-unread{background:var(--aq-blue);border-color:var(--aq-blue-dark);color:#23272e}
 </style>"""
 
 
@@ -545,8 +558,8 @@ def initial(name):
 
 
 def avatar(name):
-    colour = AVATAR_COLOURS[sum(map(ord, name)) % len(AVATAR_COLOURS)]
-    return "<span class=aq-avatar style='background:%s'>%s</span>" % (colour, escape(initial(name)))
+    colour, ink = avatar_colours(name)
+    return "<span class=aq-avatar style='background:%s;color:%s'>%s</span>" % (colour, ink, escape(initial(name)))
 
 
 def _scope_picker(standing, translate):
