@@ -23,6 +23,7 @@ REACHED_KEY = "ankiquestGoalReported"
 SETUP_SHOWN = "goal_setup_shown"
 STREAK_MINUTES_KEY = "ankiquestStreakMinutes"
 CELEBRATED_KEY = "ankiquestGoalCelebrated"
+FREEZE_PICTURE_KEY = "ankiquestFreezePictureShown"
 SESSION_KEY = "ankiquestLastStudySession"
 BOARD_MS = 5 * 60 * 1000
 BOARD_RETRY_MS = 30_000
@@ -48,6 +49,7 @@ local = {
     "board_window": None,
     "friends_window": None,
     "pictures": None,
+    "freeze_opening": None,
 }
 
 
@@ -169,7 +171,7 @@ def today_mood():
     profile = addon().state["profile"]
     view = _profile_for_display(profile)
     kind, value, limits = _debug()
-    shown = mood_debug.mood(moods.today_mood(view, _served_goal(profile), limits), kind, value)
+    shown = mood_debug.mood(moods.today_mood(view, _served_goal(profile), limits, now_ms=now_ms()), kind, value)
     return shown, int((view or {}).get("streak") or 0)
 
 
@@ -188,7 +190,9 @@ def streak_flame(view):
     """The flame beside the streak length of a displayed profile, with the server's goal, for
     when the collection cannot be read; the Today panel's comes with today_view."""
     kind, value, limits = _debug()
-    shown = mood_debug.mood(moods.today_mood(view, _served_goal(addon().state["profile"]), limits), kind, value)
+    shown = mood_debug.mood(
+        moods.today_mood(view, _served_goal(addon().state["profile"]), limits, now_ms=now_ms()), kind, value,
+    )
     return moods.flame(shown)
 
 
@@ -561,9 +565,12 @@ def today_view(deck_browser, chosen_companion):
     # One streak mood picks the pose and, before the decks do, the line (as Android's Home card).
     # The hidden debug menu (mood_debug) can force it; the marker says so on the panel.
     kind, value, limits = _debug()
-    streak_mood = mood_debug.mood(moods.today_mood(profile, goal, limits), kind, value)
+    now = now_ms()
+    streak_mood = mood_debug.mood(moods.today_mood(profile, goal, limits, now_ms=now), kind, value)
     pose = mood_debug.pose(chosen_companion, streak_mood, streak, kind, value)
-    mood = moods.mood(streak_mood, [day.due for day in days], focus.due if focus else 0, profile, now_ms())
+    if kind is mood_debug.Override.AUTO:
+        pose = _opening_picture(api, profile, chosen_companion, now) or pose
+    mood = moods.mood(streak_mood, [day.due for day in days], focus.due if focus else 0, profile, now)
     line, values = moods.message(chosen_companion, mood, streak)
     session = last_session(api)
     return {
@@ -583,6 +590,27 @@ def today_view(deck_browser, chosen_companion):
         "countdown": _countdown_or_none(),
         "password": addon().state.get("password_prompt") == account(api),
     }
+
+
+def _opening_picture(api, profile, companion, now):
+    """Keep the one-time freeze picture across redraws of the first Today visit."""
+    day = moods.current(profile, now)
+    end = (day or {}).get("day_ends_at") or 0
+    if not api.user or companion == moods.NONE or end <= now:
+        return None
+    frozen = moods.frozen_run(day.get("heatmap"))
+    if frozen == 0:
+        return None
+    key = json.dumps(owner(api))
+    opening = (key, end)
+    if local["freeze_opening"] == opening:
+        return moods.forced_pose(companion, moods.FREEZE_USED)
+    shown = mw.pm.profile.setdefault(FREEZE_PICTURE_KEY, {})
+    picture = moods.freeze_picture(companion, frozen, end, shown.get(key, 0))
+    if picture:
+        shown[key] = end
+        local["freeze_opening"] = opening
+    return picture
 
 
 def _countdown_or_none():
@@ -760,6 +788,8 @@ def remaining_cards():
 
 
 def on_state_change(new_state, old_state):
+    if new_state != "deckBrowser":
+        local["freeze_opening"] = None
     _refresh_toolbar()
     if new_state == "review" and old_state != "review":
         api = addon().client()
@@ -1007,6 +1037,7 @@ def clear_account():
 
 
 def on_profile_open():
+    local["freeze_opening"] = None
     _close_progress()
     _clear_boards()
     _close_friends()

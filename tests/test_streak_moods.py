@@ -23,6 +23,10 @@ AKI_MOOD_POSES = {
     moods.MOOD_UNKNOWN: "aki_face",
     moods.ASLEEP: "aki_asleep",
     moods.SAD: "aki_sad",
+    moods.FREEZE: "aki_freeze",
+    moods.NEGLECTED: "aki_neglected",
+    moods.ABANDONED: "aki_neglected",
+    moods.DEAD: "aki_neglected",
     moods.FROZEN_1: "aki_frozen",
     moods.FROZEN_2: "aki_frozen",
     moods.FROZEN_3: "aki_frozen",
@@ -44,7 +48,10 @@ class StreakMoods(unittest.TestCase):
                 today = case["today"]
                 goal = moods.Goal.REACHED if today["goal_reached"] else moods.Goal.OPEN
                 stage = moods.Stage.of(today["time_ms"], today["streak_minutes"])
-                found = moods.streak_mood(today["state"], today["reviews"], stage, today["streak"], today["frozen_days"], goal)
+                found = moods.streak_mood(
+                    today["state"], today["reviews"], stage, today["streak"], today["frozen_days"], goal,
+                    days_away=today["days_away"], freezes=today["freezes"], day_left_ms=today["day_left_ms"],
+                )
                 self.assertEqual(case["expected"]["mood"], found)
                 pose = moods.pose_art(moods.AKI_POSES, case["expected"]["pose"])
                 self.assertEqual(pose, moods.streak_pose(found, today["streak"]))
@@ -86,7 +93,7 @@ class StreakMoods(unittest.TestCase):
             return {"_day_status": "protected", "streak": 10, "heatmap": [],
                     "today": {"reviews": 4, "time_ms": time_ms, "streak_minutes": 20}}
 
-        self.assertEqual(moods.FROZEN_1, moods.today_mood(view(299_999), moods.Goal.OPEN))
+        self.assertEqual(moods.FREEZE, moods.today_mood(view(299_999), moods.Goal.OPEN))
         self.assertEqual(moods.THAWING, moods.today_mood(view(300_000), moods.Goal.OPEN))
         self.assertEqual(moods.HOPEFUL, moods.today_mood(view(600_000), moods.Goal.OPEN))
         self.assertEqual(moods.ALMOST, moods.today_mood(view(900_000), moods.Goal.OPEN))
@@ -100,6 +107,29 @@ class StreakMoods(unittest.TestCase):
         for case in self.fixture["frozen_run"]:
             with self.subTest(case=case["name"]):
                 self.assertEqual(case["expected"], moods.frozen_run(case["heatmap"]))
+
+    def test_every_shared_away_run(self):
+        for case in self.fixture["away_run"]:
+            with self.subTest(case=case["name"]):
+                self.assertEqual(case["expected"], moods.away_run(case["heatmap"]))
+
+    def test_every_shared_freeze_picture_case(self):
+        end = 86_400_000
+        for case in self.fixture["freeze_used"]["cases"]:
+            with self.subTest(case=case["name"]):
+                seen = end if case["opened_today"] else 0
+                picture = moods.freeze_picture(moods.AKI, case["frozen_days"], end, seen)
+                self.assertEqual("aki_freeze_used" if case["expected"] else None, picture)
+
+    def test_only_a_current_enabled_freeze_changes_the_mood(self):
+        now = 86_400_000
+        end = now + self.fixture["freeze_window_ms"]
+        view = {"_day_status": "pending", "streak": 7, "day_ends_at": end,
+                "stored_freezes": 1, "freezes_enabled": True}
+        self.assertEqual(moods.SAD, moods.today_mood(view, moods.Goal.OPEN, now_ms=now - 1))
+        self.assertEqual(moods.FREEZE, moods.today_mood(view, moods.Goal.OPEN, now_ms=now))
+        self.assertEqual(moods.SAD, moods.today_mood(view, moods.Goal.OPEN, now_ms=end))
+        self.assertEqual(moods.SAD, moods.today_mood(dict(view, freezes_enabled=False), moods.Goal.OPEN, now_ms=now))
 
     def test_every_shared_flame(self):
         # The flame beside the streak number is lit only once today counts.
@@ -184,6 +214,10 @@ class StreakMoods(unittest.TestCase):
             moods.MOOD_UNKNOWN: "ankilope_face",
             moods.ASLEEP: "ankilope_asleep",
             moods.SAD: "ankilope_sad",
+            moods.FREEZE: "ankilope_frozen",
+            moods.NEGLECTED: "ankilope_neglected",
+            moods.ABANDONED: "ankilope_neglected",
+            moods.DEAD: "ankilope_neglected",
             moods.FROZEN_1: "ankilope_frozen",
             moods.FROZEN_2: "ankilope_frozen",
             moods.FROZEN_3: "ankilope_frozen",
@@ -206,6 +240,10 @@ class StreakMoods(unittest.TestCase):
             moods.MOOD_UNKNOWN: "anki_tan_face",
             moods.ASLEEP: "anki_tan_asleep",
             moods.SAD: "anki_tan_sad",
+            moods.FREEZE: "anki_tan_frozen",
+            moods.NEGLECTED: "anki_tan_neglected",
+            moods.ABANDONED: "anki_tan_neglected",
+            moods.DEAD: "anki_tan_neglected",
             moods.FROZEN_1: "anki_tan_frozen",
             moods.FROZEN_2: "anki_tan_frozen",
             moods.FROZEN_3: "anki_tan_frozen",
@@ -273,7 +311,7 @@ class StreakMoods(unittest.TestCase):
         self.assertTrue(ART_POSES.is_file(), "Fetch the pictures first: " + moods.FETCH)
         art = json.loads(ART_POSES.read_text("utf-8"))
         self.assertEqual(art["core"], list(moods.CORE_POSES))
-        self.assertEqual(art["extensions"], moods.POSE_FALLBACKS)
+        self.assertEqual({**art["extensions"], **art["pictures"]}, moods.POSE_FALLBACKS)
         self.assertEqual(art["core_fallbacks"], moods.CORE_FALLBACKS)
 
         # Aki and Ankilope have every core pose; Anki-tan's happy and streak are not drawn yet.
@@ -291,13 +329,14 @@ class StreakMoods(unittest.TestCase):
         art = json.dumps({
             "core": ["face", "asleep"],
             "extensions": {"winner": "happy", "frozen_2": "frozen"},
+            "pictures": {"freeze": "frozen"},
             "core_fallbacks": {"happy": "hopeful"},
         })
         self.assertEqual(
-            (("face", "asleep"), {"winner": "happy", "frozen_2": "frozen"}, {"happy": "hopeful"}),
+            (("face", "asleep"), {"winner": "happy", "frozen_2": "frozen", "freeze": "frozen"}, {"happy": "hopeful"}),
             moods.read_poses(art),
         )
-        for missing in ("core", "extensions", "core_fallbacks"):
+        for missing in ("core", "extensions", "pictures", "core_fallbacks"):
             with self.subTest(missing=missing):
                 stripped = {key: value for key, value in json.loads(art).items() if key != missing}
                 with self.assertRaises(ValueError):
@@ -306,6 +345,7 @@ class StreakMoods(unittest.TestCase):
             ("core poses that are not strings", {"core": ["face", 7]}),
             ("core that is not a list", {"core": "face"}),
             ("fallbacks that are not strings", {"extensions": {"winner": 7}}),
+            ("picture fallbacks that are not strings", {"pictures": {"freeze": 7}}),
             ("core fallbacks that are not strings", {"core_fallbacks": {"happy": 7}}),
         ):
             with self.subTest(wrong=name):

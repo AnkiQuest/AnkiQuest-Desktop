@@ -743,6 +743,17 @@ class HomeTests(unittest.TestCase):
         self.assertIn("Your streak is protected by a freeze. A fresh start is waiting.", content.stats)
         self.assertNotIn("A small step starts with one card.", content.stats)
 
+    def test_the_first_today_visit_keeps_the_freeze_picture_until_reopened(self):
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"].update(streak=5, heatmap=[{"frozen": True}, {"frozen": False}])
+        first = "/_addons/ankiquest/art/aki_freeze_used.png"
+        self.assertIn(first, self.render().stats)
+        self.assertIn(first, self.render().stats)
+        self.home.on_state_change("overview", "deckBrowser")
+        self.assertNotIn(first, self.render().stats)
+        self.assertIn("/_addons/ankiquest/art/aki_frozen.png", self.render().stats)
+
     def test_cards_due_bring_no_greeting(self):
         # Regression: "A small step starts with one card." said nothing useful above the deck.
         self.api.companion.return_value = "aki"
