@@ -11,10 +11,11 @@ moods = load_module("aq_streak_moods", "moods.py")
 
 TESTS = Path(__file__).resolve().parent
 FIXTURE = TESTS / "fixtures" / "streak_moods.json"
-POSES = TESTS / "fixtures" / "companion_poses.json"
 
-# How a checkout fetches the add-on's pictures from the pinned AnkiQuest-Art release.
-FETCH = "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+# Art's poses.json, copied beside the code from the pinned release.
+ART_POSES = ADDON / "poses.json"
+
+# moods.FETCH says how a checkout fetches the add-on's pictures from the pinned release.
 
 # Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows
 # frozen and almost shows hopeful; she has no frozen_2 or frozen_3 art, so those show her frozen.
@@ -149,9 +150,9 @@ class StreakMoods(unittest.TestCase):
 
     def test_every_picture_asked_for_is_exported_or_falls_back(self):
         # The pictures come from the pinned AnkiQuest-Art release (docs/desktop.md, Companion pictures).
-        # Every pose the fixture names resolves, for every companion, to an exported picture or
+        # Every pose Art's poses.json names resolves, for every companion, to an exported picture or
         # to the exported picture of its fallback, and so does every picture named directly.
-        self.assertTrue((ADDON / "art").is_dir(), "Fetch the pictures first: " + FETCH)
+        self.assertTrue((ADDON / "art").is_dir(), "Fetch the pictures first: " + moods.FETCH)
         poses = [*moods.CORE_POSES, *moods.POSE_FALLBACKS]
 
         asked = set()
@@ -263,16 +264,49 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual("ankilope_study", moods.companion_pose(moods.ANKILOPE_ID, "aki_review"))
         self.assertEqual(["ankilope_face", "ankilope_streak", "ankilope_sad"], moods.preview(moods.ANKILOPE_ID))
 
-    def test_the_poses_are_the_shared_ones(self):
-        fixture = json.loads(POSES.read_text("utf-8"))
-        self.assertEqual(fixture["core"], list(moods.CORE_POSES))
-        self.assertEqual(fixture["extensions"], moods.POSE_FALLBACKS)
+    def test_the_poses_come_from_the_pinned_art_release(self):
+        # The pose list is Art's: the release's poses.json, unpacked beside the code, not a copy
+        # on the server. Its core poses, extension fallbacks and core fallbacks are what moods
+        # works with, with nothing of its own on top.
+        self.assertTrue(ART_POSES.is_file(), "Fetch the pictures first: " + moods.FETCH)
+        art = json.loads(ART_POSES.read_text("utf-8"))
+        self.assertEqual(art["core"], list(moods.CORE_POSES))
+        self.assertEqual(art["extensions"], moods.POSE_FALLBACKS)
+        self.assertEqual(art["core_fallbacks"], moods.CORE_FALLBACKS)
 
         # Every companion has every core pose, so no core fallback is used.
         for art in (moods.AKI_POSES, moods.ANKILOPE, moods.BLUMA_POSES, moods.ANKI_TAN_POSES):
             self.assertTrue(set(moods.CORE_POSES) <= set(art))
         self.assertLessEqual(set(moods.CORE_FALLBACKS.values()), set(moods.CORE_POSES))
         self.assertEqual("ankilope_frozen", moods.pose_art(moods.ANKILOPE, "frozen_3"))
+
+    def test_poses_are_read_from_art(self):
+        # The core poses every companion has, the pose each extension falls back to and the core
+        # pose shown while one is not drawn, as Art's poses.json names them.
+        art = json.dumps({
+            "core": ["face", "asleep"],
+            "extensions": {"winner": "happy", "frozen_2": "frozen"},
+            "core_fallbacks": {"happy": "hopeful"},
+        })
+        self.assertEqual(
+            (("face", "asleep"), {"winner": "happy", "frozen_2": "frozen"}, {"happy": "hopeful"}),
+            moods.read_poses(art),
+        )
+        for missing in ("core", "extensions", "core_fallbacks"):
+            with self.subTest(missing=missing):
+                stripped = {key: value for key, value in json.loads(art).items() if key != missing}
+                with self.assertRaises(ValueError):
+                    moods.read_poses(json.dumps(stripped))
+        for name, wrong in (
+            ("core poses that are not strings", {"core": ["face", 7]}),
+            ("core that is not a list", {"core": "face"}),
+            ("fallbacks that are not strings", {"extensions": {"winner": 7}}),
+            ("core fallbacks that are not strings", {"core_fallbacks": {"happy": 7}}),
+        ):
+            with self.subTest(wrong=name):
+                broken = dict(json.loads(art), **wrong)
+                with self.assertRaises(ValueError):
+                    moods.read_poses(json.dumps(broken))
 
     def test_the_displayed_day_sets_the_state(self):
         def view(status, reviews=0):

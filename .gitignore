@@ -4,6 +4,7 @@ __pycache__
 addon/version.json
 /tools/banner/target
 /addon/art/
+/addon/poses.json
 /art/
 # AnkiQuest-Server master's fixtures and examples, copied by
 # `package-addon server-data` before the tests run.

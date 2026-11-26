@@ -12,10 +12,7 @@ from addon_loader import ADDON, load_in_package
 moods = load_in_package("aq_companion_art", "moods")
 share = load_in_package("aq_companion_art", "share")
 
-POSES = Path(__file__).resolve().parent / "fixtures" / "companion_poses.json"
-
-# How a checkout fetches the add-on's pictures from the pinned AnkiQuest-Art release.
-FETCH = "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+POSES = ADDON / "poses.json"
 
 # Each companion's id and the prefix of its exported pictures.
 PREFIXES = {"aki": "aki_", "ankilope": "ankilope_", "cow": "bluma_", "anki_tan": "anki_tan_"}
@@ -85,7 +82,7 @@ class CompanionArt(unittest.TestCase):
             with self.subTest(companion=companion):
                 path = Path(share.face_path(companion))
                 self.assertEqual(ADDON / "art" / (core["face"] + ".png"), path)
-                self.assertTrue(path.is_file(), "Fetch the pictures first: " + FETCH)
+                self.assertTrue(path.is_file(), "Fetch the pictures first: " + moods.FETCH)
                 self.assertEqual(core["face"], moods.face(companion))
         self.assertIsNone(share.face_path("none"))
         self.assertIsNone(moods.face("none"))
@@ -156,7 +153,7 @@ class CompanionArt(unittest.TestCase):
             for picture in sorted(shown):
                 name = "art/%s.png" % picture
                 with self.subTest(picture=name):
-                    self.assertTrue((ADDON / name).is_file(), "Fetch the pictures first: " + FETCH)
+                    self.assertTrue((ADDON / name).is_file(), "Fetch the pictures first: " + moods.FETCH)
                     self.assertTrue(re.fullmatch(pattern, name), name)
 
     def test_no_picture_is_recoloured(self):
