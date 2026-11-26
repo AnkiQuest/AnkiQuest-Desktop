@@ -54,7 +54,7 @@ def fake_anki(test, mw):
     aqt = ModuleType("aqt")
     aqt.mw, aqt.gui_hooks = mw, _Hooks()
     utils = ModuleType("aqt.utils")
-    utils.tooltip, utils.openLink = Mock(), Mock()
+    utils.tooltip, utils.openLink, utils.showInfo = Mock(), Mock(), Mock()
     qt = ModuleType("aqt.qt")
     qt.__getattr__ = lambda name: Mock()
     anki = ModuleType("anki")

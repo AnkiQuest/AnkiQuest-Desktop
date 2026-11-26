@@ -1,5 +1,6 @@
 """The GitHub updater must preserve a working add-on when an archive needs newer Anki."""
 import ast
+import importlib.util
 from contextlib import ExitStack
 import io
 import json
@@ -21,6 +22,11 @@ from aqt.qt import QApplication, QMainWindow
 
 ROOT = Path(__file__).resolve().parents[1]
 app = QApplication.instance() or QApplication([])
+
+# The add-on's own update rules, imported the way the shipped updater uses them.
+spec = importlib.util.spec_from_file_location("ankiquest_updates_compat", ROOT / "addon" / "updates.py")
+updates = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(updates)
 
 
 def archive(minimum, source):
@@ -60,28 +66,36 @@ class UpdateCompatibility(unittest.TestCase):
             # Exercise the shipped updater function with Anki's real installer.
             tree = ast.parse((ROOT / "addon/__init__.py").read_text("utf-8"))
             function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "install_update")
-            namespace = {"mw": SimpleNamespace(addonManager=manager), "tr": lambda text: text, "tooltip": Mock()}
+            profile = {}
+            namespace = {
+                "mw": SimpleNamespace(addonManager=manager, pm=SimpleNamespace(profile=profile)),
+                "tr": lambda text: text,
+                "tooltip": Mock(),
+                "updates": updates,
+            }
             exec(compile(ast.Module(body=[function], type_ignores=[]), "addon/__init__.py", "exec"), namespace)
             show_info = scope.enter_context(patch("aqt.utils.showInfo"))
+            candidate = {"release": 99, "nightly": 0, "commit": "deadbeef"}
             incoming = Path(folder) / "update.ankiaddon"
             incoming.write_bytes(archive(max(241100, _current_version + 1), "# needs newer Anki\n").getvalue())
-            namespace["install_update"](incoming)
+            namespace["install_update"](incoming, candidate)
 
             self.assertEqual(original, module.read_text("utf-8"))
             self.assertTrue(manager.addon_meta("ankiquest_upgrade_test").compatible())
+            self.assertTrue(updates.refused(profile, candidate), "the refused build is remembered")
             show_info.assert_not_called()
 
             # Refusing one archive must not prevent a compatible update.
             compatible = "# compatible update\n"
             incoming.write_bytes(archive(1, compatible).getvalue())
-            namespace["install_update"](incoming)
+            namespace["install_update"](incoming, candidate)
             self.assertEqual(compatible, module.read_text("utf-8"))
             self.assertTrue(manager.addon_meta("ankiquest_upgrade_test").compatible())
             show_info.assert_called_once()
 
             # Corrupt downloads keep Anki's existing error path and the installed files.
             incoming.write_bytes(b"PKnot-a-valid-zip")
-            namespace["install_update"](incoming)
+            namespace["install_update"](incoming, candidate)
             self.assertEqual(compatible, module.read_text("utf-8"))
             self.assertIn("could not be installed", namespace["tooltip"].call_args.args[0])
             show_info.assert_called_once()
