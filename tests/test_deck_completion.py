@@ -481,6 +481,34 @@ class RefreshTests(unittest.TestCase):
             self.addon.refresh(False)
         self.assertEqual(self.mw.pm.profile["ankiquestReviewOffsets"], {101: -60})
 
+    def test_answering_reads_the_collection_off_the_main_thread(self):
+        answered = int(time.time() * 1000)
+        queued = []
+        self.mw.taskman = SimpleNamespace(
+            run_in_background=lambda work, done, **_ignored: queued.append((work, done))
+        )
+        self.mw.col.db.scalar = Mock(return_value=answered)
+        self.addon.on_answer(None, SimpleNamespace(id=7), 3)
+        self.mw.col.db.scalar.assert_not_called()
+        self.api.upload.assert_not_called()
+        self.assertEqual(len(queued), 1, "one background task")
+        work, done = queued[0]
+        future = Future()
+        future.set_result(work())
+        done(future)
+        self.mw.col.db.scalar.assert_called_once_with("select max(id) from revlog where cid = ?", 7)
+        self.assertEqual(
+            self.mw.pm.profile["ankiquestReviewOffsets"],
+            {answered: self.addon.review_offsets.offset_at(answered)},
+            "journalled before the upload starts",
+        )
+        self.assertEqual(len(queued), 2, "the upload only now leaves the main thread")
+        work, done = queued[1]
+        future = Future()
+        future.set_result(work())
+        done(future)
+        self.api.upload.assert_called_once()
+
     def test_answering_a_card_records_the_offset_of_that_answer(self):
         answered = int(time.time() * 1000)
         self.mw.col.db.scalar = Mock(return_value=answered)
