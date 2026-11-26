@@ -63,7 +63,7 @@ def _art(companion, pose, size, fallback="aki_celebrate"):
         for chosen in dict.fromkeys((pose, *fallbacks)):
             if not chosen or not re.fullmatch(r"[a-z0-9_]+", chosen):
                 continue
-            art = companion_art.pixmap(companion_art.pose_path(chosen), companion, size).toImage()
+            art = companion_art.pixmap(companion_art.pose_path(chosen), size).toImage()
             if not art.isNull():
                 return art, size, None
     return None
