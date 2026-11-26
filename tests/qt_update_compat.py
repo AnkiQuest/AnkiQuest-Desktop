@@ -85,24 +85,26 @@ class UpdateCompatibility(unittest.TestCase):
             candidate = {"release": 99, "nightly": 0, "commit": "deadbeef"}
             incoming = Path(folder) / "update.ankiaddon"
             incoming.write_bytes(archive(max(241100, _current_version + 1), "# needs newer Anki\n").getvalue())
-            namespace["install_update"](incoming, candidate)
+            namespace["install_update"](incoming, candidate, _current_version)
 
             self.assertEqual(original, module.read_text("utf-8"))
             self.assertTrue(manager.addon_meta("ankiquest_upgrade_test").compatible())
-            self.assertTrue(updates.refused(profile, candidate), "the refused build is remembered")
+            self.assertTrue(
+                updates.refused(profile, candidate, _current_version), "the refused build is remembered"
+            )
             show_info.assert_not_called()
 
             # Refusing one archive must not prevent a compatible update.
             compatible = "# compatible update\n"
             incoming.write_bytes(archive(1, compatible).getvalue())
-            namespace["install_update"](incoming, candidate)
+            namespace["install_update"](incoming, candidate, _current_version)
             self.assertEqual(compatible, module.read_text("utf-8"))
             self.assertTrue(manager.addon_meta("ankiquest_upgrade_test").compatible())
             show_info.assert_called_once()
 
             # Corrupt downloads keep Anki's existing error path and the installed files.
             incoming.write_bytes(b"PKnot-a-valid-zip")
-            namespace["install_update"](incoming, candidate)
+            namespace["install_update"](incoming, candidate, _current_version)
             self.assertEqual(compatible, module.read_text("utf-8"))
             self.assertIn("could not be installed", namespace["tooltip"].call_args.args[0])
             show_info.assert_called_once()
