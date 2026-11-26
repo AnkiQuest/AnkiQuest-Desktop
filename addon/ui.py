@@ -118,6 +118,12 @@ def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
         widget.hide()
     new = QCheckBox(tr("Create a new account"))
     layout.addWidget(new)
+    public = QCheckBox(tr("Public profile"))
+    public.setObjectName("ankiquest_sign_in_public")
+    layout.addWidget(public)
+    public_hint = QLabel(tr("Anyone can open your profile and you are listed on the global leaderboard."))
+    public_hint.setWordWrap(True)
+    layout.addWidget(public_hint)
     hint = QLabel(tr("Usernames use lowercase letters, numbers, - and _. Passwords need at least 10 characters."))
     hint.setWordWrap(True)
     layout.addWidget(hint)
@@ -138,7 +144,7 @@ def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
 
     def toggle():
         creating = new.isChecked()
-        for widget in (display_label, display, hint):
+        for widget in (display_label, display, hint, public, public_hint):
             widget.setVisible(creating)
         submit.setText(tr("Create account") if creating else tr("Sign in"))
 
@@ -178,6 +184,7 @@ def account_dialog(parent, url, on_submit, companion="aki", dismiss=None):
             "display": display.text().strip(),
             "new": new.isChecked(),
             "code": code.text().strip() if code.isVisibleTo(dialog) else "",
+            "public": public.isChecked(),
         }
         if not values["url"] or not values["user"] or not values["password"]:
             status.setText(tr("Fill in the server, username and password."))

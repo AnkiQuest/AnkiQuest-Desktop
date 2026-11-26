@@ -32,6 +32,10 @@ class Server(BaseHTTPRequestHandler):
             self.answer(409, {"error": "That username is taken."})
         elif self.path == "/api/accounts":
             self.answer(201, {"user": body["user"], "display": body.get("display", body["user"]), "token": "first-token"})
+        elif self.path.startswith("/api/social/") and Server.social_refused:
+            self.answer(404, None)
+        elif self.path.startswith("/api/social/"):
+            self.answer(200, {"public": bool(body.get("public"))})
         else:
             self.answer(404, None)
 
@@ -47,6 +51,9 @@ class Server(BaseHTTPRequestHandler):
             self.answer(401, {"error": "That code is not right.", "second_factor": True})
 
     old_server = False
+
+    # Whether the social endpoint refuses, to stand in for a server without the action.
+    social_refused = False
 
     def do_GET(self):
         if self.path == "/api/capabilities" and not Server.old_server:
@@ -150,6 +157,31 @@ class AccountTests(unittest.TestCase):
         self.client.sign_up(self.base, "bo", "long enough pw", "Bo", "Anki desktop")
         self.assertNotIn("display", Server.received[0][1])
         self.assertEqual(Server.received[1][1]["display"], "Bo")
+
+    def test_a_new_accounts_public_answer_follows_the_sign_up(self):
+        answer = self.client.sign_up(self.base, "ana", "long enough pw", "Ana", "Anki desktop", False)
+        self.assertEqual("first-token", answer["token"])
+        self.assertEqual("/api/accounts", Server.received[0][0])
+        self.assertNotIn("public", Server.received[0][1], "not a sign-up field: older servers refuse unknown fields")
+        self.assertEqual("/api/social/ana", Server.received[1][0])
+        self.assertEqual({"action": "visibility", "public": False}, Server.received[1][1])
+        self.assertEqual("Bearer first-token", Server.headers[1]["Authorization"])
+
+    def test_a_ticked_public_box_answers_public(self):
+        self.client.sign_up(self.base, "bea", "long enough pw", "", "Anki desktop", True)
+        self.assertEqual(True, Server.received[-1][1]["public"])
+
+    def test_signing_up_without_an_answer_leaves_the_visibility_alone(self):
+        self.client.sign_up(self.base, "bo", "long enough pw", "", "Anki desktop")
+        self.assertEqual(1, len(Server.received))
+
+    def test_a_public_answer_the_server_refuses_still_signs_in(self):
+        Server.social_refused = True
+        try:
+            answer = self.client.sign_up(self.base, "ana", "long enough pw", "", "Anki desktop", False)
+        finally:
+            Server.social_refused = False
+        self.assertEqual("first-token", answer["token"])
 
     def test_account_passwords_never_leave_over_public_http(self):
         for base in (

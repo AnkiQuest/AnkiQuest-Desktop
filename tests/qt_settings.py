@@ -294,6 +294,38 @@ class Settings(unittest.TestCase):
             raise errors[0]
         self.assertEqual(["", "", "", ""], [values["code"] for values in sent])
 
+    def test_creating_an_account_asks_for_a_public_profile_unticked(self):
+        sent, errors = [], []
+
+        def submit(values, finish):
+            sent.append(dict(values))
+            finish({"url": values["url"], "user": values["user"], "token": "device-token"}, None)
+
+        def interact():
+            dialog = app.activeModalWidget()
+            try:
+                public = dialog.findChild(QCheckBox, "ankiquest_sign_in_public")
+                self.assertFalse(public.isVisibleTo(dialog), "hidden while signing in")
+                self.checkbox(dialog, "Create a new account").setChecked(True)
+                self.assertTrue(public.isVisibleTo(dialog), "shown while creating")
+                self.assertFalse(public.isChecked(), "unticked by default")
+                self.assertIn(
+                    "Anyone can open your profile and you are listed on the global leaderboard.",
+                    [label.text() for label in dialog.findChildren(QLabel)],
+                )
+                public.setChecked(True)
+                self.button(dialog, "Create account").click()
+            except Exception as error:
+                errors.append(error)
+                dialog.reject()
+
+        QTimer.singleShot(0, interact)
+        ui.account_dialog(None, "https://example.test", submit)
+        if errors:
+            raise errors[0]
+        self.assertTrue(sent[0]["new"])
+        self.assertTrue(sent[0]["public"], "the ticked answer is sent")
+
     def test_sync_switch_is_on_by_default_and_saved_for_this_device(self):
         def turn_off(dialog):
             box = self.checkbox(dialog, "Sync settings")

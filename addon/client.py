@@ -192,12 +192,25 @@ def sign_in(base, user, password, device, code=None):
         raise
 
 
-def sign_up(base, user, password, display, device):
-    """Creates an account and returns its first device token."""
+def sign_up(base, user, password, display, device, public=None):
+    """Creates an account and returns its first device token.
+
+    `public` is the sign-up form's "Public profile" answer, sent with `choose_public` after the
+    account exists. It is not a sign-up field: servers from before profiles became private by
+    default refuse unknown sign-up fields, so the answer travels as the visibility action, which
+    every server takes. A server that refuses it leaves the account signed in with that server's
+    default, changeable under Friends.
+    """
     body = {"user": user, "password": password, "device": device}
     if display:
         body["display"] = display
-    return _account(base, "/api/accounts", body)
+    answer = _account(base, "/api/accounts", body)
+    if public is not None:
+        try:
+            Client(base, answer["user"], answer["token"]).choose_public(public)
+        except Exception as error:
+            print("ankiquest public profile:", error)
+    return answer
 
 
 COMPANIONS = ("aki", "ankilope", "cow", "anki_tan", "none")
@@ -272,6 +285,11 @@ class Client:
         `token_only`; answers as sign_in_methods."""
         body = {"action": "password", "password": password, "sign_out_others": False}
         return self._request("/api/sign-in/" + self.user, body)
+
+    def choose_public(self, public):
+        """Sets whether the profile is public, the Friends screen's checkbox action; the
+        sign-up form's answer goes through here once the account exists."""
+        return self._request("/api/social/" + self.user, {"action": "visibility", "public": bool(public)})
 
     def leaderboard(self, period="week", scope="friends"):
         """The server's order and XP for this board and period."""
