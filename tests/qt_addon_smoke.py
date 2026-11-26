@@ -102,8 +102,8 @@ class RealAnki(unittest.TestCase):
             col = Collection(path)
             try:
                 self.assertEqual(10, col.sched.today)
-                found = rule.inputs(col)
-                self.assertEqual((None, 0, [rule.Scheduler.SM2]), (found.last_optimized_day, found.reviews_since, found.presets))
+                found = rule.inputs(col, 5)
+                self.assertEqual((5, None, 0, [rule.Scheduler.SM2]), (found.now_ms, found.last_optimized_ms, found.reviews_since, found.presets))
                 self.assertEqual(col.decks.get_current_id(), found.deck)
 
                 config = col.decks.all_config()[0]
@@ -115,13 +115,15 @@ class RealAnki(unittest.TestCase):
                     "insert into revlog (id,cid,usn,ease,ivl,lastIvl,factor,time,type) values (?,1,0,3,1,1,2500,1000,1)",
                     (col.sched.day_cutoff - 1) * 1000,
                 )
-                found = rule.inputs(col)
+                # Optimized today: its time is the end of today, so today's answer doesn't count.
+                found = rule.inputs(col, 5)
                 self.assertEqual(
-                    (col.sched.today, 0, [rule.Scheduler.RWKV_CURVE]),
-                    (found.last_optimized_day, found.reviews_since, found.presets),
+                    (col.sched.day_cutoff * 1000, 0, [rule.Scheduler.RWKV_CURVE]),
+                    (found.last_optimized_ms, found.reviews_since, found.presets),
                 )
                 col.set_config("lastFsrsOptimize", col.sched.today - 1)
-                self.assertEqual(1, rule.inputs(col).reviews_since)
+                found = rule.inputs(col, 5)
+                self.assertEqual(((col.sched.day_cutoff - 86400) * 1000, 1), (found.last_optimized_ms, found.reviews_since))
             finally:
                 col.close()
 

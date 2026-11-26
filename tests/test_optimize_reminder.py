@@ -39,6 +39,7 @@ class SharedCases(unittest.TestCase):
     def test_the_limits_are_the_shared_ones(self):
         limits = FIXTURE["limits"]
         self.assertEqual((limits["days"], limits["reviews"], limits["snooze_days"]), (rule.DAYS, rule.REVIEWS, rule.SNOOZE_DAYS))
+        self.assertEqual(86_400_000, rule.DAY_MS)
 
     def test_every_preset_scheduler(self):
         self.assertTrue(FIXTURE["schedulers"])
@@ -51,12 +52,19 @@ class SharedCases(unittest.TestCase):
     def test_missing_rwkv_keys_mean_fsrs(self):
         self.assertIs(rule.Scheduler.FSRS, rule.scheduler(rule.Fsrs.ON, {}))
 
+    def test_every_optimization_time(self):
+        self.assertTrue(FIXTURE["optimized_at"])
+        for case in FIXTURE["optimized_at"]:
+            with self.subTest(case["name"]):
+                found = rule.optimized_at(case["today"], case["day_cutoff"], case["last_optimized_day"])
+                self.assertEqual(case["expected"], found)
+
     def test_every_review_count(self):
         self.assertTrue(FIXTURE["reviews"])
         for case in FIXTURE["reviews"]:
             with self.subTest(case["name"]):
                 revlog = Revlog(case["reviews"])
-                found = rule.reviews_since(revlog, case["today"], case["day_cutoff"], case["last_optimized_day"])
+                found = rule.reviews_since(revlog, case["last_optimized_ms"])
                 revlog.close()
                 self.assertEqual(case["expected"], found)
 
@@ -65,8 +73,8 @@ class SharedCases(unittest.TestCase):
         for case in FIXTURE["cases"]:
             with self.subTest(case["name"]):
                 inputs = rule.Inputs(
-                    today=case["today"],
-                    last_optimized_day=case["last_optimized_day"],
+                    now_ms=case["now_ms"],
+                    last_optimized_ms=case["last_optimized_ms"],
                     reviews_since=case["reviews_since"],
                     presets=[rule.Scheduler(preset) for preset in case["presets"]],
                     deck=1,
@@ -79,14 +87,15 @@ class SharedCases(unittest.TestCase):
         for case in FIXTURE["transitions"]:
             with self.subTest(case["name"]):
                 found = rule.next_state(
-                    rule.decode(case["state"]), rule.Event(case["event"]), case["today"], case["last_optimized_day"]
+                    rule.decode(case["state"]), rule.Event(case["event"]), case["now_ms"], case["last_optimized_ms"]
                 )
                 self.assertEqual(case["expected"], rule.encode(found))
                 self.assertEqual(found, rule.decode(rule.encode(found)))
 
     def test_a_missing_or_broken_state_is_on(self):
-        broken = (None, "on", {}, {"kind": "snoozed"}, {"kind": "dismissed"}, {"kind": "snoozed", "until_day": "x"},
-                  {"kind": "off", "until_day": 3}, {"kind": "dismissed", "optimized_day": 0})
+        broken = (None, "on", {}, {"kind": "snoozed"}, {"kind": "dismissed"}, {"kind": "snoozed", "until_ms": "x"},
+                  {"kind": "off", "until_ms": 3}, {"kind": "dismissed", "optimized_ms": 0},
+                  {"kind": "snoozed", "until_day": 437}, {"kind": "dismissed", "optimized_day": 400})
         for stored in broken:
             with self.subTest(stored=stored):
                 self.assertEqual(rule.On(), rule.decode(stored))
@@ -102,7 +111,7 @@ class SyncedState(unittest.TestCase):
         self.assertEqual(rule.On(), rule.decode(rule.DEFAULT))
 
     def test_a_snooze_here_is_a_change_to_send(self):
-        snoozed = {"kind": "snoozed", "until_day": 507}
+        snoozed = {"kind": "snoozed", "until_ms": 1793788140000}
         self.assertEqual({"optimize_reminder": 5}, settings_sync.stamped({}, {rule.CONFIG_KEY: snoozed}, 5))
         self.assertIsNone(settings_sync.stamped({}, {rule.CONFIG_KEY: rule.encode(rule.On())}, 5))
 
@@ -124,8 +133,9 @@ class SyncedState(unittest.TestCase):
             with self.subTest(case["name"]):
                 value = case["incoming"]["optimize_reminder"]["value"]
                 self.assertEqual(not case.get("refused", False), settings_sync.usable("optimize_reminder", value))
-        self.assertFalse(rule.valid({"kind": "snoozed", "until_day": True}))
-        self.assertFalse(rule.valid({"kind": "snoozed", "until_day": 2**31}))
+        self.assertFalse(rule.valid({"kind": "snoozed", "until_ms": True}))
+        self.assertFalse(rule.valid({"kind": "snoozed", "until_ms": 2**63}))
+        self.assertTrue(rule.valid({"kind": "snoozed", "until_ms": 2**63 - 1}))
 
 
 class Wording(unittest.TestCase):
@@ -183,14 +193,16 @@ class Inputs(unittest.TestCase):
     def test_reads_the_collection(self):
         revlog = Revlog([{"id": 1794900000000, "type": 1, "ease": 3}, {"id": 1, "type": 1, "ease": 3}])
         presets = [{"name": "Default"}, {"name": "RWKV", "rwkvReviewEnabled": True}]
-        found = rule.inputs(Collection({"fsrs": True, "lastFsrsOptimize": 498}, presets, revlog))
-        self.assertEqual(rule.Inputs(500, 498, 1, [rule.Scheduler.FSRS, rule.Scheduler.RWKV_CURVE], 7), found)
+        # Day 498 ends two days before today's cutoff.
+        found = rule.inputs(Collection({"fsrs": True, "lastFsrsOptimize": 498}, presets, revlog), 9)
+        optimized = (1794974400 - 2 * 86400) * 1000
+        self.assertEqual(rule.Inputs(9, optimized, 1, [rule.Scheduler.FSRS, rule.Scheduler.RWKV_CURVE], 7), found)
 
         # 0 or a missing key is never; FSRS off makes every preset SM-2.
         for config in ({"lastFsrsOptimize": 0}, {}):
             with self.subTest(config=config):
-                found = rule.inputs(Collection(config, presets, revlog))
-                self.assertEqual((None, 2, [rule.Scheduler.SM2] * 2), (found.last_optimized_day, found.reviews_since, found.presets))
+                found = rule.inputs(Collection(config, presets, revlog), 9)
+                self.assertEqual((None, 2, [rule.Scheduler.SM2] * 2), (found.last_optimized_ms, found.reviews_since, found.presets))
         revlog.close()
 
 

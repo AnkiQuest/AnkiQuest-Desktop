@@ -67,7 +67,7 @@ def offer(mw, config, save_config):
     if isinstance(state, rule.Off) or col is None:
         return
     try:
-        found = rule.inputs(col)
+        found = rule.inputs(col, rule.now_ms())
     except Exception as error:
         print("ankiquest optimize reminder:", error)
         return
@@ -83,7 +83,8 @@ def offer(mw, config, save_config):
     event = {Choice.SNOOZE: rule.Event.SNOOZE, Choice.DISMISS: rule.Event.DISMISS}.get(choice)
     if event is None:
         return
-    after = rule.next_state(state, event, found.today, found.last_optimized_day)
+    # A snooze counts from when the player chose it, not from when the dialog opened.
+    after = rule.next_state(state, event, rule.now_ms(), found.last_optimized_ms)
     save_config({rule.CONFIG_KEY: rule.encode(after)})
 
 

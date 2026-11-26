@@ -21,7 +21,9 @@ class Main(QWidget):
     col = object()
 
 
-DUE = rule.Inputs(today=500, last_optimized_day=400, reviews_since=1500, presets=[rule.Scheduler.FSRS, rule.Scheduler.RWKV_CURVE], deck=7)
+OPTIMIZED = 1786334400000
+NOW = OPTIMIZED + 30 * rule.DAY_MS
+DUE = rule.Inputs(now_ms=NOW, last_optimized_ms=OPTIMIZED, reviews_since=1500, presets=[rule.Scheduler.FSRS, rule.Scheduler.RWKV_CURVE], deck=7)
 
 
 class Reminder(unittest.TestCase):
@@ -65,16 +67,18 @@ class Reminder(unittest.TestCase):
         saved = []
         mw = Main()
         deckoptions = Mock()
-        with patch.object(rule, "inputs", return_value=DUE), patch.dict(sys.modules, {"aqt.deckoptions": deckoptions}):
+        # The player picks a minute after the dialog opened; a snooze counts from then.
+        picked = NOW + 60_000
+        with patch.object(rule, "inputs", return_value=DUE), patch.object(rule, "now_ms", return_value=picked), patch.dict(sys.modules, {"aqt.deckoptions": deckoptions}):
             with patch("aqt.deckoptions", deckoptions, create=True):
                 self.open(lambda dialog: self.button(dialog, press).click(), lambda: ui.offer(mw, config, saved.append))
         return saved, deckoptions
 
     def test_snooze_and_dismiss_save_the_next_state(self):
         saved, _ = self.offer({}, rule.SNOOZE)
-        self.assertEqual([{rule.CONFIG_KEY: {"kind": "snoozed", "until_day": 507}}], saved)
+        self.assertEqual([{rule.CONFIG_KEY: {"kind": "snoozed", "until_ms": NOW + 60_000 + 7 * rule.DAY_MS}}], saved)
         saved, _ = self.offer({}, rule.DISMISS)
-        self.assertEqual([{rule.CONFIG_KEY: {"kind": "dismissed", "optimized_day": 400}}], saved)
+        self.assertEqual([{rule.CONFIG_KEY: {"kind": "dismissed", "optimized_ms": OPTIMIZED}}], saved)
 
     def test_open_shows_deck_options_for_the_current_deck(self):
         saved, deckoptions = self.offer({}, rule.OPEN)
@@ -82,7 +86,7 @@ class Reminder(unittest.TestCase):
         deckoptions.display_options_for_deck_id.assert_called_once_with(7)
 
     def test_nothing_shows_while_off_or_not_due(self):
-        for config, found in (({rule.CONFIG_KEY: {"kind": "off"}}, DUE), ({}, rule.Inputs(500, 490, 1500, [rule.Scheduler.FSRS], 7))):
+        for config, found in (({rule.CONFIG_KEY: {"kind": "off"}}, DUE), ({}, rule.Inputs(NOW, NOW - rule.DAY_MS, 1500, [rule.Scheduler.FSRS], 7))):
             with self.subTest(config=config), patch.object(rule, "inputs", return_value=found), patch.object(ui, "ask") as ask:
                 ui.offer(Main(), config, Mock())
                 ask.assert_not_called()
@@ -90,7 +94,7 @@ class Reminder(unittest.TestCase):
     def test_the_switch_turns_off_and_keeps_a_snooze(self):
         holder = QWidget()
         layout = QVBoxLayout(holder)
-        snoozed = {rule.CONFIG_KEY: {"kind": "snoozed", "until_day": 507}}
+        snoozed = {rule.CONFIG_KEY: {"kind": "snoozed", "until_ms": NOW + 7 * rule.DAY_MS}}
         values = ui.settings_switch(layout, snoozed)
         box = holder.findChild(ui.QCheckBox, "ankiquest_optimize_reminder")
         self.assertTrue(box.isChecked())
