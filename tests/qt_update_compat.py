@@ -1,6 +1,7 @@
 """The GitHub updater must preserve a working add-on when an archive needs newer Anki."""
 import ast
 import importlib.util
+import sys
 from contextlib import ExitStack
 import io
 import json
@@ -23,9 +24,15 @@ from aqt.qt import QApplication, QMainWindow
 ROOT = Path(__file__).resolve().parents[1]
 app = QApplication.instance() or QApplication([])
 
-# The add-on's own update rules, imported the way the shipped updater uses them.
-spec = importlib.util.spec_from_file_location("ankiquest_updates_compat", ROOT / "addon" / "updates.py")
+# The add-on's own update rules, imported as the add-on's package, whose neighbours
+# (links.py) it imports.
+spec = importlib.util.spec_from_file_location(
+    "ankiquest_updates_compat",
+    ROOT / "addon" / "updates.py",
+    submodule_search_locations=[str(ROOT / "addon")],
+)
 updates = importlib.util.module_from_spec(spec)
+sys.modules["ankiquest_updates_compat"] = updates
 spec.loader.exec_module(updates)
 
 
