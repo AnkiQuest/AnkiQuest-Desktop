@@ -26,12 +26,12 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Rate and report.** Tools → AnkiQuest ends with Rate AnkiQuest (on AnkiWeb or GitHub), AnkiQuest changelog, which shows these notes, and Report a bug. Settings credits Shigeyuki for Anki-tan.
 
-**Updates.** The next add-on versions need Anki 24.11 or newer. On an older Anki, the GitHub download keeps this version and stops offering newer ones, instead of installing one that would not load. An update your Anki cannot load also keeps the add-ons you have installed.
+**Anki 24.11.** This version needs Anki 24.11 or newer. On Anki 23.10, the GitHub updater continues to serve [addon-15](https://github.com/AnkiQuest/AnkiQuest-Desktop/releases/tag/addon-15).
 
 **Fixes.** A review on a freeze-protected day counts toward today instead of reading "not studied yet".
 
 **Server.** This version needs a current AnkiQuest server. On an older one, the inbox, leaderboard, progress, companion unlocks and sharing say "Update your AnkiQuest server".
 
-Companion pictures come from AnkiQuest-Art art-9.
+Companion pictures come from AnkiQuest-Art art-11.
 
 Study uploads contain review history (card id, timestamp, previous and new interval, time taken, review type and the button pressed) and deck progress, never card content.

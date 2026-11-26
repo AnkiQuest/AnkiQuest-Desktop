@@ -107,6 +107,26 @@ class UpdateTests(unittest.TestCase):
         self.assertIn(manifest["min_point_version"], [build.minimum for build in updates.BUILDS])
         self.assertEqual(sorted(updates.BUILDS, reverse=True), list(updates.BUILDS), "newest minimum first")
 
+    def test_releases_publish_the_build_for_the_manifest_minimum(self):
+        # Copies older than the bridge release read only the legacy names; they must never get
+        # a build their Anki cannot load, so new builds use the names of their own minimum.
+        root = Path(__file__).resolve().parents[1]
+        manifest = json.loads((root / "addon/manifest.json").read_text("utf-8"))
+        build = next(build for build in updates.BUILDS if build.minimum == manifest["min_point_version"])
+        workflow = (root / ".github/workflows/addon.yml").read_text("utf-8")
+        self.assertIn("--output %s" % build.package, workflow)
+        self.assertIn("--metadata %s" % build.metadata, workflow)
+        self.assertIn('gh release create "$GITHUB_REF_NAME" %s ' % build.package, workflow)
+        legacy = updates.BUILDS[-1]
+        nightly = workflow.split("      - name: Publish nightly\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("tag: addon-nightly", nightly)
+        files = nightly.split("          files: |\n", 1)[1].splitlines()
+        self.assertEqual(
+            {build.package, build.metadata, "ankiquest-ankiweb.ankiaddon",
+             "legacy/" + legacy.package, "legacy/" + legacy.metadata},
+            {line.strip() for line in files if line.startswith("            ")},
+        )
+
     def test_newer_orders_release_then_nightly_and_never_updates_a_local_copy(self):
         stable10 = {"release": 10, "nightly": 0}
         nightly10 = {"release": 10, "nightly": 2}

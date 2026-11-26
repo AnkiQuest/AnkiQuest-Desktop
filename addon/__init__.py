@@ -876,18 +876,14 @@ def _rwkv_block(tr):
 
     def work():
         if mw.col is not collection:
-            return None
-        if rwkv_stats.too_large(collection.db.scalar("select count() from cards where type = 2")):
-            return None
-        return rwkv_stats.recalls(collection)
+            return ""
+        return rwkv_stats.block(collection, tr, plural, percent)
 
     def done(future):
         if _RWKV_BLOCK is not request or mw.col is not collection or collection.mod != revision:
             return
         try:
-            rows = future.result()
-            if rows is not None:
-                request.html = '<div id="aq-rwkv">%s</div>' % rwkv_stats.html_rows(rows, tr, plural, percent)
+            request.html = future.result()
         except Exception as e:
             print("ankiquest rwkv stats:", e)
         if request.html:
