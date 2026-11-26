@@ -10,3 +10,5 @@ addon/version.json
 # `package-addon server-data` before the tests run.
 /tests/fixtures/
 /tests/api-examples/
+# Screenshots tests/draw_screenshots.py draws; CI keeps them as artifacts.
+/build/
