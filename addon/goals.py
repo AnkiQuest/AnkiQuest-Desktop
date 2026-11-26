@@ -23,10 +23,6 @@ DEFAULT_SECONDS_PER_CARD = 8
 FORECAST_DAYS = 7
 ANSWER_WINDOW_DAYS = 30
 
-LEGACY_KEYS = ("goal_mode", "goal_backlog_percent", "goal_cards", "goal_minutes")
-LEGACY_DEFAULT = (BACKLOG, 10)
-PERCENT_DAYS = {5: 60, 10: 30, 20: 14, 34: 7, 100: 1}
-
 MINIMUM, GOAL, BOTH = "minimum", "goal", "both"
 
 Load = namedtuple("Load", "day studied_cards minutes due_today backlog")
@@ -192,22 +188,6 @@ def status(load, found, today, stored, streak_minutes, profile=None, verdict=Non
     return Status(
         load.day, load.minutes, streak_minutes, load.studied_cards, found.mode, fixed, progress, reached, verdict,
     ), record, restart
-
-
-def legacy_goal(config):
-    """A goal picked in an older add-on's settings, as a `PUT /api/goal` body; None when there is
-    none, or it was left at the old default."""
-    mode = config.get("goal_mode")
-    if mode not in MODES:
-        return None
-    percent = _int(config.get("goal_backlog_percent"), LEGACY_DEFAULT[1])
-    if mode == BACKLOG and percent == LEGACY_DEFAULT[1]:
-        return None
-    if mode == BACKLOG:
-        return {"mode": BACKLOG, "value": PERCENT_DAYS.get(percent, DEFAULTS[BACKLOG])}
-    if mode == OFF:
-        return {"mode": OFF}
-    return {"mode": mode, "value": clamp(mode, config.get("goal_" + mode))}
 
 
 def remembered_streak_minutes(profile, stored, account):

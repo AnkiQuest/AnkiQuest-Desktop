@@ -27,7 +27,8 @@ class Boards(unittest.TestCase):
         rows = example("leaderboard_global")
         rows[1]["rank"] = 12
         self.api.leaderboard.return_value = rows
-        self.mw.pm.profile[self.home.board_data._OLD_PERIOD] = "day"
+        data = self.home.board_data
+        data._remember(self.mw.pm.profile, self.api, data._Query("day"))
         found = self.home.board_view(self.api, {"_day_status": "met"})
         self.assertEqual([(1, 107), (12, 20)], [(place, row["xp"]) for place, row, _ in found["rows"]])
         self.api.leaderboard.assert_called_once_with(period="day", scope="friends")
@@ -86,7 +87,11 @@ class Boards(unittest.TestCase):
 
     def test_scope_and_period_belong_to_the_account_and_survive_sign_out(self):
         data = self.home.board_data
+
+        # The period key of add-on versions before per-account boards is neither read nor written
+        self.mw.pm.profile["ankiquestBoardPeriod"] = "day"
         first = data._chosen(self.mw.pm.profile, self.api)
+        self.assertEqual(data._Query(), first)
         data._remember(self.mw.pm.profile, self.api, replace(first, scope="global", period="month"))
         self.home.clear_account()
         self.assertEqual("global", data._chosen(self.mw.pm.profile, self.api).scope)
@@ -96,6 +101,7 @@ class Boards(unittest.TestCase):
         other.name = self.api.name
         self.assertEqual(data._Query(), data._chosen(self.mw.pm.profile, other))
         self.assertEqual("month", data._chosen(self.mw.pm.profile, self.api).period)
+        self.assertEqual("day", self.mw.pm.profile["ankiquestBoardPeriod"])
         self.assertNotIn(self.api.token, json.dumps(self.mw.pm.profile))
 
     def test_old_servers_hide_global_and_current_group_names_are_escaped(self):

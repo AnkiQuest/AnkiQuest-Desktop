@@ -6,7 +6,6 @@ from urllib.parse import urlencode
 from . import today
 
 _CHOICES = "ankiquestBoards"
-_OLD_PERIOD = "ankiquestBoardPeriod"
 _TOP = 5
 
 
@@ -48,11 +47,7 @@ def _key(api):
 
 
 def _chosen(profile, api):
-    choices = profile.get(_CHOICES)
-    if choices is None:
-        query = _Query(today.period(profile.get(_OLD_PERIOD)))
-        _remember(profile, api, query)
-        return query
+    choices = profile.get(_CHOICES, [])
     stored = next((item for item in reversed(choices) if item.get("account") == _key(api)), {})
     return _Query(today.period(stored.get("period")), stored.get("scope", "friends"))
 
@@ -60,8 +55,6 @@ def _chosen(profile, api):
 def _remember(profile, api, query):
     choices = [item for item in profile.get(_CHOICES, []) if item.get("account") != _key(api)]
     profile[_CHOICES] = choices + [dict(query._params(), account=_key(api))]
-    # Keep the old period for older add-on versions; new accounts use their own choice.
-    profile[_OLD_PERIOD] = query.period
 
 
 def _fetch(api, query):

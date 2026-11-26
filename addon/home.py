@@ -314,8 +314,8 @@ def report_reached(api, status, day):
 
 
 def sync_goal(prompt=False):
-    """Reads the server's goal, moves an older add-on's local goal there if none was chosen yet,
-    and with `prompt` asks for a goal once per account while none is chosen."""
+    """Reads the server's goal, and with `prompt` asks for a goal once per account while none is
+    chosen."""
     api = addon().client()
     if not api.configured:
         return
@@ -328,13 +328,6 @@ def sync_goal(prompt=False):
         return
     request = _GoalRequest(account(api), mw.pm.profile, mode)
     local["goal_request"] = request
-    legacy = goals.legacy_goal(addon().config())
-
-    def work():
-        answer = goals.fetch(api)
-        if legacy and not answer.get("chosen"):
-            answer = goals.put(api, legacy["mode"], legacy.get("value"))
-        return answer
 
     def done(future):
         if local["goal_request"] is not request:
@@ -347,13 +340,12 @@ def sync_goal(prompt=False):
             return
         if not request.owns(addon().client()):
             return
-        addon().drop_config(goals.LEGACY_KEYS)
         remember_plan(answer)
         addon().redraw()
         if request.mode is _GoalMode.OFFER_SETUP:
             setup_prompt(api, answer)
 
-    mw.taskman.run_in_background(work, done)
+    mw.taskman.run_in_background(lambda: goals.fetch(api), done)
 
 
 def setup_prompt(api, answer):
