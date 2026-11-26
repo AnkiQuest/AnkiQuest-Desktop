@@ -43,7 +43,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -1078,12 +1078,29 @@ def _greet(profile):
     _moments._release()
 
 
+def save_mood_debug(values):
+    """Writes the debug override and its day limits into this add-on's config only
+    (mood_debug): nothing of it is synced or sent to the server."""
+    save_config(values)
+
+
+def open_mood_debug():
+    """The hidden debug menu for today's mood and pose (mood_debug_ui), opened from the
+    version label. Saving redraws so the Today panel, its flame and the companion follow."""
+    if mood_debug_ui.dialog(mw, config(), save_mood_debug) is not None:
+        state["profile"] = None
+        refresh(False)
+        poll(quiet=True)
+        redraw()
+
+
 def open_settings():
     values = ui.settings_dialog(
         mw, config(), test_connection, upload_everything, state["companion"], ask_account,
         extra=settings_sections, on_manage=_manage_account,
         on_decks=open_deck_notifications, on_privacy=_open_privacy, on_countdowns=open_countdowns,
         on_two_factor=_open_two_factor if home.server_has(client(), TWO_FACTOR) else None,
+        on_debug=open_mood_debug,
     )
     if values is None:
         return
@@ -1419,7 +1436,7 @@ def open_companion(parent=None):
         _companion_saved(account, companion)
 
     motion = reveal_ui.motion(config())
-    return companion_ui.open_picker(parent or mw, mw, api, client, current_companion(), saved, home.today_mood(), motion)
+    return companion_ui.open_picker(parent or mw, mw, api, client, current_companion(), saved, home.today_mood(), motion, home.mood_marker())
 
 
 def choose_companion(api, companion, run):

@@ -117,9 +117,15 @@ class UpdateTests(unittest.TestCase):
         self.assertIn("--output %s" % build.package, workflow)
         self.assertIn("--metadata %s" % build.metadata, workflow)
         self.assertIn('gh release create "$GITHUB_REF_NAME" %s ' % build.package, workflow)
-        self.assertIn("gh release create addon-nightly %s " % build.package, workflow)
         legacy = updates.BUILDS[-1]
-        self.assertIn("legacy/%s legacy/%s" % (legacy.package, legacy.metadata), workflow)
+        nightly = workflow.split("      - name: Publish nightly\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("tag: addon-nightly", nightly)
+        files = nightly.split("          files: |\n", 1)[1].splitlines()
+        self.assertEqual(
+            {build.package, build.metadata, "ankiquest-ankiweb.ankiaddon",
+             "legacy/" + legacy.package, "legacy/" + legacy.metadata},
+            {line.strip() for line in files if line.startswith("            ")},
+        )
 
     def test_newer_orders_release_then_nightly_and_never_updates_a_local_copy(self):
         stable10 = {"release": 10, "nightly": 0}

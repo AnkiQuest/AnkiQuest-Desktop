@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: addon-${{ github.ref }}
@@ -17,15 +17,16 @@ concurrency:
 jobs:
   package:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # creates the release and replaces the nightly one
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
 
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
-        with:
-          workspaces: tools/package-addon
-
+      # No Rust cache: a release is built from a clean registry and target,
+      # so a cache a pull request wrote can't reach the published archive.
       - name: Version
         id: version
         run: |
@@ -51,11 +52,10 @@ jobs:
             --title "Desktop add-on ${GITHUB_REF_NAME#addon-}" \
             --notes-file release-notes.md
 
-      - name: Publish nightly
+      - name: Stage legacy nightly files
         if: github.ref == 'refs/heads/master'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE: ${{ steps.version.outputs.release }}
         run: |
           # Copies older than the bridge release read only ankiquest.ankiaddon and addon-nightly.json.
           # Keep both on the last Anki 23.10 release: the highest addon-<n> release that has
@@ -69,9 +69,17 @@ jobs:
           gh release download "addon-$bridge" --pattern ankiquest.ankiaddon --dir legacy
           jq -n --argjson release "$bridge" '{release: $release, nightly: 0, commit: ""}' > legacy/addon-nightly.json
 
-          gh release delete addon-nightly --yes --cleanup-tag || true
-          gh release create addon-nightly ankiquest-24.11.ankiaddon ankiquest-ankiweb.ankiaddon addon-nightly-24.11.json \
-            legacy/ankiquest.ankiaddon legacy/addon-nightly.json \
-            --prerelease --latest=false --target "$GITHUB_SHA" \
-            --title "Desktop add-on nightly" \
-            --notes "Built from $GITHUB_SHA after addon-$RELEASE. Untested: choose the nightly update channel in ankiquest settings to get these."
+      # Update both sets of downloads together, keeping the release URL in place.
+      - name: Publish nightly
+        if: github.ref == 'refs/heads/master'
+        uses: AnkiQuest/AnkiQuest-Dev/.github/actions/nightly-release@master
+        with:
+          tag: addon-nightly
+          title: Desktop add-on nightly
+          notes: "Built from ${{ github.sha }} after addon-${{ steps.version.outputs.release }}. Untested: choose the nightly update channel in ankiquest settings to get these."
+          files: |
+            ankiquest-24.11.ankiaddon
+            ankiquest-ankiweb.ankiaddon
+            addon-nightly-24.11.json
+            legacy/ankiquest.ankiaddon
+            legacy/addon-nightly.json

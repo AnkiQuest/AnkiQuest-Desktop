@@ -48,16 +48,30 @@ cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.a
 
 ### Screenshots and banner
 
-`docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/draw_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. `ankiquest-banner`, the banner tool every AnkiQuest repository shares ([AnkiQuest-Dev](https://github.com/AnkiQuest/AnkiQuest-Dev#readme-banner-and-social-preview)), draws `docs/graphics/banner_readme.png` and `social_preview.png` from those screenshots and the duo master in an [AnkiQuest-Server](https://github.com/AnkiQuest/AnkiQuest-Server) checkout; `docs/graphics/banner.toml` lists its inputs. CI's "Screenshots" and "banner" jobs draw all of them again and fail when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed (`--record` runs `tests/draw_screenshots.py` first):
+`docs/screenshots/desktop-*.png` and the banner are drawn, not captured by hand. `tests/draw_screenshots.py` renders each add-on screen offscreen from the fake players and server replies in `tests/screenshots/data.json`, with a fixed clock, the fonts in `tests/screenshots/fonts` and fixed window sizes. `ankiquest-banner`, the banner tool every AnkiQuest repository shares ([AnkiQuest-Dev](https://github.com/AnkiQuest/AnkiQuest-Dev#readme-banner-and-social-preview)), draws `docs/graphics/banner_readme.png` and `social_preview.png` from those screenshots and the duo master of the AnkiQuest-Art release pinned in `ankiquest-art.json`, unzipped from its `masters.zip` into `art/`; `docs/graphics/banner.toml` lists its inputs. CI's "Screenshots" and "banner" jobs draw all of them again and fail when a committed file differs in any pixel. After changing a screen, regenerate them on Ubuntu 24.04 with the 26.9.4 requirements installed (`--record` runs `tests/draw_screenshots.py` first):
 
 ```sh
-cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
-cargo run --release --manifest-path ../AnkiQuest-Dev/tools/banner/Cargo.toml -- --server ../AnkiQuest-Server --record
+(
+  set -eu
+  art_stage=$(mktemp -d)
+  art_tag=$(node -p 'require("./ankiquest-art.json").tag')
+  for art_asset in masters.zip manifest.json; do
+    curl -fsSL -o "$art_stage/$art_asset" \
+      "https://github.com/AnkiQuest/AnkiQuest-Art/releases/download/$art_tag/$art_asset"
+    art_hash=$(node -p 'require("./ankiquest-art.json").assets[process.argv[1]]' "$art_asset")
+    printf '%s  %s\n' "$art_hash" "$art_stage/$art_asset" | sha256sum --check
+  done
+  mkdir -p art
+  unzip -qo "$art_stage/masters.zip" -d art
+  cp "$art_stage/manifest.json" art/manifest.json
+) &&
+cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art &&
+cargo run --release --manifest-path ../AnkiQuest-Dev/tools/banner/Cargo.toml -- --server . --record
 ```
 
 Another system or Qt draws slightly different text, so CI fails on pictures drawn there. A failing run keeps its drawings as the `screenshots` and `banner` artifacts.
 
-[Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The shared fixtures and API examples the tests read are pinned from AnkiQuest-Server ([Server snapshot](docs/desktop.md#server-snapshot)). The companion pictures come from the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art) release pinned in `ankiquest-art.json`; `cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art` puts them in `addon/` ([Companion pictures](docs/desktop.md#companion-pictures)).
+[Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The tests read the shared fixtures and API examples of AnkiQuest-Server `master`; `cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- server-data` copies them into `tests/` ([Server data](docs/desktop.md#server-data)). The companion pictures come from the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art) release pinned in `ankiquest-art.json`; `cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art` puts them in `addon/` ([Companion pictures](docs/desktop.md#companion-pictures)).
 
 ## License
 

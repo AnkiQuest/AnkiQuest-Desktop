@@ -285,48 +285,80 @@ _THAWING_MOODS = {Stage.QUARTER: THAWING, Stage.HALF: HOPEFUL, Stage.THREE_QUART
 _STREAK_MOODS = {Stage.STARTED: SAD, Stage.QUARTER: SAD, Stage.HALF: HOPEFUL, Stage.THREE_QUARTERS: ALMOST}
 
 
-def streak_mood(state, reviews, stage, streak, frozen_days, goal):
+def streak_mood(state, reviews, stage, streak, frozen_days, goal, thresholds=None):
     """Today's streak mood for a day verdict `state` with `reviews` so far at `stage` toward the
-    minimum, a `streak` of that many days and `frozen_days` frozen days in a row ending yesterday."""
+    minimum, a `streak` of that many days and `frozen_days` frozen days in a row ending yesterday.
+    `thresholds` (the debug menu's, `mood_debug.thresholds`) move the hopeful boundary and the
+    frozen moods; the rest of the rule is pinned by tests/fixtures/streak_moods.json."""
     # Today counts, or the goal says the player did what they planned.
     if state == STUDIED or goal == Goal.REACHED:
         return FIRE
     if state == UNKNOWN:
         return MOOD_UNKNOWN
 
+    # A moved review threshold moves the hopeful boundary without changing the shared stages.
+    stage = _hopeful_stage(reviews, stage, thresholds)
+
     # A protected day means a freeze kept at least yesterday, even without the heatmap.
     frozen = max(frozen_days, 1 if state == PROTECTED else 0)
     if frozen > 0:
-        return _THAWING_MOODS.get(stage) or _frozen(frozen)
+        return _THAWING_MOODS.get(stage) or _frozen(frozen, thresholds)
 
     # Without a streak there is nothing to lose: any study is hopeful.
     if streak == 0:
-        if reviews == 0:
+        if reviews < (thresholds or {}).get("hopeful_reviews", 1):
             return ASLEEP
         return ALMOST if stage == Stage.THREE_QUARTERS else HOPEFUL
     return _STREAK_MOODS[stage]
 
 
-def _frozen(days):
-    """The frozen mood for `days` frozen days in a row; 3 means 3 or more."""
-    if days >= 3:
+def _hopeful_stage(reviews, stage, thresholds):
+    """The stage a day counts as when a moved review threshold decides where hopeful starts, as
+    the phone's mood rule does: reaching it is at least half way, falling short keeps the day
+    before the halfway stage. An unmoved threshold leaves the stage alone, so the pinned
+    streak-mood fixtures keep passing."""
+    hopeful = (thresholds or {}).get("hopeful_reviews", 1)
+    if hopeful == 1:
+        return stage
+    if reviews >= hopeful:
+        return stage if stage.percent >= Stage.HALF.percent else Stage.HALF
+    return stage if stage.percent <= Stage.QUARTER.percent else Stage.QUARTER
+
+
+def _frozen(days, thresholds=None):
+    """The frozen mood for `days` frozen days in a row; the third means that many or more.
+    `thresholds` (the debug menu's, `mood_debug.thresholds`) can move where 2 and 3 start."""
+    two = (thresholds or {}).get("frozen_2_days", 2)
+    three = (thresholds or {}).get("frozen_3_days", 3)
+    if days >= max(three, two + 1):
         return FROZEN_3
-    if days == 2:
+    if days >= two:
         return FROZEN_2
     return FROZEN_1
 
 
-def _mood_pose_name(chosen, streak):
-    """The pose for a streak mood; a counted day burns by the streak's heat, from day one."""
+def _mood_pose_name(chosen, streak, thresholds=None):
+    """The pose for a streak mood; a counted day burns by the streak's heat, from day one.
+    `thresholds` (the debug menu's, `mood_debug.thresholds`) can move where the hotter poses
+    start, so keep their order."""
     if chosen != FIRE:
         return _MOOD_POSE_NAMES[chosen]
-    heat = next((pose for days, pose in HEAT if streak >= days), HEAT[-1][1])
+    limits = HEAT
+    if thresholds:
+        hots = (
+            (HEAT[0][1], thresholds.get("legend_days", HEAT[0][0])),
+            (HEAT[1][1], thresholds.get("blazing_days", HEAT[1][0])),
+            (HEAT[2][1], thresholds.get("hot_days", HEAT[2][0])),
+            (HEAT[3][1], HEAT[3][0]),
+        )
+        limits = tuple((max(days, 1), aki) for aki, days in hots)
+    heat = next((pose for days, pose in limits if streak >= days), limits[-1][1])
     return _AKI_PICTURES[heat]
 
 
-def streak_pose(chosen, streak):
+def streak_pose(chosen, streak, thresholds=None):
     """Aki's picture for a streak mood with a streak of that many days."""
-    return pose_art(AKI_POSES, _mood_pose_name(chosen, streak))
+    return pose_art(AKI_POSES, _mood_pose_name(chosen, streak, thresholds))
 
 
 def flame(chosen):
@@ -365,21 +397,39 @@ def _stage(view):
     return Stage.of(int(time_ms or 0), int(today.get("streak_minutes") or 0))
 
 
-def today_mood(view, goal):
+def today_mood(view, goal, thresholds=None):
     """The displayed profile's streak mood: the one streak rule every surface uses."""
     view = view or {}
     reviews, streak, frozen = _reviews_today(view), _streak(view), frozen_run(view.get("heatmap"))
-    return streak_mood(day_state(view), reviews, _stage(view), streak, frozen, goal)
+    return streak_mood(day_state(view), reviews, _stage(view), streak, frozen, goal, thresholds)
 
 
-def today_pose(companion, view, goal):
+def today_pose(companion, view, goal, thresholds=None):
     """`companion`'s pose for the displayed profile's day; None for no companion."""
-    return mood_pose(companion, today_mood(view, goal), _streak(view))
+    return mood_pose(companion, today_mood(view, goal, thresholds), _streak(view))
 
 
-def today_flame(view, goal):
+def today_flame(view, goal, thresholds=None):
     """The flame beside the displayed profile's streak number."""
-    return flame(today_mood(view, goal))
+    return flame(today_mood(view, goal, thresholds))
+
+
+def mood_pose(companion, chosen, streak, thresholds=None):
+    """`companion`'s pose for a streak mood with a streak of that many days; None for no companion.
+
+    It is resolved from the mood's pose, not from Aki's picture, because one of Aki's pictures
+    stands for two poses (welcome for hopeful)."""
+    if companion == NONE:
+        return None
+    return pose_art(_POSES[art_owner(companion)], _mood_pose_name(chosen, streak, thresholds))
+
+
+def forced_pose(companion, name):
+    """`companion`'s pose for one of Aki's picture names, as the debug menu forces; None without
+    a companion or when the companion cannot show that pose."""
+    if companion == NONE:
+        return None
+    return pose_art(_POSES[art_owner(companion)], name)
 
 
 def mood_line(chosen, streak):
@@ -433,16 +483,6 @@ def companion_pose(companion, aki):
     if pose is None:
         return _SCENES[owner]
     return pose_art(_POSES[owner], pose)
-
-
-def mood_pose(companion, chosen, streak):
-    """`companion`'s pose for a streak mood with a streak of that many days; None for no companion.
-
-    It is resolved from the mood's pose, not from Aki's picture, because one of Aki's pictures
-    stands for two poses (welcome for hopeful)."""
-    if companion == NONE:
-        return None
-    return pose_art(_POSES[art_owner(companion)], _mood_pose_name(chosen, streak))
 
 
 def preview(companion):

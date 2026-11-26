@@ -1,13 +1,18 @@
 {
   "_about": "The AnkiQuest-Art release this repository uses. AnkiQuest-Sync updates it when Art publishes a release; don't edit it by hand.",
-  "tag": "art-4",
-  "commit": "fefbb287a54dd5435833f59c46b6814b923ae35e",
+  "tag": "art-11",
+  "commit": "5e47fbeef33b7f1f40520b008f8d785343b836e0",
   "assets": {
-    "android-drawables.zip": "c53c4b3fbeeacbdd8a2e955e2ebb6959ed2b3aa43400c5f8e87f32130efbf3ca",
-    "addon-art.zip": "cb202aa57ac57719865eddc0a0b10cdd8ff3e2e8f1fec612114f75ffc65b65f6",
-    "masters.zip": "ed8f94b4c87e724aca715d853e490b245e3a493b64679925c0deaf3ecd2243b0",
-    "archive.zip": "9d48eeccb64f497e3e732e055dd94073b6d880ffc58d7aa0bb8f8f33156ef2d9",
-    "manifest.json": "7d4602e2e3dc546c978cdbbbdb8627cba961059f17107097a9cc0b118320b0ec",
-    "poses.json": "e41766b186c26082fcfff73027dcf37251ca4c748f6efd32f58f6c2247aeac3d"
+    "android-drawables.zip": "d1e311c05bf8417af138fb26dd03e37018b6bd90e0a91642423122b1dde36207",
+    "addon-art.zip": "1cca5e95cf4ec394d332a52caae3e5d3b0df984b941a4d764e94586749d81e3a",
+    "masters.zip": "4d9e1011c1e5e1fbd26293b59eea5960c671f69671c9ac424882aae1b2c3d454",
+    "archive.zip": "776106a8de7bd9f6e8af93da9aa89db11db7a27a0e34557dc313ada2d70c224c",
+    "manifest.json": "20ddd30f53b0353c1282b688882241af960513d6c7395266dca43f780754c013",
+    "poses.json": "e41766b186c26082fcfff73027dcf37251ca4c748f6efd32f58f6c2247aeac3d",
+    "packs.json": "a3a8df1e568fc825bce691e516d169079f813da85ba237c2523a049c47555437",
+    "pack-aki.zip": "d68bdf30117a68b94b12a7dde05b3d780c5d775e80418b3f82ef595523dbb289",
+    "pack-anki_tan.zip": "4fe227fac3df3aa8fd650ffe63173da1598f1c042cafff6998484a4c18d3f1a8",
+    "pack-ankilope.zip": "0ba2f8b929c530e8268e261f33a5ced6f73ccd2a12eab9a9b0b29e37b62d28b8",
+    "pack-cow.zip": "bc902ed347703f1902b58ef145c3c3d170b26a8a85b441f2c8f8792093bfb0ed"
   }
 }

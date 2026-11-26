@@ -40,9 +40,9 @@ smoke installs (`tools/package-addon`, as releases do). Each checks:
   rank/share words, every board shape, notifications, activity, goals, decks,
   capabilities and conquered-card actions. `wins.json` cross-checks the win
   IDs used by notification shares and card-image URLs; desktop does not list
-  `/api/wins` itself. The recordings are copies from AnkiQuest-Server (see
-  [Server snapshot](#server-snapshot)), where the server regenerates and
-  verifies them.
+  `/api/wins` itself. The recordings come from AnkiQuest-Server master (see
+  [Server data](#server-data)), where the server regenerates and verifies
+  them.
 - Upload/reconcile/refresh regressions in `test_deck_completion.py` and
   `test_addon_uploads.py`; feedback, conquest paths and web navigation in
   `test_desktop_board.py`; clipboard text in `test_addon_sharing.py` and
@@ -63,34 +63,31 @@ changed. Verify the release's own Qt extra, both full test jobs and a normal
 interactive study session before claiming support. Add an upper version
 bound only for a reproduced incompatibility.
 
-## Server snapshot
+## Server data
 
-The add-on tests come from one AnkiQuest-Server commit, named in
-`tests/ankiquest-server.sha`:
+The add-on tests run against AnkiQuest-Server `master`. They read:
 
-- `tests/fixtures/*.json`: copies of Server's `tests/fixtures/`, the rules
-  both clients test against.
-- `tests/api-examples/*.json`: copies of the Server `docs/api/examples/`
-  the add-on tests read.
+- `tests/fixtures/*.json`: Server's `tests/fixtures/`, the rules both
+  clients test against.
+- `tests/api-examples/*.json`: Server's `docs/api/examples/`.
 
-The **Desktop** jobs compare each copied file with the pinned commit.
-
-The snapshot includes countdowns, observed study and companion unlocks.
-Every shared fixture is in `tests/fixtures/`; there are no separate copies
-from commits ahead of the pin.
-
-Never edit a copy. Change Server first, then bump the pin and every copy
-in one pull request, from a Server checkout next to this one:
+Neither is committed. The packager copies them from a shallow, sparse
+clone of `master`, and the **Desktop** jobs do so before the tests:
 
 ```sh
-sha=$(git -C ../AnkiQuest-Server rev-parse <server-commit>)
-git -C ../AnkiQuest-Server checkout "$sha"
-echo "$sha" > tests/ankiquest-server.sha
-for f in tests/fixtures/*.json; do cp "../AnkiQuest-Server/$f" "$f"; done
-for f in tests/api-examples/*.json; do cp "../AnkiQuest-Server/docs/api/examples/${f##*/}" "$f"; done
+cargo run --manifest-path tools/package-addon/Cargo.toml -- server-data
 ```
 
-To read a new fixture or example, copy it from the same commit.
+To test a server change before it reaches `master`, copy from its
+checkout instead:
+
+```sh
+cargo run --manifest-path tools/package-addon/Cargo.toml -- server-data --from ../AnkiQuest-Server
+```
+
+Never add a fixture or example here: change Server first. A server change
+that breaks these tests is fixed in the same change, or the add-on is
+updated right after.
 
 ## Companion pictures
 
@@ -191,9 +188,9 @@ need a complete translation, not isolated switches to `Salvar`.
 `tests/fixtures/desktop-wording.json` records reviewed Android strings for
 the same settings groups, moments and sharing screens, with the source
 commit. The translation test checks these across all four languages.
-After reviewing Android changes, update the fixture in AnkiQuest-Server,
-then bump the [Server snapshot](#server-snapshot) and the desktop wording
-together; CI does not fetch a moving Android branch. Positional Android
+After reviewing Android changes, update the fixture in AnkiQuest-Server
+and the desktop wording together (see [Server data](#server-data)); CI
+does not fetch a moving Android branch. Positional Android
 placeholders are normalized to Python placeholders. Identical English
 labels in different contexts (such as a noun versus a reply button) are
 not automatically copied.
