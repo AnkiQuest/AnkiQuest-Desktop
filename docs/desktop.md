@@ -91,8 +91,8 @@ updated right after.
 
 ## Companion pictures
 
-The add-on's pictures (`addon/art/<name>.png` and the faces
-`addon/<companion>_face.png`) and Anki-tan's licence for hers
+The add-on's pictures (`addon/art/<name>.png`, faces included) and
+Anki-tan's licence for hers
 (`addon/art/LICENSE-Anki-tan.md`) are not committed. They come from the
 `addon-art.zip` asset of the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art)
 release that `ankiquest-art.json` pins, with its SHA-256. AnkiQuest-Sync

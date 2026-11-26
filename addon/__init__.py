@@ -188,7 +188,7 @@ state = {
     "password_answers": 0,
 }
 
-mw.addonManager.setWebExports(__name__, r"((aki|ankilope|anki_tan)_face|art/(aki|ankilope|anki_tan)_[a-z0-9_]+)\.png")
+mw.addonManager.setWebExports(__name__, r"art/(aki|ankilope|anki_tan|bluma)_[a-z0-9_]+\.png")
 
 
 def config():
@@ -823,8 +823,6 @@ def redraw():
 
 def on_deck_browser(deck_browser, content):
     api = client()
-    # The heatmap shows the companion even while the board below does not.
-    content.stats += board.companion_style(current_companion())
     if not api.configured:
         content.stats += board.welcome(tr)
         return
@@ -837,7 +835,8 @@ def on_deck_browser(deck_browser, content):
     page = state["activity"]
     waiting, actions = (page.unread, page.actions) if page is not None else (0, 0)
     companion = state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
-    mascot = None if companion == "none" else "/_addons/%s/%s_face.png" % (mw.addonManager.addonFromModule(__name__), moods.art_owner(companion))
+    face = moods.face(companion)
+    mascot = None if face is None else "/_addons/%s/art/%s.png" % (mw.addonManager.addonFromModule(__name__), face)
     today = home.today_view(deck_browser, companion)
     profile = today["profile"] if today is not None else home._profile_for_display(state["profile"])
     flame = today["flame"] if today is not None else home.streak_flame(profile)

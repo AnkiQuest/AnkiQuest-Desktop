@@ -6,7 +6,6 @@ addon/version.json
 /addon/art/
 /addon/poses.json
 /addon/*_face.png
-/addon/poses.json
 /art/
 # AnkiQuest-Server master's fixtures and examples, copied by
 # `package-addon server-data` before the tests run.
