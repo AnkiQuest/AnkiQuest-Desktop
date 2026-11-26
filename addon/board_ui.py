@@ -20,10 +20,10 @@ def _initial(name):
     painter = QPainter(picture)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     painter.setPen(Qt.PenStyle.NoPen)
-    painter.setBrush(QColor(board.AVATAR_COLOURS[sum(map(ord, name)) % len(board.AVATAR_COLOURS)]))
+    colour, ink = board.avatar_colours(name)
+    painter.setBrush(QColor(colour))
     painter.drawEllipse(0, 0, 32, 32)
-    # White initials read on the dark blue; the brighter colours get ink (#207).
-    painter.setPen(QColor(board.AVATAR_INKS[sum(map(ord, name)) % len(board.AVATAR_INKS)]))
+    painter.setPen(QColor(ink))
     painter.drawText(picture.rect(), Qt.AlignmentFlag.AlignCenter, board.initial(name))
     painter.end()
     return QIcon(picture)

@@ -38,12 +38,7 @@ def palettes(style):
     day = {}
     night = {}
     for selector, names in variables(style).items():
-        if selector.startswith(".nightMode"):
-            night.update(names)
-        else:
-            day.update(names)
-        apply = night if selector.startswith(".nightMode") else day
-        apply.update({name: value for name, value in names.items()})
+        (night if selector.startswith(".nightMode") else day).update(names)
     for name, value in day.items():
         night.setdefault(name, value)
     return day, night
@@ -115,6 +110,33 @@ class WebAccessibility(unittest.TestCase):
                     with self.subTest(mode=mode):
                         self.assertGreaterEqual(contrast(ink, palette[fill]), 4.5)
 
+    def test_bright_action_badges_carry_their_own_ink(self):
+        # The board button, the unread link and the heatmap's view button keep their bright
+        # fills; their text is the fill's own dark ink, so each reads (WCAG AA, 4.5:1).
+        day, night = palettes(board.STYLE)
+        for what, rule, fill, ink in (
+            ("the board button", r"#ankiquest .aq-button\{[^}]*\}", "--aq-green", "#23272e"),
+            ("the unread link", r"#ankiquest .aq-links a.aq-unread\{[^}]*\}", "--aq-blue", "#23272e"),
+        ):
+            with self.subTest(rule=what):
+                found = re.search(rule, board.STYLE)
+                self.assertIsNotNone(found, what)
+                colours = dict(re.findall(r"(background|color):([^;}]*)", found.group(0)))
+                self.assertEqual(fill, colours["background"].strip().replace("var(", "").rstrip(")"), what)
+                self.assertEqual(ink, colours["color"].strip(), what)
+                for mode, palette in (("day", day), ("night", night)):
+                    with self.subTest(mode=mode):
+                        self.assertGreaterEqual(contrast(ink, palette[fill]), 4.5)
+        heat_day, heat_night = palettes(heatmap_ui.STYLE)
+        view = re.search(r"#aq-heatmap .hm-view\{[^}]*\}", heatmap_ui.STYLE)
+        self.assertIsNotNone(view)
+        colours = dict(re.findall(r"(background|color):([^;}]*)", view.group(0)))
+        self.assertEqual("--hm-select", colours["background"].strip().replace("var(", "").rstrip(")"))
+        self.assertEqual("#23272e", colours["color"].strip())
+        for mode, palette in (("day", heat_day), ("night", heat_night)):
+            with self.subTest(mode=mode):
+                self.assertGreaterEqual(contrast("#23272e", palette["--hm-select"]), 4.5)
+
     def test_deck_row_day_badges_carry_their_own_ink(self):
         # A deck row's day badge tints the row with its colour and writes its text in
         # the colour's own ink: dark in day mode, lighter at night, both on the badge's tint.
@@ -139,7 +161,7 @@ class WebAccessibility(unittest.TestCase):
                     self.assertGreaterEqual(contrast(inks[status.replace("_", "-")], tint(colour, row)), 4.5)
 
     def test_avatar_initials_read_on_every_avatar_colour(self):
-        for colour, ink in zip(board.AVATAR_COLOURS, board.AVATAR_INKS):
+        for colour, ink in board.AVATAR_COLOURS:
             with self.subTest(colour=colour):
                 self.assertGreaterEqual(contrast(ink, colour), 4.5)
 

@@ -61,10 +61,18 @@ PERIOD_LABELS = (
 )
 MEDALS = {1: "👑", 2: "🥈", 3: "🥉"}
 STATUS_CLASS = {"done": "aq-done-today", "learning_later": "aq-learning-later"}
-AVATAR_COLOURS = ("#58cc02", "#1cb0f6", "#ff9600", "#ce82ff", "#ff4b4b", "#2b70c9", "#ffc800")
+# Each avatar colour with the ink its initial reads in: white on the dark blue, ink on the
+# rest (#207).
+AVATAR_COLOURS = (
+    ("#58cc02", "#23272e"), ("#1cb0f6", "#23272e"), ("#ff9600", "#23272e"), ("#ce82ff", "#23272e"),
+    ("#ff4b4b", "#23272e"), ("#2b70c9", "#ffffff"), ("#ffc800", "#23272e"),
+)
 
-# The ink an avatar's initial reads in on its colour: white on the dark blue, ink on the rest (#207).
-AVATAR_INKS = ("#23272e", "#23272e", "#23272e", "#23272e", "#23272e", "#ffffff", "#23272e")
+
+def avatar_colours(name):
+    """The colour and ink of `name`'s avatar: the name's characters pick them, so a name
+    always shows the same pair."""
+    return AVATAR_COLOURS[sum(map(ord, name)) % len(AVATAR_COLOURS)]
 _FRIENDS, _GLOBAL = "friends", "global"
 
 # The flame colours before today counts, as the phone's ankiquest_streak_flames_unlit.xml: at
@@ -127,7 +135,7 @@ background:var(--aq-bg);color:var(--aq-text);box-shadow:inset 0 0 0 2px var(--aq
 #ankiquest .aq-done-today{color:var(--aq-green-ink)}
 #ankiquest .aq-learning-later{color:var(--aq-orange-ink)}
 #ankiquest .aq-button{display:block;box-sizing:border-box;width:100%;margin:10px 0 0;padding:12px 16px;border:0;border-radius:14px;cursor:pointer;
-background:var(--aq-green);color:#fff;font-family:inherit;font-weight:800;font-size:15px;line-height:1;text-transform:uppercase;letter-spacing:.06em;
+background:var(--aq-green);color:#23272e;font-family:inherit;font-weight:800;font-size:15px;line-height:1;text-transform:uppercase;letter-spacing:.06em;
 box-shadow:0 4px 0 var(--aq-green-dark)}
 #ankiquest .aq-button:hover{filter:brightness(1.05)}
 #ankiquest .aq-button:active{transform:translateY(4px);box-shadow:none}
@@ -168,7 +176,7 @@ font-size:13px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);object-fit:cover}
 #ankiquest .aq-links a{text-decoration:none;font-weight:800;font-size:13px;color:var(--aq-blue-ink);background:var(--aq-bg);
 border:2px solid var(--aq-line);border-bottom-width:4px;border-radius:12px;padding:6px 12px}
 #ankiquest .aq-links a:hover{background:var(--aq-soft)}
-#ankiquest .aq-links a.aq-unread{background:var(--aq-blue);border-color:var(--aq-blue-dark);color:#fff}
+#ankiquest .aq-links a.aq-unread{background:var(--aq-blue);border-color:var(--aq-blue-dark);color:#23272e}
 </style>"""
 
 
@@ -550,8 +558,7 @@ def initial(name):
 
 
 def avatar(name):
-    colour = AVATAR_COLOURS[sum(map(ord, name)) % len(AVATAR_COLOURS)]
-    ink = AVATAR_INKS[sum(map(ord, name)) % len(AVATAR_INKS)]
+    colour, ink = avatar_colours(name)
     return "<span class=aq-avatar style='background:%s;color:%s'>%s</span>" % (colour, ink, escape(initial(name)))
 
 

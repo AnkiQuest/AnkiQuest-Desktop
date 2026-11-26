@@ -164,19 +164,30 @@ DECK_LINK = re.compile(r"(<a\b[^>]*?pycmd\('open:(\d+)'\)[^>]*>.*?</a>)", re.S)
 
 # The deck-row day badges' inks: the badge colours tint the row; the text is the same colour's
 # own ink, dark in day mode and lighter at night, as the palette inks are (WCAG AA, 4.5:1).
-BADGE_INKS = (
-    "<style>"
-    ".ankiquest-day.ankiquest-done{color:#276b00}"
-    ".ankiquest-day.ankiquest-learning-later{color:#5c3000}"
-    ".ankiquest-day.ankiquest-review-now{color:#0e5a87}"
-    ".nightMode .ankiquest-day.ankiquest-done,.night-mode .ankiquest-day.ankiquest-done,"
-    ".night_mode .ankiquest-day.ankiquest-done{color:#7ac70c}"
-    ".nightMode .ankiquest-day.ankiquest-learning-later,.night-mode .ankiquest-day.ankiquest-learning-later,"
-    ".night_mode .ankiquest-day.ankiquest-learning-later{color:#ffb257}"
-    ".nightMode .ankiquest-day.ankiquest-review-now,.night-mode .ankiquest-day.ankiquest-review-now,"
-    ".night_mode .ankiquest-day.ankiquest-review-now{color:#6ab7e8}"
-    "</style>"
-)
+# Done matches Android's aq_deck_green; the brighter ambers and blues keep the palette's inks,
+# which pass where Android's amber does not (4.43:1 on the tint).
+_BADGE_INK = {
+    DONE: ("#247743", "#8cd79e"),
+    LEARNING_LATER: ("#5c3000", "#ffb257"),
+    REVIEW_NOW: ("#0e5a87", "#6ab7e8"),
+}
+_NIGHT_PREFIXES = (".nightMode ", ".night-mode ", ".night_mode ")
+
+
+def _badge_inks():
+    """One day rule and one night rule per status, so a status of `BADGE_STYLE` can never
+    ship without its ink: the colours come from `_BADGE_INK`."""
+    day_rules = []
+    night_rules = []
+    for status, (day, night) in _BADGE_INK.items():
+        state = status.replace("_", "-")
+        day_rules.append(".ankiquest-day.ankiquest-%s{color:%s}" % (state, day))
+        selectors = ", ".join("%s.ankiquest-day.ankiquest-%s" % (prefix, state) for prefix in _NIGHT_PREFIXES)
+        night_rules.append("%s{color:%s}" % (selectors, night))
+    return "<style>%s%s</style>" % ("".join(day_rules), "".join(night_rules))
+
+
+BADGE_INKS = _badge_inks()
 
 
 def decorate(tree_html, days, translate=lambda value: value, show_time=clock):

@@ -68,7 +68,7 @@ font:600 13px/1.35 "Nunito","Varela Round","Segoe UI Variable Display","Segoe UI
 #aq-heatmap .hm-grid .sel{box-shadow:0 0 0 2px var(--hm-select)}
 #aq-heatmap .hm-day{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
 #aq-heatmap .hm-day span{flex:1}
-#aq-heatmap .hm-view{background:var(--hm-select);color:#fff;border:0;border-radius:999px;padding:4px 12px;font-weight:800}
+#aq-heatmap .hm-view{background:var(--hm-select);color:#23272e;border:0;border-radius:999px;padding:4px 12px;font-weight:800}
 </style>"""
 
 # Lays out one year; every colour, text and search was decided in Python.
