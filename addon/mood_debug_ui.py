@@ -25,7 +25,7 @@ class VersionLabel(QLabel):
 
 
 def dialog(parent, config, on_save):
-    """The mood and pose override (`mood_debug`) and its day limits, saved through `on_save`
+    """The mood and pose override (`mood_debug`) and its thresholds, saved through `on_save`
     into this add-on's config only. None when cancelled; the marker line follows the state."""
     kind, value = mood_debug.Override.read(config)
     window = QDialog(parent)
@@ -45,15 +45,16 @@ def dialog(parent, config, on_save):
     row.addWidget(override, 1)
     layout.addLayout(row)
 
-    group = QGroupBox(tr("Day limits (debug)"))
+    group = QGroupBox(tr("Mood thresholds"))
     group.setLayout(QVBoxLayout())
     fields = {}
     for name, label in (
-        ("hot_days", "Hot from (days):"),
-        ("blazing_days", "Blazing from (days):"),
-        ("legend_days", "Legend from (days):"),
-        ("frozen_2_days", "Frozen from (days):"),
-        ("frozen_3_days", "Deep-frozen from (days):"),
+        ("hopeful_reviews", "Reviews for hopeful (1 or more)"),
+        ("frozen_2_days", "Frozen days for frozen 2 (2 or more)"),
+        ("frozen_3_days", "Frozen days for frozen 3 (more than frozen 2)"),
+        ("hot_days", "Streak days for hot (2 or more)"),
+        ("blazing_days", "Streak days for blazing (more than hot)"),
+        ("legend_days", "Streak days for legend (more than blazing)"),
     ):
         field = QLineEdit(str(limits[name]))
         field.setObjectName("ankiquest_debug_" + name)
@@ -68,7 +69,7 @@ def dialog(parent, config, on_save):
     note.setWordWrap(True)
     layout.addWidget(note)
 
-    error = QLabel(tr("Not saved: each day limit must be above the one before it."))
+    error = QLabel(tr("Not saved: each threshold must be in range and above the one before it."))
     error.setObjectName("ankiquest_debug_limits_error")
     error.setWordWrap(True)
     error.hide()
