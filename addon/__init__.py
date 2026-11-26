@@ -1296,6 +1296,10 @@ def check_updates(quiet=True):
         return
     channel = config().get("update_channel", "stable")
 
+    from anki.utils import int_version
+
+    point = int_version()
+
     def done(future):
         try:
             candidate = future.result()
@@ -1303,14 +1307,19 @@ def check_updates(quiet=True):
             if not quiet:
                 failed(tr("AnkiQuest: could not check for updates (%s)"), e)
             return
-        if updates.newer(candidate, current) and not updates.refused(mw.pm.profile, candidate):
-            offer_update(candidate)
-        elif not quiet:
-            tooltip(tr("AnkiQuest is up to date (%s).") % updates.label(current))
+        if not updates.newer(candidate, current):
+            if not quiet:
+                tooltip(tr("AnkiQuest is up to date (%s).") % updates.label(current))
+            return
+        if updates.refused(mw.pm.profile, candidate, point):
+            # A remembered refusal keeps quiet checks silent, but a manual check says
+            # why nothing is offered instead of claiming to be up to date.
+            if not quiet:
+                tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
+            return
+        offer_update(candidate, point)
 
-    from anki.utils import int_version
-
-    mw.taskman.run_in_background(lambda: updates.available(channel, int_version()), done)
+    mw.taskman.run_in_background(lambda: updates.available(channel, point), done)
 
 
 def maybe_check_updates():
@@ -1323,7 +1332,7 @@ def maybe_check_updates():
     check_updates(quiet=True)
 
 
-def offer_update(candidate):
+def offer_update(candidate, point):
     from aqt.utils import askUser
 
     if not askUser(tr("%s is available. Install it now? Anki needs a restart afterwards.") % updates.label(candidate)):
@@ -1336,12 +1345,12 @@ def offer_update(candidate):
         except Exception as e:
             failed(tr("AnkiQuest: could not download the update (%s)"), e)
             return
-        install_update(path, candidate)
+        install_update(path, candidate, point)
 
     mw.taskman.run_in_background(lambda: updates.download(candidate["url"], target), done)
 
 
-def install_update(path, candidate):
+def install_update(path, candidate, point):
     from aqt.addons import AddonMeta, InstallError
     from aqt.utils import showInfo
     from zipfile import BadZipFile, ZipFile
@@ -1355,7 +1364,7 @@ def install_update(path, candidate):
         manifest = {}
     if manifest and not AddonMeta.from_json_meta(manifest["package"], manifest).compatible():
         # Remember it, so the check stops offering this build until a newer one appears.
-        updates.remember_refused(mw.pm.profile, candidate)
+        updates.remember_refused(mw.pm.profile, candidate, point)
         tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
         return
 

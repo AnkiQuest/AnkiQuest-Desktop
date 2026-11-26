@@ -6,6 +6,7 @@ from http import HTTPStatus
 import unittest
 from pathlib import Path
 from unittest.mock import Mock
+from zipfile import ZipFile
 
 from addon_loader import ANKI_VERSION, load_in_package
 import test_deck_completion as fixture
@@ -196,12 +197,8 @@ class UpdateOwnership(unittest.TestCase):
             self.installed(folder)
             self.addon.updates.SOURCE = self.addon.updates.UpdateSource.GITHUB
             self.addon.maybe_check_updates()
-            self.addon.updates.available.assert_called_once_with("stable", ANKI_VERSION)
+            self.addon.updates.available.assert_called_once_with("stable", ANKI_23_10)
             self.addon.offer_update.assert_called_once()
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class RefusedUpdates(unittest.TestCase):
@@ -210,18 +207,26 @@ class RefusedUpdates(unittest.TestCase):
     def test_an_incompatible_build_is_remembered_until_another_appears(self):
         profile = {}
         refused = {"release": 16, "nightly": 0, "commit": "abc"}
-        updates.remember_refused(profile, refused)
-        self.assertTrue(updates.refused(profile, refused))
+        updates.remember_refused(profile, refused, ANKI_23_10)
+        self.assertTrue(updates.refused(profile, refused, ANKI_23_10))
         # Another candidate is still offered: only the build that failed is remembered.
-        self.assertFalse(updates.refused(profile, {"release": 17, "nightly": 0, "commit": "abc"}))
-        self.assertFalse(updates.refused(profile, {"release": 16, "nightly": 1, "commit": "abc"}))
-        updates.remember_refused(profile, {"release": 17, "nightly": 0, "commit": "abc"})
-        self.assertFalse(updates.refused(profile, refused))
+        self.assertFalse(updates.refused(profile, {"release": 17, "nightly": 0, "commit": "abc"}, ANKI_23_10))
+        self.assertFalse(updates.refused(profile, {"release": 16, "nightly": 1, "commit": "abc"}, ANKI_23_10))
+        updates.remember_refused(profile, {"release": 17, "nightly": 0, "commit": "abc"}, ANKI_23_10)
+        self.assertFalse(updates.refused(profile, refused, ANKI_23_10))
+
+    def test_upgrading_anki_offers_the_refused_build_again(self):
+        profile = {}
+        refused = {"release": 16, "nightly": 0, "commit": ""}
+        updates.remember_refused(profile, refused, ANKI_23_10)
+        self.assertTrue(updates.refused(profile, refused, ANKI_23_10))
+        # The refusal outlived its reason: Anki 24.11 can run it, so it is offered again.
+        self.assertFalse(updates.refused(profile, refused, ANKI_24_11))
 
     def test_without_a_remembered_build_nothing_is_refused(self):
-        self.assertFalse(updates.refused({}, {"release": 16, "nightly": 0, "commit": ""}))
-        self.assertFalse(updates.refused({"ankiquestUpdateRefused": (16, 1, "abc")}, {"release": 16, "nightly": 0, "commit": ""}))
-        self.assertFalse(updates.refused({}, None))
+        self.assertFalse(updates.refused({}, {"release": 16, "nightly": 0, "commit": ""}, ANKI_23_10))
+        self.assertFalse(updates.refused({"ankiquestUpdateRefused": (16, 1, "abc")}, {"release": 16, "nightly": 0, "commit": ""}, ANKI_23_10))
+        self.assertFalse(updates.refused({}, None, ANKI_23_10))
 
 
 class RefusedOffering(unittest.TestCase):
@@ -240,15 +245,23 @@ class RefusedOffering(unittest.TestCase):
         return candidate
 
     def confirm_incompatible(self, candidate):
-        # Anki's installer would find the package needs a newer Anki: the shipped guard shows its
-        # tooltip and keeps the installed add-on.
+        # Anki's installer would find the package needs a newer Anki: the shipped guard reads
+        # the manifest out of a real package, shows its tooltip and keeps the installed add-on.
         self.addon.mw.addonManager.readManifestFile = Mock(return_value={
-            "package": "ankiquest", "min_point_version": 99,
+            "package": "ankiquest",
+            "min_point_version": ANKI_24_11,
         })
         self.addon.mw.addonManager.install = Mock()
-        self.addon.install_update("nowhere.ankiaddon", candidate)
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "update.ankiaddon"
+            with ZipFile(path, "w") as archive:
+                archive.writestr("manifest.json", "{}")
+            self.addon.install_update(str(path), candidate, ANKI_23_10)
         self.addon.tooltip.assert_called_once()
         self.addon.mw.addonManager.install.assert_not_called()
+
+    def check(self, quiet):
+        self.addon.check_updates(quiet=quiet)
 
     def test_an_incompatible_build_is_downloaded_and_complained_about_once(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -264,10 +277,35 @@ class RefusedOffering(unittest.TestCase):
             self.addon.tooltip.reset_mock()
             self.addon.maybe_check_updates()
             self.addon.offer_update.assert_not_called()
-            self.assertTrue(updates.refused(self.addon.mw.pm.profile, candidate))
+            self.assertTrue(updates.refused(self.addon.mw.pm.profile, candidate, ANKI_23_10))
 
             # A newer build is offered again.
+            self.addon.mw.pm.profile[self.addon.UPDATE_CHECK_KEY] = 0
             newer = dict(candidate, release=17)
             self.addon.updates.available = Mock(return_value=newer)
             self.addon.maybe_check_updates()
             self.addon.offer_update.assert_called_once()
+
+    def test_a_manual_check_on_a_refused_build_says_why(self):
+        with tempfile.TemporaryDirectory() as folder:
+            candidate = self.installed(folder, 16)
+            self.addon.updates.SOURCE = self.addon.updates.UpdateSource.GITHUB
+            self.addon.maybe_check_updates()
+            self.addon.offer_update.assert_called_once()
+            self.confirm_incompatible(candidate)
+
+            # A quiet check stays silent.
+            self.addon.offer_update.reset_mock()
+            self.addon.tooltip.reset_mock()
+            self.check(quiet=True)
+            self.addon.offer_update.assert_not_called()
+            self.addon.tooltip.assert_not_called()
+
+            # A manual check never claims to be up to date: the newer build still exists.
+            self.check(quiet=False)
+            self.addon.offer_update.assert_not_called()
+            self.assertIn("incompatible", self.addon.tooltip.call_args[0][0])
+
+
+if __name__ == "__main__":
+    unittest.main()
