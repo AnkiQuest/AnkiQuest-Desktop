@@ -3,18 +3,20 @@
 A modifier-click on the version label in the add-on's settings opens the menu. The choice is
 kept in this add-on's config only (`debug_mood`), never sent to the server: no upload touches
 the key and the shared-settings sync leaves unknown local keys alone. The thresholds below
-move the poses' day limits the same way; `moods` owns the defaults so the pinned streak-mood
-fixtures do not.
+move the hopeful review count and the poses' day limits the same way; `moods` owns the defaults
+so the pinned streak-mood fixtures do not.
 """
 
 from enum import Enum, auto
 from . import moods
 
-# The thresholds the debug menu can move, with the values the rules use (the day each streak
-# pose starts at, and the frozen days in a row each frozen mood needs). `moods` owns the same
-# numbers for computed moods; the keys name them for the menu.
-THRESHOLDS = ("hot_days", "blazing_days", "legend_days", "frozen_2_days", "frozen_3_days")
+# The thresholds the debug menu can move, in the Android menu's order, with the values the
+# rules use (the reviews that make today hopeful, the day each streak pose starts at, and the
+# frozen days in a row each frozen mood needs). `moods` owns the same numbers for computed
+# moods; the keys name them for the menu.
+THRESHOLDS = ("hopeful_reviews", "frozen_2_days", "frozen_3_days", "hot_days", "blazing_days", "legend_days")
 DEFAULT_THRESHOLDS = {
+    "hopeful_reviews": 1,
     "hot_days": 7,
     "blazing_days": 30,
     "legend_days": 100,
@@ -92,15 +94,17 @@ def marker(kind):
 
 
 def ordered(limits):
-    """Whether the day limits keep the order the moods need, as the Android menu checks:
-    each streak pose after the one before it, and frozen 3 past frozen 2."""
-    return (limits["hot_days"] < limits["blazing_days"] < limits["legend_days"]
-            and limits["frozen_2_days"] < limits["frozen_3_days"])
+    """Whether the thresholds keep the order the moods need, as the Android menu checks:
+    one review or more for hopeful, each streak pose after the one before it, and frozen 3
+    past frozen 2."""
+    return (limits["hopeful_reviews"] >= 1
+            and 2 <= limits["frozen_2_days"] < limits["frozen_3_days"]
+            and 2 <= limits["hot_days"] < limits["blazing_days"] < limits["legend_days"])
 
 
 def thresholds(config):
-    """The day limits the poses use, from `config` where the menu moved them; whole numbers
-    one and up, else that limit keeps its rule value."""
+    """The thresholds the moods use, from `config` where the menu moved them; whole numbers
+    one and up, else that threshold keeps its rule value."""
     moved = {}
     stored = (config or {}).get("debug_thresholds") or {}
     for name in THRESHOLDS:
