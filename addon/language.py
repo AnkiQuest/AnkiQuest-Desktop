@@ -2565,7 +2565,7 @@ GERMAN.update({
     "Optimize All Presets is in the FSRS section of deck options.": "„Alle Voreinstellungen optimieren“ findest du im FSRS-Abschnitt der Stapeloptionen.",
     "Open deck options": "Stapeloptionen öffnen",
     "Remind me in a week": "In einer Woche erinnern",
-    "Remind me to optimize presets": "An das Optimieren der Voreinstellungen erinnern",
+    "Remind me to optimize presets": "Erinnern, Voreinstellungen zu optimieren",
     "When Optimize All Presets last ran at least 30 days and 1,000 reviews ago": "Wenn „Alle Voreinstellungen optimieren“ zuletzt vor mindestens 30 Tagen und 1.000 Wiederholungen lief",
 })
 FRENCH.update({
