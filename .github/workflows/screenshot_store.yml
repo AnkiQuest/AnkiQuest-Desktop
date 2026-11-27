@@ -1,0 +1,61 @@
+# Do not rename: .github/screenshot_baseline.cjs looks for this file's runs.
+#
+# Stores the add-on screenshots of each master commit as the
+# screenshot-baseline artifact. CI's Screenshots job compares a pull
+# request, a merge group or a push with the baseline of the exact commit it
+# is based on, and only accepts this workflow's push and dispatch runs, so
+# no pull request can write a baseline. Run it by hand (Run workflow) on a
+# branch at a commit whose baseline expired.
+name: Store screenshot baseline
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions: {}
+
+# Every master commit needs its own baseline: no run cancels another.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  store:
+    name: Store
+    # The pictures are drawn by this Ubuntu and the Qt of the 26.9.4 requirements.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: tests/requirements-anki-26.9.4.txt
+      - name: Install Anki and Qt
+        run: |
+          bash .github/scripts/ubuntu-archive.sh
+          sudo apt-get install -y -qq libegl1 libgl1 libxkbcommon0 libfontconfig1 libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxkbfile1 libasound2t64
+          python -m pip install -r tests/requirements-anki-26.9.4.txt
+      - name: Fetch the companion pictures
+        run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
+      - name: Draw the screenshots
+        env:
+          ANKIQUEST_SCREENSHOTS_DIR: ${{ runner.temp }}/baseline
+        run: python tests/draw_screenshots.py -v
+      - name: Upload the baseline
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: screenshot-baseline
+          path: ${{ runner.temp }}/baseline/
+          retention-days: 90
+          if-no-files-found: error

@@ -63,7 +63,7 @@ def ask(parent, account):
 
     # Picture, title and text, in Android's order.
     image = QLabel()
-    image.setPixmap(companion_art.pixmap(companion_art.pose_path(IMAGE), "aki", IMAGE_SIZE))
+    image.setPixmap(companion_art.pixmap(companion_art.pose_path(IMAGE), IMAGE_SIZE))
     image.setAlignment(Qt.AlignmentFlag.AlignCenter)
     image.setAccessibleName(tr("Aki waving hello"))
     layout.addWidget(image)

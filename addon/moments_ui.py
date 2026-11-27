@@ -414,7 +414,7 @@ class _Card:
         pose = moments._pose(item, companion)
         self._art.setVisible(pose is not None)
         if pose is not None:
-            self._art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), companion, 112))
+            self._art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), 112))
         self._session_fields()
         while self._actions.count():
             self._actions.takeAt(0).widget().deleteLater()

@@ -83,7 +83,7 @@ def _card(companion, progress=None):
     poses = QHBoxLayout()
     for index, pose in enumerate(moods.preview(companion)):
         image = QLabel()
-        picture = companion_art.pixmap(companion_art.pose_path(pose), companion, FACE_PX if index == 0 else POSE_PX)
+        picture = companion_art.pixmap(companion_art.pose_path(pose), FACE_PX if index == 0 else POSE_PX)
         image.setPixmap(companion_art.silhouette(picture) if progress is not None else picture)
         poses.addWidget(image, 0, Qt.AlignmentFlag.AlignBottom)
     if poses.count() == 0:
@@ -143,7 +143,7 @@ def _today(companion, mood, streak, marker=None):
         art.setObjectName(TODAY_ART)
         art.setProperty("companion", companion)
         art.setProperty("pose", pose)
-        art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), companion, TODAY_PX))
+        art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), TODAY_PX))
         art.setAlignment(Qt.AlignmentFlag.AlignCenter)
         art.setFixedSize(round(TODAY_PX * POP_ROOM), round(TODAY_PX * POP_ROOM))
         layout.addWidget(art, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -294,7 +294,7 @@ class Picker:
     def _become(self, art, base, chibi):
         """Swaps the picture for the chibi's, popping in unless motion is reduced."""
         pose = _chibi_pose(art.property("pose"), base, chibi)
-        picture = companion_art.pixmap(companion_art.pose_path(pose), chibi, TODAY_PX)
+        picture = companion_art.pixmap(companion_art.pose_path(pose), TODAY_PX)
         art.setProperty("companion", chibi)
         art.setProperty("pose", pose)
         if self._motion == Motion.REDUCED:

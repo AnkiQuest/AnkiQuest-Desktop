@@ -6,6 +6,7 @@ from http import HTTPStatus
 import unittest
 from pathlib import Path
 from unittest.mock import Mock
+from zipfile import ZipFile
 
 from addon_loader import ANKI_VERSION, load_in_package
 import test_deck_completion as fixture
@@ -107,6 +108,26 @@ class UpdateTests(unittest.TestCase):
         self.assertIn(manifest["min_point_version"], [build.minimum for build in updates.BUILDS])
         self.assertEqual(sorted(updates.BUILDS, reverse=True), list(updates.BUILDS), "newest minimum first")
 
+    def test_releases_publish_the_build_for_the_manifest_minimum(self):
+        # Copies older than the bridge release read only the legacy names; they must never get
+        # a build their Anki cannot load, so new builds use the names of their own minimum.
+        root = Path(__file__).resolve().parents[1]
+        manifest = json.loads((root / "addon/manifest.json").read_text("utf-8"))
+        build = next(build for build in updates.BUILDS if build.minimum == manifest["min_point_version"])
+        workflow = (root / ".github/workflows/addon.yml").read_text("utf-8")
+        self.assertIn("--output %s" % build.package, workflow)
+        self.assertIn("--metadata %s" % build.metadata, workflow)
+        self.assertIn('gh release create "$GITHUB_REF_NAME" %s ' % build.package, workflow)
+        legacy = updates.BUILDS[-1]
+        nightly = workflow.split("      - name: Publish nightly\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("tag: addon-nightly", nightly)
+        files = nightly.split("          files: |\n", 1)[1].splitlines()
+        self.assertEqual(
+            {build.package, build.metadata, "ankiquest-ankiweb.ankiaddon",
+             "legacy/" + legacy.package, "legacy/" + legacy.metadata},
+            {line.strip() for line in files if line.startswith("            ")},
+        )
+
     def test_newer_orders_release_then_nightly_and_never_updates_a_local_copy(self):
         stable10 = {"release": 10, "nightly": 0}
         nightly10 = {"release": 10, "nightly": 2}
@@ -196,8 +217,114 @@ class UpdateOwnership(unittest.TestCase):
             self.installed(folder)
             self.addon.updates.SOURCE = self.addon.updates.UpdateSource.GITHUB
             self.addon.maybe_check_updates()
-            self.addon.updates.available.assert_called_once_with("stable", ANKI_VERSION)
+            self.addon.updates.available.assert_called_once_with("stable", ANKI_23_10)
             self.addon.offer_update.assert_called_once()
+
+
+class RefusedUpdates(unittest.TestCase):
+    """A build found incompatible is remembered: not downloaded and not offered again."""
+
+    def test_an_incompatible_build_is_remembered_until_another_appears(self):
+        profile = {}
+        refused = {"release": 16, "nightly": 0, "commit": "abc"}
+        updates.remember_refused(profile, refused, ANKI_23_10)
+        self.assertTrue(updates.refused(profile, refused, ANKI_23_10))
+        # Another candidate is still offered: only the build that failed is remembered.
+        self.assertFalse(updates.refused(profile, {"release": 17, "nightly": 0, "commit": "abc"}, ANKI_23_10))
+        self.assertFalse(updates.refused(profile, {"release": 16, "nightly": 1, "commit": "abc"}, ANKI_23_10))
+        updates.remember_refused(profile, {"release": 17, "nightly": 0, "commit": "abc"}, ANKI_23_10)
+        self.assertFalse(updates.refused(profile, refused, ANKI_23_10))
+
+    def test_upgrading_anki_offers_the_refused_build_again(self):
+        profile = {}
+        refused = {"release": 16, "nightly": 0, "commit": ""}
+        updates.remember_refused(profile, refused, ANKI_23_10)
+        self.assertTrue(updates.refused(profile, refused, ANKI_23_10))
+        # The refusal outlived its reason: Anki 24.11 can run it, so it is offered again.
+        self.assertFalse(updates.refused(profile, refused, ANKI_24_11))
+
+    def test_without_a_remembered_build_nothing_is_refused(self):
+        self.assertFalse(updates.refused({}, {"release": 16, "nightly": 0, "commit": ""}, ANKI_23_10))
+        self.assertFalse(updates.refused({"ankiquestUpdateRefused": (16, 1, "abc")}, {"release": 16, "nightly": 0, "commit": ""}, ANKI_23_10))
+        self.assertFalse(updates.refused({}, None, ANKI_23_10))
+
+
+class RefusedOffering(unittest.TestCase):
+    setUp = fixture.RefreshTests.setUp
+    run_task = fixture.RefreshTests.run_task
+    read_rows = fixture.RefreshTests.read_rows
+    write_config = fixture.RefreshTests.write_config
+
+    def installed(self, folder, tag):
+        (Path(folder) / "version.json").write_text(json.dumps({"release": 11, "nightly": 0}), "utf-8")
+        self.addon.ADDON_DIR = Path(folder)
+        candidate = {"release": tag, "nightly": 0, "commit": "abc", "url": "u"}
+        self.addon.updates.available = Mock(return_value=candidate)
+        self.addon.updates.download = Mock()
+        self.addon.offer_update = Mock()
+        return candidate
+
+    def confirm_incompatible(self, candidate):
+        # Anki's installer would find the package needs a newer Anki: the shipped guard reads
+        # the manifest out of a real package, shows its tooltip and keeps the installed add-on.
+        self.addon.mw.addonManager.readManifestFile = Mock(return_value={
+            "package": "ankiquest",
+            "min_point_version": ANKI_24_11,
+        })
+        self.addon.mw.addonManager.install = Mock()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "update.ankiaddon"
+            with ZipFile(path, "w") as archive:
+                archive.writestr("manifest.json", "{}")
+            self.addon.install_update(str(path), candidate, ANKI_23_10)
+        self.addon.tooltip.assert_called_once()
+        self.addon.mw.addonManager.install.assert_not_called()
+
+    def check(self, quiet):
+        self.addon.check_updates(quiet=quiet)
+
+    def test_an_incompatible_build_is_downloaded_and_complained_about_once(self):
+        with tempfile.TemporaryDirectory() as folder:
+            candidate = self.installed(folder, 16)
+            self.addon.updates.SOURCE = self.addon.updates.UpdateSource.GITHUB
+            self.addon.maybe_check_updates()
+            self.addon.offer_update.assert_called_once()
+            self.confirm_incompatible(candidate)
+
+            # The next day's check finds the same candidate and skips it entirely.
+            self.addon.mw.pm.profile[self.addon.UPDATE_CHECK_KEY] = 0
+            self.addon.offer_update.reset_mock()
+            self.addon.tooltip.reset_mock()
+            self.addon.maybe_check_updates()
+            self.addon.offer_update.assert_not_called()
+            self.assertTrue(updates.refused(self.addon.mw.pm.profile, candidate, ANKI_23_10))
+
+            # A newer build is offered again.
+            self.addon.mw.pm.profile[self.addon.UPDATE_CHECK_KEY] = 0
+            newer = dict(candidate, release=17)
+            self.addon.updates.available = Mock(return_value=newer)
+            self.addon.maybe_check_updates()
+            self.addon.offer_update.assert_called_once()
+
+    def test_a_manual_check_on_a_refused_build_says_why(self):
+        with tempfile.TemporaryDirectory() as folder:
+            candidate = self.installed(folder, 16)
+            self.addon.updates.SOURCE = self.addon.updates.UpdateSource.GITHUB
+            self.addon.maybe_check_updates()
+            self.addon.offer_update.assert_called_once()
+            self.confirm_incompatible(candidate)
+
+            # A quiet check stays silent.
+            self.addon.offer_update.reset_mock()
+            self.addon.tooltip.reset_mock()
+            self.check(quiet=True)
+            self.addon.offer_update.assert_not_called()
+            self.addon.tooltip.assert_not_called()
+
+            # A manual check never claims to be up to date: the newer build still exists.
+            self.check(quiet=False)
+            self.addon.offer_update.assert_not_called()
+            self.assertIn("incompatible", self.addon.tooltip.call_args[0][0])
 
 
 if __name__ == "__main__":

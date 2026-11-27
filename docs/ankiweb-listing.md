@@ -14,8 +14,8 @@ AnkiQuest — study progress, streaks and friends
 
 Give your regular Anki study sessions a little company. AnkiQuest adds a
 study companion, XP, streaks, daily goals, quests and optional social features
-to Anki. It works with Anki 23.10 or newer using Qt 6.
-Use a current Anki release for everyday study; 23.10 is the compatibility floor.
+to Anki. It works with Anki 24.11 or newer using Qt 6.
+Use a current Anki release for everyday study; 24.11 is the compatibility floor.
 
 - **Today:** see your study progress, next deck, streak status and daily goal
   under the deck list.
@@ -63,17 +63,15 @@ your account.
 
 ## Screenshots and captions
 
-**Today:** your companion, streak status, next deck and progress in Anki.
+The pictures are `desktop-today-light.png`, `desktop-progress.png` and
+`desktop-inbox.png` from the [latest master baseline](https://github.com/AnkiQuest/AnkiQuest-Desktop/actions/workflows/screenshot_store.yml?query=branch%3Amaster)
+(the `screenshot-baseline` artifact); they are not committed.
 
-![AnkiQuest Today](screenshots/desktop-today-light.png)
+**Today** (`desktop-today-light.png`): your companion, streak status, next deck and progress in Anki.
 
-**Progress:** a native history window with the server's study-day states.
+**Progress** (`desktop-progress.png`): a native history window with the server's study-day states.
 
-![AnkiQuest Progress](screenshots/desktop-progress.png)
-
-**Inbox:** messages and actions in a native window.
-
-![AnkiQuest Inbox](screenshots/desktop-inbox.png)
+**Inbox** (`desktop-inbox.png`): messages and actions in a native window.
 
 ## Updating the listing
 
@@ -86,8 +84,12 @@ your account.
 4. Download with Anki's **Get Add-ons** code, check the installed version,
    open Settings, and use **Check for Updates** to verify update ownership.
 
-The listing embeds the three screenshots from a pinned public GitHub
-commit. Update those URLs when the pictured screens change. AnkiWeb's
+The listing embeds the three screenshots by public URL. The current ones
+point at a commit from before the screenshots left the repository. When
+the pictured screens change, attach the three files from the baseline of
+the released commit to that version's GitHub release
+(`gh release upload addon-<n> desktop-today-light.png desktop-progress.png desktop-inbox.png`)
+and point the listing at their release download URLs. AnkiWeb's
 package conflicts with `ankiquest`; GitHub's package conflicts with
 `414948448`. Anki preserves disabled installations on update. Remove the
 other copy before switching channels, restart, and sign in to the same

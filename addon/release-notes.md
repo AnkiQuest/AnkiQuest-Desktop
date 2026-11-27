@@ -1,6 +1,6 @@
 The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on the same account as [AnkiQuest for Android](https://github.com/AnkiQuest/AnkiQuest-Android).
 
-**Study companion.** Choose your study companion under Settings → Account. Ankilope joins you when you reach a level, with a short reveal; "Reduce motion" under App and privacy shows a fade instead. Anki-tan joins the companions, earned with a 66-day streak. Aki greets you once after you install or update the add-on. Your companion's pose follows your streak: asleep, happy, on fire, sad, hopeful, frozen or neglected.
+**Study companion.** Choose your study companion under Settings → Account. Ankilope joins you when you reach a level, with a short reveal; "Reduce motion" under App and privacy shows a fade instead. Anki-tan joins the companions, earned with a 66-day streak. Aki greets you once after you install or update the add-on. Your companion's pose follows your streak: asleep, happy, on fire, sad, hopeful, frozen or neglected. Bluma and Anki-tan show their own drawn poses, Bluma's face included, and Ankilope shows her own streak pose; moments with no picture of their own show a full pose, not the face.
 
 **Today.** The streak flame stays unlit until today counts. Friends' study stays hidden until you upload your first reviews. Between Monday and the weekly board's switch, the XP already counting for next week is shown.
 
@@ -26,7 +26,7 @@ The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on th
 
 **Rate and report.** Tools → AnkiQuest ends with Rate AnkiQuest (on AnkiWeb or GitHub), AnkiQuest changelog, which shows these notes, and Report a bug. Settings credits Shigeyuki for Anki-tan.
 
-**Updates.** The next add-on versions need Anki 24.11 or newer. On an older Anki, the GitHub download keeps this version and stops offering newer ones, instead of installing one that would not load. An update your Anki cannot load also keeps the add-ons you have installed.
+**Anki 24.11.** This version needs Anki 24.11 or newer. On Anki 23.10, the GitHub updater continues to serve [addon-15](https://github.com/AnkiQuest/AnkiQuest-Desktop/releases/tag/addon-15).
 
 **Fixes.** A review on a freeze-protected day counts toward today instead of reading "not studied yet".
 
