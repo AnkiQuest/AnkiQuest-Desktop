@@ -86,27 +86,27 @@ class Thresholds(unittest.TestCase):
         limits = debug.thresholds({"debug_thresholds": {"hopeful_reviews": 3}})
         self.assertEqual(3, limits["hopeful_reviews"])
         # Below the moved count the day stays before hopeful, in every state.
-        self.assertEqual(moods.ASLEEP, moods.streak_mood(moods.SHORT, 2, moods.Stage.STARTED, 0, 0, moods.Goal.OPEN, limits))
-        self.assertEqual(moods.SAD, moods.streak_mood(moods.SHORT, 2, moods.Stage.HALF, 2, 0, moods.Goal.OPEN, limits))
-        self.assertEqual(moods.ASLEEP, moods.streak_mood(moods.SHORT, 2, moods.Stage.THREE_QUARTERS, 0, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.ASLEEP, moods.streak_mood(moods.SHORT, 2, moods.Stage.STARTED, 0, 0, moods.Goal.OPEN, thresholds=limits))
+        self.assertEqual(moods.SAD, moods.streak_mood(moods.SHORT, 2, moods.Stage.HALF, 2, 0, moods.Goal.OPEN, thresholds=limits))
+        self.assertEqual(moods.ASLEEP, moods.streak_mood(moods.SHORT, 2, moods.Stage.THREE_QUARTERS, 0, 0, moods.Goal.OPEN, thresholds=limits))
         # Reaching it counts as half way to the minimum, whatever the clock says.
-        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.STARTED, 0, 0, moods.Goal.OPEN, limits))
-        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.QUARTER, 2, 0, moods.Goal.OPEN, limits))
-        self.assertEqual(moods.ALMOST, moods.streak_mood(moods.SHORT, 3, moods.Stage.THREE_QUARTERS, 2, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.STARTED, 0, 0, moods.Goal.OPEN, thresholds=limits))
+        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.QUARTER, 2, 0, moods.Goal.OPEN, thresholds=limits))
+        self.assertEqual(moods.ALMOST, moods.streak_mood(moods.SHORT, 3, moods.Stage.THREE_QUARTERS, 2, 0, moods.Goal.OPEN, thresholds=limits))
         # A frozen day falls back to the frozen mood below the count, and thaws at it.
-        self.assertEqual(moods.FROZEN_1, moods.streak_mood(moods.SHORT, 2, moods.Stage.STARTED, 2, 1, moods.Goal.OPEN, limits))
-        self.assertEqual(moods.THAWING, moods.streak_mood(moods.SHORT, 2, moods.Stage.HALF, 2, 1, moods.Goal.OPEN, limits))
-        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.STARTED, 2, 1, moods.Goal.OPEN, limits))
-        self.assertEqual(moods.ALMOST, moods.streak_mood(moods.SHORT, 3, moods.Stage.THREE_QUARTERS, 2, 1, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.FROZEN_1, moods.streak_mood(moods.SHORT, 2, moods.Stage.STARTED, 2, 1, moods.Goal.OPEN, thresholds=limits))
+        self.assertEqual(moods.THAWING, moods.streak_mood(moods.SHORT, 2, moods.Stage.HALF, 2, 1, moods.Goal.OPEN, thresholds=limits))
+        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 3, moods.Stage.STARTED, 2, 1, moods.Goal.OPEN, thresholds=limits))
+        self.assertEqual(moods.ALMOST, moods.streak_mood(moods.SHORT, 3, moods.Stage.THREE_QUARTERS, 2, 1, moods.Goal.OPEN, thresholds=limits))
         # A counted day or a reached goal stays fire, whatever the count says.
-        self.assertEqual(moods.FIRE, moods.streak_mood(moods.STUDIED, 0, moods.Stage.STARTED, 2, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.FIRE, moods.streak_mood(moods.STUDIED, 0, moods.Stage.STARTED, 2, 0, moods.Goal.OPEN, thresholds=limits))
         self.assertEqual(moods.FIRE, moods.streak_mood(moods.SHORT, 0, moods.Stage.STARTED, 2, 0, moods.Goal.REACHED, limits))
 
     def test_an_unmoved_count_leaves_the_rule_stages_alone(self):
         # One shared review still means hopeful, so the pinned streak-mood fixtures keep passing.
         limits = debug.thresholds({})
-        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 1, moods.Stage.HALF, 2, 0, moods.Goal.OPEN, limits))
-        self.assertEqual(moods.SAD, moods.streak_mood(moods.SHORT, 0, moods.Stage.QUARTER, 2, 0, moods.Goal.OPEN, limits))
+        self.assertEqual(moods.HOPEFUL, moods.streak_mood(moods.SHORT, 1, moods.Stage.HALF, 2, 0, moods.Goal.OPEN, thresholds=limits))
+        self.assertEqual(moods.SAD, moods.streak_mood(moods.SHORT, 0, moods.Stage.QUARTER, 2, 0, moods.Goal.OPEN, thresholds=limits))
 
     def test_edited_limits_change_where_the_hotter_poses_start(self):
         limits = debug.thresholds({"debug_thresholds": {"hot_days": 2, "blazing_days": 3, "legend_days": 4}})

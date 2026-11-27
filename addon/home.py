@@ -155,6 +155,23 @@ def _served_goal(profile):
     return moods.Goal.REACHED if served is True else moods.Goal.OPEN
 
 
+def _local_time(ms):
+    return datetime.fromtimestamp(ms / 1000).strftime("%H:%M")
+
+
+def night_inputs(view):
+    """The night rule's inputs for a displayed profile (moods.Night); None when the collection
+    cannot be read, which leaves the night rule out."""
+    try:
+        rollover = int(mw.col.get_config("rollover", 4))
+        now = now_ms()
+        first = today.first_reviews(mw.col, now, offset_west_min(), rollover, moods.RECENT_DAYS, _local_time)
+    except Exception as e:
+        print("ankiquest night:", e)
+        return None
+    return moods.Night(_local_time(now), rollover, first, moods.yesterday((view or {}).get("heatmap")))
+
+
 def _debug():
     """The debug override and thresholds of this add-on's config (mood_debug): a local choice
     the server never sees."""
@@ -169,8 +186,8 @@ def today_mood():
     profile = addon().state["profile"]
     view = _profile_for_display(profile)
     kind, value, limits = _debug()
-    shown = mood_debug.mood(moods.today_mood(view, _served_goal(profile), limits), kind, value)
-    return shown, int((view or {}).get("streak") or 0)
+    mood = moods.today_mood(view, _served_goal(profile), night_inputs(view), now_ms(), thresholds=limits)
+    return mood_debug.mood(mood, kind, value), int((view or {}).get("streak") or 0)
 
 
 def mood_marker():
@@ -188,8 +205,8 @@ def streak_flame(view):
     """The flame beside the streak length of a displayed profile, with the server's goal, for
     when the collection cannot be read; the Today panel's comes with today_view."""
     kind, value, limits = _debug()
-    shown = mood_debug.mood(moods.today_mood(view, _served_goal(addon().state["profile"]), limits), kind, value)
-    return moods.flame(shown)
+    mood = moods.today_mood(view, _served_goal(addon().state["profile"]), night_inputs(view), now_ms(), thresholds=limits)
+    return moods.flame(mood_debug.mood(mood, kind, value), int((view or {}).get("streak") or 0))
 
 
 def days_for(deck_browser=None):
@@ -561,7 +578,7 @@ def today_view(deck_browser, chosen_companion):
     # One streak mood picks the pose and, before the decks do, the line (as Android's Home card).
     # The hidden debug menu (mood_debug) can force it; the marker says so on the panel.
     kind, value, limits = _debug()
-    streak_mood = mood_debug.mood(moods.today_mood(profile, goal, limits), kind, value)
+    streak_mood = mood_debug.mood(moods.today_mood(profile, goal, night_inputs(profile), now_ms(), thresholds=limits), kind, value)
     pose = mood_debug.pose(chosen_companion, streak_mood, streak, kind, value)
     mood = moods.mood(streak_mood, [day.due for day in days], focus.due if focus else 0, profile, now_ms())
     line, values = moods.message(chosen_companion, mood, streak)
@@ -570,7 +587,7 @@ def today_view(deck_browser, chosen_companion):
         "profile": profile,
         "art": _pose_url(pose),
         # The flame follows the shown mood, so a forced mood carries its flame with it.
-        "flame": moods.flame(streak_mood),
+        "flame": moods.flame(streak_mood, streak),
         "mood": (tr(line) % values if line and chosen_companion != "none" else None),
         "winner": art_url(chosen_companion, moods.WINNER),
         "focus": focus_view(focus),

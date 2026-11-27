@@ -6,6 +6,7 @@ tests/fixtures/streak_moods.json. `mood` picks the encouraging line from that st
 first, then from the collection's due cards, as the phone's AnkiquestAki.message does.
 """
 
+from dataclasses import dataclass
 from enum import Enum, auto
 import json
 from pathlib import Path
@@ -40,8 +41,20 @@ STUDIED, PROTECTED, SHORT, PENDING, UNKNOWN = "studied", "protected", "short", "
 _DAY_STATES = {"met": STUDIED, "unverified": STUDIED, "syncing": STUDIED, "protected": PROTECTED, "pending": PENDING}
 
 # Aki's streak moods, as the phone names them.
-STREAK_MOODS = ("unknown", "asleep", "sad", "frozen_1", "frozen_2", "frozen_3", "thawing", "hopeful", "almost", "fire")
-(MOOD_UNKNOWN, ASLEEP, SAD, FROZEN_1, FROZEN_2, FROZEN_3, THAWING, HOPEFUL, ALMOST, FIRE) = STREAK_MOODS
+STREAK_MOODS = (
+    "unknown", "asleep", "sad", "freeze", "frozen_1", "frozen_2", "frozen_3", "thawing", "hopeful", "almost", "fire",
+    "neglected", "abandoned", "dead",
+)
+(MOOD_UNKNOWN, ASLEEP, SAD, MOOD_FREEZE, FROZEN_1, FROZEN_2, FROZEN_3, THAWING, HOPEFUL, ALMOST, FIRE,
+ NEGLECTED, ABANDONED, DEAD) = STREAK_MOODS
+
+# Days without reviews in a row ending yesterday, and the away mood each count starts, as
+# `away_levels` in streak_moods.json says; later levels first.
+AWAY_LEVELS = ((30, DEAD), (7, ABANDONED), (2, NEGLECTED))
+
+# How long before the study day ends a freeze about to keep the streak shows as one
+# (`freeze_window_ms`).
+FREEZE_WINDOW_MS = 7_200_000
 
 MINUTE_MS = 60_000
 _PERCENT = 100
@@ -53,6 +66,10 @@ _FROZEN = (FROZEN_1, FROZEN_2, FROZEN_3)
 MOOD_LINES = {
     MOOD_UNKNOWN: "Waiting for today’s study to sync.",
     ASLEEP: "Asleep: study a card to start a streak.",
+    MOOD_FREEZE: "Wrapped up: a freeze is keeping your %d-day streak.",
+    NEGLECTED: "Lonely: a few days without study. One card cheers me up.",
+    ABANDONED: "Abandoned: a week without study. One card brings me back.",
+    DEAD: "Out cold: a month without study. One card brings me back.",
     SAD: "Sad: your %d-day streak is waiting for today’s study.",
     FROZEN_1: "Frozen: a freeze kept your streak. Study today to thaw.",
     FROZEN_2: "Frozen for 2 days: study today to thaw.",
@@ -62,6 +79,9 @@ MOOD_LINES = {
     ALMOST: "Almost: a few more minutes and today counts.",
     FIRE: "On fire: today counts for your %d-day streak.",
 }
+
+# The line for asleep at night with a streak (`night` in streak_moods.json).
+NIGHT_LINE = "Asleep: your %d-day streak wakes up with you."
 
 # A counted day's pose by heat: the first streak length each pose starts at, hottest first.
 HEAT = ((100, "aki_streak_legend"), (30, "aki_streak_blazing"), (7, "aki_streak_hot"), (1, "aki_streak"))
@@ -83,7 +103,11 @@ class Flame(Enum):
 _FLAMES = {
     MOOD_UNKNOWN: Flame.NONE,
     ASLEEP: Flame.NONE,
+    NEGLECTED: Flame.NONE,
+    ABANDONED: Flame.NONE,
+    DEAD: Flame.NONE,
     SAD: Flame.UNLIT,
+    MOOD_FREEZE: Flame.ICY,
     HOPEFUL: Flame.UNLIT,
     ALMOST: Flame.UNLIT,
     FROZEN_1: Flame.ICY,
@@ -94,10 +118,73 @@ _FLAMES = {
 }
 
 
+class Yesterday(Enum):
+    """How the study day before today ended, as `night` in streak_moods.json names it."""
+    COUNTED = "counted"
+    PROTECTED = "protected"
+    MISSED = "missed"
+    UNKNOWN = "unknown"
+
+
+# The night window's rule: the usual first study time from the last RECENT_DAYS studied days,
+# DEFAULT_USUAL with fewer than MIN_DAYS of them.
+DAY_MINUTES = 24 * 60
+HOUR_MINUTES = 60
+DEFAULT_USUAL = "08:00"
+RECENT_DAYS = 14
+MIN_DAYS = 3
+
+# Night asleep with a streak: the streak is alive but today has not counted yet.
+NIGHT_FLAME = Flame.UNLIT
+
+
+def after_rollover(time, rollover_hour):
+    """Minutes after the study day's rollover for a local `HH:MM` time."""
+    hours, minutes = (int(part) for part in time.split(":"))
+    return (hours * HOUR_MINUTES + minutes - rollover_hour * HOUR_MINUTES) % DAY_MINUTES
+
+
+def usual_first_study(first_reviews, rollover_hour):
+    """The usual first study time, in minutes after rollover: the median (lower middle for an even
+    count) of the last RECENT_DAYS first-review times, DEFAULT_USUAL with fewer than MIN_DAYS."""
+    recent = sorted(after_rollover(time, rollover_hour) for time in list(first_reviews)[-RECENT_DAYS:])
+    if len(recent) < MIN_DAYS:
+        return after_rollover(DEFAULT_USUAL, rollover_hour)
+    return recent[(len(recent) - 1) // 2]
+
+
+@dataclass(frozen=True)
+class Night:
+    """What the night rule needs: the local time `now` (HH:MM), the day's `rollover_hour`, the
+    first-review times of recent studied days (oldest first) and how yesterday ended."""
+    now: str
+    rollover_hour: int
+    first_reviews: tuple
+    yesterday: Yesterday
+
+    def window(self):
+        """Whether now is from the rollover up to, not including, the usual first study time."""
+        usual = usual_first_study(self.first_reviews, self.rollover_hour)
+        return after_rollover(self.now, self.rollover_hour) < usual
+
+
 class Goal(Enum):
     """Whether today's daily goal is reached."""
     OPEN = auto()
     REACHED = auto()
+
+
+class Studied(Enum):
+    """Whether the player has ever studied: the profile's `lifetime.reviews > 0`
+    (`away_run` in streak_moods.json)."""
+    NEVER = auto()
+    EVER = auto()
+
+    @classmethod
+    def of(cls, profile):
+        lifetime = (profile or {}).get("lifetime")
+        reviews = lifetime.get("reviews") if isinstance(lifetime, dict) else 0
+        return cls.EVER if int(reviews or 0) > 0 else cls.NEVER
 
 
 class Stage(Enum):
@@ -221,6 +308,10 @@ _MOOD_POSE_NAMES = {
     MOOD_UNKNOWN: "face",
     ASLEEP: "asleep",
     SAD: "sad",
+    MOOD_FREEZE: "freeze",
+    NEGLECTED: "neglected",
+    ABANDONED: "abandoned",
+    DEAD: "dead",
     FROZEN_1: "frozen",
     FROZEN_2: "frozen_2",
     FROZEN_3: "frozen_3",
@@ -312,7 +403,7 @@ def mood(chosen, decks_due, focus_due, profile, now_ms):
     # A streak waiting for today, or kept by a freeze, comes before anything about the decks.
     if chosen == SAD:
         return WAITING
-    if chosen in _FROZEN:
+    if chosen in _FROZEN or chosen == MOOD_FREEZE:
         return FREEZE
 
     # Otherwise the decks decide: all done after real study, or cards still due.
@@ -332,31 +423,57 @@ _THAWING_MOODS = {Stage.QUARTER: THAWING, Stage.HALF: HOPEFUL, Stage.THREE_QUART
 _STREAK_MOODS = {Stage.STARTED: SAD, Stage.QUARTER: SAD, Stage.HALF: HOPEFUL, Stage.THREE_QUARTERS: ALMOST}
 
 
-def streak_mood(state, reviews, stage, streak, frozen_days, goal, thresholds=None):
+def streak_mood(state, reviews, stage, streak, frozen_days, goal, days_away=0, freezes=0,
+                 day_left_ms=None, night=None, thresholds=None):
     """Today's streak mood for a day verdict `state` with `reviews` so far at `stage` toward the
     minimum, a `streak` of that many days and `frozen_days` frozen days in a row ending yesterday.
-    `thresholds` (the debug menu's, `mood_debug.thresholds`) move the hopeful boundary and the
-    frozen moods; the rest of the rule is pinned by tests/fixtures/streak_moods.json."""
+    `days_away` counts days without reviews in a row ending yesterday, `freezes` the freezes left,
+    `day_left_ms` the time until the study day ends (None when unknown) and `night` the night
+    rule's inputs (None outside it). `thresholds` (the debug menu's, `mood_debug.thresholds`) move
+    the hopeful boundary and the frozen moods; the rest of the rule is pinned by
+    tests/fixtures/streak_moods.json."""
     # Today counts, or the goal says the player did what they planned.
     if state == STUDIED or goal == Goal.REACHED:
         return FIRE
     if state == UNKNOWN:
         return MOOD_UNKNOWN
 
+    # At night a comfortable companion sleeps until the player's usual first study time.
+    if _sleeps(state, streak, night):
+        return ASLEEP
+
     # A moved review threshold moves the hopeful boundary without changing the shared stages.
     stage = _hopeful_stage(reviews, stage, thresholds)
 
-    # A protected day means a freeze kept at least yesterday, even without the heatmap.
-    frozen = max(frozen_days, 1 if state == PROTECTED else 0)
-    if frozen > 0:
-        return _THAWING_MOODS.get(stage) or _frozen(frozen, thresholds)
+    # A freeze covering today, with no frozen day before it, is in effect; frozen days show their level.
+    if frozen_days == 0 and state == PROTECTED:
+        return _THAWING_MOODS.get(stage) or MOOD_FREEZE
+    if frozen_days > 0:
+        return _THAWING_MOODS.get(stage) or _frozen(frozen_days, thresholds)
 
-    # Without a streak there is nothing to lose: any study is hopeful.
+    # Without a streak there is nothing to lose: any study is hopeful; days away show their level.
     if streak == 0:
         if reviews < (thresholds or {}).get("hopeful_reviews", 1):
-            return ASLEEP
+            return _away(days_away)
         return ALMOST if stage == Stage.THREE_QUARTERS else HOPEFUL
+
+    # A freeze about to keep the streak tonight is in effect.
+    if reviews == 0 and freezes > 0 and day_left_ms is not None and day_left_ms <= FREEZE_WINDOW_MS:
+        return MOOD_FREEZE
     return _STREAK_MOODS[stage]
+
+
+def _sleeps(state, streak, night):
+    """Whether the night rule puts a comfortable companion to sleep: no review yet, in the night
+    window, the streak alive and yesterday counted."""
+    if night is None or state != PENDING:
+        return False
+    return streak > 0 and night.yesterday == Yesterday.COUNTED and night.window()
+
+
+def _away(days):
+    """The mood for no streak and no review today after `days` away."""
+    return next((mood for start, mood in AWAY_LEVELS if days >= start), ASLEEP)
 
 
 def _hopeful_stage(reviews, stage, thresholds):
@@ -408,8 +525,10 @@ def streak_pose(chosen, streak, thresholds=None):
     return pose_art(AKI_POSES, _mood_pose_name(chosen, streak, thresholds))
 
 
-def flame(chosen):
-    """The flame beside the streak number for a streak mood."""
+def flame(chosen, streak=0):
+    """The flame beside the streak number for a streak mood; asleep with a streak is the night's."""
+    if chosen == ASLEEP and streak > 0:
+        return NIGHT_FLAME
     return _FLAMES[chosen]
 
 
@@ -421,6 +540,32 @@ def frozen_run(heatmap):
             break
         days += 1
     return days
+
+
+def away_run(heatmap, studied):
+    """Days without reviews in a row ending yesterday in a profile's heatmap, whose last cell is
+    today. Without a study day in the heatmap, a player who `studied` before it is away for every
+    day of it before today, and one who never studied (a new player) is not away. Without a
+    heatmap nothing is known: 0."""
+    before = (heatmap or [])[:-1]
+    for index in range(len(before) - 1, -1, -1):
+        cell = before[index]
+        if isinstance(cell, dict) and cell.get("state") != "none":
+            return len(before) - 1 - index
+
+    # No study day in the heatmap: away since before it, or never studied at all.
+    return len(before) if studied is Studied.EVER else 0
+
+
+def yesterday(heatmap):
+    """How yesterday ended, from a profile's heatmap whose last cell is today."""
+    cells = heatmap or []
+    if len(cells) < 2 or not isinstance(cells[-2], dict):
+        return Yesterday.UNKNOWN
+    cell = cells[-2]
+    if cell.get("frozen") is True:
+        return Yesterday.PROTECTED
+    return Yesterday.COUNTED if cell.get("state") == "met" else Yesterday.MISSED
 
 
 def day_state(view):
@@ -444,21 +589,40 @@ def _stage(view):
     return Stage.of(int(time_ms or 0), int(today.get("streak_minutes") or 0))
 
 
-def today_mood(view, goal, thresholds=None):
-    """The displayed profile's streak mood: the one streak rule every surface uses."""
+def _freezes(view):
+    """The freezes the player has left; 0 with freezes off."""
+    if not view.get("freezes_enabled"):
+        return 0
+    return max(0, int(view.get("stored_freezes") or 0))
+
+
+def _day_left_ms(view, now_ms):
+    ends = view.get("day_ends_at")
+    if not ends or now_ms is None:
+        return None
+    return int(ends) - now_ms
+
+
+def today_mood(view, goal, night=None, now_ms=None, thresholds=None):
+    """The displayed profile's streak mood: the one streak rule every surface uses. `night` holds
+    the night rule's inputs (None outside it), `now_ms` the time for the day's end."""
     view = view or {}
-    reviews, streak, frozen = _reviews_today(view), _streak(view), frozen_run(view.get("heatmap"))
-    return streak_mood(day_state(view), reviews, _stage(view), streak, frozen, goal, thresholds)
+    heatmap = view.get("heatmap")
+    reviews, streak, frozen = _reviews_today(view), _streak(view), frozen_run(heatmap)
+    return streak_mood(
+        day_state(view), reviews, _stage(view), streak, frozen, goal,
+        away_run(heatmap, Studied.of(view)), _freezes(view), _day_left_ms(view, now_ms), night, thresholds,
+    )
 
 
-def today_pose(companion, view, goal, thresholds=None):
+def today_pose(companion, view, goal, night=None, now_ms=None, thresholds=None):
     """`companion`'s pose for the displayed profile's day; None for no companion."""
-    return mood_pose(companion, today_mood(view, goal, thresholds), _streak(view))
+    return mood_pose(companion, today_mood(view, goal, night, now_ms, thresholds), _streak(view))
 
 
-def today_flame(view, goal, thresholds=None):
+def today_flame(view, goal, night=None, now_ms=None, thresholds=None):
     """The flame beside the displayed profile's streak number."""
-    return flame(today_mood(view, goal, thresholds))
+    return flame(today_mood(view, goal, night, now_ms, thresholds), _streak(view))
 
 
 def mood_pose(companion, chosen, streak, thresholds=None):
@@ -481,7 +645,7 @@ def forced_pose(companion, name):
 
 def mood_line(chosen, streak):
     """The companion tab's line for a mood, untranslated, and the values for its `%d`."""
-    text = MOOD_LINES[chosen]
+    text = NIGHT_LINE if chosen == ASLEEP and streak > 0 else MOOD_LINES[chosen]
     if "%d" not in text:
         return text, ()
 
@@ -511,9 +675,10 @@ def face(companion):
 
 def pose_art(art, pose):
     """The picture in `art` (pose to picture) for `pose`, or for its nearest fallback: an extension's
-    (`POSE_FALLBACKS`), then a core pose's while it is not drawn (`CORE_FALLBACKS`)."""
+    (`POSE_FALLBACKS`) or a picture's (`PICTURE_FALLBACKS`), then a core pose's while it is not
+    drawn (`CORE_FALLBACKS`)."""
     while pose not in art:
-        pose = POSE_FALLBACKS[pose] if pose in POSE_FALLBACKS else CORE_FALLBACKS[pose]
+        pose = POSE_FALLBACKS.get(pose) or PICTURE_FALLBACKS.get(pose) or CORE_FALLBACKS[pose]
     return art[pose]
 
 

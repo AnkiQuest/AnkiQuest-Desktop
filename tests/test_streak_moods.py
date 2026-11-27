@@ -23,13 +23,26 @@ AKI_MOOD_POSES = {
     moods.MOOD_UNKNOWN: "aki_face",
     moods.ASLEEP: "aki_asleep",
     moods.SAD: "aki_sad",
+    moods.MOOD_FREEZE: "aki_frozen",
     moods.FROZEN_1: "aki_frozen",
     moods.FROZEN_2: "aki_frozen",
     moods.FROZEN_3: "aki_frozen",
     moods.THAWING: "aki_frozen",
     moods.HOPEFUL: "aki_hopeful",
     moods.ALMOST: "aki_hopeful",
+    moods.NEGLECTED: "aki_neglected",
+    moods.ABANDONED: "aki_neglected",
+    moods.DEAD: "aki_neglected",
 }
+
+
+def night(case):
+    """The night rule's inputs of a shared mood case; None when the case leaves the night out."""
+    given = case.get("night")
+    if given is None:
+        return None
+    return moods.Night(given["now"], given["rollover_hour"], tuple(given["first_reviews"]),
+                       moods.Yesterday(given["yesterday"]))
 
 
 class StreakMoods(unittest.TestCase):
@@ -44,7 +57,10 @@ class StreakMoods(unittest.TestCase):
                 today = case["today"]
                 goal = moods.Goal.REACHED if today["goal_reached"] else moods.Goal.OPEN
                 stage = moods.Stage.of(today["time_ms"], today["streak_minutes"])
-                found = moods.streak_mood(today["state"], today["reviews"], stage, today["streak"], today["frozen_days"], goal)
+                found = moods.streak_mood(
+                    today["state"], today["reviews"], stage, today["streak"], today["frozen_days"], goal,
+                    today["days_away"], today["freezes"], today["day_left_ms"], night(case),
+                )
                 self.assertEqual(case["expected"]["mood"], found)
                 pose = moods.pose_art(moods.AKI_POSES, case["expected"]["pose"])
                 self.assertEqual(pose, moods.streak_pose(found, today["streak"]))
@@ -86,7 +102,7 @@ class StreakMoods(unittest.TestCase):
             return {"_day_status": "protected", "streak": 10, "heatmap": [],
                     "today": {"reviews": 4, "time_ms": time_ms, "streak_minutes": 20}}
 
-        self.assertEqual(moods.FROZEN_1, moods.today_mood(view(299_999), moods.Goal.OPEN))
+        self.assertEqual(moods.MOOD_FREEZE, moods.today_mood(view(299_999), moods.Goal.OPEN))
         self.assertEqual(moods.THAWING, moods.today_mood(view(300_000), moods.Goal.OPEN))
         self.assertEqual(moods.HOPEFUL, moods.today_mood(view(600_000), moods.Goal.OPEN))
         self.assertEqual(moods.ALMOST, moods.today_mood(view(900_000), moods.Goal.OPEN))
@@ -95,6 +111,76 @@ class StreakMoods(unittest.TestCase):
         older = view(0)
         older["today"] = {"reviews": 4, "minutes": 10, "streak_minutes": 20}
         self.assertEqual(moods.HOPEFUL, moods.today_mood(older, moods.Goal.OPEN))
+
+    def test_every_shared_usual_first_study_time(self):
+        if "night" not in self.fixture:
+            self.skipTest("the shared fixture carries no night rule yet")
+        rule = self.fixture["night"]
+        self.assertEqual((rule["default_usual"], rule["recent_days"], rule["min_days"]),
+                         (moods.DEFAULT_USUAL, moods.RECENT_DAYS, moods.MIN_DAYS))
+        self.assertEqual(rule["flame"], moods.NIGHT_FLAME.value)
+        for case in rule["usual_cases"]:
+            with self.subTest(case=case["name"]):
+                rollover = case["rollover_hour"]
+                self.assertEqual(moods.after_rollover(case["expected"], rollover),
+                                 moods.usual_first_study(case["first_reviews"], rollover))
+
+    def test_asleep_at_night_with_a_streak_has_its_own_flame_and_line(self):
+        self.assertEqual(moods.Flame.UNLIT, moods.flame(moods.ASLEEP, 12))
+        self.assertEqual(moods.Flame.NONE, moods.flame(moods.ASLEEP, 0))
+        self.assertEqual((moods.NIGHT_LINE, (12,)), moods.mood_line(moods.ASLEEP, 12))
+        self.assertEqual((moods.MOOD_LINES[moods.ASLEEP], ()), moods.mood_line(moods.ASLEEP, 0))
+
+    def test_every_shared_away_run(self):
+        for case in self.fixture["away_run"]:
+            with self.subTest(case=case["name"]):
+                studied = moods.Studied.EVER if case["studied"] else moods.Studied.NEVER
+                self.assertEqual(case["expected"], moods.away_run(case["heatmap"], studied))
+
+    def test_studied_is_lifetime_reviews_above_zero(self):
+        self.assertIs(moods.Studied.NEVER, moods.Studied.of(None))
+        self.assertIs(moods.Studied.NEVER, moods.Studied.of({}))
+        self.assertIs(moods.Studied.NEVER, moods.Studied.of({"lifetime": {"reviews": 0}}))
+        self.assertIs(moods.Studied.EVER, moods.Studied.of({"lifetime": {"reviews": 1}}))
+
+    def test_a_long_gone_player_is_dead_not_asleep(self):
+        # A heatmap with no study day: the player who studied before it has been away all of it.
+        heatmap = [{"frozen": False, "state": "none"} for _ in range(40)]
+        gone = {"_day_status": "pending", "streak": 0, "heatmap": heatmap, "lifetime": {"reviews": 5}}
+        new = dict(gone, lifetime={"reviews": 0})
+        self.assertEqual(moods.DEAD, moods.today_mood(gone, moods.Goal.OPEN))
+        self.assertEqual(moods.ASLEEP, moods.today_mood(new, moods.Goal.OPEN))
+
+    def test_the_heatmap_says_how_yesterday_ended(self):
+        today = {"frozen": False, "state": "none"}
+        self.assertEqual(moods.Yesterday.UNKNOWN, moods.yesterday(None))
+        self.assertEqual(moods.Yesterday.UNKNOWN, moods.yesterday([today]))
+        self.assertEqual(moods.Yesterday.COUNTED, moods.yesterday([{"frozen": False, "state": "met"}, today]))
+        self.assertEqual(moods.Yesterday.PROTECTED, moods.yesterday([{"frozen": True, "state": "frozen"}, today]))
+        self.assertEqual(moods.Yesterday.MISSED, moods.yesterday([{"frozen": False, "state": "short"}, today]))
+        self.assertEqual(moods.Yesterday.MISSED, moods.yesterday([{"frozen": False, "state": "none"}, today]))
+
+    def test_the_displayed_day_sleeps_at_night(self):
+        # The Today panel passes the night inputs; a comfortable streak sleeps before the usual time.
+        view = {"_day_status": "pending", "streak": 9, "today": {"reviews": 0},
+                "heatmap": [{"frozen": False, "state": "met"}, {"frozen": False, "state": "none"}]}
+        early = moods.Night("06:00", 4, (), moods.yesterday(view["heatmap"]))
+        late = moods.Night("09:00", 4, (), moods.yesterday(view["heatmap"]))
+        self.assertEqual(moods.ASLEEP, moods.today_mood(view, moods.Goal.OPEN, early))
+        self.assertEqual(moods.Flame.UNLIT, moods.today_flame(view, moods.Goal.OPEN, early))
+        self.assertEqual(moods.SAD, moods.today_mood(view, moods.Goal.OPEN, late))
+        self.assertEqual(moods.SAD, moods.today_mood(view, moods.Goal.OPEN))
+
+    def test_the_displayed_day_brings_the_freeze_and_away_inputs(self):
+        hour = 3_600_000
+        view = {"_day_status": "pending", "streak": 9, "today": {"reviews": 0}, "heatmap": [],
+                "freezes_enabled": True, "stored_freezes": 1, "day_ends_at": 10 * hour}
+        self.assertEqual(moods.MOOD_FREEZE, moods.today_mood(view, moods.Goal.OPEN, now_ms=9 * hour))
+        self.assertEqual(moods.SAD, moods.today_mood(view, moods.Goal.OPEN, now_ms=7 * hour))
+        self.assertEqual(moods.SAD, moods.today_mood(dict(view, freezes_enabled=False), moods.Goal.OPEN, now_ms=9 * hour))
+        away = {"_day_status": "pending", "streak": 0, "today": {"reviews": 0},
+                "heatmap": [{"frozen": False, "state": "met"}] + [{"frozen": False, "state": "none"}] * 8}
+        self.assertEqual(moods.ABANDONED, moods.today_mood(away, moods.Goal.OPEN))
 
     def test_every_shared_frozen_run(self):
         for case in self.fixture["frozen_run"]:
@@ -184,6 +270,10 @@ class StreakMoods(unittest.TestCase):
             moods.MOOD_UNKNOWN: "ankilope_face",
             moods.ASLEEP: "ankilope_asleep",
             moods.SAD: "ankilope_sad",
+            moods.MOOD_FREEZE: "ankilope_frozen",
+            moods.NEGLECTED: "ankilope_neglected",
+            moods.ABANDONED: "ankilope_neglected",
+            moods.DEAD: "ankilope_neglected",
             moods.FROZEN_1: "ankilope_frozen",
             moods.FROZEN_2: "ankilope_frozen",
             moods.FROZEN_3: "ankilope_frozen",
@@ -205,6 +295,10 @@ class StreakMoods(unittest.TestCase):
             moods.MOOD_UNKNOWN: "anki_tan_face",
             moods.ASLEEP: "anki_tan_asleep",
             moods.SAD: "anki_tan_sad",
+            moods.MOOD_FREEZE: "anki_tan_frozen",
+            moods.NEGLECTED: "anki_tan_neglected",
+            moods.ABANDONED: "anki_tan_neglected",
+            moods.DEAD: "anki_tan_neglected",
             moods.FROZEN_1: "anki_tan_frozen",
             moods.FROZEN_2: "anki_tan_frozen",
             moods.FROZEN_3: "anki_tan_frozen",
