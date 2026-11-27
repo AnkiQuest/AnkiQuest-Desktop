@@ -29,6 +29,8 @@ class HeldTasks(unittest.TestCase):
         self.api.upload = Mock(return_value={"feedback": {"status": "+5 XP"}})
         self.addon.tooltip = Mock()
         self.mw.taskman.run_on_main = lambda work: work()
+        # The features the profile learned when it opened: none, so no upload owes a resend.
+        self.home.local["capabilities"] = (self.api.base, frozenset())
 
     def run_task(self, work, done, uses_collection=False):
         self.tasks.append((work, done))

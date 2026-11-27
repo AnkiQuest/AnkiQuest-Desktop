@@ -131,9 +131,9 @@ class ResendOnce(HeldTasks):
         self.assertEqual(1, len(self.resends()))
         self.assertIs(Resend.DONE, self.state())
 
-    def test_an_empty_cache_keeps_the_resend_owed_and_makes_no_request(self):
-        # The cache is empty: the profile has not learned the server's features yet. The resend
-        # must not spend itself on that, and must not ask the server here.
+    def test_an_empty_cache_loads_the_features_and_the_next_upload_resends(self):
+        # Nothing else fills the cache this session (the load at profile open failed, or the
+        # player signed in later): the resend starts the load and stays owed meanwhile.
         self.home.local["capabilities"] = None
         self.addon.refresh(False, resync=True)
         self.finish()
@@ -142,8 +142,9 @@ class ResendOnce(HeldTasks):
         self.assertIs(Resend.PENDING, self.state())
         self.api.server_info.assert_not_called()
 
-        # The profile opens and learns them; the next upload resends.
-        self.set_capabilities()
+        # The load it started answers; the next upload resends.
+        self.finish()
+        self.assertEqual((self.api.base, frozenset(self.features)), self.home.local["capabilities"])
         self.addon.refresh(False, resync=True)
         self.finish()
         self.assertEqual(1, len(self.resends()))

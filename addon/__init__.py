@@ -565,11 +565,13 @@ def _request_upload(request, *, attempts=0):
             return ease_resend.Check.FAILED
 
     def resend_rows(start):
-        # An older server drops the button, so the resend waits until it names the feature. The
-        # answer is the cached one, loaded when the profile opens, and no request is made here;
-        # until it is in the cache says nothing, and UNSUPPORTED keeps the resend owed, so a later
-        # upload tries again once the answer has arrived.
+        # An older server drops the button, so the resend waits until it names the feature.
+        # Reads the features cached at profile open; makes no request. On a miss it starts that
+        # load on the main thread, and UNSUPPORTED keeps the resend owed for a later upload.
         check_target()
+        if not home.capabilities_known(api):
+            mw.taskman.run_on_main(lambda: home.load_capabilities(api))
+            return ease_resend.Check.UNSUPPORTED
         if not home.server_has(api, ease_resend.FEATURE):
             return ease_resend.Check.UNSUPPORTED
 
