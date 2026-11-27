@@ -112,7 +112,7 @@ def _head(win, companion):
     asset = share.face_path(companion)
     if asset:
         image = QLabel()
-        image.setPixmap(companion_art.pixmap(asset, companion, 56))
+        image.setPixmap(companion_art.pixmap(asset, 56))
         head.addWidget(image)
     words = QVBoxLayout()
     words.addWidget(_plain(win["title"], True))

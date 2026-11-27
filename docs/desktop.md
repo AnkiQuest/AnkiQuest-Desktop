@@ -1,8 +1,8 @@
 # Desktop compatibility and packages
 
-AnkiQuest supports Anki 23.10 and newer with Qt 6. CI pins the oldest supported
-release (23.10, Python 3.9) and the current release (26.09.4, Python 3.12).
-The manifest keeps `min_point_version: 231000`; there is no known incompatible
+AnkiQuest supports Anki 24.11 and newer with Qt 6. CI pins the oldest supported
+release (24.11, Python 3.9) and the current release (26.09.4, Python 3.12).
+The manifest keeps `min_point_version: 241100`; there is no known incompatible
 newer release that needs a maximum version.
 
 ## Run the checks
@@ -20,7 +20,7 @@ cargo run --manifest-path tools/package-addon/Cargo.toml -- --output ankiquest.a
 
 On Windows, activate `.venv\Scripts\Activate.ps1` and set
 `$env:QT_QPA_PLATFORM = "offscreen"` before running the tests. For the oldest
-version, create another environment with `tests/requirements-anki-23.10.txt`.
+version, create another environment with `tests/requirements-anki-24.11.txt`.
 The current `aqt[qt]` extra pins its matching Qt, WebEngine and SIP packages;
 the older requirements explicitly pin those packages. Do not install an
 unbounded PyQt/WebEngine combination on top of these environments.
@@ -40,9 +40,9 @@ smoke installs (`tools/package-addon`, as releases do). Each checks:
   rank/share words, every board shape, notifications, activity, goals, decks,
   capabilities and conquered-card actions. `wins.json` cross-checks the win
   IDs used by notification shares and card-image URLs; desktop does not list
-  `/api/wins` itself. The recordings are copies from AnkiQuest-Server (see
-  [Server snapshot](#server-snapshot)), where the server regenerates and
-  verifies them.
+  `/api/wins` itself. The recordings come from AnkiQuest-Server master (see
+  [Server data](#server-data)), where the server regenerates and verifies
+  them.
 - Upload/reconcile/refresh regressions in `test_deck_completion.py` and
   `test_addon_uploads.py`; feedback, conquest paths and web navigation in
   `test_desktop_board.py`; clipboard text in `test_addon_sharing.py` and
@@ -63,39 +63,36 @@ changed. Verify the release's own Qt extra, both full test jobs and a normal
 interactive study session before claiming support. Add an upper version
 bound only for a reproduced incompatibility.
 
-## Server snapshot
+## Server data
 
-The add-on tests come from one AnkiQuest-Server commit, named in
-`tests/ankiquest-server.sha`:
+The add-on tests run against AnkiQuest-Server `master`. They read:
 
-- `tests/fixtures/*.json`: copies of Server's `tests/fixtures/`, the rules
-  both clients test against.
-- `tests/api-examples/*.json`: copies of the Server `docs/api/examples/`
-  the add-on tests read.
+- `tests/fixtures/*.json`: Server's `tests/fixtures/`, the rules both
+  clients test against.
+- `tests/api-examples/*.json`: Server's `docs/api/examples/`.
 
-The **Desktop** jobs compare each copied file with the pinned commit.
-
-The snapshot includes countdowns, observed study and companion unlocks.
-Every shared fixture is in `tests/fixtures/`; there are no separate copies
-from commits ahead of the pin.
-
-Never edit a copy. Change Server first, then bump the pin and every copy
-in one pull request, from a Server checkout next to this one:
+Neither is committed. The packager copies them from a shallow, sparse
+clone of `master`, and the **Desktop** jobs do so before the tests:
 
 ```sh
-sha=$(git -C ../AnkiQuest-Server rev-parse <server-commit>)
-git -C ../AnkiQuest-Server checkout "$sha"
-echo "$sha" > tests/ankiquest-server.sha
-for f in tests/fixtures/*.json; do cp "../AnkiQuest-Server/$f" "$f"; done
-for f in tests/api-examples/*.json; do cp "../AnkiQuest-Server/docs/api/examples/${f##*/}" "$f"; done
+cargo run --manifest-path tools/package-addon/Cargo.toml -- server-data
 ```
 
-To read a new fixture or example, copy it from the same commit.
+To test a server change before it reaches `master`, copy from its
+checkout instead:
+
+```sh
+cargo run --manifest-path tools/package-addon/Cargo.toml -- server-data --from ../AnkiQuest-Server
+```
+
+Never add a fixture or example here: change Server first. A server change
+that breaks these tests is fixed in the same change, or the add-on is
+updated right after.
 
 ## Companion pictures
 
-The add-on's pictures (`addon/art/<name>.png` and the faces
-`addon/<companion>_face.png`) and Anki-tan's licence for hers
+The add-on's pictures (`addon/art/<name>.png`, faces included) and
+Anki-tan's licence for hers
 (`addon/art/LICENSE-Anki-tan.md`) are not committed. They come from the
 `addon-art.zip` asset of the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art)
 release that `ankiquest-art.json` pins, with its SHA-256. AnkiQuest-Sync
@@ -117,10 +114,14 @@ release that is not published yet, set `ANKIQUEST_ART_DIR` to a folder
 holding its assets (from AnkiQuest-Art's `tools/release/build.sh`); they
 are checked against the pin the same way.
 
+CI keeps that folder in the Actions cache, keyed by the SHA-256 of
+`ankiquest-art.json`, so each pin is downloaded once. Pull requests and
+merge groups only restore it; the add-on archive job on `master` saves it.
+
 Where a companion has no master for a pose, the add-on shows the fallback
-`tests/fixtures/companion_poses.json` names; a core pose not drawn yet
-shows the core pose `CORE_FALLBACKS` in `addon/moods.py` names, as
-AnkiQuest-Art's `poses.json` does.
+the pinned AnkiQuest-Art release's `poses.json` (copied beside the code by
+`-- art`) names; a core pose not drawn yet shows the core pose its
+`core_fallbacks` name, read by `addon/moods.py`.
 
 ## Shared rules module
 
@@ -173,7 +174,7 @@ the module in WebEngine, with the loader the pages use.
 
 ## API audit
 
-Checked against the installed 23.10 and 26.09.4 APIs:
+Checked against the installed 24.11 and 26.09.4 APIs:
 
 | API | Finding |
 | --- | --- |
@@ -240,9 +241,9 @@ need a complete translation, not isolated switches to `Salvar`.
 `tests/fixtures/desktop-wording.json` records reviewed Android strings for
 the same settings groups, moments and sharing screens, with the source
 commit. The translation test checks these across all four languages.
-After reviewing Android changes, update the fixture in AnkiQuest-Server,
-then bump the [Server snapshot](#server-snapshot) and the desktop wording
-together; CI does not fetch a moving Android branch. Positional Android
+After reviewing Android changes, update the fixture in AnkiQuest-Server
+and the desktop wording together (see [Server data](#server-data)); CI
+does not fetch a moving Android branch. Positional Android
 placeholders are normalized to Python placeholders. Identical English
 labels in different contexts (such as a noun versus a reply button) are
 not automatically copied.

@@ -14,7 +14,7 @@ heatmap = load_in_package("aq_observed", "heatmap")
 heatmap_ui = load_in_package("aq_observed", "heatmap_ui")
 moods = load_in_package("aq_observed", "moods")
 
-# Shared rules pinned by tests/ankiquest-server.sha.
+# Shared rules from AnkiQuest-Server master (docs/desktop.md, Server data).
 OBSERVED = json.loads((Path(__file__).parent / "fixtures/observed_reviews.json").read_text("utf-8"))
 MINUTE_MS = 60_000
 

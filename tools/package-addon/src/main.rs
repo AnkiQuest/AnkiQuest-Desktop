@@ -1,8 +1,10 @@
 //! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb:
 //! `cargo run --manifest-path tools/package-addon/Cargo.toml --
 //! --output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-//! [--metadata <file>]`, `-- art` for the pictures alone, or `-- rules`
-//! for the shared rules' module alone.
+//! [--metadata <file>]`, `-- art` for the pictures and `poses.json` alone,
+//! `-- rules` for the shared rules' module alone, or
+//! `-- server-data [--from <AnkiQuest-Server checkout>]` for the server
+//! data the tests read (see `server`).
 //!
 //! The archive is reproducible: the same commit and channel always give
 //! the same bytes. The GitHub and AnkiWeb builds differ only in the
@@ -30,6 +32,7 @@ mod attestation;
 mod json;
 mod release;
 mod rules;
+mod server;
 mod zip;
 
 use json::Object;
@@ -116,14 +119,24 @@ const ART_COMMAND: &str = "art";
 /// The subcommand that only writes the rules module into `addon/rules/`.
 const RULES_COMMAND: &str = "rules";
 
+/// The subcommand that copies the server's fixtures and examples into `tests/`.
+const SERVER_COMMAND: &str = "server-data";
+
+/// The `server-data` flag naming a server checkout to copy from.
+const FROM_FLAG: &str = "--from";
+
 /// Runs `--output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-/// [--metadata <file>]`, `art` or `rules`.
+/// [--metadata <file>]`, `art`, `rules`, or `server-data [--from <checkout>]`.
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
     let repo = root();
     let result = match args.as_slice() {
         [command] if command == ART_COMMAND => art::fetch(&repo, &repo.join(ADDON)),
         [command] if command == RULES_COMMAND => rules::fetch(&repo, &repo.join(ADDON)),
+        [command] if command == SERVER_COMMAND => server::fetch(&root(), None),
+        [command, flag, from] if command == SERVER_COMMAND && flag == FROM_FLAG => {
+            server::fetch(&root(), Some(Path::new(from)))
+        }
         _ => package(&args),
     };
     match result {

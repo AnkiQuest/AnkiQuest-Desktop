@@ -21,6 +21,26 @@ SPANISH = {
     "I conquered a card!": "¡He conquistado una tarjeta!",
     "Your study companion.": "Tu compañero de estudio.",
     "Study companion": "Compañero de estudio",
+    "RWKV forecast": "Previsión RWKV",
+    "if you stop reviewing now": "si dejas de repasar ahora",
+    "due %d | near %d | safe %d": "vencidas %d | cerca %d | seguras %d",
+    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "vencidas %d · +%d en 1 h · +%d en 3 h · %d para mañana",
+    "RWKV recall now": "Recuerdo RWKV ahora",
+    "%d of %d card (%s) below %s": "%d de %d tarjeta (%s) por debajo de %s", "%d of %d cards (%s) below %s": "%d de %d tarjetas (%s) por debajo de %s",
+    "%d of %d card (%s) below its desired retention": "%d de %d tarjeta (%s) por debajo de su retención deseada", "%d of %d cards (%s) below their desired retention": "%d de %d tarjetas (%s) por debajo de su retención deseada",
+    "Today's companion (debug)": "Compañero de estudio (depuración)",
+    "Follow today's streak": "Seguir la racha de hoy",
+    "Shown mood and pose:": "Ánimo y pose mostrados:",
+    "Mood thresholds": "Umbrales del ánimo",
+    "Reviews for hopeful (1 or more)": "Repasos para hopeful (1 o más)",
+    "Frozen days for frozen 2 (2 or more)": "Días congelados para frozen 2 (2 o más)",
+    "Frozen days for frozen 3 (more than frozen 2)": "Días congelados para frozen 3 (más que frozen 2)",
+    "Streak days for hot (2 or more)": "Días de racha para hot (2 o más)",
+    "Streak days for blazing (more than hot)": "Días de racha para blazing (más que hot)",
+    "Streak days for legend (more than blazing)": "Días de racha para legend (más que blazing)",
+    "Never sent to the server.": "Nunca se envía al servidor.",
+    "Debug override": "Anulación de depuración",
+    "Not saved: each threshold must be in range and above the one before it.": "No guardado: cada umbral debe estar en su rango y por encima del anterior.",
     "No companion": "Sin compañero",
     "Choose who cheers you on.": "Elige quién te anima.",
     "You are 1 tap away from chibi": "Estás a 1 toque de chibi", "You are %d taps away from chibi": "Estás a %d toques de chibi",
@@ -169,11 +189,31 @@ GERMAN = {
     "Check for picture": "Nach Bild suchen", "Could not load the card (%s).": "Die Karte konnte nicht geladen werden (%s).",
     "Could not update the card (%s).": "Die Karte konnte nicht aktualisiert werden (%s).",
     "It is too late to undo this share.": "Das Teilen lässt sich nicht mehr rückgängig machen.",
+    "RWKV forecast": "RWKV-Prognose",
+    "if you stop reviewing now": "wenn du jetzt aufhörst zu wiederholen",
+    "due %d | near %d | safe %d": "fällig %d | knapp %d | sicher %d",
+    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "fällig %d · +%d in 1 Std. · +%d in 3 Std. · %d bis morgen",
+    "RWKV recall now": "RWKV-Erinnerung jetzt",
+    "%d of %d card (%s) below %s": "%d von %d Karte (%s) unter %s", "%d of %d cards (%s) below %s": "%d von %d Karten (%s) unter %s",
+    "%d of %d card (%s) below its desired retention": "%d von %d Karte (%s) unter ihrer gewünschten Merkquote", "%d of %d cards (%s) below their desired retention": "%d von %d Karten (%s) unter ihrer gewünschten Merkquote",
     "Label saved.": "Bezeichnung gespeichert.", "Label removed.": "Bezeichnung entfernt.",
     "Share taken back where possible.": "Das Teilen wurde soweit möglich rückgängig gemacht.",
     "I conquered a card!": "Ich habe eine Karte gemeistert!",
     "Your study companion.": "Dein Lernbegleiter.",
     "Study companion": "Lernbegleiter",
+    "Today's companion (debug)": "Lernbegleiter (Debug)",
+    "Follow today's streak": "Der Serie von heute folgen",
+    "Shown mood and pose:": "Gezeigte Stimmung und Pose:",
+    "Mood thresholds": "Stimmungsschwellen",
+    "Reviews for hopeful (1 or more)": "Wiederholungen für hopeful (1 oder mehr)",
+    "Frozen days for frozen 2 (2 or more)": "Gefrorene Tage für frozen 2 (2 oder mehr)",
+    "Frozen days for frozen 3 (more than frozen 2)": "Gefrorene Tage für frozen 3 (mehr als frozen 2)",
+    "Streak days for hot (2 or more)": "Serientage für hot (2 oder mehr)",
+    "Streak days for blazing (more than hot)": "Serientage für blazing (mehr als hot)",
+    "Streak days for legend (more than blazing)": "Serientage für legend (mehr als blazing)",
+    "Never sent to the server.": "Wird nie an den Server gesendet.",
+    "Debug override": "Debug-Override",
+    "Not saved: each threshold must be in range and above the one before it.": "Nicht gespeichert: Jeder Schwellenwert muss in seinem Bereich und über dem vorherigen liegen.",
     "No companion": "Kein Begleiter",
     "Choose who cheers you on.": "Wähle, wer dich anfeuert.",
     "You are 1 tap away from chibi": "Du bist 1 Tipp von Chibi entfernt", "You are %d taps away from chibi": "Du bist %d Tipps von Chibi entfernt",
@@ -291,11 +331,31 @@ FRENCH = {
     "Check for picture": "Chercher l’image", "Could not load the card (%s).": "Impossible de charger la carte (%s).",
     "Could not update the card (%s).": "Impossible de mettre à jour la carte (%s).",
     "It is too late to undo this share.": "Il est trop tard pour annuler ce partage.",
+    "RWKV forecast": "Prévision RWKV",
+    "if you stop reviewing now": "si tu arrêtes de réviser maintenant",
+    "due %d | near %d | safe %d": "dues %d | proches %d | sûres %d",
+    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "dues %d · +%d dans 1 h · +%d dans 3 h · %d d’ici demain",
+    "RWKV recall now": "Rappel RWKV maintenant",
+    "%d of %d card (%s) below %s": "%d carte sur %d (%s) sous %s", "%d of %d cards (%s) below %s": "%d cartes sur %d (%s) sous %s",
+    "%d of %d card (%s) below its desired retention": "%d carte sur %d (%s) sous sa rétention souhaitée", "%d of %d cards (%s) below their desired retention": "%d cartes sur %d (%s) sous leur rétention souhaitée",
     "Label saved.": "Nom enregistré.", "Label removed.": "Nom supprimé.",
     "Share taken back where possible.": "Le partage a été annulé dans la mesure du possible.",
     "I conquered a card!": "J’ai maîtrisé une carte !",
     "Your study companion.": "Ton compagnon d’étude.",
     "Study companion": "Compagnon d’étude",
+    "Today's companion (debug)": "Compagnon d’étude (debug)",
+    "Follow today's streak": "Suivre la série d’aujourd’hui",
+    "Shown mood and pose:": "Humeur et pose affichées :",
+    "Mood thresholds": "Seuils d’humeur",
+    "Reviews for hopeful (1 or more)": "Révisions pour hopeful (1 ou plus)",
+    "Frozen days for frozen 2 (2 or more)": "Jours gelés pour frozen 2 (2 ou plus)",
+    "Frozen days for frozen 3 (more than frozen 2)": "Jours gelés pour frozen 3 (plus que frozen 2)",
+    "Streak days for hot (2 or more)": "Jours de série pour hot (2 ou plus)",
+    "Streak days for blazing (more than hot)": "Jours de série pour blazing (plus que hot)",
+    "Streak days for legend (more than blazing)": "Jours de série pour legend (plus que blazing)",
+    "Never sent to the server.": "N’est jamais envoyé au serveur.",
+    "Debug override": "Valeur forcée (débogage)",
+    "Not saved: each threshold must be in range and above the one before it.": "Non enregistré : chaque seuil doit être dans sa plage et au-dessus du précédent.",
     "No companion": "Aucun compagnon",
     "Choose who cheers you on.": "Choisis qui t’encourage.",
     "You are 1 tap away from chibi": "Tu es à 1 appui de chibi", "You are %d taps away from chibi": "Tu es à %d appuis de chibi",
@@ -413,11 +473,31 @@ PORTUGUESE = {
     "Check for picture": "Procurar imagem", "Could not load the card (%s).": "Não foi possível carregar o cartão (%s).",
     "Could not update the card (%s).": "Não foi possível atualizar o cartão (%s).",
     "It is too late to undo this share.": "Já é tarde para anular esta partilha.",
+    "RWKV forecast": "Previsão RWKV",
+    "if you stop reviewing now": "se parares de rever agora",
+    "due %d | near %d | safe %d": "vencidos %d | perto %d | seguros %d",
+    "due %d · +%d in 1 h · +%d in 3 h · %d by tomorrow": "vencidos %d · +%d em 1 h · +%d em 3 h · %d até amanhã",
+    "RWKV recall now": "Recordação RWKV agora",
+    "%d of %d card (%s) below %s": "%d de %d cartão (%s) abaixo de %s", "%d of %d cards (%s) below %s": "%d de %d cartões (%s) abaixo de %s",
+    "%d of %d card (%s) below its desired retention": "%d de %d cartão (%s) abaixo da retenção desejada", "%d of %d cards (%s) below their desired retention": "%d de %d cartões (%s) abaixo da retenção desejada",
     "Label saved.": "Nome guardado.", "Label removed.": "Nome removido.",
     "Share taken back where possible.": "A partilha foi anulada onde foi possível.",
     "I conquered a card!": "Conquistei um cartão!",
     "Your study companion.": "O teu companheiro de estudo.",
     "Study companion": "Companheiro de estudo",
+    "Today's companion (debug)": "Companheiro de estudo (depuração)",
+    "Follow today's streak": "Seguir a sequência de hoje",
+    "Shown mood and pose:": "Humor e pose mostrados:",
+    "Mood thresholds": "Limiares do humor",
+    "Reviews for hopeful (1 or more)": "Revisões para hopeful (1 ou mais)",
+    "Frozen days for frozen 2 (2 or more)": "Dias congelados para frozen 2 (2 ou mais)",
+    "Frozen days for frozen 3 (more than frozen 2)": "Dias congelados para frozen 3 (mais que frozen 2)",
+    "Streak days for hot (2 or more)": "Dias de sequência para hot (2 ou mais)",
+    "Streak days for blazing (more than hot)": "Dias de sequência para blazing (mais que hot)",
+    "Streak days for legend (more than blazing)": "Dias de sequência para legend (mais que blazing)",
+    "Never sent to the server.": "Nunca é enviado para o servidor.",
+    "Debug override": "Substituição de depuração",
+    "Not saved: each threshold must be in range and above the one before it.": "Não guardado: cada limiar deve estar no intervalo e acima do anterior.",
     "No companion": "Sem companheiro",
     "Choose who cheers you on.": "Escolhe quem te apoia.",
     "You are 1 tap away from chibi": "Está a 1 toque de chibi", "You are %d taps away from chibi": "Está a %d toques de chibi",
@@ -544,8 +624,20 @@ def plural(one, other, count, translate=tr):
     return translate(one if singular else other)
 
 
+# The locales whose percent format writes a space before the sign, as Android's
+# NumberFormat.getPercentInstance renders them: de "62,9 %", fr "62,9 %", es/pt "62,9%".
+PERCENT_SPACE = frozenset(("de", "fr"))
+
+
+def percent(share):
+    """A share from 0 to 1 as the locale's percent, at most one decimal: 0.629 is "62,9 %" in
+    German and "62,9%" in Spanish; 0.9 is "90%" everywhere."""
+    shown = _locale().toString(share * 100, "f", 1).rstrip("0").rstrip(",.")
+    return shown + (" %" if language_code(_current()) in PERCENT_SPACE else "%")
+
+
 def _locale():
-    from aqt.qt import QLocale
+    from aqt.qt import QLocale  # noqa: F401
     return QLocale(_current().replace("-", "_"))
 
 
@@ -1634,7 +1726,7 @@ PORTUGUESE.update({
 
 # Observed study from AnkiQuest Lite, in the website's words (AnkiQuest-Server static/translations-*.json).
 SPANISH.update({
-    "Studied today · time not known": "Estudió hoy · tiempo desconocido",
+    "Studied today · time not known": "Estudiado hoy · tiempo desconocido",
     "Time not known": "Tiempo desconocido",
     "Observed": "Observado",
     "Includes answers read from AnkiDroid without review times": "Incluye respuestas leídas de AnkiDroid sin tiempos de repaso",
@@ -1655,7 +1747,7 @@ FRENCH.update({
 })
 
 PORTUGUESE.update({
-    "Studied today · time not known": "Estudei hoje · tempo desconhecido",
+    "Studied today · time not known": "Estudado hoje · tempo desconhecido",
     "Time not known": "Tempo desconhecido",
     "Observed": "Observado",
     "Includes answers read from AnkiDroid without review times": "Inclui respostas lidas do AnkiDroid sem tempos de revisão",

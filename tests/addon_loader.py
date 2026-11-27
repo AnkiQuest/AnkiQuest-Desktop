@@ -42,19 +42,45 @@ class _Hooks(SimpleNamespace):
         return hook
 
 
+class AddonMeta:
+    """aqt.addons.AddonMeta stand-in: reads the point-version window from the manifest."""
+
+    def __init__(self, min_point, max_point):
+        self.min_point = min_point
+        self.max_point = max_point
+
+    @classmethod
+    def from_json_meta(cls, package, manifest):
+        return cls(manifest.get("min_point_version", 0), manifest.get("max_point_version", 0))
+
+    def compatible(self):
+        return self.min_point <= ANKI_VERSION and (not self.max_point or self.max_point >= ANKI_VERSION)
+
+
+class InstallError(Exception):
+    """aqt.addons.InstallError stand-in, carrying the message an install failure reports."""
+
+    def __init__(self, err):
+        super().__init__(err)
+        self.errmsg = err
+
+
 # The Anki version anki.utils.int_version() reports under fake_anki: the add-on's minimum.
 ANKI_VERSION = 231000
 
 
 def fake_anki(test, mw):
-    """Replaces aqt, aqt.utils, aqt.qt, anki, anki.lang and anki.utils with stand-ins until `test` ends.
+    """Replaces aqt, aqt.utils, aqt.addons, aqt.qt, anki, anki.lang and anki.utils with stand-ins
+    until `test` ends.
 
     aqt.mw is `mw`, Qt names are mocks, the language is English and Anki is ANKI_VERSION.
     Returns the aqt stand-in."""
     aqt = ModuleType("aqt")
     aqt.mw, aqt.gui_hooks = mw, _Hooks()
     utils = ModuleType("aqt.utils")
-    utils.tooltip, utils.openLink = Mock(), Mock()
+    utils.tooltip, utils.openLink, utils.showInfo = Mock(), Mock(), Mock()
+    addons = ModuleType("aqt.addons")
+    addons.AddonMeta, addons.InstallError = AddonMeta, InstallError
     qt = ModuleType("aqt.qt")
     qt.__getattr__ = lambda name: Mock()
     anki = ModuleType("anki")
@@ -64,7 +90,8 @@ def fake_anki(test, mw):
     anki.utils.int_version = lambda: ANKI_VERSION
 
     modules = patch.dict(sys.modules, {
-        "aqt": aqt, "aqt.utils": utils, "aqt.qt": qt, "anki": anki, "anki.lang": anki.lang, "anki.utils": anki.utils,
+        "aqt": aqt, "aqt.utils": utils, "aqt.addons": addons, "aqt.qt": qt, "anki": anki,
+        "anki.lang": anki.lang, "anki.utils": anki.utils,
     })
     modules.start()
     test.addCleanup(modules.stop)

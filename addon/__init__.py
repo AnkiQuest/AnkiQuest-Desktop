@@ -43,7 +43,7 @@ from .client import (
     sign_up,
 )
 from .deck_completion import deck_snapshots, study_day
-from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, preferences, preview, review_offsets, settings_sync
+from . import copies_ui, countdowns, countdowns_ui, deck_names, ease_resend, help_ui, mood_debug_ui, preferences, preview, review_offsets, rwkv_stats, settings_sync
 
 MARK_KEY = "ankiquestUploadedThrough"
 RECENT_KEY = "ankiquestRecentUploads"
@@ -188,7 +188,7 @@ state = {
     "password_answers": 0,
 }
 
-mw.addonManager.setWebExports(__name__, r"((aki|ankilope|anki_tan)_face|art/(aki|ankilope|anki_tan)_[a-z0-9_]+)\.png")
+mw.addonManager.setWebExports(__name__, r"art/(aki|ankilope|anki_tan|bluma)_[a-z0-9_]+\.png")
 
 
 def config():
@@ -823,8 +823,6 @@ def redraw():
 
 def on_deck_browser(deck_browser, content):
     api = client()
-    # The heatmap shows the companion even while the board below does not.
-    content.stats += board.companion_style(current_companion())
     if not api.configured:
         content.stats += board.welcome(tr)
         return
@@ -837,13 +835,61 @@ def on_deck_browser(deck_browser, content):
     page = state["activity"]
     waiting, actions = (page.unread, page.actions) if page is not None else (0, 0)
     companion = state["companion"] if state["companion_account"] == [api.base, api.user, api.token] else "aki"
-    mascot = None if companion == "none" else "/_addons/%s/%s_face.png" % (mw.addonManager.addonFromModule(__name__), moods.art_owner(companion))
+    face = moods.face(companion)
+    mascot = None if face is None else "/_addons/%s/art/%s.png" % (mw.addonManager.addonFromModule(__name__), face)
     today = home.today_view(deck_browser, companion)
     profile = today["profile"] if today is not None else home._profile_for_display(state["profile"])
     flame = today["flame"] if today is not None else home.streak_flame(profile)
     content.stats += board.html(profile, state["place"], waiting, tr, mascot, today, actions=actions, flame=flame)
     content.stats += board._connection_note(state["profile"], state["poll_failure"], tr)
     content.stats += '<p style="text-align:center;font-size:12px">%s</p>' % html.escape(_upload_status(api))
+    content.stats += _rwkv_block(tr)
+
+
+# One cached forecast for the current collection and revision. While it loads, it draws nothing.
+@dataclass
+class _RwkvBlock:
+    collection: object
+    revision: int
+    html: str = ""
+
+
+_RWKV_BLOCK = None
+
+
+def _rwkv_block(tr):
+    global _RWKV_BLOCK
+    from .language import percent, plural
+
+    collection = mw.col
+    backend = getattr(collection, "_backend", None)
+    if getattr(backend, "rwkv_offline_forecast", None) is None:
+        _RWKV_BLOCK = None
+        return ""
+    revision = collection.mod
+    if _RWKV_BLOCK is not None and _RWKV_BLOCK.collection is collection and _RWKV_BLOCK.revision == revision:
+        return _RWKV_BLOCK.html
+
+    request = _RwkvBlock(collection, revision)
+    _RWKV_BLOCK = request
+
+    def work():
+        if mw.col is not collection:
+            return ""
+        return rwkv_stats.block(collection, tr, plural, percent)
+
+    def done(future):
+        if _RWKV_BLOCK is not request or mw.col is not collection or collection.mod != revision:
+            return
+        try:
+            request.html = future.result()
+        except Exception as e:
+            print("ankiquest rwkv stats:", e)
+        if request.html:
+            mw.deckBrowser.refresh()
+
+    mw.taskman.run_in_background(work, done, uses_collection=True)
+    return ""
 
 
 def on_js_message(handled, message, context):
@@ -1078,12 +1124,29 @@ def _greet(profile):
     _moments._release()
 
 
+def save_mood_debug(values):
+    """Writes the debug override and its day limits into this add-on's config only
+    (mood_debug): nothing of it is synced or sent to the server."""
+    save_config(values)
+
+
+def open_mood_debug():
+    """The hidden debug menu for today's mood and pose (mood_debug_ui), opened from the
+    version label. Saving redraws so the Today panel, its flame and the companion follow."""
+    if mood_debug_ui.dialog(mw, config(), save_mood_debug) is not None:
+        state["profile"] = None
+        refresh(False)
+        poll(quiet=True)
+        redraw()
+
+
 def open_settings():
     values = ui.settings_dialog(
         mw, config(), test_connection, upload_everything, state["companion"], ask_account,
         extra=settings_sections, on_manage=_manage_account,
         on_decks=open_deck_notifications, on_privacy=_open_privacy, on_countdowns=open_countdowns,
         on_two_factor=_open_two_factor if home.server_has(client(), TWO_FACTOR) else None,
+        on_debug=open_mood_debug,
     )
     if values is None:
         return
@@ -1279,6 +1342,10 @@ def check_updates(quiet=True):
         return
     channel = config().get("update_channel", "stable")
 
+    from anki.utils import int_version
+
+    point = int_version()
+
     def done(future):
         try:
             candidate = future.result()
@@ -1286,14 +1353,19 @@ def check_updates(quiet=True):
             if not quiet:
                 failed(tr("AnkiQuest: could not check for updates (%s)"), e)
             return
-        if updates.newer(candidate, current):
-            offer_update(candidate)
-        elif not quiet:
-            tooltip(tr("AnkiQuest is up to date (%s).") % updates.label(current))
+        if not updates.newer(candidate, current):
+            if not quiet:
+                tooltip(tr("AnkiQuest is up to date (%s).") % updates.label(current))
+            return
+        if updates.refused(mw.pm.profile, candidate, point):
+            # A remembered refusal keeps quiet checks silent, but a manual check says
+            # why nothing is offered instead of claiming to be up to date.
+            if not quiet:
+                tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
+            return
+        offer_update(candidate, point)
 
-    from anki.utils import int_version
-
-    mw.taskman.run_in_background(lambda: updates.available(channel, int_version()), done)
+    mw.taskman.run_in_background(lambda: updates.available(channel, point), done)
 
 
 def maybe_check_updates():
@@ -1306,7 +1378,7 @@ def maybe_check_updates():
     check_updates(quiet=True)
 
 
-def offer_update(candidate):
+def offer_update(candidate, point):
     from aqt.utils import askUser
 
     if not askUser(tr("%s is available. Install it now? Anki needs a restart afterwards.") % updates.label(candidate)):
@@ -1319,12 +1391,12 @@ def offer_update(candidate):
         except Exception as e:
             failed(tr("AnkiQuest: could not download the update (%s)"), e)
             return
-        install_update(path)
+        install_update(path, candidate, point)
 
     mw.taskman.run_in_background(lambda: updates.download(candidate["url"], target), done)
 
 
-def install_update(path):
+def install_update(path, candidate, point):
     from aqt.addons import AddonMeta, InstallError
     from aqt.utils import showInfo
     from zipfile import BadZipFile, ZipFile
@@ -1337,6 +1409,8 @@ def install_update(path):
     except (BadZipFile, OSError):
         manifest = {}
     if manifest and not AddonMeta.from_json_meta(manifest["package"], manifest).compatible():
+        # Remember it, so the check stops offering this build until a newer one appears.
+        updates.remember_refused(mw.pm.profile, candidate, point)
         tooltip(tr("AnkiQuest: this update is incompatible with your Anki version. Your installed add-on was kept."))
         return
 
@@ -1419,7 +1493,7 @@ def open_companion(parent=None):
         _companion_saved(account, companion)
 
     motion = reveal_ui.motion(config())
-    return companion_ui.open_picker(parent or mw, mw, api, client, current_companion(), saved, home.today_mood(), motion)
+    return companion_ui.open_picker(parent or mw, mw, api, client, current_companion(), saved, home.today_mood(), motion, home.mood_marker())
 
 
 def choose_companion(api, companion, run):

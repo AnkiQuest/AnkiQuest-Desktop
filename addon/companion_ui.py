@@ -83,7 +83,7 @@ def _card(companion, progress=None):
     poses = QHBoxLayout()
     for index, pose in enumerate(moods.preview(companion)):
         image = QLabel()
-        picture = companion_art.pixmap(companion_art.pose_path(pose), companion, FACE_PX if index == 0 else POSE_PX)
+        picture = companion_art.pixmap(companion_art.pose_path(pose), FACE_PX if index == 0 else POSE_PX)
         image.setPixmap(companion_art.silhouette(picture) if progress is not None else picture)
         poses.addWidget(image, 0, Qt.AlignmentFlag.AlignBottom)
     if poses.count() == 0:
@@ -131,8 +131,9 @@ def _chibi_pose(pose, base, chibi):
     return chibi + "_" + pose[len(prefix):] if pose.startswith(prefix) else pose
 
 
-def _today(companion, mood, streak):
-    """The chosen companion large in today's pose, its name and a line saying why it feels so."""
+def _today(companion, mood, streak, marker=None):
+    """The chosen companion large in today's pose, its name and a line saying why it feels so.
+    `marker` (the debug menu's, home.mood_marker) says when the mood or pose is forced."""
     box = QWidget()
     layout = QVBoxLayout(box)
     layout.setContentsMargins(0, 0, 0, 0)
@@ -142,7 +143,7 @@ def _today(companion, mood, streak):
         art.setObjectName(TODAY_ART)
         art.setProperty("companion", companion)
         art.setProperty("pose", pose)
-        art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), companion, TODAY_PX))
+        art.setPixmap(companion_art.pixmap(companion_art.pose_path(pose), TODAY_PX))
         art.setAlignment(Qt.AlignmentFlag.AlignCenter)
         art.setFixedSize(round(TODAY_PX * POP_ROOM), round(TODAY_PX * POP_ROOM))
         layout.addWidget(art, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -156,6 +157,10 @@ def _today(companion, mood, streak):
         line = _label(tr(text) % values)
         line.setWordWrap(True)
         layout.addWidget(line)
+    if pose is not None and marker:
+        mark = _label(tr(marker))
+        mark.setObjectName("ankiquest_companion_debug_marker")
+        layout.addWidget(mark)
     return box
 
 
@@ -166,7 +171,7 @@ class Picker:
     after a save. `motion` says whether a found chibi pops in; `clock` answers milliseconds for
     counting taps."""
 
-    def __init__(self, parent, mw, api, client, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL, clock=None):
+    def __init__(self, parent, mw, api, client, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL, clock=None, marker=None):
         self._mw, self._api, self._client, self._on_saved = mw, api, client, on_saved
         self._profile = mw.pm.profile
         self._loaded = current
@@ -190,7 +195,7 @@ class Picker:
         dialog.setWindowTitle(tr("Study companion"))
         dialog.setWindowIcon(companion_art.icon(current or moods.AKI))
         layout = QVBoxLayout(dialog)
-        self.today = _today(current or moods.AKI, *today)
+        self.today = _today(current or moods.AKI, *today, marker=marker)
         layout.addWidget(self.today)
         art = self.today.findChild(QLabel, TODAY_ART)
         if art is not None:
@@ -289,7 +294,7 @@ class Picker:
     def _become(self, art, base, chibi):
         """Swaps the picture for the chibi's, popping in unless motion is reduced."""
         pose = _chibi_pose(art.property("pose"), base, chibi)
-        picture = companion_art.pixmap(companion_art.pose_path(pose), chibi, TODAY_PX)
+        picture = companion_art.pixmap(companion_art.pose_path(pose), TODAY_PX)
         art.setProperty("companion", chibi)
         art.setProperty("pose", pose)
         if self._motion == Motion.REDUCED:
@@ -352,10 +357,10 @@ class Picker:
         self.dialog.accept()
 
 
-def open_picker(parent, mw, api, client, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL):
+def open_picker(parent, mw, api, client, current, on_saved, today=(moods.MOOD_UNKNOWN, 0), motion=Motion.FULL, marker=None):
     """Shows the companion tab for `api`'s account and returns it; `client()` answers the
     signed-in client."""
-    picker = Picker(parent, mw, api, client, current, on_saved, today, motion)
+    picker = Picker(parent, mw, api, client, current, on_saved, today, motion, None, marker)
     picker.dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
     picker.dialog.show()
     return picker

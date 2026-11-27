@@ -10,7 +10,7 @@ from html import escape
 
 from aqt import gui_hooks, mw
 
-from . import address, countdowns, day_verdict, deck_moments, deck_names, goal_ui, goals, heatmap_ui, moods, today
+from . import address, countdowns, day_verdict, deck_moments, deck_names, goal_ui, goals, heatmap_ui, mood_debug, moods, today
 from .board import _day_label
 from .client import Client, offset_west_min
 from .deck_completion import deck_snapshots, study_day
@@ -155,23 +155,41 @@ def _served_goal(profile):
     return moods.Goal.REACHED if served is True else moods.Goal.OPEN
 
 
+def _debug():
+    """The debug override and thresholds of this add-on's config (mood_debug): a local choice
+    the server never sees."""
+    config = addon().config()
+    return (*mood_debug.Override.read(config), mood_debug.thresholds(config))
+
+
 def today_mood():
     """Today's streak mood and streak, by the one rule (moods.today_mood). The goal is the
-    server's word; the Today panel also counts reviews it has not uploaded yet."""
+    server's word; the Today panel also counts reviews it has not uploaded yet. The hidden
+    debug menu (mood_debug) can force the mood."""
     profile = addon().state["profile"]
     view = _profile_for_display(profile)
-    return moods.today_mood(view, _served_goal(profile)), int((view or {}).get("streak") or 0)
+    kind, value, limits = _debug()
+    shown = mood_debug.mood(moods.today_mood(view, _served_goal(profile), limits), kind, value)
+    return shown, int((view or {}).get("streak") or 0)
+
+
+def mood_marker():
+    """The line marking the debug override on the surfaces it changes; None without one."""
+    return mood_debug.marker(_debug()[0])
 
 
 def pose_url(chosen_companion):
     """The companion's pose for today's streak."""
-    return _pose_url(moods.mood_pose(chosen_companion, *today_mood()))
+    kind, value, _limits = _debug()
+    return _pose_url(mood_debug.pose(chosen_companion, *today_mood(), kind, value))
 
 
 def streak_flame(view):
     """The flame beside the streak length of a displayed profile, with the server's goal, for
     when the collection cannot be read; the Today panel's comes with today_view."""
-    return moods.today_flame(view, _served_goal(addon().state["profile"]))
+    kind, value, limits = _debug()
+    shown = mood_debug.mood(moods.today_mood(view, _served_goal(addon().state["profile"]), limits), kind, value)
+    return moods.flame(shown)
 
 
 def days_for(deck_browser=None):
@@ -541,16 +559,19 @@ def today_view(deck_browser, chosen_companion):
     streak = int((profile or {}).get("streak") or 0)
 
     # One streak mood picks the pose and, before the decks do, the line (as Android's Home card).
-    streak_mood = moods.today_mood(profile, goal)
-    pose = moods.mood_pose(chosen_companion, streak_mood, streak)
+    # The hidden debug menu (mood_debug) can force it; the marker says so on the panel.
+    kind, value, limits = _debug()
+    streak_mood = mood_debug.mood(moods.today_mood(profile, goal, limits), kind, value)
+    pose = mood_debug.pose(chosen_companion, streak_mood, streak, kind, value)
     mood = moods.mood(streak_mood, [day.due for day in days], focus.due if focus else 0, profile, now_ms())
     line, values = moods.message(chosen_companion, mood, streak)
     session = last_session(api)
     return {
         "profile": profile,
         "art": _pose_url(pose),
-        "flame": moods.today_flame(profile, goal),
-        "mood": tr(line) % values if line and chosen_companion != "none" else None,
+        # The flame follows the shown mood, so a forced mood carries its flame with it.
+        "flame": moods.flame(streak_mood),
+        "mood": (tr(line) % values if line and chosen_companion != "none" else None),
         "winner": art_url(chosen_companion, moods.WINNER),
         "focus": focus_view(focus),
         "goal": goal_view(status),
@@ -647,7 +668,8 @@ def on_deck_browser(deck_browser, content):
         return
     try:
         _, days = days_for(deck_browser)
-        content.tree = today.decorate(content.tree, days, tr)
+        # The badges' inks come with them, so the pair never splits across settings.
+        content.tree = today.BADGE_INKS + today.decorate(content.tree, days, tr)
     except Exception as e:
         print("ankiquest deck status:", e)
 

@@ -15,7 +15,7 @@ share = load_in_package("aq_cow", "share")
 client = load_in_package("aq_cow", "client")
 moments = load_in_package("aq_cow", "moments")
 
-# Shared rules pinned by tests/ankiquest-server.sha.
+# Shared rules from AnkiQuest-Server master (docs/desktop.md, Server data).
 FIXTURE = json.loads((ADDON.parent / "tests/fixtures/companion_unlock.json").read_text("utf-8"))
 EXAMPLES = ADDON.parent / "tests/api-examples"
 LIVE = [rule for rule in FIXTURE["companions"] if rule["status"] == "live"]
@@ -220,7 +220,7 @@ class UnlockMoment(unittest.TestCase):
         self.assertEqual(("companion", "Bluma joined you!"), (item["topic"], item["title"]))
         self.assertEqual("Bluma joined me!", item["share"]["title"])
         self.assertEqual("cow", moments.shown_companion(item, "aki"))
-        self.assertEqual("ankilope_celebrate", moments._pose(item, moments.shown_companion(item, "none")))
+        self.assertEqual("bluma_happy", moments._pose(item, moments.shown_companion(item, "none")))
         level = moments._notice({**row, "moment": "level:3", "topic": "level"})
         self.assertEqual("aki", moments.shown_companion(level, "aki"))
 
@@ -238,16 +238,11 @@ class UnlockMoment(unittest.TestCase):
 
 
 class CowArt(unittest.TestCase):
-    def test_the_cow_is_drawn_with_ankilope_turned_purple(self):
-        self.assertEqual("ankilope", moods.art_owner("cow"))
+    def test_the_cow_is_drawn_with_blumas_own_art(self):
+        self.assertEqual("cow", moods.art_owner("cow"))
         self.assertEqual("aki", moods.art_owner("aki"))
-        self.assertEqual("ankilope_sad", moods.companion_pose("cow", "aki_at_risk"))
-        self.assertEqual("ankilope_face.png", Path(share.face_path("cow")).name)
-        self.assertEqual("hue-rotate(250deg)", moods.css_filter("cow"))
-        for companion in ("aki", "ankilope", "none"):
-            self.assertIsNone(moods.css_filter(companion))
-            self.assertEqual("", board.companion_style(companion))
-        self.assertIn("img.aq-companion{filter:hue-rotate(250deg)}", board.companion_style("cow"))
+        self.assertEqual("bluma_sad", moods.companion_pose("cow", "aki_at_risk"))
+        self.assertEqual("bluma_face.png", Path(share.face_path("cow")).name)
 
     def test_the_deck_list_marks_every_companion_picture(self):
         today = {"art": "/a.png", "mood": None, "winner": "/w.png"}
@@ -257,9 +252,9 @@ class CowArt(unittest.TestCase):
     def test_picker_cards_preview_face_fire_and_sad(self):
         self.assertEqual(("aki_face", "aki_streak", "aki_sad"), moods.PREVIEW_POSES)
         self.assertEqual(["aki_face", "aki_streak", "aki_sad"], moods.preview("aki"))
-        self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview("ankilope"))
-        self.assertEqual(moods.preview("ankilope"), moods.preview("cow"))
-        self.assertEqual(["anki_tan_face", "anki_tan_hopeful", "anki_tan_sad"], moods.preview("anki_tan"))
+        self.assertEqual(["ankilope_face", "ankilope_streak", "ankilope_sad"], moods.preview("ankilope"))
+        self.assertEqual(["bluma_face", "bluma_streak", "bluma_sad"], moods.preview("cow"))
+        self.assertEqual(["anki_tan_face", "anki_tan_streak", "anki_tan_sad"], moods.preview("anki_tan"))
         self.assertEqual([], moods.preview("none"))
         for companion in ("aki", "ankilope", "cow", "anki_tan"):
             for pose in moods.preview(companion):

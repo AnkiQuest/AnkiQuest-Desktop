@@ -8,7 +8,7 @@ from addon_loader import load_module
 
 day_verdict = load_module("aq_day_verdict", "day_verdict.py")
 
-# Shared rules, including observed study, pinned by tests/ankiquest-server.sha.
+# Shared rules, including observed study, from AnkiQuest-Server master.
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "day_verdicts.json"
 
 
