@@ -154,6 +154,9 @@ class Progress(unittest.TestCase):
                 addon.open_account.assert_not_called()
                 self.assertIsNotNone(opened)
                 self.assertEqual("Study time", opened._tabs.tabText(opened._tabs.currentIndex()))
+                # The same names and order as Android's Me (#389).
+                titles = [opened._tabs.tabText(index) for index in range(opened._tabs.count())]
+                self.assertEqual(["Study history", "Records", "Study time"], titles)
                 # Study history and Records need an account: they say so and read nothing.
                 self.assertEqual([], self.paths)
                 for section in (ui._Section.HISTORY, ui._Section.RECORDS):
