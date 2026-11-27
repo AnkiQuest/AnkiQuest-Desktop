@@ -2,15 +2,10 @@
 // Finds the screenshot baseline the "Screenshots" check compares with: the one
 // screenshot_store.yml stored for the exact base commit, from a master push or a
 // dispatch, never a pull request's. It waits while that run is still drawing.
-// Commits from before the baseline moved to CI have it in docs/screenshots; for
-// those it writes the committed files into `dir` instead.
-
-const path = require("node:path");
 
 const WORKFLOW = "screenshot_store.yml";
 const ARTIFACT = "screenshot-baseline";
 const TRUSTED_EVENTS = ["push", "workflow_dispatch"];
-const LEGACY_FOLDER = "docs/screenshots";
 const NOT_FOUND = 404;
 const RETRY_MS = 30_000;
 // A store run takes a few minutes; 30 minutes covers a queue of them.
@@ -42,28 +37,6 @@ async function baseCommit({ github, context }) {
         return mergeBase.sha;
     }
     return context.sha;
-}
-
-// The committed screenshots of `sha`, written into `dir`; false when it has none.
-async function fromTree({ github, context, sha, dir, writeFile }) {
-    let entries;
-    try {
-        ({ data: entries } = await github.rest.repos.getContent({ ...context.repo, path: LEGACY_FOLDER, ref: sha }));
-    } catch (error) {
-        if (error.status === NOT_FOUND) {
-            return false;
-        }
-        throw error;
-    }
-
-    const pictures = entries.filter(entry => entry.type === "file" && entry.name.endsWith(".png"));
-    for (const picture of pictures) {
-        const {
-            data: { content },
-        } = await github.rest.git.getBlob({ ...context.repo, file_sha: picture.sha });
-        writeFile(path.join(dir, picture.name), Buffer.from(content, "base64"));
-    }
-    return pictures.length > 0;
 }
 
 // The store runs of `sha`; none while GitHub does not know the workflow yet.
@@ -108,30 +81,16 @@ module.exports = async function screenshotBaseline({
     github,
     context,
     core,
-    dir,
     sleep = delay => new Promise(resolve => setTimeout(resolve, delay)),
-    writeFile = (file, bytes) => {
-        require("node:fs").mkdirSync(path.dirname(file), { recursive: true });
-        require("node:fs").writeFileSync(file, bytes);
-    },
 }) {
     const sha = await baseCommit({ github, context });
     core.setOutput("base", sha);
 
-    // A commit from before the move has its baseline in the tree.
-    if (await fromTree({ github, context, sha, dir, writeFile })) {
-        core.info(`Using the screenshots committed at ${sha}`);
-        core.setOutput("source", "tree");
-        core.setOutput("run-id", "");
-        return "";
-    }
-
-    // Otherwise only the store run of this exact commit is used, never another commit's.
+    // Only the store run of this exact commit is used, never another commit's.
     for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
         const id = await storedRun({ github, context, sha });
         if (id !== null) {
             core.info(`Using the screenshot baseline of ${sha}: run ${id}`);
-            core.setOutput("source", "run");
             core.setOutput("run-id", String(id));
             return id;
         }

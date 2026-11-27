@@ -24,10 +24,9 @@ function run(id, options = {}) {
 
 const PR = { pull_request: { base: { sha: 'stale-sha', ref: 'master' } } };
 
-// A fake GitHub: `batches` are the store runs each query returns, `artifacts` each run's
-// artifacts, `tree` the base commit's committed docs/screenshots (name to bytes), if any.
-function harness({ batches = [[run(42)]], artifacts = {}, tree = null, payload = PR, sha = 'merge-sha', unregistered = false } = {}) {
-  const calls = { runs: [], waits: [], written: {}, compares: [] };
+// A fake GitHub: `batches` are the store runs each query returns, `artifacts` each run's artifacts.
+function harness({ batches = [[run(42)]], artifacts = {}, payload = PR, sha = 'merge-sha', unregistered = false } = {}) {
+  const calls = { runs: [], waits: [], compares: [] };
   const outputs = {};
   let query = 0;
   const context = { repo: { owner: 'AnkiQuest', repo: 'AnkiQuest-Desktop' }, sha, ref: 'refs/pull/1/merge', payload };
@@ -42,21 +41,6 @@ function harness({ batches = [[run(42)]], artifacts = {}, tree = null, payload =
       async compareCommitsWithBasehead(request) {
         calls.compares.push(request);
         return { data: { merge_base_commit: { sha: 'base-sha' } } };
-      },
-      async getContent({ path: folder, ref }) {
-        assert.equal(folder, 'docs/screenshots');
-        assert.equal(ref, 'base-sha');
-        if (!tree) {
-          throw notFound();
-        }
-        const files = Object.keys(tree).map(name => ({ name, path: `${folder}/${name}`, type: 'file', sha: `blob-${name}` }));
-        return { data: [...files, { name: 'sub', path: `${folder}/sub`, type: 'dir', sha: 'tree-sub' }] };
-      },
-    },
-    git: {
-      async getBlob({ file_sha: blob }) {
-        const name = blob.replace(/^blob-/, '');
-        return { data: { encoding: 'base64', content: Buffer.from(tree[name]).toString('base64') } };
       },
     },
     actions: {
@@ -76,9 +60,8 @@ function harness({ batches = [[run(42)]], artifacts = {}, tree = null, payload =
   return {
     calls, outputs,
     args: {
-      github, context, core, dir: 'baseline',
+      github, context, core,
       sleep: async delay => { calls.waits.push(delay); },
-      writeFile: (file, bytes) => { calls.written[file] = Buffer.from(bytes).toString(); },
     },
   };
 }
@@ -86,7 +69,7 @@ function harness({ batches = [[run(42)]], artifacts = {}, tree = null, payload =
 test('a pull request compares with the store run of the commit it was merged into', async () => {
   const { args, calls, outputs } = harness();
   assert.equal(42, await baseline(args));
-  assert.deepEqual({ base: 'base-sha', source: 'run', 'run-id': '42' }, outputs);
+  assert.deepEqual({ base: 'base-sha', 'run-id': '42' }, outputs);
   assert.equal('screenshot_store.yml', calls.runs[0].workflow_id);
   assert.equal('base-sha', calls.runs[0].head_sha);
   assert.deepEqual([], calls.waits);
@@ -124,15 +107,6 @@ test('a store workflow GitHub does not know yet counts as no run', async () => {
   await assert.rejects(baseline(args), /No screenshot baseline/);
 });
 
-test('a commit from before the move uses its committed screenshots', async () => {
-  const tree = { 'desktop-today-light.png': 'today', 'desktop-inbox.png': 'inbox', 'notes.md': 'skip' };
-  const { args, calls, outputs } = harness({ tree });
-  assert.equal('', await baseline(args));
-  assert.deepEqual({ base: 'base-sha', source: 'tree', 'run-id': '' }, outputs);
-  assert.deepEqual({ 'baseline/desktop-today-light.png': 'today', 'baseline/desktop-inbox.png': 'inbox' }, calls.written);
-  assert.deepEqual([], calls.runs);
-});
-
 test('a merge group compares with the master commit it was built on', async () => {
   const payload = { merge_group: { base_ref: 'refs/heads/master', head_sha: 'group-sha' } };
   const { args, calls, outputs } = harness({ payload, sha: 'group-sha' });
@@ -151,7 +125,6 @@ test('the check downloads only the run the script found', () => {
   const wait = step(ci, 'Find the base commit\'s screenshot baseline');
   assert.match(wait, /require\('\.\/\.github\/screenshot_baseline\.cjs'\)/);
   const download = step(ci, 'Download the screenshot baseline');
-  assert.match(download, /if: steps\.baseline\.outputs\.run-id != ''/);
   assert.match(download, /run-id: \$\{\{ steps\.baseline\.outputs\.run-id \}\}/);
   assert.match(download, /name: screenshot-baseline\n/);
   assert.doesNotMatch(download, /continue-on-error/);
