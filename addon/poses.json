@@ -1,0 +1,49 @@
+{
+  "_about": "The poses, launcher icons and moment pictures of AnkiQuest's companions, read by the server, the clients and tools/art-check; each master is <companion>/<name>.png, listed in manifest.json. Every name appears once, in one group. core lists the poses every live companion needs, in order: a new companion goes live only with all of them drawn. extensions are tiers and variants of a core pose. pictures are the moment, share-card and notification pictures the apps show. icons are the launcher icon moods; icon is the default one. In extensions, pictures and icons each name maps to its fallback, which a companion with no master for it shows: a core pose or another name whose chain reaches one. core_fallbacks maps a core pose to the core pose shown instead, used only while a companion has no master for that core pose (manifest.json lists those under missing). Fallbacks are a stopgap until every live companion has everything drawn (AnkiQuest/AnkiQuest-Server#57, #116): a core_fallbacks entry goes once every live companion has that pose drawn.",
+  "core": ["face", "asleep", "happy", "streak", "sad", "hopeful", "frozen", "neglected"],
+  "extensions": {
+    "streak_hot": "streak",
+    "streak_blazing": "streak_hot",
+    "streak_legend": "streak_blazing",
+    "streak_milestone": "streak_legend",
+    "frozen_2": "frozen",
+    "frozen_3": "frozen_2",
+    "welcome": "happy",
+    "review": "happy",
+    "hurt": "sad",
+    "abandoned": "neglected",
+    "dead": "neglected",
+    "leech_defeated": "happy",
+    "winner": "happy"
+  },
+  "pictures": {
+    "achievement": "happy",
+    "at_risk": "sad",
+    "backlog": "sad",
+    "challenge": "hopeful",
+    "challenge_lost": "sad",
+    "challenge_won": "winner",
+    "comeback": "welcome",
+    "deck_conquered": "happy",
+    "freeze": "frozen",
+    "freeze_used": "frozen",
+    "goal": "happy",
+    "level_up": "happy",
+    "minimum": "review",
+    "nudge": "hopeful",
+    "place_1": "winner",
+    "place_2": "happy",
+    "place_3": "happy"
+  },
+  "icons": {
+    "icon": "face",
+    "icon_happy": "icon",
+    "icon_worried": "icon",
+    "icon_frozen": "icon",
+    "icon_sleepy": "icon"
+  },
+  "core_fallbacks": {
+    "happy": "hopeful",
+    "streak": "hopeful"
+  }
+}
