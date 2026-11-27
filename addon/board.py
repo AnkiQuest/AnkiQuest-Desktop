@@ -34,12 +34,6 @@ def _opens_tab(picture, translate):
         label, label, _COMPANION_BUTTON_STYLE, COMPANION_COMMAND, picture)
 
 
-def companion_style(companion):
-    """A style element that draws the deck list's companion pictures as `companion` needs:
-    the cow is Ankilope's art turned purple until it has its own (#88). Empty for others."""
-    found = moods.css_filter(companion)
-    return "<style>img.%s{filter:%s}</style>" % (COMPANION_CLASS, found) if found else ""
-
 PAGES = {
     "board": "/week",
     "profile": "/#{user}",

@@ -132,9 +132,6 @@ NAMES = {AKI: "Aki", ANKILOPE_ID: "Ankilope", COW: "Bluma", ANKI_TAN: "Anki-tan"
 # The Aki poses each picker card previews, in the phone's order: face, fire, sad.
 PREVIEW_POSES = ("aki_face", "aki_streak", "aki_sad")
 
-# How far the cow's art is hue-rotated, as CSS hue-rotate() turns it; see `art_owner`.
-COW_HUE_DEGREES = 250
-
 # The poses AnkiQuest-Art's poses.json names, unpacked beside the code from the pinned release
 # by the `-- art` step (tools/package-addon, `art`): the core poses every companion has, the pose
 # each extension falls back to where a companion has no art for it, and the core pose a companion
@@ -166,6 +163,35 @@ try:
 except FileNotFoundError as error:
     raise RuntimeError("Fetch the companion pictures first: " + FETCH) from error
 CORE_POSES, POSE_FALLBACKS, CORE_FALLBACKS = read_poses(_POSES_TEXT)
+
+# The pose each moment, share-card and notification picture shows where a companion has no
+# picture of its own, as poses.json `pictures` says. Only Aki has these scenes in the add-on.
+PICTURE_FALLBACKS = {
+    "achievement": "happy",
+    "at_risk": "sad",
+    "backlog": "sad",
+    "challenge": "hopeful",
+    "challenge_lost": "sad",
+    "challenge_won": "winner",
+    "comeback": "welcome",
+    "deck_conquered": "happy",
+    "freeze": "frozen",
+    "freeze_used": "frozen",
+    "goal": "happy",
+    "level_up": "happy",
+    "minimum": "review",
+    "nudge": "hopeful",
+    "place_1": "winner",
+    "place_2": "happy",
+    "place_3": "happy",
+}
+
+# Aki's pictures are `aki_<pose or picture>`.
+_AKI_PREFIX = "aki_"
+
+# The pose an Aki picture shows that neither the pose list nor `PICTURE_FALLBACKS` names, such
+# as one a newer server sends: a full-body pose, never the face.
+_UNKNOWN_PICTURE_POSE = "happy"
 
 # The pose each of Aki's pictures shows, so that other companions show theirs.
 _AKI_PICTURES = {
@@ -220,13 +246,12 @@ AKI_POSES = {
     "neglected": "aki_neglected",
 }
 
-# Ankilope's art for each pose she has, as the phone's AnkiquestCompanion maps them. On fire she
-# studies until her on-fire art exists.
+# Ankilope's art for each pose she has, as the phone's AnkiquestCompanion maps them.
 ANKILOPE = {
     "face": "ankilope_face",
     "asleep": "ankilope_asleep",
     "happy": "ankilope_celebrate",
-    "streak": "ankilope_study",
+    "streak": "ankilope_streak",
     "sad": "ankilope_sad",
     "hopeful": "ankilope_hopeful",
     "frozen": "ankilope_frozen",
@@ -235,24 +260,35 @@ ANKILOPE = {
     "review": "ankilope_study",
 }
 
-# Anki-tan's art for each pose she has a master for in AnkiQuest-Art. Her happy and streak poses
-# are not drawn yet (AnkiQuest-Server#57): they show hopeful (`CORE_FALLBACKS`), and so do the
-# extensions that end in them (welcome, review, winner and the streak tiers).
+# Bluma's art for each pose she has: her core poses, exported as `bluma_*`.
+BLUMA_POSES = {
+    "face": "bluma_face",
+    "asleep": "bluma_asleep",
+    "happy": "bluma_happy",
+    "streak": "bluma_streak",
+    "sad": "bluma_sad",
+    "hopeful": "bluma_hopeful",
+    "frozen": "bluma_frozen",
+    "neglected": "bluma_neglected",
+}
+
+# Anki-tan's art for each pose she has, as the pinned AnkiQuest-Art release exports it. Her face is
+# a headshot and every other pose full body; welcome shows her hopeful master, as Art's manifest
+# names it. Her other extensions fall back until they are drawn (AnkiQuest-Server#57).
 ANKI_TAN_POSES = {
     "face": "anki_tan_face",
     "asleep": "anki_tan_asleep",
+    "happy": "anki_tan_happy",
+    "streak": "anki_tan_streak",
     "sad": "anki_tan_sad",
     "hopeful": "anki_tan_hopeful",
     "frozen": "anki_tan_frozen",
     "neglected": "anki_tan_neglected",
+    "welcome": "anki_tan_hopeful",
 }
 
-# Each companion's art by pose, by whose art draws it (`art_owner`).
-_POSES = {AKI: AKI_POSES, ANKILOPE_ID: ANKILOPE, ANKI_TAN: ANKI_TAN_POSES}
-
-# The picture a companion shows for Aki's scenes it has no art for: Ankilope studies, Anki-tan
-# shows her face.
-_SCENES = {ANKILOPE_ID: "ankilope_study", ANKI_TAN: "anki_tan_face"}
+# Each companion's art by pose.
+_POSES = {AKI: AKI_POSES, ANKILOPE_ID: ANKILOPE, COW: BLUMA_POSES, ANKI_TAN: ANKI_TAN_POSES}
 
 
 def current(profile, now_ms):
@@ -432,7 +468,7 @@ def mood_pose(companion, chosen, streak, thresholds=None):
     stands for two poses (welcome for hopeful)."""
     if companion == NONE:
         return None
-    return pose_art(_POSES[art_owner(companion)], _mood_pose_name(chosen, streak, thresholds))
+    return pose_art(companion_poses(companion), _mood_pose_name(chosen, streak, thresholds))
 
 
 def forced_pose(companion, name):
@@ -440,7 +476,7 @@ def forced_pose(companion, name):
     a companion or when the companion cannot show that pose."""
     if companion == NONE:
         return None
-    return pose_art(_POSES[art_owner(companion)], name)
+    return pose_art(companion_poses(companion), name)
 
 
 def mood_line(chosen, streak):
@@ -454,25 +490,23 @@ def mood_line(chosen, streak):
 
 
 def art_owner(companion):
-    """Whose art draws `companion`. The cow has none yet (#88): it is Ankilope's, turned by
-    `hue_degrees`. A companion this add-on has no art for, such as one a newer server knows, is
-    drawn as Aki."""
-    if companion == COW:
-        return ANKILOPE_ID
+    """Whose art draws `companion`: its own. A companion this add-on has no art for, such as one
+    a newer server knows, is drawn as Aki."""
     if companion == NONE or companion in _POSES:
         return companion
     return AKI
 
 
-def hue_degrees(companion):
-    """How far `companion`'s art is hue-rotated: only the cow's, until it has its own (#88)."""
-    return COW_HUE_DEGREES if companion == COW else 0
+def companion_poses(companion):
+    """`companion`'s art by pose (`art_owner`'s); call it with a companion, not "none"."""
+    return _POSES[art_owner(companion)]
 
 
-def css_filter(companion):
-    """The CSS filter for `companion`'s art in web views; None when it needs none."""
-    degrees = hue_degrees(companion)
-    return "hue-rotate(%ddeg)" % degrees if degrees else None
+def face(companion):
+    """The file name of `companion`'s face, its only headshot; None for no companion."""
+    if companion == NONE:
+        return None
+    return companion_poses(companion)["face"]
 
 
 def pose_art(art, pose):
@@ -490,9 +524,12 @@ def companion_pose(companion, aki):
     owner = art_owner(companion)
     if owner == AKI:
         return aki
+
+    # A pose shows the companion's own; a scene only Aki has shows the pose poses.json names.
     pose = _AKI_PICTURES.get(aki)
     if pose is None:
-        return _SCENES[owner]
+        scene = aki[len(_AKI_PREFIX):] if aki.startswith(_AKI_PREFIX) else aki
+        pose = PICTURE_FALLBACKS.get(scene, _UNKNOWN_PICTURE_POSE)
     return pose_art(_POSES[owner], pose)
 
 

@@ -77,7 +77,7 @@ def _brand(dialog, layout, companion="aki"):
         return
     dialog.setWindowIcon(companion_art.icon(companion))
     image = QLabel()
-    image.setPixmap(companion_art.pixmap(face_path(companion), companion, 48))
+    image.setPixmap(companion_art.pixmap(face_path(companion), 48))
     layout.addWidget(_row(image, QLabel(tr("Your study companion."))))
 
 
