@@ -15,7 +15,7 @@ progress = load_in_package("aq_progress_data_test", "progress_data")
 class InviteCode(unittest.TestCase):
     def test_a_bare_code_is_taken_as_it_is(self):
         self.assertEqual("abc-123", social._invite_code("  abc-123 \n", "https://quest.example"))
-        self.assertEqual(social._invite_code("_x", "https://quest.example").strip(), "_x")
+        self.assertEqual("_x", social._invite_code("_x", "https://quest.example"))
 
     def test_a_link_of_the_same_server_yields_its_code(self):
         base = "https://quest.example"
