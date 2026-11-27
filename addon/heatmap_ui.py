@@ -1,11 +1,12 @@
 """The review heatmap under the deck list, as AnkiQuest-Android shows it under its decks.
 
-Python decides each day's colour, text and search (heatmap.py); the page's script only lays
-out the chosen year and shows the clicked day:
+Python decides each day's colour, text and search (heatmap.py); the page's script lays out the
+chosen year and shows the clicked day. A day's colour level comes from the shared rules'
+WebAssembly module (rules.py), the same Rust the Android app uses:
 
     heatmap.load ─▶ with_server_days ─▶ cells() ─▶ JSON ─▶ <script> draws the year
-                                                             │ click "View cards"
-    browser ◀─ search_for_offset ◀─ on_js_message ◀─ pycmd ◀─┘
+                                    rules.promise() ─▶ heatmap_intensity ─┘ │ click "View cards"
+    browser ◀─ search_for_offset ◀─ on_js_message ◀─ pycmd ◀────────────────┘
 
 Works offline, without an account. With one, AnkiQuest's verdicts and frozen days colour
 the days it judged, as on Android.
@@ -15,7 +16,7 @@ import json
 from datetime import date
 from html import escape
 
-from . import heatmap
+from . import heatmap, rules
 from .board import COMPANION_CLASS
 from .language import plural
 
@@ -71,9 +72,12 @@ font:600 13px/1.35 "Nunito","Varela Round","Segoe UI Variable Display","Segoe UI
 #aq-heatmap .hm-view{background:var(--hm-select);color:#23272e;border:0;border-radius:999px;padding:4px 12px;font-weight:800}
 </style>"""
 
-# Lays out one year; every colour, text and search was decided in Python.
+# Lays out one year once the rules module is ready; every text and search was decided in Python,
+# each colour level by the module. Marks the block data-ready once drawn.
 SCRIPT = """<script>(function(){
 var D=%s,L=D.labels,root=document.getElementById("aq-heatmap");
+// The colour level of a count: from the module, or 0 if it could not load.
+var level=function(){return 0;};
 function q(name){return root.querySelector(".hm-"+name);}
 var grid=q("grid"),months=q("months"),scroll=q("scroll"),view=q("view"),body=q("body");
 var year=+D.today.slice(0,4),selected=D.today,firstDay=1;
@@ -85,9 +89,11 @@ var full=format({dateStyle:"full",timeZone:"UTC"}),month=format({month:"short",t
 weekday=format({weekday:"short",timeZone:"UTC"});
 function iso(day){return day.toISOString().slice(0,10);}
 function parse(text){return new Date(text+"T00:00:00Z");}
-// [class, text, has cards]; days without data get the text for their kind.
+// [class, text, has cards]; days without data get the text for their kind. A day's data is
+// [colour, text, has cards, count to level or null, kept].
 function info(day){
-  if(D.days[day]){return D.days[day];}
+  var c=D.days[day];
+  if(c){return [c[0]+(c[3]===null?"":level(c[3]))+(c[4]?" k":""),c[1],c[2]];}
   if(day>D.end){return ["",L.beyond,0];}
   return ["",day>D.today?L.due:L.none,0];
 }
@@ -153,7 +159,9 @@ q("toggle").onclick=function(){
   this.setAttribute("aria-label",open?L.collapse:L.expand);
   pycmd("%s"+(open?1:0));
 };
-draw();
+%s.then(function(rules){level=function(count){return rules.heatmap_intensity(count,D.average);};},
+function(error){console.error("ankiquest heatmap:",error);})
+.then(function(){draw();root.dataset.ready="1";});
 })();</script>"""
 
 
@@ -201,31 +209,35 @@ def describe(data, day, tr):
 
 
 def colour(data, day):
-    """A day's colour class, as ReviewHeatmapGrid.kt draws it. AnkiQuest's verdict colours the
-    days it judged: only a day that met the streak minimum looks studied, and a frozen day
-    looks frozen even with reviews. An unverified day counted, so it looks studied too. "k" outlines a day AnkiQuest kept the streak through."""
+    """A day's colour as (class, count, kept), as ReviewHeatmapGrid.kt draws it. Reviews ("l")
+    and forecast ("f") days take the level of `count` (heatmap_intensity), added by the page;
+    the other classes have no count. AnkiQuest's verdict colours the days it judged: only a day
+    that met the streak minimum looks studied, and a frozen day looks frozen even with reviews.
+    An unverified day counted, so it looks studied too. `kept` (1) outlines a day AnkiQuest
+    kept the streak through."""
     future = day > data.today
     verdict = None if future else data.verdicts.get(day)
     state = verdict.state if verdict else None
+    kept = 1 if day in data.protected else 0
     if state == heatmap.SHORT:
-        found = "s"
-    elif state in heatmap.KEEPS_STREAK:
-        found = "z"
-    elif state == heatmap.NONE:
-        found = "l0"
-    elif future:
-        found = "f%d" % heatmap.intensity(data.scheduled.get(day, 0), data.daily_average)
-    else:
-        found = "l%d" % heatmap.intensity(data.reviews.get(day, 0), data.daily_average)
-    return found + " k" if day in data.protected else found
+        return "s", None, kept
+    if state in heatmap.KEEPS_STREAK:
+        return "z", None, kept
+    if state == heatmap.NONE:
+        return "l0", None, kept
+    if future:
+        return "f", data.scheduled.get(day, 0), kept
+    return "l", data.reviews.get(day, 0), kept
 
 
 def cells(data, tr):
-    """{ISO date: [colour, text, has cards]} for every day with something to show."""
+    """{ISO date: [colour, text, has cards, count to level or None, kept]} for every day with
+    something to show."""
     found = {}
     for day in sorted(set(data.reviews) | set(data.scheduled) | set(data.verdicts) | data.protected):
         has_cards = 1 if heatmap.search_for_day(data, day) else 0
-        found[day.isoformat()] = [colour(data, day), describe(data, day, tr), has_cards]
+        name, count, kept = colour(data, day)
+        found[day.isoformat()] = [name, describe(data, day, tr), has_cards, count, kept]
     return found
 
 
@@ -242,6 +254,7 @@ def html(data, tr, language="en", expanded=True, art=None):
         "firstYear": first_year,
         "lastYear": data.forecast_end.year,
         "lang": language.replace("_", "-") or "en",
+        "average": data.daily_average,
         "days": cells(data, tr),
         "labels": {
             "none": _reviews(tr, 0),
@@ -254,7 +267,7 @@ def html(data, tr, language="en", expanded=True, art=None):
         },
     }
     # Keeps "</script>" in a label from ending the script.
-    script = SCRIPT % (json.dumps(page, ensure_ascii=False).replace("</", "<\\/"), CARDS, EXPANDED)
+    script = SCRIPT % (json.dumps(page, ensure_ascii=False).replace("</", "<\\/"), CARDS, EXPANDED, rules.promise())
 
     picture = "<img class=%s src='%s' alt=''>" % (COMPANION_CLASS, escape(art, quote=True)) if art else ""
     toggle = tr("Collapse review heatmap") if expanded else tr("Expand review heatmap")

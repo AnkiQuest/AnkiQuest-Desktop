@@ -1,7 +1,8 @@
 //! Builds the add-on archive for PR checks, GitHub releases and AnkiWeb:
 //! `cargo run --manifest-path tools/package-addon/Cargo.toml --
 //! --output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-//! [--metadata <file>]`, `-- art` for the pictures and `poses.json` alone, or
+//! [--metadata <file>]`, `-- art` for the pictures and `poses.json` alone,
+//! `-- rules` for the shared rules' module alone, or
 //! `-- server-data [--from <AnkiQuest-Server checkout>]` for the server
 //! data the tests read (see `server`).
 //!
@@ -12,7 +13,10 @@
 //!
 //! Before packaging, it unpacks the add-on's companion pictures into
 //! `addon/` from the AnkiQuest-Art release `ankiquest-art.json` pins
-//! (see `art`). `package-addon art` does only that, for a checkout.
+//! (see `art`), and writes the shared rules' WebAssembly module into
+//! `addon/rules/` from AnkiQuest-Server's newest rules release, recording its
+//! tag (see `rules`). `package-addon art` and `package-addon rules` each
+//! do only their part, for a checkout.
 
 use std::collections::BTreeMap;
 use std::env;
@@ -24,7 +28,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde_json::{Value, json};
 
 mod art;
+mod attestation;
 mod json;
+mod release;
+mod rules;
 mod server;
 mod zip;
 
@@ -109,6 +116,9 @@ struct Args {
 /// The subcommand that only unpacks the pictures into `addon/`.
 const ART_COMMAND: &str = "art";
 
+/// The subcommand that only writes the rules module into `addon/rules/`.
+const RULES_COMMAND: &str = "rules";
+
 /// The subcommand that copies the server's fixtures and examples into `tests/`.
 const SERVER_COMMAND: &str = "server-data";
 
@@ -116,14 +126,13 @@ const SERVER_COMMAND: &str = "server-data";
 const FROM_FLAG: &str = "--from";
 
 /// Runs `--output <file> [--ankiweb] [--updates github|none] [--ref <ref>]
-/// [--metadata <file>]`, `art` or `server-data [--from <checkout>]`.
+/// [--metadata <file>]`, `art`, `rules`, or `server-data [--from <checkout>]`.
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
+    let repo = root();
     let result = match args.as_slice() {
-        [command] if command == ART_COMMAND => {
-            let repo = root();
-            art::fetch(&repo, &repo.join(ADDON))
-        }
+        [command] if command == ART_COMMAND => art::fetch(&repo, &repo.join(ADDON)),
+        [command] if command == RULES_COMMAND => rules::fetch(&repo, &repo.join(ADDON)),
         [command] if command == SERVER_COMMAND => server::fetch(&root(), None),
         [command, flag, from] if command == SERVER_COMMAND && flag == FROM_FLAG => {
             server::fetch(&root(), Some(Path::new(from)))
@@ -145,6 +154,7 @@ fn package(args: &[String]) -> Result<(), String> {
     let repo = root();
     let version = version(&repo, &args.source)?;
     art::fetch(&repo, &repo.join(ADDON))?;
+    rules::fetch(&repo, &repo.join(ADDON))?;
     build(&repo.join(ADDON), &args.output, &version, args.channel)?;
 
     // The nightly release publishes this for the add-on's update check.

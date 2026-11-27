@@ -66,12 +66,13 @@ The screenshots and the banner are drawn, not captured by hand. `tests/draw_scre
   cp "$art_stage/manifest.json" art/manifest.json
 ) &&
 cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art &&
+cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules &&
 cargo run --release --manifest-path ../AnkiQuest-Dev/tools/banner/Cargo.toml -- --server . --record
 ```
 
 Another system or Qt draws slightly different text, so CI fails on a banner drawn there. Every run keeps its drawings as the `screenshots` and `banner` artifacts.
 
-[Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The tests read the shared fixtures and API examples of AnkiQuest-Server `master`; `cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- server-data` copies them into `tests/` ([Server data](docs/desktop.md#server-data)). The companion pictures come from the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art) release pinned in `ankiquest-art.json`; `cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art` puts them in `addon/` ([Companion pictures](docs/desktop.md#companion-pictures)).
+[Desktop compatibility, tests and packages](docs/desktop.md) has the supported Anki versions, the CI jobs and the release steps. The tests read the shared fixtures and API examples of AnkiQuest-Server `master`; `cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- server-data` copies them into `tests/` ([Server data](docs/desktop.md#server-data)). The companion pictures come from the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art) release pinned in `ankiquest-art.json`; `cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art` puts them in `addon/` ([Companion pictures](docs/desktop.md#companion-pictures)). The shared rules' WebAssembly module comes from the newest AnkiQuest-Server `rules-<N>` release; `-- rules` puts it in `addon/rules/` with the tag it used ([Shared rules module](docs/desktop.md#shared-rules-module)).
 
 ## License
 

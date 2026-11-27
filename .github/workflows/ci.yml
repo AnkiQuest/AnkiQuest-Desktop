@@ -114,6 +114,16 @@ jobs:
       - name: Fetch the companion pictures
         if: needs.changes.outputs.code == 'true'
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
+      # The heatmap and its tests run the shared rules' module from the
+      # newest AnkiQuest-Server rules release. Later packaging in this job
+      # (the real-Anki smoke) takes the same release.
+      - name: Fetch the rules module
+        if: needs.changes.outputs.code == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules
+          echo "ANKIQUEST_RULES_TAG=$(jq -r .tag addon/rules/release.json)" >> "$GITHUB_ENV"
       - name: Lint the add-on
         if: needs.changes.outputs.code == 'true'
         run: python -m pyflakes addon
@@ -178,6 +188,10 @@ jobs:
           key: ankiquest-art-${{ hashFiles('ankiquest-art.json') }}
       - name: Fetch the companion pictures
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
+      - name: Fetch the rules module
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules
       - name: Compare the screenshots with the baseline
         env:
           ANKIQUEST_SCREENSHOTS_BASELINE: ${{ runner.temp }}/baseline
@@ -255,7 +269,10 @@ jobs:
           cargo fmt --all --manifest-path "$PACKAGER" --check
           cargo clippy --workspace --locked --manifest-path "$PACKAGER" --all-targets -- -D warnings
           cargo test --locked --manifest-path "$PACKAGER"
+      # Both archives take the newest rules release.
       - name: Build the archive
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           cargo run --locked --manifest-path "$PACKAGER" -- --updates github --output ankiquest-24.11.ankiaddon
           cargo run --locked --manifest-path "$PACKAGER" -- --ankiweb --output ankiquest-ankiweb.ankiaddon

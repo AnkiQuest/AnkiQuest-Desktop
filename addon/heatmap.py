@@ -226,20 +226,6 @@ def summarize(today, reviews, scheduled, protected=(), verdicts=None):
     )
 
 
-def intensity(count, daily_average):
-    """Colour level 0-4 of a day: none, up to half the average, the average, twice it, more."""
-    average = max(daily_average, 1.0)
-    if count <= 0:
-        return 0
-    if count <= average / 2:
-        return 1
-    if count <= average:
-        return 2
-    if count <= average * 2:
-        return 3
-    return 4
-
-
 def search_for_offset(offset):
     """The browser search for the day `offset` days from today, or None past the forecast."""
     if offset <= 0:

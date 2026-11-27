@@ -25,10 +25,14 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      # No Rust cache: a release is built from a clean registry and target,
-      # so a cache a pull request wrote can't reach the published archive.
+      # The archives take the newest AnkiQuest-Server rules release and
+      # record its tag. No Rust cache: a release is built from a clean
+      # registry and target, so a cache a pull request wrote can't reach the
+      # published archive.
       - name: Version
         id: version
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           # The GitHub release updates itself from GitHub releases. Its names carry the minimum
           # Anki (updates.BUILDS): copies on an older Anki never see them.

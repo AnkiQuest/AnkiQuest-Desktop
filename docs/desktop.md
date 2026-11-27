@@ -123,6 +123,55 @@ the pinned AnkiQuest-Art release's `poses.json` (copied beside the code by
 `-- art`) names; a core pose not drawn yet shows the core pose its
 `core_fallbacks` name, read by `addon/moods.py`.
 
+## Shared rules module
+
+The heatmap's colour levels come from the shared rules' WebAssembly module
+(`addon/rules/ankiquest_rules.wasm`), AnkiQuest-Server's `crates/rules`
+built for the pages Anki shows in Qt WebEngine (`docs/shared-rules.md` in
+AnkiQuest-Server). `addon/rules.py` inlines it into a page, which compiles
+it and calls its exports; every Anki the add-on supports has a WebEngine
+that runs WebAssembly, so there is no Python copy of those rules.
+
+The module is not committed. The add-on uses AnkiQuest-Server `master`,
+so the packager takes the newest `rules-<N>` release at every build: it
+lists AnkiQuest-Server's releases (with `GITHUB_TOKEN` when set, for the
+API's rate limit), downloads the release's `SHA256SUMS` and the module,
+checks the module against it and against the release's build provenance
+attestation, and writes the tag and hash to `addon/rules/release.json`,
+which the archive carries. Downloads are cached by SHA-256 in
+`ANKIQUEST_RULES_CACHE`, by default `ankiquest-rules` in the user's cache
+folder, and only once their attestation verified; a cached asset is used
+again without network. For a checkout:
+
+```sh
+cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- rules
+```
+
+To rebuild an archive with the rules it shipped, set `ANKIQUEST_RULES_TAG`
+to the tag in its `rules/release.json`. To try a release that is not
+published yet, set `ANKIQUEST_RULES_DIR` to a folder with its assets and
+`SHA256SUMS` (from AnkiQuest-Server's `crates/rules-wasm/build.sh`).
+
+The attestation is the release's `ankiquest_rules.sigstore.json`, a
+Sigstore bundle. The packager runs the GitHub CLI on each downloaded asset:
+
+```sh
+gh attestation verify <asset> --bundle ankiquest_rules.sigstore.json --repo AnkiQuest/AnkiQuest-Server \
+  --cert-identity https://github.com/AnkiQuest/AnkiQuest-Server/.github/workflows/rules-release.yml@refs/heads/master \
+  --cert-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+It accepts an asset only when the bundle verifies against Sigstore's
+public trust root, its certificate was issued to AnkiQuest-Server's
+release workflow on `master`, and the asset's SHA-256 is one of its
+subjects. `SHA256SUMS` alone can be replaced together with the assets.
+With the bundle given as a file, `gh` needs no login and no API call, but
+it must be installed (GitHub's runners have it). A folder in
+`ANKIQUEST_RULES_DIR` is trusted as it is, without an attestation.
+
+`tests/qt_heatmap_rules.py` runs the fixture's `intensity_cases` through
+the module in WebEngine, with the loader the pages use.
+
 ## API audit
 
 Checked against the installed 24.11 and 26.09.4 APIs:
