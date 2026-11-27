@@ -134,7 +134,22 @@ class StreakMoods(unittest.TestCase):
     def test_every_shared_away_run(self):
         for case in self.fixture["away_run"]:
             with self.subTest(case=case["name"]):
-                self.assertEqual(case["expected"], moods.away_run(case["heatmap"]))
+                studied = moods.Studied.EVER if case["studied"] else moods.Studied.NEVER
+                self.assertEqual(case["expected"], moods.away_run(case["heatmap"], studied))
+
+    def test_studied_is_lifetime_reviews_above_zero(self):
+        self.assertIs(moods.Studied.NEVER, moods.Studied.of(None))
+        self.assertIs(moods.Studied.NEVER, moods.Studied.of({}))
+        self.assertIs(moods.Studied.NEVER, moods.Studied.of({"lifetime": {"reviews": 0}}))
+        self.assertIs(moods.Studied.EVER, moods.Studied.of({"lifetime": {"reviews": 1}}))
+
+    def test_a_long_gone_player_is_dead_not_asleep(self):
+        # A heatmap with no study day: the player who studied before it has been away all of it.
+        heatmap = [{"frozen": False, "state": "none"} for _ in range(40)]
+        gone = {"_day_status": "pending", "streak": 0, "heatmap": heatmap, "lifetime": {"reviews": 5}}
+        new = dict(gone, lifetime={"reviews": 0})
+        self.assertEqual(moods.DEAD, moods.today_mood(gone, moods.Goal.OPEN))
+        self.assertEqual(moods.ASLEEP, moods.today_mood(new, moods.Goal.OPEN))
 
     def test_the_heatmap_says_how_yesterday_ended(self):
         today = {"frozen": False, "state": "none"}

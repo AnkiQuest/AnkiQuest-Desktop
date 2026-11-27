@@ -174,6 +174,19 @@ class Goal(Enum):
     REACHED = auto()
 
 
+class Studied(Enum):
+    """Whether the player has ever studied: the profile's `lifetime.reviews > 0`
+    (`away_run` in streak_moods.json)."""
+    NEVER = auto()
+    EVER = auto()
+
+    @classmethod
+    def of(cls, profile):
+        lifetime = (profile or {}).get("lifetime")
+        reviews = lifetime.get("reviews") if isinstance(lifetime, dict) else 0
+        return cls.EVER if int(reviews or 0) > 0 else cls.NEVER
+
+
 class Stage(Enum):
     """How far today's review time has come toward the streak minimum. Each stage starts at
     `percent` of the minimum, as `stages` in streak_moods.json says; values as it names them."""
@@ -529,15 +542,19 @@ def frozen_run(heatmap):
     return days
 
 
-def away_run(heatmap):
+def away_run(heatmap, studied):
     """Days without reviews in a row ending yesterday in a profile's heatmap, whose last cell is
-    today; 0 when no earlier day was studied (a new player is not away)."""
+    today. Without a study day in the heatmap, a player who `studied` before it is away for every
+    day of it before today, and one who never studied (a new player) is not away. Without a
+    heatmap nothing is known: 0."""
     before = (heatmap or [])[:-1]
     for index in range(len(before) - 1, -1, -1):
         cell = before[index]
         if isinstance(cell, dict) and cell.get("state") != "none":
             return len(before) - 1 - index
-    return 0
+
+    # No study day in the heatmap: away since before it, or never studied at all.
+    return len(before) if studied is Studied.EVER else 0
 
 
 def yesterday(heatmap):
@@ -594,7 +611,7 @@ def today_mood(view, goal, night=None, now_ms=None, thresholds=None):
     reviews, streak, frozen = _reviews_today(view), _streak(view), frozen_run(heatmap)
     return streak_mood(
         day_state(view), reviews, _stage(view), streak, frozen, goal,
-        away_run(heatmap), _freezes(view), _day_left_ms(view, now_ms), night, thresholds,
+        away_run(heatmap, Studied.of(view)), _freezes(view), _day_left_ms(view, now_ms), night, thresholds,
     )
 
 
