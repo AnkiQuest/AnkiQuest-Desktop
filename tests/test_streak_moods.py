@@ -11,10 +11,11 @@ moods = load_module("aq_streak_moods", "moods.py")
 
 TESTS = Path(__file__).resolve().parent
 FIXTURE = TESTS / "fixtures" / "streak_moods.json"
-POSES = TESTS / "fixtures" / "companion_poses.json"
 
-# How a checkout fetches the add-on's pictures from the pinned AnkiQuest-Art release.
-FETCH = "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+# Art's poses.json, copied beside the code from the pinned release.
+ART_POSES = ADDON / "poses.json"
+
+# moods.FETCH says how a checkout fetches the add-on's pictures from the pinned release.
 
 # Aki's picture for each mood but fire, which burns by heat: her art for each pose. thawing shows
 # frozen and almost shows hopeful; she has no frozen_2 or frozen_3 art, so those show her frozen.
@@ -200,7 +201,8 @@ class StreakMoods(unittest.TestCase):
         # Each pose and Today art is bundled and the web view may load it, but nothing outside the art.
         source = (ADDON / "__init__.py").read_text("utf-8")
         pattern = re.search(r'setWebExports\(__name__, r"(.+?)"\)', source).group(1)
-        self.assertTrue(re.fullmatch(pattern, "aki_face.png"))
+        self.assertTrue(re.fullmatch(pattern, "art/bluma_face.png"))
+        self.assertFalse(re.fullmatch(pattern, "aki_face.png"), "faces load from art/")
         self.assertFalse(re.fullmatch(pattern, "art/../config.json"))
         for companion in ("aki", "ankilope", "cow", "anki_tan"):
             shown = {moods.mood_pose(companion, chosen, streak) for chosen in moods.STREAK_MOODS for streak in (0, 1, 7, 30, 100)}
@@ -215,37 +217,36 @@ class StreakMoods(unittest.TestCase):
 
     def test_every_picture_asked_for_is_exported_or_falls_back(self):
         # The pictures come from the pinned AnkiQuest-Art release (docs/desktop.md, Companion pictures).
-        # Every pose the fixture names resolves, for every companion, to an exported picture or
+        # Every pose Art's poses.json names resolves, for every companion, to an exported picture or
         # to the exported picture of its fallback, and so does every picture named directly.
-        self.assertTrue((ADDON / "art").is_dir(), "Fetch the pictures first: " + FETCH)
+        self.assertTrue((ADDON / "art").is_dir(), "Fetch the pictures first: " + moods.FETCH)
         poses = [*moods.CORE_POSES, *moods.POSE_FALLBACKS]
 
         asked = set()
-        for art in (moods.AKI_POSES, moods.ANKILOPE, moods.ANKI_TAN_POSES, moods._SCENES):
+        for art in (moods.AKI_POSES, moods.ANKILOPE, moods.BLUMA_POSES, moods.ANKI_TAN_POSES):
             asked.update(art.values())
+        scenes = ["aki_" + scene for scene in moods.PICTURE_FALLBACKS]
         for companion in ("aki", "ankilope", "cow", "anki_tan"):
-            owner = moods._POSES[moods.art_owner(companion)]
+            owner = moods.companion_poses(companion)
             asked.update(moods.pose_art(owner, pose) for pose in poses)
             asked.update(moods.companion_pose(companion, aki) for aki in moods._AKI_PICTURES)
+            if companion != "aki":
+                asked.update(moods.companion_pose(companion, aki) for aki in scenes)
             asked.update(moods.preview(companion))
         for name in sorted(asked):
             with self.subTest(picture=name):
                 self.assertTrue((ADDON / "art" / (name + ".png")).is_file(), name)
 
-        # The share card and toolbar faces sit beside the code.
-        for owner in moods._POSES:
-            self.assertTrue((ADDON / ("%s_face.png" % owner)).is_file(), owner)
-
     def test_asleep_art_uses_the_pose_name(self):
         # AnkiQuest-Server#32: every companion's asleep picture is `<companion>_asleep`.
-        for poses in (moods.AKI_POSES, moods.ANKILOPE, moods.ANKI_TAN_POSES):
+        for poses in (moods.AKI_POSES, moods.ANKILOPE, moods.BLUMA_POSES, moods.ANKI_TAN_POSES):
             name = poses["asleep"]
             self.assertTrue(name.endswith("_asleep"), name)
             self.assertTrue((ADDON / "art" / ("%s.png" % name)).is_file(), name)
 
     def test_ankilope_shows_her_pose_for_every_mood(self):
         # Regression: a freeze used yesterday showed Ankilope studying, although her frozen art exists.
-        # On fire she studies until her on-fire art exists.
+        # On fire she shows her streak pose, at every heat.
         expected = {
             moods.MOOD_UNKNOWN: "ankilope_face",
             moods.ASLEEP: "ankilope_asleep",
@@ -260,14 +261,13 @@ class StreakMoods(unittest.TestCase):
             moods.THAWING: "ankilope_frozen",
             moods.HOPEFUL: "ankilope_hopeful",
             moods.ALMOST: "ankilope_hopeful",
-            moods.FIRE: "ankilope_study",
+            moods.FIRE: "ankilope_streak",
         }
         self.assertEqual(set(moods.STREAK_MOODS), set(expected))
-        for companion in (moods.ANKILOPE_ID, moods.COW):
-            for chosen, pose in expected.items():
-                for streak in (0, 1, 7, 30, 100, 365):
-                    with self.subTest(companion=companion, mood=chosen, streak=streak):
-                        self.assertEqual(pose, moods.mood_pose(companion, chosen, streak))
+        for chosen, pose in expected.items():
+            for streak in (0, 1, 7, 30, 100, 365):
+                with self.subTest(mood=chosen, streak=streak):
+                    self.assertEqual(pose, moods.mood_pose(moods.ANKILOPE_ID, chosen, streak))
 
     def test_anki_tan_shows_her_pose_for_every_mood(self):
         # Anki-tan goes live with the poses her masters have; frozen 2 and 3 fall
@@ -293,24 +293,22 @@ class StreakMoods(unittest.TestCase):
                 with self.subTest(mood=chosen, streak=streak):
                     self.assertEqual(pose, moods.mood_pose(moods.ANKI_TAN, chosen, streak))
 
-        # Her streak pose is not drawn yet, so on fire she shows hopeful at every streak.
+        # On fire she shows her streak pose; its hotter tiers are not drawn and fall back to it.
         for streak in (1, 7, 30, 99, 100, 365):
-            self.assertEqual("anki_tan_hopeful", moods.mood_pose(moods.ANKI_TAN, moods.FIRE, streak))
+            self.assertEqual("anki_tan_streak", moods.mood_pose(moods.ANKI_TAN, moods.FIRE, streak))
 
     def test_anki_tan_shows_her_pose_for_aki_pictures(self):
         pose = lambda aki: moods.companion_pose(moods.ANKI_TAN, aki)
         self.assertEqual("anki_tan_frozen", pose("aki_freeze"))
-        self.assertEqual("anki_tan_face", pose("aki_nudge"), "she has no scene art: her face, never Aki's")
-        self.assertEqual(["anki_tan_face", "anki_tan_hopeful", "anki_tan_sad"], moods.preview(moods.ANKI_TAN))
+        self.assertEqual("anki_tan_hopeful", pose("aki_nudge"), "no scene art: the pose poses.json names, never her face")
+        self.assertEqual(["anki_tan_face", "anki_tan_streak", "anki_tan_sad"], moods.preview(moods.ANKI_TAN))
 
-        # Happy and streak are core poses with no master yet: they and the extensions that end in
-        # them show hopeful. Her other extensions fall back as companion_poses.json says.
+        # Welcome is her hopeful master; her other extensions fall back as poses.json says.
         fallbacks = {
-            "happy": "anki_tan_hopeful", "streak": "anki_tan_hopeful",
-            "welcome": "anki_tan_hopeful", "review": "anki_tan_hopeful", "winner": "anki_tan_hopeful",
-            "leech_defeated": "anki_tan_hopeful", "streak_hot": "anki_tan_hopeful",
-            "streak_blazing": "anki_tan_hopeful", "streak_legend": "anki_tan_hopeful",
-            "streak_milestone": "anki_tan_hopeful",
+            "review": "anki_tan_happy", "winner": "anki_tan_happy",
+            "leech_defeated": "anki_tan_happy", "streak_hot": "anki_tan_streak",
+            "streak_blazing": "anki_tan_streak", "streak_legend": "anki_tan_streak",
+            "streak_milestone": "anki_tan_streak",
             "frozen_2": "anki_tan_frozen", "frozen_3": "anki_tan_frozen",
             "hurt": "anki_tan_sad", "abandoned": "anki_tan_neglected", "dead": "anki_tan_neglected",
         }
@@ -337,23 +335,53 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual("ankilope_welcome", moods.companion_pose(moods.ANKILOPE_ID, "aki_welcome"))
         self.assertEqual("ankilope_asleep", moods.companion_pose(moods.ANKILOPE_ID, "aki_asleep"))
         self.assertEqual("ankilope_frozen", moods.companion_pose(moods.ANKILOPE_ID, "aki_freeze"))
-        self.assertEqual("ankilope_study", moods.companion_pose(moods.ANKILOPE_ID, "aki_streak_milestone"))
-        self.assertEqual(["ankilope_face", "ankilope_study", "ankilope_sad"], moods.preview(moods.ANKILOPE_ID))
+        self.assertEqual("ankilope_streak", moods.companion_pose(moods.ANKILOPE_ID, "aki_streak_milestone"))
+        self.assertEqual("ankilope_study", moods.companion_pose(moods.ANKILOPE_ID, "aki_review"))
+        self.assertEqual(["ankilope_face", "ankilope_streak", "ankilope_sad"], moods.preview(moods.ANKILOPE_ID))
 
-    def test_the_poses_are_the_shared_ones(self):
-        fixture = json.loads(POSES.read_text("utf-8"))
-        self.assertEqual(fixture["core"], list(moods.CORE_POSES))
-        self.assertEqual(fixture["extensions"], moods.POSE_FALLBACKS)
-        self.assertEqual(fixture["pictures"], moods.PICTURE_FALLBACKS)
+    def test_the_poses_come_from_the_pinned_art_release(self):
+        # The pose list is Art's: the release's poses.json, unpacked beside the code, not a copy
+        # on the server. Its core poses, extension fallbacks and core fallbacks are what moods
+        # works with, with nothing of its own on top.
+        self.assertTrue(ART_POSES.is_file(), "Fetch the pictures first: " + moods.FETCH)
+        art = json.loads(ART_POSES.read_text("utf-8"))
+        self.assertEqual(art["core"], list(moods.CORE_POSES))
+        self.assertEqual(art["extensions"], moods.POSE_FALLBACKS)
+        self.assertEqual(art["core_fallbacks"], moods.CORE_FALLBACKS)
 
-        # Aki and Ankilope have every core pose; Anki-tan's happy and streak are not drawn yet.
-        for art in (moods.AKI_POSES, moods.ANKILOPE):
+        # Every companion has every core pose, so no core fallback is used.
+        for art in (moods.AKI_POSES, moods.ANKILOPE, moods.BLUMA_POSES, moods.ANKI_TAN_POSES):
             self.assertTrue(set(moods.CORE_POSES) <= set(art))
-        missing = set(moods.CORE_POSES) - set(moods.ANKI_TAN_POSES)
-        self.assertEqual({"happy", "streak"}, missing)
-        self.assertLessEqual(missing, set(moods.CORE_FALLBACKS))
-        self.assertLessEqual(set(moods.CORE_FALLBACKS.values()), set(moods.CORE_POSES) - missing)
+        self.assertLessEqual(set(moods.CORE_FALLBACKS.values()), set(moods.CORE_POSES))
         self.assertEqual("ankilope_frozen", moods.pose_art(moods.ANKILOPE, "frozen_3"))
+
+    def test_poses_are_read_from_art(self):
+        # The core poses every companion has, the pose each extension falls back to and the core
+        # pose shown while one is not drawn, as Art's poses.json names them.
+        art = json.dumps({
+            "core": ["face", "asleep"],
+            "extensions": {"winner": "happy", "frozen_2": "frozen"},
+            "core_fallbacks": {"happy": "hopeful"},
+        })
+        self.assertEqual(
+            (("face", "asleep"), {"winner": "happy", "frozen_2": "frozen"}, {"happy": "hopeful"}),
+            moods.read_poses(art),
+        )
+        for missing in ("core", "extensions", "core_fallbacks"):
+            with self.subTest(missing=missing):
+                stripped = {key: value for key, value in json.loads(art).items() if key != missing}
+                with self.assertRaises(ValueError):
+                    moods.read_poses(json.dumps(stripped))
+        for name, wrong in (
+            ("core poses that are not strings", {"core": ["face", 7]}),
+            ("core that is not a list", {"core": "face"}),
+            ("fallbacks that are not strings", {"extensions": {"winner": 7}}),
+            ("core fallbacks that are not strings", {"core_fallbacks": {"happy": 7}}),
+        ):
+            with self.subTest(wrong=name):
+                broken = dict(json.loads(art), **wrong)
+                with self.assertRaises(ValueError):
+                    moods.read_poses(json.dumps(broken))
 
     def test_the_displayed_day_sets_the_state(self):
         def view(status, reviews=0):

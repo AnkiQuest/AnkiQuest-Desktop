@@ -101,4 +101,4 @@ class MomentQueue(unittest.TestCase):
     def test_a_secured_day_burns_as_hot_as_its_streak(self):
         for streak, expected in ((None, "aki_streak"), (6, "aki_streak"), (7, "aki_streak_hot"), (30, "aki_streak_blazing"), (100, "aki_streak_legend")):
             self.assertEqual(expected, moments._pose({"topic": "secured", "streak": streak}, "aki"))
-        self.assertEqual("ankilope_study", moments._pose({"topic": "secured", "streak": 64}, "ankilope"))
+        self.assertEqual("ankilope_streak", moments._pose({"topic": "secured", "streak": 64}, "ankilope"))

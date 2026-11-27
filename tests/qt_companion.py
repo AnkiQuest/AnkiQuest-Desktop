@@ -1,6 +1,7 @@
 """Real Qt checks of the companion picker, run by test_qt_windows.py."""
 
 from concurrent.futures import Future
+from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
@@ -15,6 +16,7 @@ companion_art = load_in_package("companion_qt", "companion_art")
 companion_unlock = load_in_package("companion_qt", "companion_unlock")
 companion_reveal = load_in_package("companion_qt", "companion_reveal")
 share = load_in_package("companion_qt", "share")
+moods = load_in_package("companion_qt", "moods")
 client = load_in_package("companion_qt", "client")
 companion_ui.tr = lambda text: text
 
@@ -278,7 +280,7 @@ class Picker(unittest.TestCase):
         self.api.unlock.assert_not_called()
 
     def test_a_silhouette_keeps_the_shape_and_drops_the_colours(self):
-        face = companion_art.pixmap(share.face_path("ankilope"), "ankilope")
+        face = companion_art.pixmap(share.face_path("ankilope"))
         shadow = companion_art.silhouette(face).toImage().convertToFormat(QImage.Format.Format_ARGB32)
         plain = face.toImage().convertToFormat(QImage.Format.Format_ARGB32)
         colours = set()
@@ -293,22 +295,22 @@ class Picker(unittest.TestCase):
                 colours.add(colour.red() == colour.green() == colour.blue())
         self.assertEqual({True}, colours)
 
-    def test_the_cow_is_ankilope_turned_purple(self):
-        face = share.face_path("cow")
-        ankilope = companion_art.pixmap(face, "ankilope").toImage().convertToFormat(QImage.Format.Format_ARGB32)
-        cow = companion_art.pixmap(face, "cow").toImage().convertToFormat(QImage.Format.Format_ARGB32)
-        self.assertEqual(ankilope.size(), cow.size())
-        self.assertNotEqual(ankilope, cow)
-
-        # Ankilope's tan coat turns a light purple, as CSS hue-rotate(250deg) turns it.
-        red, green, blue = companion_art.turn_rgb(companion_art.matrix(250), 234, 171, 91)
-        self.assertGreater(blue, green)
-        self.assertGreater(red, green)
-        art = companion_art.pose_path("ankilope_celebrate")
-        turned = companion_art.pixmap(art, "cow").toImage().convertToFormat(QImage.Format.Format_ARGB32)
-        plain = QImage(art).convertToFormat(QImage.Format.Format_ARGB32)
-        alphas = {(plain.pixelColor(x, 128).alpha(), turned.pixelColor(x, 128).alpha()) for x in range(0, 256, 8)}
-        self.assertTrue(all(a == b for a, b in alphas))
+    def test_every_companion_shows_its_own_pictures_unchanged(self):
+        # Bluma has her own pictures: her face is hers, and no picture is recoloured on the way.
+        self.assertEqual("bluma_face.png", Path(share.face_path("cow")).name)
+        for companion in ("aki", "ankilope", "cow", "anki_tan"):
+            for path in (share.face_path(companion), companion_art.pose_path(moods.mood_pose(companion, moods.SAD, 3))):
+                with self.subTest(companion=companion, picture=Path(path).name):
+                    shown = companion_art.pixmap(path).toImage().convertToFormat(QImage.Format.Format_ARGB32)
+                    plain = QImage(path).convertToFormat(QImage.Format.Format_ARGB32)
+                    self.assertFalse(plain.isNull())
+                    self.assertEqual(plain.size(), shown.size())
+                    for x in range(0, plain.width(), 8):
+                        y = plain.height() // 2
+                        before, after = plain.pixelColor(x, y), shown.pixelColor(x, y)
+                        self.assertEqual(before.alpha(), after.alpha(), x)
+                        if before.alpha() == 255:
+                            self.assertEqual(before.rgb(), after.rgb(), x)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,8 @@ first, then from the collection's due cards, as the phone's AnkiquestAki.message
 
 from dataclasses import dataclass
 from enum import Enum, auto
+import json
+from pathlib import Path
 
 WELCOME, REVIEW, CELEBRATE, STREAK, FREEZE, WINNER = "welcome", "review", "celebrate", "streak", "freeze", "winner"
 
@@ -204,29 +206,40 @@ NAMES = {AKI: "Aki", ANKILOPE_ID: "Ankilope", COW: "Bluma", ANKI_TAN: "Anki-tan"
 # The Aki poses each picker card previews, in the phone's order: face, fire, sad.
 PREVIEW_POSES = ("aki_face", "aki_streak", "aki_sad")
 
-# How far the cow's art is hue-rotated, as CSS hue-rotate() turns it; see `art_owner`.
-COW_HUE_DEGREES = 250
+# The poses AnkiQuest-Art's poses.json names, unpacked beside the code from the pinned release
+# by the `-- art` step (tools/package-addon, `art`): the core poses every companion has, the pose
+# each extension falls back to where a companion has no art for it, and the core pose a companion
+# shows for a core pose it has no master for yet.
 
-# The poses tests/fixtures/companion_poses.json names: the core poses every companion has, and
-# the pose each extension falls back to where a companion has no art for it.
-CORE_POSES = ("face", "asleep", "happy", "streak", "sad", "hopeful", "frozen", "neglected")
-POSE_FALLBACKS = {
-    "streak_hot": "streak",
-    "streak_blazing": "streak_hot",
-    "streak_legend": "streak_blazing",
-    "streak_milestone": "streak_legend",
-    "frozen_2": "frozen",
-    "frozen_3": "frozen_2",
-    "welcome": "happy",
-    "review": "happy",
-    "hurt": "sad",
-    "abandoned": "neglected",
-    "dead": "neglected",
-    "leech_defeated": "happy",
-    "winner": "happy",
-}
 
-# The pictures companion_poses.json names, each with the item a companion without it shows.
+def read_poses(art):
+    """The core poses, the extension fallbacks and the core fallbacks, as Art's `poses.json`
+    (`core`, `extensions`, `core_fallbacks`) names them. Only pose names and name-to-name
+    maps parse: anything else Art might write raises."""
+    poses = json.loads(art)
+    core = poses.get("core")
+    if not isinstance(core, list) or not all(isinstance(pose, str) for pose in core):
+        raise ValueError("Art's poses.json names no core poses")
+    for field in ("extensions", "core_fallbacks"):
+        names = poses.get(field)
+        if not isinstance(names, dict) or not all(
+            isinstance(pose, str) and isinstance(shown, str) for pose, shown in names.items()
+        ):
+            raise ValueError("Art's poses.json names no %s" % field)
+    return (tuple(core), poses["extensions"], poses["core_fallbacks"])
+
+
+# How a checkout unpacks the pictures and poses.json from the pinned AnkiQuest-Art release.
+FETCH = "cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art"
+
+try:
+    _POSES_TEXT = Path(__file__).with_name("poses.json").read_text("utf-8")
+except FileNotFoundError as error:
+    raise RuntimeError("Fetch the companion pictures first: " + FETCH) from error
+CORE_POSES, POSE_FALLBACKS, CORE_FALLBACKS = read_poses(_POSES_TEXT)
+
+# The pose each moment, share-card and notification picture shows where a companion has no
+# picture of its own, as poses.json `pictures` says. Only Aki has these scenes in the add-on.
 PICTURE_FALLBACKS = {
     "achievement": "happy",
     "at_risk": "sad",
@@ -247,9 +260,12 @@ PICTURE_FALLBACKS = {
     "place_3": "happy",
 }
 
-# The core pose a companion shows for a core pose it has no master for yet, as AnkiQuest-Art's
-# poses.json `core_fallbacks` says.
-CORE_FALLBACKS = {"happy": "hopeful", "streak": "hopeful"}
+# Aki's pictures are `aki_<pose or picture>`.
+_AKI_PREFIX = "aki_"
+
+# The pose an Aki picture shows that neither the pose list nor `PICTURE_FALLBACKS` names, such
+# as one a newer server sends: a full-body pose, never the face.
+_UNKNOWN_PICTURE_POSE = "happy"
 
 # The pose each of Aki's pictures shows, so that other companions show theirs.
 _AKI_PICTURES = {
@@ -308,13 +324,12 @@ AKI_POSES = {
     "neglected": "aki_neglected",
 }
 
-# Ankilope's art for each pose she has, as the phone's AnkiquestCompanion maps them. On fire she
-# studies until her on-fire art exists.
+# Ankilope's art for each pose she has, as the phone's AnkiquestCompanion maps them.
 ANKILOPE = {
     "face": "ankilope_face",
     "asleep": "ankilope_asleep",
     "happy": "ankilope_celebrate",
-    "streak": "ankilope_study",
+    "streak": "ankilope_streak",
     "sad": "ankilope_sad",
     "hopeful": "ankilope_hopeful",
     "frozen": "ankilope_frozen",
@@ -323,24 +338,35 @@ ANKILOPE = {
     "review": "ankilope_study",
 }
 
-# Anki-tan's art for each pose she has a master for in AnkiQuest-Art. Her happy and streak poses
-# are not drawn yet (AnkiQuest-Server#57): they show hopeful (`CORE_FALLBACKS`), and so do the
-# extensions that end in them (welcome, review, winner and the streak tiers).
+# Bluma's art for each pose she has: her core poses, exported as `bluma_*`.
+BLUMA_POSES = {
+    "face": "bluma_face",
+    "asleep": "bluma_asleep",
+    "happy": "bluma_happy",
+    "streak": "bluma_streak",
+    "sad": "bluma_sad",
+    "hopeful": "bluma_hopeful",
+    "frozen": "bluma_frozen",
+    "neglected": "bluma_neglected",
+}
+
+# Anki-tan's art for each pose she has, as the pinned AnkiQuest-Art release exports it. Her face is
+# a headshot and every other pose full body; welcome shows her hopeful master, as Art's manifest
+# names it. Her other extensions fall back until they are drawn (AnkiQuest-Server#57).
 ANKI_TAN_POSES = {
     "face": "anki_tan_face",
     "asleep": "anki_tan_asleep",
+    "happy": "anki_tan_happy",
+    "streak": "anki_tan_streak",
     "sad": "anki_tan_sad",
     "hopeful": "anki_tan_hopeful",
     "frozen": "anki_tan_frozen",
     "neglected": "anki_tan_neglected",
+    "welcome": "anki_tan_hopeful",
 }
 
-# Each companion's art by pose, by whose art draws it (`art_owner`).
-_POSES = {AKI: AKI_POSES, ANKILOPE_ID: ANKILOPE, ANKI_TAN: ANKI_TAN_POSES}
-
-# The picture a companion shows for Aki's scenes it has no art for: Ankilope studies, Anki-tan
-# shows her face.
-_SCENES = {ANKILOPE_ID: "ankilope_study", ANKI_TAN: "anki_tan_face"}
+# Each companion's art by pose.
+_POSES = {AKI: AKI_POSES, ANKILOPE_ID: ANKILOPE, COW: BLUMA_POSES, ANKI_TAN: ANKI_TAN_POSES}
 
 
 def current(profile, now_ms):
@@ -384,12 +410,15 @@ _THAWING_MOODS = {Stage.QUARTER: THAWING, Stage.HALF: HOPEFUL, Stage.THREE_QUART
 _STREAK_MOODS = {Stage.STARTED: SAD, Stage.QUARTER: SAD, Stage.HALF: HOPEFUL, Stage.THREE_QUARTERS: ALMOST}
 
 
-def streak_mood(state, reviews, stage, streak, frozen_days, goal, days_away=0, freezes=0, day_left_ms=None, night=None):
+def streak_mood(state, reviews, stage, streak, frozen_days, goal, days_away=0, freezes=0,
+                 day_left_ms=None, night=None, thresholds=None):
     """Today's streak mood for a day verdict `state` with `reviews` so far at `stage` toward the
     minimum, a `streak` of that many days and `frozen_days` frozen days in a row ending yesterday.
     `days_away` counts days without reviews in a row ending yesterday, `freezes` the freezes left,
     `day_left_ms` the time until the study day ends (None when unknown) and `night` the night
-    rule's inputs (None outside it)."""
+    rule's inputs (None outside it). `thresholds` (the debug menu's, `mood_debug.thresholds`) move
+    the hopeful boundary and the frozen moods; the rest of the rule is pinned by
+    tests/fixtures/streak_moods.json."""
     # Today counts, or the goal says the player did what they planned.
     if state == STUDIED or goal == Goal.REACHED:
         return FIRE
@@ -400,15 +429,17 @@ def streak_mood(state, reviews, stage, streak, frozen_days, goal, days_away=0, f
     if _sleeps(state, streak, night):
         return ASLEEP
 
-    # A freeze covering today, with no frozen day before it, is in effect; frozen days show their level.
-    if frozen_days == 0 and state == PROTECTED:
-        return _THAWING_MOODS.get(stage) or MOOD_FREEZE
-    if frozen_days > 0:
-        return _THAWING_MOODS.get(stage) or _frozen(frozen_days)
+    # A moved review threshold moves the hopeful boundary without changing the shared stages.
+    stage = _hopeful_stage(reviews, stage, thresholds)
+
+    # A protected day means a freeze kept at least yesterday, even without the heatmap.
+    frozen = max(frozen_days, 1 if state == PROTECTED else 0)
+    if frozen > 0:
+        return _THAWING_MOODS.get(stage) or _frozen(frozen, thresholds)
 
     # Without a streak there is nothing to lose: any study is hopeful; days away show their level.
     if streak == 0:
-        if reviews == 0:
+        if reviews < (thresholds or {}).get("hopeful_reviews", 1):
             return _away(days_away)
         return ALMOST if stage == Stage.THREE_QUARTERS else HOPEFUL
 
@@ -431,26 +462,53 @@ def _away(days):
     return next((mood for start, mood in AWAY_LEVELS if days >= start), ASLEEP)
 
 
-def _frozen(days):
-    """The frozen mood for `days` frozen days in a row; 3 means 3 or more."""
-    if days >= 3:
+def _hopeful_stage(reviews, stage, thresholds):
+    """The stage a day counts as when a moved review threshold decides where hopeful starts, as
+    the phone's mood rule does: reaching it is at least half way, falling short keeps the day
+    before the halfway stage. An unmoved threshold leaves the stage alone, so the pinned
+    streak-mood fixtures keep passing."""
+    hopeful = (thresholds or {}).get("hopeful_reviews", 1)
+    if hopeful == 1:
+        return stage
+    if reviews >= hopeful:
+        return stage if stage.percent >= Stage.HALF.percent else Stage.HALF
+    return stage if stage.percent <= Stage.QUARTER.percent else Stage.QUARTER
+
+
+def _frozen(days, thresholds=None):
+    """The frozen mood for `days` frozen days in a row; the third means that many or more.
+    `thresholds` (the debug menu's, `mood_debug.thresholds`) can move where 2 and 3 start."""
+    two = (thresholds or {}).get("frozen_2_days", 2)
+    three = (thresholds or {}).get("frozen_3_days", 3)
+    if days >= max(three, two + 1):
         return FROZEN_3
-    if days == 2:
+    if days >= two:
         return FROZEN_2
     return FROZEN_1
 
 
-def _mood_pose_name(chosen, streak):
-    """The pose for a streak mood; a counted day burns by the streak's heat, from day one."""
+def _mood_pose_name(chosen, streak, thresholds=None):
+    """The pose for a streak mood; a counted day burns by the streak's heat, from day one.
+    `thresholds` (the debug menu's, `mood_debug.thresholds`) can move where the hotter poses
+    start, so keep their order."""
     if chosen != FIRE:
         return _MOOD_POSE_NAMES[chosen]
-    heat = next((pose for days, pose in HEAT if streak >= days), HEAT[-1][1])
+    limits = HEAT
+    if thresholds:
+        hots = (
+            (HEAT[0][1], thresholds.get("legend_days", HEAT[0][0])),
+            (HEAT[1][1], thresholds.get("blazing_days", HEAT[1][0])),
+            (HEAT[2][1], thresholds.get("hot_days", HEAT[2][0])),
+            (HEAT[3][1], HEAT[3][0]),
+        )
+        limits = tuple((max(days, 1), aki) for aki, days in hots)
+    heat = next((pose for days, pose in limits if streak >= days), limits[-1][1])
     return _AKI_PICTURES[heat]
 
 
-def streak_pose(chosen, streak):
+def streak_pose(chosen, streak, thresholds=None):
     """Aki's picture for a streak mood with a streak of that many days."""
-    return pose_art(AKI_POSES, _mood_pose_name(chosen, streak))
+    return pose_art(AKI_POSES, _mood_pose_name(chosen, streak, thresholds))
 
 
 def flame(chosen, streak=0):
@@ -527,7 +585,7 @@ def _day_left_ms(view, now_ms):
     return int(ends) - now_ms
 
 
-def today_mood(view, goal, night=None, now_ms=None):
+def today_mood(view, goal, night=None, now_ms=None, thresholds=None):
     """The displayed profile's streak mood: the one streak rule every surface uses. `night` holds
     the night rule's inputs (None outside it), `now_ms` the time for the day's end."""
     view = view or {}
@@ -535,18 +593,36 @@ def today_mood(view, goal, night=None, now_ms=None):
     reviews, streak, frozen = _reviews_today(view), _streak(view), frozen_run(heatmap)
     return streak_mood(
         day_state(view), reviews, _stage(view), streak, frozen, goal,
-        away_run(heatmap), _freezes(view), _day_left_ms(view, now_ms), night,
+        away_run(heatmap), _freezes(view), _day_left_ms(view, now_ms), night, thresholds,
     )
 
 
-def today_pose(companion, view, goal, night=None, now_ms=None):
+def today_pose(companion, view, goal, night=None, now_ms=None, thresholds=None):
     """`companion`'s pose for the displayed profile's day; None for no companion."""
-    return mood_pose(companion, today_mood(view, goal, night, now_ms), _streak(view))
+    return mood_pose(companion, today_mood(view, goal, night, now_ms, thresholds), _streak(view))
 
 
-def today_flame(view, goal, night=None, now_ms=None):
+def today_flame(view, goal, night=None, now_ms=None, thresholds=None):
     """The flame beside the displayed profile's streak number."""
-    return flame(today_mood(view, goal, night, now_ms), _streak(view))
+    return flame(today_mood(view, goal, night, now_ms, thresholds), _streak(view))
+
+
+def mood_pose(companion, chosen, streak, thresholds=None):
+    """`companion`'s pose for a streak mood with a streak of that many days; None for no companion.
+
+    It is resolved from the mood's pose, not from Aki's picture, because one of Aki's pictures
+    stands for two poses (welcome for hopeful)."""
+    if companion == NONE:
+        return None
+    return pose_art(companion_poses(companion), _mood_pose_name(chosen, streak, thresholds))
+
+
+def forced_pose(companion, name):
+    """`companion`'s pose for one of Aki's picture names, as the debug menu forces; None without
+    a companion or when the companion cannot show that pose."""
+    if companion == NONE:
+        return None
+    return pose_art(companion_poses(companion), name)
 
 
 def mood_line(chosen, streak):
@@ -560,25 +636,23 @@ def mood_line(chosen, streak):
 
 
 def art_owner(companion):
-    """Whose art draws `companion`. The cow has none yet (#88): it is Ankilope's, turned by
-    `hue_degrees`. A companion this add-on has no art for, such as one a newer server knows, is
-    drawn as Aki."""
-    if companion == COW:
-        return ANKILOPE_ID
+    """Whose art draws `companion`: its own. A companion this add-on has no art for, such as one
+    a newer server knows, is drawn as Aki."""
     if companion == NONE or companion in _POSES:
         return companion
     return AKI
 
 
-def hue_degrees(companion):
-    """How far `companion`'s art is hue-rotated: only the cow's, until it has its own (#88)."""
-    return COW_HUE_DEGREES if companion == COW else 0
+def companion_poses(companion):
+    """`companion`'s art by pose (`art_owner`'s); call it with a companion, not "none"."""
+    return _POSES[art_owner(companion)]
 
 
-def css_filter(companion):
-    """The CSS filter for `companion`'s art in web views; None when it needs none."""
-    degrees = hue_degrees(companion)
-    return "hue-rotate(%ddeg)" % degrees if degrees else None
+def face(companion):
+    """The file name of `companion`'s face, its only headshot; None for no companion."""
+    if companion == NONE:
+        return None
+    return companion_poses(companion)["face"]
 
 
 def pose_art(art, pose):
@@ -597,20 +671,13 @@ def companion_pose(companion, aki):
     owner = art_owner(companion)
     if owner == AKI:
         return aki
+
+    # A pose shows the companion's own; a scene only Aki has shows the pose poses.json names.
     pose = _AKI_PICTURES.get(aki)
     if pose is None:
-        return _SCENES[owner]
+        scene = aki[len(_AKI_PREFIX):] if aki.startswith(_AKI_PREFIX) else aki
+        pose = PICTURE_FALLBACKS.get(scene, _UNKNOWN_PICTURE_POSE)
     return pose_art(_POSES[owner], pose)
-
-
-def mood_pose(companion, chosen, streak):
-    """`companion`'s pose for a streak mood with a streak of that many days; None for no companion.
-
-    It is resolved from the mood's pose, not from Aki's picture, because one of Aki's pictures
-    stands for two poses (welcome for hopeful)."""
-    if companion == NONE:
-        return None
-    return pose_art(_POSES[art_owner(companion)], _mood_pose_name(chosen, streak))
 
 
 def preview(companion):

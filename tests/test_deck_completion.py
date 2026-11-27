@@ -333,9 +333,9 @@ class RefreshTests(unittest.TestCase):
         self.assertLess(content.stats.index("heatmap"), content.stats.index("Leaderboard"))
         self.assertIn("#1 this week", content.stats)
         self.assertIn("ankiquest:web:inbox", content.stats)
-        self.assertIn('/_addons/ankiquest/aki_face.png', content.stats)
+        self.assertIn('/_addons/ankiquest/art/aki_face.png', content.stats)
         self.mw.addonManager.setWebExports.assert_called_once_with(
-            "ankiquest_test_addon", r"((aki|ankilope|anki_tan)_face|art/(aki|ankilope|anki_tan)_[a-z0-9_]+)\.png"
+            "ankiquest_test_addon", r"art/(aki|ankilope|anki_tan|bluma)_[a-z0-9_]+\.png"
         )
 
     def test_a_quiet_poll_remembers_messages_without_showing_them(self):
