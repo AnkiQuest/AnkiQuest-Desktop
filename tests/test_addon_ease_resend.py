@@ -83,6 +83,11 @@ class ResendOnce(HeldTasks):
         )
         self.features = {ease_resend.FEATURE}
         self.api.server_info = Mock(side_effect=lambda: (frozenset(self.features), None))
+        self.set_capabilities()
+
+    def set_capabilities(self):
+        """The answer /api/capabilities gave when the profile opened: the cache the resend reads."""
+        self.home.local["capabilities"] = (self.api.base, frozenset(self.features))
 
     def add_new_review(self):
         self.db.execute("insert into revlog values (?, 1, 3, 1, 5000, 1, 3)", (self.now + 1,))
@@ -112,6 +117,7 @@ class ResendOnce(HeldTasks):
 
     def test_a_server_without_the_button_waits_until_it_stores_it(self):
         self.features = set()
+        self.set_capabilities()
         self.addon.refresh(False, resync=True)
         self.finish()
 
@@ -119,6 +125,26 @@ class ResendOnce(HeldTasks):
         self.assertIs(Resend.PENDING, self.state())
 
         self.features = {ease_resend.FEATURE}
+        self.set_capabilities()
+        self.addon.refresh(False, resync=True)
+        self.finish()
+        self.assertEqual(1, len(self.resends()))
+        self.assertIs(Resend.DONE, self.state())
+
+    def test_an_empty_cache_loads_the_features_and_the_next_upload_resends(self):
+        # Nothing else fills the cache this session (the load at profile open failed, or the
+        # player signed in later): the resend starts the load and stays owed meanwhile.
+        self.home.local["capabilities"] = None
+        self.addon.refresh(False, resync=True)
+        self.finish()
+
+        self.assertEqual([], self.resends())
+        self.assertIs(Resend.PENDING, self.state())
+        self.api.server_info.assert_not_called()
+
+        # The load it started answers; the next upload resends.
+        self.finish()
+        self.assertEqual((self.api.base, frozenset(self.features)), self.home.local["capabilities"])
         self.addon.refresh(False, resync=True)
         self.finish()
         self.assertEqual(1, len(self.resends()))

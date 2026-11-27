@@ -848,11 +848,16 @@ def move_to_main_address(api, main):
     mw.taskman.run_in_background(lambda: there.devices() if _owns_request(_Job.MOVE, request) else None, done)
 
 
+def capabilities_known(api):
+    """Whether the cached /api/capabilities answer is the player's server's."""
+    known = local["capabilities"]
+    return known is not None and known[0] == api.base
+
+
 def server_has(api, feature):
     """Whether the player's server is known to name `feature` at /api/capabilities. False until
     the answer, loaded when the profile opens, is in."""
-    known = local["capabilities"]
-    return known is not None and known[0] == api.base and feature in known[1]
+    return capabilities_known(api) and feature in local["capabilities"][1]
 
 
 def server_celebrates_goal(api):
@@ -861,11 +866,10 @@ def server_celebrates_goal(api):
     Only a server known to lack wins leaves the goal to the add-on. Until the answer is in,
     the server is trusted: it celebrates once the reviews arrive.
     """
-    known = local["capabilities"]
-    if known is None or known[0] != api.base:
+    if not capabilities_known(api):
         load_capabilities(api)
         return True
-    return "wins" in known[1]
+    return server_has(api, "wins")
 
 
 def celebrate(summary):
