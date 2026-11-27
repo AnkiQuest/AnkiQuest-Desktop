@@ -4,6 +4,7 @@ from concurrent.futures import Future
 from copy import deepcopy
 import json
 import os
+import re
 from pathlib import Path
 from types import SimpleNamespace
 import time
@@ -412,21 +413,6 @@ class LocalPicture(unittest.TestCase):
         self.assertTrue(image.loadFromData(found["png"], "PNG"))
         return image
 
-    def test_streak_unit_matches_phone(self):
-        units = {
-            "en": ("day streak", "day streak"),
-            "es": ("día de racha", "días de racha"),
-            "de": ("Tag Lernserie", "Tage Lernserie"),
-            "fr": ("jour de série", "jours de série"),
-            "pt": ("dia de sequência", "dias de sequência"),
-        }
-        for language, expected in units.items():
-            for days, unit in zip((1, 30), expected):
-                with self.subTest(language=language, days=days), patch("anki.lang.current_lang", language), \
-                        patch.object(picture, "_words", wraps=picture._words) as words:
-                    self.image({"title": "A good day", "picture_streak": days})
-                    self.assertIn(unit, [call.args[0] for call in words.call_args_list])
-
     def test_repeated_streak_body_hidden(self):
         for body in ("30 day streak", "One more day of practice"):
             with self.subTest(body=body), patch("anki.lang.current_lang", "en"), \
@@ -438,24 +424,35 @@ class LocalPicture(unittest.TestCase):
                 else:
                     self.assertIn(body, text)
 
-    def test_streak_heat_and_next_milestones_match_shared_cases(self):
+    def test_streak_heat_and_milestone_lines_match_shared_cases(self):
         for case in STREAKS["pictures"]:
-            with self.subTest(streak=case["streak"]), patch.object(picture, "_words", wraps=picture._words) as words:
-                win = {"title": "My streak", "body": "A little progress", "picture_streak": case["streak"]}
-                image = self.image(win)
+            with self.subTest(streak=case["streak"]), patch("anki.lang.current_lang", "en"):
+                image = self.image({"title": "My streak", "body": "A little progress", "picture_streak": case["streak"]})
                 self.assertEqual(QColor(case["top"]), image.pixelColor(0, 0))
                 self.assertEqual(QColor(case["bottom"]), image.pixelColor(0, image.height() - 1))
                 ink = QColor(STREAKS["picture_style"]["ink"])
                 self.assertGreater(sum(image.pixelColor(x, y) == ink for y in range(0, image.height(), 8)
                                        for x in range(0, image.width(), 8)), 50)
-                text = [str(call.args[0]) for call in words.call_args_list]
-                if case["next"] is not None:
-                    left = case["next"] - case["streak"]
-                    self.assertIn("%d %s to %d" % (left, "day" if left == 1 else "days", case["next"]), text)
-                else:
-                    self.assertFalse(any(" to " in value for value in text))
                 self.assertLessEqual(image.height(), 4096)
                 self.assertEqual(case["pose"], picture.moods.streak_pose(picture.moods.FIRE, case["streak"]))
+
+    def test_streak_unit_and_milestone_match_shared_cases_in_every_language(self):
+        # The cases word the unit and the milestone line in every language both clients ship.
+        for case in STREAKS["pictures"]:
+            for language, unit in case["unit"].items():
+                with self.subTest(streak=case["streak"], language=language), \
+                        patch("anki.lang.current_lang", language), \
+                        patch.object(picture, "_words", wraps=picture._words) as words:
+                    self.image({"title": "My streak", "body": "A little progress", "picture_streak": case["streak"]})
+                    text = [str(call.args[0]) for call in words.call_args_list]
+                    self.assertIn(unit, text)
+                    if case["milestone"] is not None:
+                        self.assertIn(case["milestone"][language], text)
+                        continue
+
+                    # Past the last milestone, the streak number is the only text with digits.
+                    numbers = [value for value in text if any(char.isdigit() for char in value)]
+                    self.assertEqual([str(case["streak"])], [re.sub(r"\D", "", value) for value in numbers])
 
     def test_streak_number_is_gold_localized_and_fits_large_text(self):
         with patch("anki.lang.current_lang", "de"), patch.object(picture, "_words", wraps=picture._words) as words:
