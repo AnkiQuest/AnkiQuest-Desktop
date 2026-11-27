@@ -53,7 +53,7 @@ class _Progress:
         self._years = QComboBox()
         self._years.currentIndexChanged.connect(self._year_changed)
         for section, title, headers in (
-            (_Section.HISTORY, tr("History"), [tr("Day"), tr("State"), tr("Reviews"), tr("Study time"), "XP"]),
+            (_Section.HISTORY, tr("Study history"), [tr("Day"), tr("State"), tr("Reviews"), tr("Study time"), "XP"]),
             (_Section.RECORDS, tr("Records"), [tr("Record"), tr("Player"), tr("Value")]),
         ):
             page = QWidget()

@@ -1529,6 +1529,7 @@ SPANISH.update({
     "Sign in to AnkiQuest": "Iniciar sesión en AnkiQuest",
     "State": "Estado",
     "Streak freezes off": "Congelaciones de racha desactivadas",
+    "Study history": "Historial de estudio",
     "Study time": "Tiempo de estudio",
     # Android's aq_server_outdated (AnkiQuest-Android#408).
     "Update your AnkiQuest server": "Actualiza tu servidor de AnkiQuest",
@@ -1569,6 +1570,7 @@ GERMAN.update({
     "Sign in to AnkiQuest": "Bei AnkiQuest anmelden",
     "State": "Status",
     "Streak freezes off": "Streak-Freezes ausgeschaltet",
+    "Study history": "Lernverlauf",
     "Study time": "Lernzeit",
     # Android's aq_server_outdated (AnkiQuest-Android#408).
     "Update your AnkiQuest server": "Aktualisiere deinen AnkiQuest-Server",
@@ -1609,6 +1611,7 @@ FRENCH.update({
     "Sign in to AnkiQuest": "Se connecter à AnkiQuest",
     "State": "État",
     "Streak freezes off": "Gels de série désactivés",
+    "Study history": "Historique d’étude",
     "Study time": "Temps d’étude",
     # Android's aq_server_outdated (AnkiQuest-Android#408).
     "Update your AnkiQuest server": "Mets à jour ton serveur AnkiQuest",
@@ -1649,6 +1652,7 @@ PORTUGUESE.update({
     "Sign in to AnkiQuest": "Iniciar sessão no AnkiQuest",
     "State": "Estado",
     "Streak freezes off": "Congelamentos de sequência desativados",
+    "Study history": "Histórico de estudo",
     "Study time": "Tempo de estudo",
     # Android's aq_server_outdated (AnkiQuest-Android#408).
     "Update your AnkiQuest server": "Atualize seu servidor do AnkiQuest",
