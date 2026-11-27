@@ -154,7 +154,7 @@ class Progress(unittest.TestCase):
                 addon.open_account.assert_not_called()
                 self.assertIsNotNone(opened)
                 self.assertEqual("Study time", opened._tabs.tabText(opened._tabs.currentIndex()))
-                # History and Records need an account: they say so and read nothing.
+                # Study history and Records need an account: they say so and read nothing.
                 self.assertEqual([], self.paths)
                 for section in (ui._Section.HISTORY, ui._Section.RECORDS):
                     self.assertFalse(opened._tabs.isTabEnabled(opened._tab_index[section]))
