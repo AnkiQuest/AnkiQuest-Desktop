@@ -37,8 +37,10 @@ AKI_MOOD_POSES = {
 
 
 def night(case):
-    """The night rule's inputs of a shared mood case."""
-    given = case["night"]
+    """The night rule's inputs of a shared mood case; None when the case leaves the night out."""
+    given = case.get("night")
+    if given is None:
+        return None
     return moods.Night(given["now"], given["rollover_hour"], tuple(given["first_reviews"]),
                        moods.Yesterday(given["yesterday"]))
 
@@ -111,6 +113,8 @@ class StreakMoods(unittest.TestCase):
         self.assertEqual(moods.HOPEFUL, moods.today_mood(older, moods.Goal.OPEN))
 
     def test_every_shared_usual_first_study_time(self):
+        if "night" not in self.fixture:
+            self.skipTest("the shared fixture carries no night rule yet")
         rule = self.fixture["night"]
         self.assertEqual((rule["default_usual"], rule["recent_days"], rule["min_days"]),
                          (moods.DEFAULT_USUAL, moods.RECENT_DAYS, moods.MIN_DAYS))

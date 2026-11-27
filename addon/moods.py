@@ -432,10 +432,11 @@ def streak_mood(state, reviews, stage, streak, frozen_days, goal, days_away=0, f
     # A moved review threshold moves the hopeful boundary without changing the shared stages.
     stage = _hopeful_stage(reviews, stage, thresholds)
 
-    # A protected day means a freeze kept at least yesterday, even without the heatmap.
-    frozen = max(frozen_days, 1 if state == PROTECTED else 0)
-    if frozen > 0:
-        return _THAWING_MOODS.get(stage) or _frozen(frozen, thresholds)
+    # A freeze covering today, with no frozen day before it, is in effect; frozen days show their level.
+    if frozen_days == 0 and state == PROTECTED:
+        return _THAWING_MOODS.get(stage) or MOOD_FREEZE
+    if frozen_days > 0:
+        return _THAWING_MOODS.get(stage) or _frozen(frozen_days, thresholds)
 
     # Without a streak there is nothing to lose: any study is hopeful; days away show their level.
     if streak == 0:
