@@ -438,7 +438,7 @@ class LocalPicture(unittest.TestCase):
                 else:
                     self.assertIn(body, text)
 
-    def test_streak_heat_and_next_milestones_match_shared_cases(self):
+    def test_streak_heat_and_milestone_lines_match_shared_cases(self):
         for case in STREAKS["pictures"]:
             with self.subTest(streak=case["streak"]), patch.object(picture, "_words", wraps=picture._words) as words:
                 win = {"title": "My streak", "body": "A little progress", "picture_streak": case["streak"]}
@@ -449,9 +449,9 @@ class LocalPicture(unittest.TestCase):
                 self.assertGreater(sum(image.pixelColor(x, y) == ink for y in range(0, image.height(), 8)
                                        for x in range(0, image.width(), 8)), 50)
                 text = [str(call.args[0]) for call in words.call_args_list]
-                if case["next"] is not None:
-                    left = case["next"] - case["streak"]
-                    self.assertIn("%d %s to %d" % (left, "day" if left == 1 else "days", case["next"]), text)
+                self.assertIn(case["unit"], text)
+                if case["milestone"] is not None:
+                    self.assertIn(case["milestone"], text)
                 else:
                     self.assertFalse(any(" to " in value for value in text))
                 self.assertLessEqual(image.height(), 4096)
