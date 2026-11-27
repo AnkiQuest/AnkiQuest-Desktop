@@ -2541,3 +2541,56 @@ PORTUGUESE.update({
     "Could not read study time (%s).": "Não foi possível ler o tempo de estudo (%s).",
     "No reviews in this collection yet.": "Ainda não há revisões nesta coleção.",
 })
+# The optimize reminder (optimize_reminder.py), worded as on Android.
+SPANISH.update({
+    "Time to optimize your presets": "Es hora de optimizar tus preajustes",
+    "You last ran Optimize All Presets at least 30 days and 1,000 reviews ago.": "Ejecutaste «Optimizar todos los preajustes» por última vez hace al menos 30 días y 1000 repasos.",
+    "You have at least 1,000 reviews and haven't run Optimize All Presets yet.": "Tienes al menos 1000 repasos y aún no has ejecutado «Optimizar todos los preajustes».",
+    "It fits each preset's FSRS parameters to your review history.": "Ajusta los parámetros FSRS de cada preajuste a tu historial de repasos.",
+    "Your presets use RWKV-Curve or RWKV-Instant: it fits only their FSRS fallback. RWKV itself isn't trained by it.": "Tus preajustes usan RWKV-Curve o RWKV-Instant: solo ajusta su respaldo FSRS. No entrena RWKV.",
+    "It fits the parameters of your FSRS presets to your review history. For RWKV-Curve and RWKV-Instant presets it fits only the FSRS fallback; RWKV itself isn't trained by it.": "Ajusta los parámetros de tus preajustes FSRS a tu historial de repasos. En los preajustes RWKV-Curve y RWKV-Instant solo ajusta el respaldo FSRS; no entrena RWKV.",
+    "Optimize All Presets is in the FSRS section of deck options.": "«Optimizar todos los preajustes» está en la sección FSRS de las opciones del mazo.",
+    "Open deck options": "Abrir opciones del mazo",
+    "Remind me in a week": "Recordármelo en una semana",
+    "Remind me to optimize presets": "Recordarme optimizar los preajustes",
+    "When Optimize All Presets last ran at least 30 days and 1,000 reviews ago": "Cuando «Optimizar todos los preajustes» se ejecutó por última vez hace al menos 30 días y 1000 repasos",
+})
+GERMAN.update({
+    "Time to optimize your presets": "Zeit, deine Voreinstellungen zu optimieren",
+    "You last ran Optimize All Presets at least 30 days and 1,000 reviews ago.": "Du hast „Alle Voreinstellungen optimieren“ zuletzt vor mindestens 30 Tagen und 1.000 Wiederholungen ausgeführt.",
+    "You have at least 1,000 reviews and haven't run Optimize All Presets yet.": "Du hast mindestens 1.000 Wiederholungen und „Alle Voreinstellungen optimieren“ noch nie ausgeführt.",
+    "It fits each preset's FSRS parameters to your review history.": "Es passt die FSRS-Parameter jeder Voreinstellung an deinen Lernverlauf an.",
+    "Your presets use RWKV-Curve or RWKV-Instant: it fits only their FSRS fallback. RWKV itself isn't trained by it.": "Deine Voreinstellungen nutzen RWKV-Curve oder RWKV-Instant: Es passt nur ihren FSRS-Ersatz an. RWKV selbst wird dabei nicht trainiert.",
+    "It fits the parameters of your FSRS presets to your review history. For RWKV-Curve and RWKV-Instant presets it fits only the FSRS fallback; RWKV itself isn't trained by it.": "Es passt die Parameter deiner FSRS-Voreinstellungen an deinen Lernverlauf an. Bei RWKV-Curve- und RWKV-Instant-Voreinstellungen passt es nur den FSRS-Ersatz an; RWKV selbst wird dabei nicht trainiert.",
+    "Optimize All Presets is in the FSRS section of deck options.": "„Alle Voreinstellungen optimieren“ findest du im FSRS-Abschnitt der Stapeloptionen.",
+    "Open deck options": "Stapeloptionen öffnen",
+    "Remind me in a week": "In einer Woche erinnern",
+    "Remind me to optimize presets": "Erinnern, Voreinstellungen zu optimieren",
+    "When Optimize All Presets last ran at least 30 days and 1,000 reviews ago": "Wenn „Alle Voreinstellungen optimieren“ zuletzt vor mindestens 30 Tagen und 1.000 Wiederholungen lief",
+})
+FRENCH.update({
+    "Time to optimize your presets": "C’est le moment d’optimiser tes préréglages",
+    "You last ran Optimize All Presets at least 30 days and 1,000 reviews ago.": "Tu as lancé « Optimiser tous les préréglages » pour la dernière fois il y a au moins 30 jours et 1 000 révisions.",
+    "You have at least 1,000 reviews and haven't run Optimize All Presets yet.": "Tu as au moins 1 000 révisions et tu n’as jamais lancé « Optimiser tous les préréglages ».",
+    "It fits each preset's FSRS parameters to your review history.": "Il ajuste les paramètres FSRS de chaque préréglage à ton historique de révisions.",
+    "Your presets use RWKV-Curve or RWKV-Instant: it fits only their FSRS fallback. RWKV itself isn't trained by it.": "Tes préréglages utilisent RWKV-Curve ou RWKV-Instant : il n’ajuste que leur repli FSRS. RWKV lui-même n’est pas entraîné.",
+    "It fits the parameters of your FSRS presets to your review history. For RWKV-Curve and RWKV-Instant presets it fits only the FSRS fallback; RWKV itself isn't trained by it.": "Il ajuste les paramètres de tes préréglages FSRS à ton historique de révisions. Pour les préréglages RWKV-Curve et RWKV-Instant, il n’ajuste que le repli FSRS ; RWKV lui-même n’est pas entraîné.",
+    "Optimize All Presets is in the FSRS section of deck options.": "« Optimiser tous les préréglages » se trouve dans la section FSRS des options du paquet.",
+    "Open deck options": "Ouvrir les options du paquet",
+    "Remind me in a week": "Me le rappeler dans une semaine",
+    "Remind me to optimize presets": "Me rappeler d’optimiser les préréglages",
+    "When Optimize All Presets last ran at least 30 days and 1,000 reviews ago": "Quand « Optimiser tous les préréglages » a été lancé il y a au moins 30 jours et 1 000 révisions",
+})
+PORTUGUESE.update({
+    "Time to optimize your presets": "Está na hora de otimizar as tuas predefinições",
+    "You last ran Optimize All Presets at least 30 days and 1,000 reviews ago.": "Executaste “Otimizar todas as predefinições” pela última vez há pelo menos 30 dias e 1000 revisões.",
+    "You have at least 1,000 reviews and haven't run Optimize All Presets yet.": "Tens pelo menos 1000 revisões e ainda não executaste “Otimizar todas as predefinições”.",
+    "It fits each preset's FSRS parameters to your review history.": "Ajusta os parâmetros FSRS de cada predefinição ao teu histórico de revisões.",
+    "Your presets use RWKV-Curve or RWKV-Instant: it fits only their FSRS fallback. RWKV itself isn't trained by it.": "As tuas predefinições usam RWKV-Curve ou RWKV-Instant: só ajusta a alternativa FSRS delas. O RWKV em si não é treinado.",
+    "It fits the parameters of your FSRS presets to your review history. For RWKV-Curve and RWKV-Instant presets it fits only the FSRS fallback; RWKV itself isn't trained by it.": "Ajusta os parâmetros das tuas predefinições FSRS ao teu histórico de revisões. Nas predefinições RWKV-Curve e RWKV-Instant só ajusta a alternativa FSRS; o RWKV em si não é treinado.",
+    "Optimize All Presets is in the FSRS section of deck options.": "“Otimizar todas as predefinições” está na secção FSRS das opções do baralho.",
+    "Open deck options": "Abrir opções do baralho",
+    "Remind me in a week": "Lembrar-me daqui a uma semana",
+    "Remind me to optimize presets": "Lembrar-me de otimizar as predefinições",
+    "When Optimize All Presets last ran at least 30 days and 1,000 reviews ago": "Quando “Otimizar todas as predefinições” foi executado há pelo menos 30 dias e 1000 revisões",
+})
