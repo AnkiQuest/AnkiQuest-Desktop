@@ -26,6 +26,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde_json::{Value, json};
 
 mod art;
+mod attestation;
 mod json;
 mod release;
 mod rules;

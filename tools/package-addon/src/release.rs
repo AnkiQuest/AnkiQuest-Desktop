@@ -7,7 +7,8 @@
 //! against its hash before every use, so a build works offline after the
 //! first. A folder named by the source's local variable holds the assets to
 //! use instead of downloading them, for a release not published yet; they
-//! are checked against the pin the same way.
+//! are checked against the pin the same way. The rules check a downloaded
+//! asset against their release's attestation too, before it is cached.
 
 use std::env;
 use std::fs;
@@ -110,7 +111,7 @@ fn asset(source: &Source, pin: &Pin, origin: &Origin, name: &str) -> Result<Vec<
         Origin::Local(folder) => folder.join(name),
         Origin::Release(tag) => {
             let cache = cache(source)?;
-            download(source, tag, name, &expected, &cache)?;
+            download(source, tag, name, &expected, &cache, &mut |_| Ok(()))?;
             cache.join(&expected)
         }
     };
@@ -119,16 +120,21 @@ fn asset(source: &Source, pin: &Pin, origin: &Origin, name: &str) -> Result<Vec<
     Ok(bytes)
 }
 
+/// The file `attest` checks a downloaded asset in, before it is cached.
+pub(super) type Attest<'a> = dyn FnMut(&Path) -> Result<(), String> + 'a;
+
 /// Asset `name` of release `tag`, from the cache or downloaded, checked
-/// against `sha256`.
+/// against `sha256`. A download is cached only once `attest` accepts it; a
+/// cached asset was accepted when it was cached, so it serves offline.
 pub(super) fn checked(
     source: &Source,
     tag: &str,
     name: &str,
     sha256: &str,
+    attest: &mut Attest,
 ) -> Result<Vec<u8>, String> {
     let cache = cache(source)?;
-    download(source, tag, name, sha256, &cache)?;
+    download(source, tag, name, sha256, &cache, attest)?;
     let path = cache.join(sha256);
     let bytes = fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     verify(source, name, &bytes, sha256)?;
@@ -178,13 +184,15 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 /// Downloads asset `name` of release `tag` into `cache` as `<sha256>`,
-/// unless a file with the right hash is already there.
+/// unless a file with the right hash is already there. The download takes
+/// that name only once it has the hash and `attest` accepts it.
 fn download(
     source: &Source,
     tag: &str,
     name: &str,
     sha256: &str,
     cache: &Path,
+    attest: &mut Attest,
 ) -> Result<(), String> {
     let target = cache.join(sha256);
     let cached = fs::read(&target).is_ok_and(|bytes| verify(source, name, &bytes, sha256).is_ok());
@@ -213,6 +221,10 @@ fn download(
     }
     let bytes = fs::read(&partial).map_err(|e| format!("{}: {e}", partial.display()))?;
     verify(source, name, &bytes, sha256)?;
+    if let Err(error) = attest(&partial) {
+        let _ = fs::remove_file(&partial);
+        return Err(error);
+    }
     fs::rename(&partial, &target).map_err(|e| format!("{}: {e}", target.display()))
 }
 
@@ -308,10 +320,44 @@ mod tests {
     }
 
     #[test]
+    fn a_download_is_cached_only_once_attested() {
+        let releases = TempDir::new().unwrap();
+        fs::create_dir(releases.path().join("rules-1")).unwrap();
+        fs::write(releases.path().join("rules-1").join(ASSET), b"new").unwrap();
+        let url = format!("file://{}", releases.path().display());
+        let source = Source {
+            releases: Box::leak(url.into_boxed_str()),
+            ..TEST
+        };
+        let cache = TempDir::new().unwrap();
+        let sha = hex(&Sha256::digest(b"new"));
+
+        let error = download(&source, "rules-1", ASSET, &sha, cache.path(), &mut |_| {
+            Err("not attested".to_owned())
+        })
+        .unwrap_err();
+        assert_eq!("not attested", error);
+        assert_eq!(0, fs::read_dir(cache.path()).unwrap().count());
+
+        download(&source, "rules-1", ASSET, &sha, cache.path(), &mut |file| {
+            assert_eq!(b"new".to_vec(), fs::read(file).unwrap());
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(b"new".to_vec(), fs::read(cache.path().join(&sha)).unwrap());
+    }
+
+    #[test]
     fn a_cached_asset_is_used_without_downloading() {
         let cache = TempDir::new().unwrap();
         let sha = hex(&Sha256::digest(b"cached"));
         fs::write(cache.path().join(&sha), b"cached").unwrap();
-        download(&TEST, "art-0", ASSET, &sha, cache.path()).unwrap();
+        let mut attested = 0;
+        download(&TEST, "art-0", ASSET, &sha, cache.path(), &mut |_| {
+            attested += 1;
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(0, attested, "a cached asset was checked when it was cached");
     }
 }

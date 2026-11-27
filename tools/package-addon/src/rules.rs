@@ -6,11 +6,12 @@
 //!
 //! The add-on uses server `master`, so it takes the newest release at build
 //! time rather than pinning one: it lists the releases, takes the highest N,
-//! checks each asset against that release's `SHA256SUMS` and records the tag
-//! and hashes in `addon/rules/release.json`, so a build can be traced and
-//! rebuilt. `ANKIQUEST_RULES_TAG` names a release to use instead, to rebuild
-//! one; `ANKIQUEST_RULES_DIR` a folder with the assets and their `SHA256SUMS`,
-//! for a release not published yet.
+//! checks each asset against that release's `SHA256SUMS` and its build
+//! provenance attestation (`attestation.rs`), and records the tag and hashes
+//! in `addon/rules/release.json`, so a build can be traced and rebuilt.
+//! `ANKIQUEST_RULES_TAG` names a release to use instead, to rebuild one;
+//! `ANKIQUEST_RULES_DIR` a folder with the assets and their `SHA256SUMS`, for
+//! a release not published yet, trusted without an attestation.
 
 use std::collections::BTreeMap;
 use std::env;
@@ -19,6 +20,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{Value, json};
 
+use crate::attestation::{self, Verifier};
 use crate::release::{self, Source};
 
 /// AnkiQuest-Server's rules releases. Assets are checked against the
@@ -139,10 +141,19 @@ fn released_assets(chosen: Option<String>) -> Result<Release, String> {
     };
     let url = format!("{}/{tag}/{SUMS}", SOURCE.releases);
     let sums = sums(&String::from_utf8_lossy(&release::get(&url)?))?;
+
+    // The bundle is fetched only if an asset has to be downloaded.
+    let bundle = std::env::temp_dir().join(format!("{tag}-{}", attestation::BUNDLE));
+    let url = format!("{}/{tag}/{}", SOURCE.releases, attestation::BUNDLE);
+    let mut verifier = Verifier::new(url, bundle);
     let mut assets = BTreeMap::new();
     for name in ASSETS {
         let hash = listed(&sums, name)?;
-        assets.insert(name, release::checked(&SOURCE, &tag, name, hash)?);
+        let mut attest = |file: &Path| verifier.verify(name, file);
+        assets.insert(
+            name,
+            release::checked(&SOURCE, &tag, name, hash, &mut attest)?,
+        );
     }
     Ok((tag, sums, assets))
 }
