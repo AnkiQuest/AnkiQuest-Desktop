@@ -565,9 +565,12 @@ def _request_upload(request, *, attempts=0):
             return ease_resend.Check.FAILED
 
     def resend_rows(start):
-        # An older server drops the button, so the resend waits until it names the feature.
+        # An older server drops the button, so the resend waits until it names the feature. The
+        # answer is the cached one, loaded when the profile opens, and no request is made here;
+        # until it is in the cache says nothing, and UNSUPPORTED keeps the resend owed, so a later
+        # upload tries again once the answer has arrived.
         check_target()
-        if ease_resend.FEATURE not in api.server_info()[0]:
+        if not home.server_has(api, ease_resend.FEATURE):
             return ease_resend.Check.UNSUPPORTED
 
         # An upload from the first review already sent everything with the button.
