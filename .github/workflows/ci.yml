@@ -124,8 +124,8 @@ jobs:
       - name: Fetch the companion pictures
         if: needs.changes.outputs.code == 'true'
         run: cargo run --locked --manifest-path tools/package-addon/Cargo.toml -- art
-      # The heatmap and its tests run the shared rules' module from the
-      # newest AnkiQuest-Server rules release. Later packaging in this job
+      # The heatmap, the day verdict and their tests run the shared rules
+      # of the newest AnkiQuest-Server rules release. Later packaging in this job
       # (the real-Anki smoke) takes the same release.
       - name: Fetch the rules module
         if: needs.changes.outputs.code == 'true'
@@ -136,7 +136,8 @@ jobs:
           echo "ANKIQUEST_RULES_TAG=$(jq -r .tag addon/rules/release.json)" >> "$GITHUB_ENV"
       - name: Lint the add-on
         if: needs.changes.outputs.code == 'true'
-        run: python -m pyflakes addon
+        # Only the add-on's own files: the rules bindings are generated.
+        run: python -m pyflakes $(git ls-files 'addon/*.py')
       - name: Test the add-on and its real Anki APIs
         if: needs.changes.outputs.code == 'true'
         run: python -m unittest discover -s tests -v

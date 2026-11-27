@@ -1,6 +1,8 @@
-//! The shared rules' WebAssembly module, from the newest AnkiQuest-Server
-//! `rules-<N>` release, written to `addon/rules/ankiquest_rules.wasm` for the
-//! add-on's pages (`addon/rules.py`).
+//! The shared rules, from the newest AnkiQuest-Server `rules-<N>` release:
+//! the WebAssembly module, written to `addon/rules/ankiquest_rules.wasm` for
+//! the add-on's pages (`addon/rules.py`), and the UniFFI library of each
+//! desktop platform with its Python bindings, written to
+//! `addon/rules/<platform>/` for rules Python needs (`addon/native_rules.py`).
 //!
 //! The add-on uses server `master`, so it takes the newest release at build
 //! time rather than pinning one: it lists the releases, takes the highest N,
@@ -51,8 +53,58 @@ const SUMS: &str = "SHA256SUMS";
 /// The release asset, and its name in the add-on.
 const MODULE: &str = "ankiquest_rules.wasm";
 
+/// The Python bindings, one copy in each platform's folder next to its
+/// library, which they load from their own folder.
+const BINDINGS: &str = "ankiquest_rules.py";
+
+/// A desktop library: its release asset, the platform folder it goes in and
+/// the name the bindings load it by.
+struct Library {
+    asset: &'static str,
+    platform: &'static str,
+    name: &'static str,
+}
+
+/// Every platform the add-on ships a library for: those Anki 24.11 and newer
+/// run on, as AnkiQuest-Server's rules release builds them.
+const LIBRARIES: [Library; 5] = [
+    Library {
+        asset: "libankiquest_rules-linux-x86_64.so",
+        platform: "linux-x86_64",
+        name: "libankiquest_rules.so",
+    },
+    Library {
+        asset: "libankiquest_rules-linux-aarch64.so",
+        platform: "linux-aarch64",
+        name: "libankiquest_rules.so",
+    },
+    Library {
+        asset: "ankiquest_rules-windows-x86_64.dll",
+        platform: "windows-x86_64",
+        name: "ankiquest_rules.dll",
+    },
+    Library {
+        asset: "libankiquest_rules-macos-arm64.dylib",
+        platform: "macos-arm64",
+        name: "libankiquest_rules.dylib",
+    },
+    Library {
+        asset: "libankiquest_rules-macos-x86_64.dylib",
+        platform: "macos-x86_64",
+        name: "libankiquest_rules.dylib",
+    },
+];
+
 /// The assets the add-on takes from a release.
-const ASSETS: [&str; 1] = [MODULE];
+const ASSETS: [&str; 7] = [
+    MODULE,
+    BINDINGS,
+    LIBRARIES[0].asset,
+    LIBRARIES[1].asset,
+    LIBRARIES[2].asset,
+    LIBRARIES[3].asset,
+    LIBRARIES[4].asset,
+];
 
 /// The rules' folder inside the add-on.
 const FOLDER: &str = "rules";
@@ -63,8 +115,9 @@ const RECORD: &str = "release.json";
 /// The first bytes of every WebAssembly module: `\0asm` and version 1.
 const WASM_HEADER: &[u8] = b"\0asm\x01\0\0\0";
 
-/// Writes the newest release's module into `addon`, with the record of
-/// which release it was.
+/// Writes the newest release's module, bindings and libraries into `addon`,
+/// with the record of which release they came from. Every asset is fetched
+/// and checked before anything is written.
 pub(super) fn fetch(_repo: &Path, addon: &Path) -> Result<(), String> {
     let local = env::var_os(SOURCE.local_dir).map(PathBuf::from);
     let chosen = env::var(TAG_VAR).ok().filter(|tag| !tag.is_empty());
@@ -73,6 +126,9 @@ pub(super) fn fetch(_repo: &Path, addon: &Path) -> Result<(), String> {
         None => released_assets(chosen)?,
     };
     stage(&assets[MODULE], addon)?;
+    for library in &LIBRARIES {
+        native(library, &assets[library.asset], &assets[BINDINGS], addon)?;
+    }
     record(&tag, &sums, addon)
 }
 
@@ -182,6 +238,18 @@ fn stage(bytes: &[u8], addon: &Path) -> Result<(), String> {
     fs::write(&path, bytes).map_err(|e| format!("{}: {e}", path.display()))
 }
 
+/// Writes one platform's library and a copy of the bindings to
+/// `addon/rules/<platform>/`.
+fn native(library: &Library, bytes: &[u8], bindings: &[u8], addon: &Path) -> Result<(), String> {
+    let folder = addon.join(FOLDER).join(library.platform);
+    fs::create_dir_all(&folder).map_err(|e| format!("{}: {e}", folder.display()))?;
+    for (name, data) in [(library.name, bytes), (BINDINGS, bindings)] {
+        let path = folder.join(name);
+        fs::write(&path, data).map_err(|e| format!("{}: {e}", path.display()))?;
+    }
+    Ok(())
+}
+
 /// Writes `addon/rules/release.json`: the tag and the hashes of the assets
 /// taken, so the build can be traced and rebuilt (`ANKIQUEST_RULES_TAG`).
 fn record(tag: &str, sums: &BTreeMap<String, String>, addon: &Path) -> Result<(), String> {
@@ -235,12 +303,17 @@ mod tests {
     fn a_local_folder_is_checked_and_recorded() {
         let folder = TempDir::new().unwrap();
         let module = [WASM_HEADER, b"rest"].concat();
-        fs::write(folder.path().join(MODULE), &module).unwrap();
-        fs::write(
-            folder.path().join(SUMS),
-            format!("{}  {MODULE}\n", hash(&module)),
-        )
-        .unwrap();
+        let mut listing = String::new();
+        for name in ASSETS {
+            let bytes = if name == MODULE {
+                module.clone()
+            } else {
+                name.as_bytes().to_vec()
+            };
+            fs::write(folder.path().join(name), &bytes).unwrap();
+            listing.push_str(&format!("{}  {name}\n", hash(&bytes)));
+        }
+        fs::write(folder.path().join(SUMS), listing).unwrap();
         let (tag, sums, assets) = local_assets(folder.path(), None).unwrap();
         assert_eq!(LOCAL_TAG, tag);
         assert_eq!(module, assets[MODULE]);
@@ -251,10 +324,9 @@ mod tests {
         let written: Value =
             serde_json::from_slice(&fs::read(addon.path().join("rules/release.json")).unwrap())
                 .unwrap();
-        assert_eq!(
-            json!({"tag": "rules-4", "assets": {MODULE: hash(&module)}}),
-            written
-        );
+        assert_eq!(json!("rules-4"), written["tag"]);
+        assert_eq!(json!(hash(&module)), written["assets"][MODULE]);
+        assert_eq!(ASSETS.len(), written["assets"].as_object().unwrap().len());
 
         // A module that does not match SHA256SUMS is refused.
         fs::write(folder.path().join(MODULE), b"other").unwrap();
@@ -268,6 +340,23 @@ mod tests {
         stage(&module, addon.path()).unwrap();
         let written = fs::read(addon.path().join("rules/ankiquest_rules.wasm")).unwrap();
         assert_eq!(module, written);
+    }
+
+    #[test]
+    fn each_platform_gets_its_library_and_the_bindings() {
+        let addon = TempDir::new().unwrap();
+        for library in &LIBRARIES {
+            native(library, library.asset.as_bytes(), b"bindings", addon.path()).unwrap();
+        }
+        for library in &LIBRARIES {
+            let folder = addon.path().join("rules").join(library.platform);
+            let written = fs::read(folder.join(library.name)).unwrap();
+            assert_eq!(library.asset.as_bytes(), written.as_slice());
+            assert_eq!(
+                b"bindings".to_vec(),
+                fs::read(folder.join(BINDINGS)).unwrap()
+            );
+        }
     }
 
     #[test]

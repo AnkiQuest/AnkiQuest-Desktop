@@ -171,6 +171,19 @@ it must be installed (GitHub's runners have it). A folder in
 `tests/qt_heatmap_rules.py` runs the fixture's `intensity_cases` through
 the module in WebEngine, with the loader the pages use.
 
+Rules Python needs synchronously, outside a page, use the same crate as a
+UniFFI library: today's day verdict (`addon/day_verdict.py`), with deck
+names to follow. The release carries the library of each platform Anki
+24.11 and newer run on (Linux x86_64 and aarch64, Windows x86_64, macOS
+arm64 and x86_64) and its Python bindings; the packager takes them from
+the same release as the module, checks them against its `SHA256SUMS`,
+writes each library to `addon/rules/<platform>/` with a copy of the
+bindings, and lists them in `release.json`. `addon/native_rules.py` loads
+the one for the running platform. The bindings load the library with
+`ctypes`, so one library serves every Python version. On another platform
+the day verdict is unknown. `tests/test_day_verdicts.py` runs
+`day_verdicts.json` through the library.
+
 ## API audit
 
 Checked against the installed 23.10 and 26.09.4 APIs:
