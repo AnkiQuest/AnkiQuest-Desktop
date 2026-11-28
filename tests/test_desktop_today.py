@@ -748,11 +748,36 @@ class HomeTests(unittest.TestCase):
         self.served_today()
         self.addon.state["profile"].update(streak=5, heatmap=[{"frozen": True}, {"frozen": False}])
         first = "/_addons/ankiquest/art/aki_freeze_used.png"
+        self.change_visit("deckBrowser", "overview")
+        self.assertIn(self.home.FREEZE_PICTURE_KEY, self.mw.pm.profile)
         self.assertIn(first, self.render().stats)
+        self.addon.redraw()
         self.assertIn(first, self.render().stats)
-        self.home.on_state_change("overview", "deckBrowser")
+        self.change_visit("overview", "deckBrowser")
+        self.change_visit("deckBrowser", "overview")
         self.assertNotIn(first, self.render().stats)
         self.assertIn("/_addons/ankiquest/art/aki_frozen.png", self.render().stats)
+
+    def change_visit(self, new, old):
+        for hook in self.hooks.state_will_change:
+            hook(new, old)
+        self.mw.state = new
+
+    def test_the_profile_can_arrive_mid_visit(self):
+        self.change_visit("deckBrowser", "overview")
+        self.assertNotIn(self.home.FREEZE_PICTURE_KEY, self.mw.pm.profile)
+        self.served_today()
+        self.addon.state["profile"]["heatmap"] = [{"frozen": True}, {"frozen": False}]
+        self.addon.redraw()
+        self.assertIn("/_addons/ankiquest/art/aki_freeze_used.png", self.render().stats)
+
+    def test_render_does_not_record_a_freeze_picture_without_an_open_visit(self):
+        self.addon.state.update(companion="aki", companion_account=None)
+        self.served_today()
+        self.addon.state["profile"].update(streak=5, heatmap=[{"frozen": True}, {"frozen": False}])
+        self.change_visit("overview", "deckBrowser")
+        self.render()
+        self.assertNotIn(self.home.FREEZE_PICTURE_KEY, self.mw.pm.profile)
 
     def test_cards_due_bring_no_greeting(self):
         # Regression: "A small step starts with one card." said nothing useful above the deck.

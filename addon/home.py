@@ -31,6 +31,18 @@ BOARD_RETRY_CAP_MS = BOARD_MS
 CACHE_MS = 2000
 _RECAP_MS = 7 * 86_400_000
 
+
+class _Visit(Enum):
+    CLOSED = auto()
+    OPEN = auto()
+
+
+@dataclass(frozen=True)
+class _FreezeVisit:
+    owner: str
+    end: int
+
+
 local = {
     "addon": None,
     "board": None,
@@ -49,7 +61,7 @@ local = {
     "board_window": None,
     "friends_window": None,
     "pictures": None,
-    "freeze_opening": None,
+    "today_visit": _Visit.CLOSED,
 }
 
 
@@ -593,24 +605,56 @@ def today_view(deck_browser, chosen_companion):
 
 
 def _opening_picture(api, profile, companion, now):
-    """Keep the one-time freeze picture across redraws of the first Today visit."""
+    """The picture already selected for this visit. Rendering cannot record a visit."""
+    visit = local["today_visit"]
     day = moods.current(profile, now)
     end = (day or {}).get("day_ends_at") or 0
-    if not api.user or companion == moods.NONE or end <= now:
+    if end <= now or visit != _FreezeVisit(json.dumps(owner(api)), end):
         return None
-    frozen = moods.frozen_run(day.get("heatmap"))
-    if frozen == 0:
-        return None
+    return moods.forced_pose(companion, moods.FREEZE_USED)
+
+
+def update_today_visit():
+    """Select the first picture at entry or when the profile arrives during an open visit."""
+    visit = local["today_visit"]
+    prefs = mw.pm.profile
+    if visit is _Visit.CLOSED or prefs is None:
+        return
+    api = addon().client()
+    state = addon().state
+    now = now_ms()
+    day = moods.current(state["profile"], now)
+    end = (day or {}).get("day_ends_at") or 0
+    chosen = companion()
+    if (not api.configured or state["reauth"] == account(api) or end <= now
+            or chosen == moods.NONE or _debug()[0] is not mood_debug.Override.AUTO):
+        return
     key = json.dumps(owner(api))
-    opening = (key, end)
-    if local["freeze_opening"] == opening:
-        return moods.forced_pose(companion, moods.FREEZE_USED)
-    shown = mw.pm.profile.setdefault(FREEZE_PICTURE_KEY, {})
-    picture = moods.freeze_picture(companion, frozen, end, shown.get(key, 0))
-    if picture:
-        shown[key] = end
-        local["freeze_opening"] = opening
-    return picture
+    opening = _FreezeVisit(key, end)
+    if visit == opening:
+        return
+    local["today_visit"] = _Visit.OPEN
+    shown = prefs.get(FREEZE_PICTURE_KEY, {})
+    if moods.freeze_picture(chosen, moods.frozen_run(day.get("heatmap")), end, shown.get(key, 0)):
+        prefs[FREEZE_PICTURE_KEY] = {**shown, key: end}
+        local["today_visit"] = opening
+
+
+def _close_today_visit():
+    local["today_visit"] = _Visit.CLOSED
+
+
+def _open_today_visit():
+    local["today_visit"] = _Visit.OPEN
+    update_today_visit()
+
+
+def _on_visit_change(new_state, old_state):
+    # The deck browser renders during the transition, before state_did_change.
+    if new_state != "deckBrowser":
+        _close_today_visit()
+    elif old_state != "deckBrowser":
+        _open_today_visit()
 
 
 def _countdown_or_none():
@@ -788,8 +832,6 @@ def remaining_cards():
 
 
 def on_state_change(new_state, old_state):
-    if new_state != "deckBrowser":
-        local["freeze_opening"] = None
     _refresh_toolbar()
     if new_state == "review" and old_state != "review":
         api = addon().client()
@@ -1037,7 +1079,8 @@ def clear_account():
 
 
 def on_profile_open():
-    local["freeze_opening"] = None
+    if mw.state == "deckBrowser" and local["today_visit"] is _Visit.CLOSED:
+        _open_today_visit()
     _close_progress()
     _clear_boards()
     _close_friends()
@@ -1055,12 +1098,14 @@ def install(module):
     local["addon"] = module
     gui_hooks.deck_browser_will_render_content.append(on_deck_browser)
     gui_hooks.webview_did_receive_js_message.append(on_js_message)
+    gui_hooks.state_will_change.append(_on_visit_change)
     gui_hooks.state_did_change.append(on_state_change)
     gui_hooks.profile_did_open.append(on_profile_open)
     gui_hooks.sync_did_finish.append(refresh_board)
     gui_hooks.top_toolbar_did_init_links.append(_toolbar_links)
     gui_hooks.top_toolbar_did_redraw.append(_refresh_toolbar)
     gui_hooks.profile_will_close.append(_close_progress)
+    gui_hooks.profile_will_close.append(_close_today_visit)
     gui_hooks.profile_will_close.append(_clear_boards)
     gui_hooks.profile_will_close.append(_close_friends)
     gui_hooks.profile_will_close.append(_clear_requests)

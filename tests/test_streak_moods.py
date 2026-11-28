@@ -48,10 +48,8 @@ class StreakMoods(unittest.TestCase):
                 today = case["today"]
                 goal = moods.Goal.REACHED if today["goal_reached"] else moods.Goal.OPEN
                 stage = moods.Stage.of(today["time_ms"], today["streak_minutes"])
-                found = moods.streak_mood(
-                    today["state"], today["reviews"], stage, today["streak"], today["frozen_days"], goal,
-                    days_away=today["days_away"], freezes=today["freezes"], day_left_ms=today["day_left_ms"],
-                )
+                history = moods.History(today["frozen_days"], today["days_away"], today["freezes"], today["day_left_ms"])
+                found = moods.streak_mood(today["state"], today["reviews"], stage, today["streak"], history, goal)
                 self.assertEqual(case["expected"]["mood"], found)
                 pose = moods.pose_art(moods.AKI_POSES, case["expected"]["pose"])
                 self.assertEqual(pose, moods.streak_pose(found, today["streak"]))
@@ -85,7 +83,8 @@ class StreakMoods(unittest.TestCase):
     def test_a_review_after_a_freeze_keeps_aki_frozen(self):
         # Regression: one review after a freeze made Aki hopeful at once.
         stage = moods.Stage.of(30_000, 20)
-        self.assertEqual(moods.FROZEN_1, moods.streak_mood(moods.PROTECTED, 1, stage, 10, 1, moods.Goal.OPEN))
+        history = moods.History(frozen_days=1)
+        self.assertEqual(moods.FROZEN_1, moods.streak_mood(moods.PROTECTED, 1, stage, 10, history, moods.Goal.OPEN))
 
     def test_the_displayed_day_sets_the_stage(self):
         # The Today panel and the companion tab measure the day the way its verdict does.

@@ -55,6 +55,10 @@ def dialog(parent, config, on_save):
         ("hot_days", "Streak days for hot (2 or more)"),
         ("blazing_days", "Streak days for blazing (more than hot)"),
         ("legend_days", "Streak days for legend (more than blazing)"),
+        ("freeze_window_minutes", "Minutes before a freeze (1 or more)"),
+        ("neglected_days", "Days away for neglected (1 or more)"),
+        ("abandoned_days", "Days away for abandoned (more than neglected)"),
+        ("dead_days", "Days away for dead (more than abandoned)"),
     ):
         field = QLineEdit(str(limits[name]))
         field.setObjectName("ankiquest_debug_" + name)
