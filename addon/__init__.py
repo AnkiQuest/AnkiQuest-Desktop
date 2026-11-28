@@ -818,6 +818,7 @@ def failed(template, error):
 def redraw():
     home._refresh_toolbar()
     if mw.state == "deckBrowser":
+        home.update_today_visit()
         mw.deckBrowser.refresh()
 
 

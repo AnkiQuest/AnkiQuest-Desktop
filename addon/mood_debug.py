@@ -14,15 +14,8 @@ from . import moods
 # rules use (the reviews that make today hopeful, the day each streak pose starts at, and the
 # frozen days in a row each frozen mood needs). `moods` owns the same numbers for computed
 # moods; the keys name them for the menu.
-THRESHOLDS = ("hopeful_reviews", "frozen_2_days", "frozen_3_days", "hot_days", "blazing_days", "legend_days")
-DEFAULT_THRESHOLDS = {
-    "hopeful_reviews": 1,
-    "hot_days": 7,
-    "blazing_days": 30,
-    "legend_days": 100,
-    "frozen_2_days": 2,
-    "frozen_3_days": 3,
-}
+DEFAULT_THRESHOLDS = moods.DEFAULT_THRESHOLDS
+THRESHOLDS = tuple(DEFAULT_THRESHOLDS)
 
 # A mood override holds one of the fixture's streak moods; a pose override, one of the pose
 # names every companion resolves through `moods` (its core poses and their extensions).
@@ -99,7 +92,9 @@ def ordered(limits):
     past frozen 2."""
     return (limits["hopeful_reviews"] >= 1
             and 2 <= limits["frozen_2_days"] < limits["frozen_3_days"]
-            and 2 <= limits["hot_days"] < limits["blazing_days"] < limits["legend_days"])
+            and 2 <= limits["hot_days"] < limits["blazing_days"] < limits["legend_days"]
+            and limits["freeze_window_minutes"] >= 1
+            and 1 <= limits["neglected_days"] < limits["abandoned_days"] < limits["dead_days"])
 
 
 def thresholds(config):
