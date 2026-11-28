@@ -84,7 +84,7 @@ class RevealWindow:
         self._run_task = run
         self._elapsed = 0
         art = companion_art.pose_path(moments._pose(item, self.companion))
-        self._art = companion_art.pixmap(art, self.companion, ART_PX)
+        self._art = companion_art.pixmap(art, ART_PX)
 
         dialog = self.dialog = QDialog(parent)
         dialog.setWindowTitle(item["title"])

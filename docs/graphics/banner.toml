@@ -4,8 +4,10 @@
 title = "AnkiQuest"
 tagline = "Study together, keep your streak"
 
-# Regenerates docs/screenshots/desktop-*.png (Ubuntu 24.04, Anki 26.9.4).
-record = ["env", "ANKIQUEST_SCREENSHOTS=write", "python", "tests/draw_screenshots.py"]
+# Draws build/screenshots/desktop-*.png (Ubuntu 24.04, Anki 26.9.4). They are
+# not committed: CI's Screenshots job hands them to the banner job as the
+# `screenshots` artifact.
+record = ["python", "tests/draw_screenshots.py"]
 
 readme = "docs/graphics/banner_readme.png"
 social = "docs/graphics/social_preview.png"
@@ -21,7 +23,7 @@ height = 138
 # the add-on's main window, in front.
 [[screen]]
 frame = "window"
-shot = "docs/screenshots/desktop-progress.png"
+shot = "build/screenshots/desktop-progress.png"
 title = "Progress"
 x = 24
 y = 178
@@ -30,7 +32,7 @@ max_height = 600
 
 [[screen]]
 frame = "window"
-shot = "docs/screenshots/desktop-friends.png"
+shot = "build/screenshots/desktop-friends.png"
 title = "Friends"
 x = 168
 y = 318
@@ -39,7 +41,7 @@ max_height = 600
 
 [[screen]]
 frame = "window"
-shot = "docs/screenshots/desktop-inbox.png"
+shot = "build/screenshots/desktop-inbox.png"
 title = "Inbox"
 x = 620
 y = 318
@@ -48,7 +50,7 @@ max_height = 600
 
 [[screen]]
 frame = "window"
-shot = "docs/screenshots/desktop-today-light.png"
+shot = "build/screenshots/desktop-today-light.png"
 title = "Today"
 x = 870
 y = 150

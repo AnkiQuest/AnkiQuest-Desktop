@@ -149,6 +149,7 @@ def invitation(win, server, translate=lambda value: value):
 
 def face_path(companion):
     """The bundled face for the chosen companion; None means no art."""
-    if companion == moods.NONE:
+    name = moods.face(companion)
+    if name is None:
         return None
-    return str(Path(__file__).with_name("%s_face.png" % moods.art_owner(companion)))
+    return str(Path(__file__).with_name("art") / (name + ".png"))

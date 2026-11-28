@@ -2,9 +2,8 @@
 //! `ankiquest-art.json` pins.
 //!
 //! `addon-art.zip` holds `art/<name>.png`, `<companion>_face.png` and
-//! Anki-tan's licence, `art/LICENSE-Anki-tan.md`, which are unpacked into
-//! `addon/` after the pictures of an earlier run are removed, and the
-//! release's `poses.json` is copied there for `moods` to read. Each asset is
+//! Anki-tan's licence, `art/LICENSE-Anki-tan.md`. The add-on uses the licence
+//! and pictures under `art/` and the release's `poses.json`. Each asset is
 //! downloaded into a cache named by its SHA-256 and checked against the pin
 //! before every use, so a build works offline after the first.
 //! `ANKIQUEST_ART_DIR` names a folder holding the
@@ -50,7 +49,8 @@ const SHA256_HEX_LEN: usize = 64;
 /// The folder of the poses, inside the add-on and the asset.
 const POSES: &str = "art";
 
-/// Each face sits beside the code as `<companion>_face.png`.
+/// The asset also has each face beside the code as `<companion>_face.png`,
+/// a copy of `art/<companion>_face.png` the add-on does not use.
 const FACE_SUFFIX: &str = "_face.png";
 
 /// The pictures' file extension.
@@ -101,6 +101,10 @@ fn unpack(bytes: &[u8], addon: &Path) -> Result<(), String> {
     }
     clear(addon)?;
     for (name, data) in entries {
+        // The top-level faces duplicate those in `art/`.
+        if !name.contains('/') {
+            continue;
+        }
         let path = addon.join(&name);
         if let Some(folder) = path.parent() {
             fs::create_dir_all(folder).map_err(|e| format!("{}: {e}", folder.display()))?;
@@ -275,7 +279,7 @@ fn install(pictures: &[u8], poses: &[u8], addon: &Path) -> Result<(), String> {
     fs::write(&path, poses).map_err(|e| format!("{}: {e}", path.display()))
 }
 
-/// Removes the pictures an earlier run unpacked into `addon`.
+/// Removes pictures an earlier run unpacked into `addon`, including top-level faces.
 fn clear(addon: &Path) -> Result<(), String> {
     let poses = addon.join(POSES);
     if poses.is_dir() {
@@ -447,9 +451,9 @@ mod tests {
         let bytes = asset(&pinned, &origin, PICTURES).unwrap();
         unpack(&bytes, addon.path()).unwrap();
 
+        // The top-level face is left out: the add-on reads `art/`.
         let expected: BTreeMap<String, Vec<u8>> = [
-            ("aki_face.png", &b"face"[..]),
-            ("art/aki_sad.png", b"sad"),
+            ("art/aki_sad.png", &b"sad"[..]),
             (LICENCE, b"CC BY-SA 4.0"),
             ("share.py", b"code"),
         ]

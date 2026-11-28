@@ -1,6 +1,6 @@
 The AnkiQuest add-on for Anki: streaks, friends, leaderboards and moments, on the same account as [AnkiQuest for Android](https://github.com/AnkiQuest/AnkiQuest-Android).
 
-**Study companion.** Choose your study companion under Settings → Account. Ankilope joins you when you reach a level, with a short reveal; "Reduce motion" under App and privacy shows a fade instead. Anki-tan joins the companions, earned with a 66-day streak. Aki greets you once after you install or update the add-on. Your companion's pose follows your streak: asleep, happy, on fire, sad, hopeful, frozen or neglected.
+**Study companion.** Choose your study companion under Settings → Account. Ankilope joins you when you reach a level, with a short reveal; "Reduce motion" under App and privacy shows a fade instead. Anki-tan joins the companions, earned with a 66-day streak. Aki greets you once after you install or update the add-on. Your companion's pose follows your streak: asleep, happy, on fire, sad, hopeful, frozen or neglected. Bluma and Anki-tan show their own drawn poses, Bluma's face included, and Ankilope shows her own streak pose; moments with no picture of their own show a full pose, not the face.
 
 **Today.** The streak flame stays unlit until today counts. Friends' study stays hidden until you upload your first reviews. Between Monday and the weekly board's switch, the XP already counting for next week is shown.
 

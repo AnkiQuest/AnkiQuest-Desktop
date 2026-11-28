@@ -295,10 +295,11 @@ class ShareTests(unittest.TestCase):
     def test_the_window_shows_the_chosen_companion(self):
         self.assertEqual("aki_face.png", Path(share.face_path("aki")).name)
         self.assertEqual("ankilope_face.png", Path(share.face_path("ankilope")).name)
+        self.assertEqual("bluma_face.png", Path(share.face_path("cow")).name)
         self.assertEqual("anki_tan_face.png", Path(share.face_path("anki_tan")).name)
         self.assertEqual("aki_face.png", Path(share.face_path("leech_kun")).name, "no art: Aki's face")
         self.assertIsNone(share.face_path("none"))
-        for companion in ("aki", "ankilope", "anki_tan"):
+        for companion in ("aki", "ankilope", "cow", "anki_tan"):
             self.assertTrue(Path(share.face_path(companion)).is_file())
 
 

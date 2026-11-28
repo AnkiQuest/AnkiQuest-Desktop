@@ -477,9 +477,9 @@ class LocalPicture(unittest.TestCase):
         original = picture.companion_art.pixmap
         paths = []
 
-        def missing_tier(path, companion, size):
+        def missing_tier(path, size):
             paths.append((Path(path).stem, size))
-            return original(path, companion, size) if "blazing" not in path else original("missing.png", companion, size)
+            return original(path, size) if "blazing" not in path else original("missing.png", size)
 
         with patch.object(picture.companion_art, "pixmap", side_effect=missing_tier):
             self.image(win, "aki")

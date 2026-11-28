@@ -91,8 +91,8 @@ updated right after.
 
 ## Companion pictures
 
-The add-on's pictures (`addon/art/<name>.png` and the faces
-`addon/<companion>_face.png`) and Anki-tan's licence for hers
+The add-on's pictures (`addon/art/<name>.png`, faces included) and
+Anki-tan's licence for hers
 (`addon/art/LICENSE-Anki-tan.md`) are not committed. They come from the
 `addon-art.zip` asset of the [AnkiQuest-Art](https://github.com/AnkiQuest/AnkiQuest-Art)
 release that `ankiquest-art.json` pins, with its SHA-256. AnkiQuest-Sync
@@ -113,6 +113,10 @@ builds work offline. Every use checks the hash against the pin. To try a
 release that is not published yet, set `ANKIQUEST_ART_DIR` to a folder
 holding its assets (from AnkiQuest-Art's `tools/release/build.sh`); they
 are checked against the pin the same way.
+
+CI keeps that folder in the Actions cache, keyed by the SHA-256 of
+`ankiquest-art.json`, so each pin is downloaded once. Pull requests and
+merge groups only restore it; the add-on archive job on `master` saves it.
 
 Where a companion has no master for a pose, the add-on shows the fallback
 the pinned AnkiQuest-Art release's `poses.json` (copied beside the code by
